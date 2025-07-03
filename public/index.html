@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The cursed village 1996</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Creepster&family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Krub:wght@400;700&family=Merriweather:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=IM+Fell+English+SC&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Thai:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>หมู่บ้านต้องคำสาป 1996</h1>
+    <div class="container game-layout">
+        <div class="sidebar" id="sidebar-left">
+            <div id="players-board-section" class="section" style="display: none;">
+                <h3>ผู้เล่นทั้งหมด</h3>
+                <div id="players-board-list">
+                    <!-- Player cards will be populated here -->
+                </div>
+            </div>
+        </div>
+        <div class="main-game-content">
+        <div id="name-section" class="section">
+            <h2>Player Info</h2>
+            <div id="name-input-container">
+                <input type="text" id="name-input" placeholder="Enter your name">
+                <button id="set-name-button">Set Name</button>
+            </div>
+            <p>Your Name: <span id="player-name-display">Guest</span></p>
+            <p>Your Unique ID: <span id="player-unique-id-display"></span></p>
+            <p>Current Room: <span id="current-room-display">None</span></p>
+            <button id="leave-room-button" style="display: none;">Leave Room</button>
+        </div>
+
+        <div id="room-management-section" class="section">
+            <h2>Room Management</h2>
+            <div style="margin-bottom: 10px;">
+                <input type="text" id="room-player-name-input" placeholder="Change your name">
+                <button id="room-set-name-button">Set Name</button>
+            </div>
+            <div>
+                <input type="text" id="new-room-name-input" placeholder="New room name">
+                <button id="create-room-button">Create Room</button>
+            </div>
+            <div>
+                <input type="text" id="join-room-name-input" placeholder="Room to join">
+                <button id="join-room-button">Join Room</button>
+            </div>
+        </div>
+
+        <div id="room-lobby-section" class="section" style="display: none;">
+            <h2>Lobby: <span id="lobby-room-name"></span></h2>
+            <p>Players: <span id="lobby-player-count"></span>/<span id="lobby-max-players"></span></p>
+            <h3>Players in Room:</h3>
+            <div id="player-list">
+                </div>
+            <button id="start-game-button">Start Game</button>
+
+            <div class="host-controls" id="host-controls-lobby" style="display: none;">
+                <h3>Host Controls (Lobby)</h3>
+                <button id="force-next-phase-button">Force Next Phase</button>
+            </div>
+        </div>
+
+        <div id="game-section" class="section" style="display: none;">
+                <div class="game-layout">
+                    <div class="main-game-content">
+                        <div id="game-state-bar" class="game-state-bar">
+                            <span>ช่วงเวลา: <span id="current-phase-display"></span></span>
+                            <span>| ตัวจับเวลา: <span id="timer-display"></span></span>
+                            <span>| วันที่: <span id="day-number-display"></span></span>
+                            <span>| เทิร์นของ: <span id="current-turn-player-display"></span></span>
+                        </div>
+                        <div id="deck-info-bar" class="deck-info-bar">
+                            <span>กองการ์ด: <span id="deck-count-display">0</span></span>
+                            <span>| กองทิ้ง: <span id="discard-pile-count-display">0</span></span>
+                        </div>
+            <h3 style="color: #ff7f50;">การ์ดจิตวิญญาณในมือ (<span id="hand-card-count">0</span> cards)</h3>
+                            <div id="player-hand"></div>
+                        <div class="hand-action-buttons" style="margin-top: 8px;">
+                                <button id="draw-card-button">จั่วการ์ด 2 ใบ</button>
+                                <button id="play-card-button">เล่นการ์ดที่เลือก</button>
+                                <select id="card-target-select" style="display: none; margin-left: 8px;">
+                                    <option value="">Select Target</option>
+                                </select>
+                                <select id="card-second-target-select" style="display: none; margin-left: 8px;">
+                                    <option value="">Select Second Target</option>
+                                </select>
+                                <button id="end-turn-button" style="background-color: #dc3545; color: white; font-weight: bold; margin-left: 12px;">จบเทิร์น</button>
+                </div>
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <h3 style="color: #ff7f50; margin-bottom: 0;">การ์ดชีวิต (<span id="tryal-card-count">0</span> ใบ)</h3>
+              <span id="my-role-display-container"><span style="font-size: 1em; margin-left: 12px;">คุณเป็น: </span><span id="my-role-display">Not Assigned</span></span>
+            </div>
+            <div id="tryal-cards-display">
+                <p id="my-revealed-tryal-cards"></p>
+                <p id="my-secret-tryal-cards-count"></p>
+                <ul id="my-tryal-cards-list"></ul>
+            </div>
+
+                        <div id="turn-controls" class="section" style="display: none;">
+                            <h3 style="color: #ff7f50;">Turn Controls</h3>
+                            <button id="end-turn-button" style="background-color: #dc3545; color: white; padding: 15px 30px; font-size: 1.2em; font-weight: bold;">End Turn</button>
+            </div>
+
+            <div id="confess-section" style="display: none;">
+                            <h3>Confess! (<span id="confess-timer-display"></span>s left - Auto-skip if time expires)</h3>
+                <button id="confess-button">Confess (Reveal Tryal Card)</button>
+                            <button id="skip-confess-button" style="background-color: #666; margin-left: 10px;">Skip Confession</button>
+            </div>
+
+            <div class="host-controls" id="host-controls-game" style="display: none;">
+                <h3>Host Controls (Game)</h3>
+                <button id="force-next-phase-game-button">Force Next Phase</button>
+        </div>
+
+        <div id="witch-action-section" class="section" style="display: none;">
+            
+            <div id="assign-black-cat-action" style="display: none;">
+                <p>เลือกผู้เล่นที่จะรับการ์ดเครื่องเซ่น:</p>
+                <select id="black-cat-target-select"></select>
+                <button id="confirm-black-cat-button">Confirm</button>
+            </div>
+        </div>
+
+                        <div id="night-action-section" class="section night-action-section" style="display: none;">
+                            <h3 id="night-action-title">Night Action</h3>
+                            <div class="night-action-timer" id="night-action-timer"></div>
+                            <div class="night-action-instruction" id="night-action-instruction"></div>
+                            <p>คลิกที่ชื่อผู้เล่นในรายการด้านขวาเพื่อเลือกเป้าหมาย:</p>
+                            <button id="confirm-night-action-button" style="display: none;">ยืนยันการเลือก</button>
+                        </div>
+                    </div>
+
+                    <div class="sidebar" id="sidebar-right">
+        <div id="game-messages" class="section">
+            <h2>Game Messages</h2>
+                    </div>
+                    
+                    <div id="witch-chat-section" class="section" style="display: none;">
+                        <h2>🧙‍♀️ ชุนชนชาวปอบ</h2>
+                        <div id="witch-chat-messages" class="chat-messages">
+                            <!-- Witch chat messages will appear here -->
+                        </div>
+                        <div class="chat-input-container">
+                            <input type="text" id="witch-chat-input" placeholder="Type your message to witch team..." maxlength="200">
+                            <button id="witch-chat-send">Send</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            </div>
+    </div>
+
+    <!-- This element will be used to show card descriptions on hover -->
+    <div id="card-description-popup"></div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
