@@ -3,6 +3,7 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const { v4: uuidv4 } = require('uuid'); // For unique player IDs (Ensure you 'npm install uuid')
+const { getGameCardsForPlayerCount } = require('./src/gameLogic');
 
 const app = express();
 const server = http.createServer(app);
@@ -394,10 +395,9 @@ function changePhase(roomName, forcedNextPhase = null) {
         const constables = getAlivePlayers(room).filter(p => p.isConstable);
         const witches = getAlivePlayers(room).filter(p => p.isWitch);
         
-        // ลบหรือ comment out ทุก console.log
-        // console.log('Night phase - Checking roles:');
-        // console.log('Constables:', constables.map(p => ({ name: p.name, isConstable: p.isConstable })));
-        // console.log('Witches:', witches.map(p => ({ name: p.name, isWitch: p.isWitch })));
+        console.log('Night phase - Checking roles:');
+        console.log('Constables:', constables.map(p => ({ name: p.name, isConstable: p.isConstable })));
+        console.log('Witches:', witches.map(p => ({ name: p.name, isWitch: p.isWitch })));
         
             if (witches.length > 0) {
             // ปอบเลือกเป้าหมาย
@@ -530,7 +530,7 @@ function startGame(roomName) {
     // --- New Card Dealing Logic ---
 
     // 1. Separate special cards from the main deck
-    const allGameCards = [...GAME_CARDS];
+    const allGameCards = getGameCardsForPlayerCount(playerCount);
     const conspiracyCards = allGameCards.filter(c => c.name === 'Conspiracy');
     const nightCards = allGameCards.filter(c => c.name === 'Night');
     const blackCatCard = allGameCards.find(c => c.name === 'Black Cat');
@@ -1287,9 +1287,9 @@ function resolveNightActions(roomName) {
     sendGameMessage(room.name, 'ช่วงเวลากลางคืนจบลงถึงช่วงเวลาสารภาพ...', 'purple', true);
 
     // Debug log
-    // console.log('--- [DEBUG] resolveNightActions ---');
-    // console.log('nightConfessors:', room.nightConfessors);
-    // console.log('playersWhoActedAtNight:', room.playersWhoActedAtNight);
+    console.log('--- [DEBUG] resolveNightActions ---');
+    console.log('nightConfessors:', room.nightConfessors);
+    console.log('playersWhoActedAtNight:', room.playersWhoActedAtNight);
 
     // 1. Witch Kill (if any alive witches) - but don't reveal who was killed yet
     const aliveWitches = getAlivePlayers(room).filter(p => p.isWitch);
@@ -1306,7 +1306,7 @@ function resolveNightActions(roomName) {
             const confessedDuringNight = room.nightConfessors && room.nightConfessors.includes(chosenToKillUniqueId);
 
             // Debug log
-            // console.log('Witch target:', targetPlayer.name, 'hasAsylum:', hasAsylum, 'wasProtectedByConstable:', wasProtectedByConstable, 'confessedDuringNight:', confessedDuringNight);
+            console.log('Witch target:', targetPlayer.name, 'hasAsylum:', hasAsylum, 'wasProtectedByConstable:', wasProtectedByConstable, 'confessedDuringNight:', confessedDuringNight);
             
             if (hasAsylum || wasProtectedByConstable || confessedDuringNight) {
                 if (hasAsylum) {

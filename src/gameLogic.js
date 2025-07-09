@@ -496,6 +496,7 @@ function endTurn(room, playerUniqueId) {
 }
 
 module.exports = {
+  getGameCardsForPlayerCount,
   PLAYER_LIMIT,
   MIN_PLAYERS_TO_START,
   DEFAULT_PHASE_DURATIONS,

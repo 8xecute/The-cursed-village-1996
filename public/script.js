@@ -155,11 +155,7 @@ socket.on('room joined', (roomName) => {
     roomManagementSection.style.display = 'none';
     roomLobbySection.style.display = 'block';
     gameSection.style.display = 'none'; // Ensure game section is hidden initially
-    if (isHost) {
-        startGameButton.style.display = 'inline-block';
-    } else {
-        startGameButton.style.display = 'none';
-    }
+    leaveRoomButton.style.display = 'block';
 });
 
 socket.on('room state update', (roomState) => {

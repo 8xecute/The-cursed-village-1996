@@ -4,8 +4,17 @@
   "description": "The Cursed Village 1996 - Salem-style card game",
   "main": "server.js",
   "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
     "start": "node server.js",
-    "build": "webpack --mode production"
+    "dev": "nodemon server.js",
+    "build": "npm run build:client && npm run build:server",
+    "build:client": "webpack --mode production",
+    "build:server": "echo 'Server build complete'",
+    "lint": "eslint . --ext .js",
+    "lint:fix": "eslint . --ext .js --fix",
+    "optimize": "npm run lint:fix && npm run build"
   },
   "keywords": ["game", "salem", "card-game", "multiplayer"],
   "author": "",
@@ -16,5 +25,27 @@
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",
     "uuid": "^11.1.0"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "nodemon": "^3.0.2",
+    "eslint": "^8.56.0",
+    "webpack": "^5.89.0",
+    "webpack-cli": "^5.1.4",
+    "terser-webpack-plugin": "^5.3.9",
+    "css-minimizer-webpack-plugin": "^5.0.1",
+    "mini-css-extract-plugin": "^2.7.6",
+    "supertest": "^6.3.3",
+    "css-loader": "^6.8.1"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "collectCoverageFrom": [
+      "server.js",
+      "src/**/*.js",
+      "!**/node_modules/**"
+    ],
+    "coverageDirectory": "coverage",
+    "coverageReporters": ["text", "lcov", "html"]
   }
 }

@@ -175,12 +175,12 @@ button:disabled {
 }
 
 .message-black { color: #ccc; }
-.message-red { color: #ff6666; }
+.message-red { color: #ff4444; }
 .message-green { color: #66ff66; }
 .message-blue { color: #66ccff; }
 .message-orange { color: #ffa07a; }
 .message-purple { color: #da70d6; }
-.message-darkred { color: #8b0000; } /* Darker red for witch-related messages */
+.message-darkred { color: #e53935; } /* ปรับแดงเข้มให้สว่างขึ้น */
 .message-gold { color: #bfa100; }
 
 .player-item {
