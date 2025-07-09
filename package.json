@@ -1,13 +1,13 @@
 {
   "name": "salem-game",
   "version": "1.0.0",
-  "description": "",
+  "description": "The Cursed Village 1996 - Salem-style card game",
   "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
+    "start": "node server.js",
+    "build": "webpack --mode production"
   },
-  "keywords": [],
+  "keywords": ["game", "salem", "card-game", "multiplayer"],
   "author": "",
   "license": "ISC",
   "type": "commonjs",

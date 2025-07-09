@@ -122,6 +122,7 @@ if (myPlayerName) {
     socket.emit('set player name', myPlayerName); // Send name to server on load
 } else {
     nameInputContainer.style.display = 'flex';
+    nameInput.placeholder = 'กรอกชื่อของคุณ';
 }
 
 // --- Socket.IO Event Listeners ---
@@ -150,11 +151,13 @@ socket.on('active rooms list', (rooms) => {
 
 socket.on('room joined', (roomName) => {
     currentRoomName = roomName;
-    currentRoomDisplay.textContent = roomName;
+    currentRoomDisplay.textContent = roomName || 'ไม่มี';
     roomManagementSection.style.display = 'none';
     roomLobbySection.style.display = 'block';
     gameSection.style.display = 'none'; // Ensure game section is hidden initially
     leaveRoomButton.style.display = 'block';
+    // ซ่อนปุ่มเริ่มเกมไว้ก่อนจนกว่าจะรู้ว่าเป็น host จริง
+    startGameButton.style.display = 'none';
 });
 
 socket.on('room state update', (roomState) => {
@@ -323,16 +326,27 @@ socket.on('room state update', (roomState) => {
             if (section) section.style.display = 'none';
         }
 
-        // Show game over message
+        // Show game over message and stats
         if (roomState.gameOver) {
             addGameMessage(`เกมจบแล้ว! ผู้ชนะคือ: ${roomState.winner}!`, 'gold', true);
             // Optionally disable all game actions
             gameActionsDiv.style.display = 'none';
             confessSection.style.display = 'none';
+            
+            // แสดงสถิติเกมจบแล้ว
+            showGameOverStats(roomState);
         }
 
         // Reset nightActionState.hasSubmitted เมื่อเริ่มรอบใหม่ (เฟสเปลี่ยน)
         nightActionState.hasSubmitted = false;
+        
+        // ลบ popup สถิติถ้าเกมยังไม่จบ
+        if (!roomState.gameOver) {
+            const statsPopup = document.querySelector('.stats-popup');
+            if (statsPopup) {
+                statsPopup.remove();
+            }
+        }
 
         // ถ้าเพิ่ง forced reveal ให้ disable draw card button
         if (forcedRevealJustHappened) {
@@ -413,6 +427,12 @@ socket.on('request player name', () => {
 });
 
 socket.on('room left', () => {
+    // ลบ popup สถิติถ้ามี
+    const statsPopup = document.querySelector('.stats-popup');
+    if (statsPopup) {
+        statsPopup.remove();
+    }
+    
     currentRoomName = null;
     roomManagementSection.style.display = 'block';
     roomLobbySection.style.display = 'none';
@@ -785,11 +805,12 @@ playCardButton.addEventListener('click', () => {
     }
     if (CARDS_NEED_TARGET.includes(card.name)) {
         // --- Popup เลือกเป้าหมายเดียว ---
-        const playerList = Object.values(currentRoomState.players).filter(p => p.alive && (card.color === 'Blue' || p.uniqueId !== myUniqueId));
+        // Blue card ห้ามเลือกตัวเอง
+        const playerList = Object.values(currentRoomState.players).filter(p => p.alive && (card.color !== 'Blue' ? p.uniqueId !== myUniqueId : true));
         showSelectPlayerPopup('เลือกเป้าหมาย', playerList, (targetId) => {
             socket.emit('play card', selectedCard, targetId);
             clearCardSelection();
-        });
+        }, card);
                     return;
                 }
     // Special handling for Night card
@@ -889,24 +910,29 @@ confirmNightActionButton.addEventListener('click', () => {
 
 // --- Helper Functions (Client-side UI) ---
 function addGameMessage(message, color, bold = false) {
-    const p = document.createElement('p');
-    // เพิ่มไอคอน action log
-    let icon = '';
-    switch (color) {
-        case 'orange': icon = '🃏 '; break; // เล่นการ์ด
-        case 'red': icon = '☠️ '; break; // kill
-        case 'green': icon = '🛡️ '; break; // protect
-        case 'blue': icon = '🔵 '; break; // turn
-        case 'gold': icon = '🏆 '; break; // win
-        default: icon = '';
-    }
-    p.textContent = icon + message;
-    p.classList.add(`message-${color}`);
-    if (bold) {
-        p.style.fontWeight = 'bold';
-    }
-    gameMessagesDiv.appendChild(p);
-    gameMessagesDiv.scrollTop = gameMessagesDiv.scrollHeight; // Auto-scroll to bottom
+    message = replaceCardNamesInMessage(message);
+    // กำหนดสีให้อ่านง่ายและเหมาะกับสถานการณ์ (สดและตัดกับพื้นหลัง)
+    const colorMap = {
+        red:      '#ef5350',   // สดขึ้น
+        green:    '#66bb6a',   // สดขึ้น
+        blue:     '#42a5f5',   // ฟ้าอ่อนสด
+        gold:     '#ffb300',   // เหลืองทองเข้ม
+        gray:     '#e0e0e0',   // เทาอ่อน
+        orange:   '#ffb74d',   // ส้มสด
+        purple:   '#ba68c8',   // ม่วงสด
+        darkred:  '#c62828',   // แดงเข้ม
+        darkblue: '#3949ab',   // น้ำเงินเข้ม
+        black:    '#fff',      // ขาว
+    };
+    let useColor = colorMap[color] || colorMap.black;
+
+    const messageDiv = document.createElement('div');
+    if (bold) messageDiv.style.fontWeight = 'bold';
+    messageDiv.style.color = useColor;
+    messageDiv.innerHTML = message;
+    const gameMessages = document.getElementById('game-messages');
+    if (gameMessages) gameMessages.appendChild(messageDiv);
+    gameMessages.scrollTop = gameMessages.scrollHeight;
 }
 
 function clearCardSelection() {
@@ -981,7 +1007,15 @@ function updateHandDisplay(hand) {
     hand.forEach((card, index) => {
         const cardElement = document.createElement('div');
         cardElement.className = `card card-${card.color.toLowerCase()}`;
-        cardElement.textContent = displayCardName(card.name);
+        
+        // แสดงรูปการ์ดแทนข้อความ
+        const cardImage = createCardImage(card.name);
+        cardImage.style.width = '100%';
+        cardImage.style.height = '100%';
+        cardImage.style.objectFit = 'cover';
+        cardImage.style.borderRadius = '4px';
+        cardElement.appendChild(cardImage);
+        
         cardElement.dataset.index = index;
         // --- Drag & Drop ---
         cardElement.draggable = true;
@@ -1048,6 +1082,46 @@ function updateHandDisplay(hand) {
         });
         playerHandDiv.appendChild(cardElement);
     });
+}
+
+// ฟังก์ชันสร้างรูปการ์ด
+function createCardImage(cardName) {
+    const img = document.createElement('img');
+    
+    // แมปชื่อการ์ดกับชื่อไฟล์
+    const cardImageMap = {
+        'Accusation': 'accusation.png',
+        'Evidence': 'evidence.png',
+        'Witness': 'witness.png',
+        'Scapegoat': 'scapegoat.png',
+        'Curse': 'curse.png',
+        'Alibi': 'alibi.png',
+        'Robbery': 'robbery.png',
+        'Stocks': 'stocks.png',
+        'Arson': 'arson.png',
+        'Black Cat': 'blackcat.png',
+        'Asylum': 'asylum.png',
+        'Piety': 'piety.png',
+        'Matchmaker': 'matchmaker.png',
+        'Conspiracy': 'conspiracy.png',
+        'Night': 'night.png',
+        'Witch': 'witch.png',
+        'Not A Witch': 'notawitch.png',
+        'Constable': 'constable.png'
+    };
+    
+    const imageFileName = cardImageMap[cardName] || 'accusation.png'; // fallback
+    img.src = `cards/${imageFileName}`;
+    img.alt = displayCardName(cardName);
+    img.title = displayCardDescription(cardName);
+    
+    // ตั้งค่าสไตล์ของรูป
+    img.style.width = '100%';
+    img.style.height = '100%';
+    img.style.objectFit = 'cover';
+    img.style.borderRadius = '8px';
+    
+    return img;
 }
 
 function populateCardTargetSelect(playersData, myUniqueId, selectedCardObj = null) {
@@ -1130,7 +1204,7 @@ function enableNightTargetSelection(actionType) {
         if (currentRoomState && currentRoomState.players[myUniqueId] && currentRoomState.players[myUniqueId].isWitch) {
             nightActionInstruction.textContent = 'คุณเป็นทั้งปอบและหมอผี! ตอนนี้คุณใช้สิทธิ์หมอผีเพื่อปกป้องผู้เล่น:';
         } else {
-            nightActionInstruction.textContent = 'คุณเป็นหมอผี! เลือกผู้เล่นที่จะปกป้องด้วยค้อนของคุณ (สามารถเลือกผู้เล่นที่ตายแล้วได้):';
+            nightActionInstruction.textContent = 'คุณเป็นหมอผี! เลือกผู้เล่นที่จะปกป้องด้วยการปัดเป่าของคุณ';
         }
     }
 
@@ -1195,8 +1269,16 @@ function updateTryalCardDisplay() {
             cardDiv.style.fontWeight = 'bold';
             cardDiv.style.cursor = 'grab';
             cardDiv.dataset.index = idx;
-            cardDiv.textContent = displayCardName(card.name);
             cardDiv.title = displayCardDescription(card.name); // <-- Add tooltip for tryal cards
+            
+            // แสดงรูปการ์ดแทนข้อความ
+            const cardImage = createCardImage(card.name);
+            cardImage.style.width = '100%';
+            cardImage.style.height = '100%';
+            cardImage.style.objectFit = 'cover';
+            cardImage.style.borderRadius = '6px';
+            cardDiv.appendChild(cardImage);
+            
             // Drag & drop events
             cardDiv.addEventListener('dragstart', (e) => {
                 e.dataTransfer.setData('text/plain', idx);
@@ -1279,80 +1361,65 @@ function updatePlayersGrid(roomState, myUniqueId, actionType = null) {
     const playersInOrder = Object.values(roomState.players).sort((a, b) => a.name.localeCompare(b.name));
 
     playersInOrder.forEach(player => {
-        const playerCard = document.createElement('div');
-        playerCard.className = `night-player-card ${!player.alive ? 'dead' : ''}`;
-        playerCard.dataset.uniqueId = player.uniqueId;
-
-        // Determine if this player can be targeted based on action type (only during night actions)
-        const canBeTargeted = actionType && (actionType === 'constable' || (actionType === 'witch' && player.alive));
-        if (canBeTargeted && nightActionState.isSelecting) {
-            console.log(`Making player ${player.name} selectable for ${actionType} action`);
-            playerCard.classList.add('selectable-target');
-            playerCard.addEventListener('click', handleNightPlayerCardClick);
-        } else {
-            console.log(`Player ${player.name} not selectable - actionType: ${actionType}, isSelecting: ${nightActionState.isSelecting}, alive: ${player.alive}`);
+        const card = document.createElement('div');
+        card.className = 'player-board-card' + (!player.alive ? ' dead' : '') + (roomState.currentTurnPlayerUniqueId === player.uniqueId ? ' current-turn' : '');
+        // Header
+        let header = `<div class='player-board-header'>`;
+        if (roomState.currentTurnPlayerUniqueId === player.uniqueId) {
+            header += `<span style="color:#ffd700;font-size:1.2em;margin-right:6px;vertical-align:middle;">🔥</span>`;
         }
-
-        // Build player name with special indicators
-        let playerNameText = player.name;
-        if (player.isHost) playerNameText += ' (Host)';
-        if (player.isBlackCatHolder) playerNameText += ' (เครื่องเซ่น)';
-
-        // Determine role display (only show if revealed or if it's the current player)
-        let roleText = 'Unknown';
-        if (player.uniqueId === myUniqueId) {
-            if (player.isWitch && player.isConstable) roleText = 'Witch + Constable';
-            else if (player.isWitch) roleText = 'Witch';
-            else if (player.isConstable) roleText = 'Constable';
-            else roleText = 'Not A Witch';
-        } else if (player.revealedTryalCardIndexes && Array.isArray(player.revealedTryalCardIndexes) && player.revealedTryalCardIndexes.length > 0) {
-            roleText = player.revealedTryalCardIndexes.join(', ');
+        header += `${player.name}`;
+        if (player.isHost) header += ' <span style="color:#ff4500;">(Host)</span>';
+        if (player.isBlackCatHolder) header += ' <span style="color:#ffd700;">(เครื่องเซ่น)</span>';
+        if (roomState.currentTurnPlayerUniqueId === player.uniqueId) header += ' <span style="color:#2196f3;font-weight:bold;">[เทิร์น]</span>';
+        header += '</div>';
+        // Status
+        let status = `<div class='player-board-status'>`;
+        status += `การ์ดในมือ: ${player.handSize} | ข้อกล่าวหา: ${player.accusationPoints}`;
+        // --- Effect: เฉพาะ Blue + Stocks (Green) ---
+        let effectCards = [];
+        if (player.inPlayCards && Array.isArray(player.inPlayCards)) {
+            effectCards = player.inPlayCards.filter(c => c === 'Stocks' || c === 'Black Cat' || c === 'Asylum' || c === 'Piety' || c === 'Matchmaker');
         }
-
-        // Build status text
-        const statusParts = [];
-        if (!player.alive) statusParts.push('Eliminated');
-        if (player.isSilenced) statusParts.push('Silenced');
-        if (roomState.currentTurnPlayerUniqueId === player.uniqueId) statusParts.push('Current Turn');
-        if (roomState.playerForcedToRevealTryal === player.uniqueId) statusParts.push('Must Reveal Tryal');
-        
-        const statusText = statusParts.length > 0 ? statusParts.join(', ') : 'Active';
-
-        // Build card indicators
-        const cardIndicators = [];
-        if (player.handSize > 0) {
-            cardIndicators.push(`<span class="card-indicator card-hand">มือ: ${player.handSize}</span>`);
+        if (effectCards.length > 0) {
+            status += `<br><span class='effect-label' style="display:inline-block;margin-top:2px;font-size:1.08em;font-weight:bold;color:#ffd700;">✨ ผลพิเศษ:</span> `;
+            effectCards.forEach(cardName => {
+                let desc = '';
+                let themeClass = '';
+                switch(cardName) {
+                    case 'Stocks': desc = 'ข้ามตา'; cardName = 'พันธนาการ'; themeClass = 'card-theme card-green'; break;
+                    case 'Black Cat': desc = 'เริ่มเล่นเป็นคนแรก/โดน พิธีเซ่นไหว้'; cardName = 'เครื่องเซ่น'; themeClass = 'card-theme card-blue'; break;
+                    case 'Asylum': desc = 'ป้องกันถูกฆ่าตอนกลางคืน'; cardName = 'ที่หลบภัย'; themeClass = 'card-theme card-blue'; break;
+                    case 'Piety': desc = 'กันโจมตีด้วยการ์ดแดง'; cardName = 'พลังศรัทธา'; themeClass = 'card-theme card-blue'; break;
+                    case 'Matchmaker': desc = 'ตายคู่'; cardName = 'ผูกวิญญาณ'; themeClass = 'card-theme card-green'; break;
+                    default: desc = ''; themeClass = 'card-theme card-black';
+                }
+                status += `<span class='effect-card ${themeClass}' title='${desc}' style="padding:2px 10px;margin:0 4px;border-radius:8px;font-size:1.08em;vertical-align:middle;box-shadow:0 2px 8px #ffd70044;">${cardName}</span>`;
+            });
         }
-        if (player.tryalCardCount > 0) {
-            cardIndicators.push(`<span class="card-indicator card-tryal">ชีวิต: ${player.tryalCardCount}</span>`);
+        status += '</div>';
+        // Tryal Cards
+        let tryals = `<div class='player-board-tryals'>`;
+        if (player.tryalCards && Array.isArray(player.tryalCards)) {
+            player.tryalCards.forEach((cardObj, idx) => {
+                const revealed = player.revealedTryalCardIndexes && player.revealedTryalCardIndexes.includes(idx);
+                let cardClass = 'player-board-tryal-card';
+                let cardThemeClass = '';
+                if (revealed) {
+                    if (cardObj.name === 'Witch') {
+                        cardThemeClass = ' card-theme card-red';
+                    } else if (cardObj.name === 'Constable') {
+                        cardThemeClass = ' card-theme card-blue';
+                    } else {
+                        cardThemeClass = ' card-theme card-black';
+                    }
+                }
+                tryals += `<div class='${cardClass}${revealed ? ' revealed' : ''}${cardThemeClass}' title='${displayCardDescription(cardObj.name)}'>${revealed ? displayCardName(cardObj.name) : 'Card ' + (idx + 1)}</div>`;
+            });
         }
-        if (player.accusationPoints > 0) {
-            cardIndicators.push(`<span class="card-indicator card-accusation">ข้อกล่าวหา: ${player.accusationPoints}</span>`);
-        }
-        if (player.inPlayCards && player.inPlayCards.length > 0) {
-            cardIndicators.push(`<span class="card-indicator card-permanent">ถาวร: ${player.inPlayCards.length}</span>`);
-        }
-
-        // Build special status indicators
-        const specialStatuses = [];
-        if (player.isHost) specialStatuses.push('<span class="player-special-status status-host">Host</span>');
-        if (player.isBlackCatHolder) specialStatuses.push('<span class="player-special-status status-black-cat">เครื่องเซ่น</span>');
-        if (roomState.currentTurnPlayerUniqueId === player.uniqueId) specialStatuses.push('<span class="player-special-status status-current-turn">Turn</span>');
-        if (player.isSilenced) specialStatuses.push('<span class="player-special-status status-silenced">เงียบ</span>');
-        if (roomState.playerForcedToRevealTryal === player.uniqueId) specialStatuses.push('<span class="player-special-status status-must-reveal-tryal">Must Reveal Tryal</span>');
-        if (player.isWitch && player.isConstable) specialStatuses.push('<span class="player-special-status status-witch-constable">ปอบ+หมอผี</span>');
-
-        playerCard.innerHTML = `
-            ${specialStatuses.join('')}
-            <div class="player-name">${playerNameText}</div>
-            <div class="player-role">บทบาท: ${roleText}</div>
-            <div class="player-status">สถานะ: ${statusText}</div>
-            <div class="player-cards">
-                ${cardIndicators.join('')}
-            </div>
-        `;
-
-        nightPlayersList.appendChild(playerCard);
+        tryals += '</div>';
+        card.innerHTML = header + status + tryals;
+        list.appendChild(card);
     });
 }
 
@@ -1405,12 +1472,16 @@ function updatePlayersBoardGrid(roomState, myUniqueId) {
     const playersInOrder = Object.values(roomState.players).sort((a, b) => a.name.localeCompare(b.name));
     playersInOrder.forEach(player => {
         const card = document.createElement('div');
-        card.className = 'player-board-card' + (!player.alive ? ' dead' : '');
+        card.className = 'player-board-card' + (!player.alive ? ' dead' : '') + (roomState.currentTurnPlayerUniqueId === player.uniqueId ? ' current-turn' : '');
         // Header
-        let header = `<div class='player-board-header'>${player.name}`;
+        let header = `<div class='player-board-header'>`;
+        if (roomState.currentTurnPlayerUniqueId === player.uniqueId) {
+            header += `<span style="color:#ffd700;font-size:1.2em;margin-right:6px;vertical-align:middle;">🔥</span>`;
+        }
+        header += `${player.name}`;
         if (player.isHost) header += ' <span style="color:#ff4500;">(Host)</span>';
         if (player.isBlackCatHolder) header += ' <span style="color:#ffd700;">(เครื่องเซ่น)</span>';
-        if (roomState.currentTurnPlayerUniqueId === player.uniqueId) header += ' <span style="color:#2196f3;">Turn</span>';
+        if (roomState.currentTurnPlayerUniqueId === player.uniqueId) header += ' <span style="color:#2196f3;font-weight:bold;">[เทิร์น]</span>';
         header += '</div>';
         // Status
         let status = `<div class='player-board-status'>`;
@@ -1424,15 +1495,16 @@ function updatePlayersBoardGrid(roomState, myUniqueId) {
             status += `<br><span class='effect-label' style="display:inline-block;margin-top:2px;font-size:1.08em;font-weight:bold;color:#ffd700;">✨ ผลพิเศษ:</span> `;
             effectCards.forEach(cardName => {
                 let desc = '';
+                let themeClass = '';
                 switch(cardName) {
-                    case 'Stocks': desc = 'ข้ามตา'; cardName = 'พันธนาการ'; break;
-                    case 'Black Cat': desc = 'เริ่มเล่นเป็นคนแรก/โดน พิธีเซ่นไหว้'; cardName = 'เครื่องเซ่น'; break;
-                    case 'Asylum': desc = 'ป้องกันถูกฆ่าตอนกลางคืน'; cardName = 'ที่หลบภัย'; break;
-                    case 'Piety': desc = 'กันโจมตีด้วยการ์ดแดง'; cardName = 'พลังศรัทธา'; break;
-                    case 'Matchmaker': desc = 'ตายคู่'; cardName = 'ผูกวิญญาณ'; break;
-                    default: desc = '';
+                    case 'Stocks': desc = 'ข้ามตา'; cardName = 'พันธนาการ'; themeClass = 'card-theme card-green'; break;
+                    case 'Black Cat': desc = 'เริ่มเล่นเป็นคนแรก/โดน พิธีเซ่นไหว้'; cardName = 'เครื่องเซ่น'; themeClass = 'card-theme card-blue'; break;
+                    case 'Asylum': desc = 'ป้องกันถูกฆ่าตอนกลางคืน'; cardName = 'ที่หลบภัย'; themeClass = 'card-theme card-blue'; break;
+                    case 'Piety': desc = 'กันโจมตีด้วยการ์ดแดง'; cardName = 'พลังศรัทธา'; themeClass = 'card-theme card-blue'; break;
+                    case 'Matchmaker': desc = 'ตายคู่'; cardName = 'ผูกวิญญาณ'; themeClass = 'card-theme card-green'; break;
+                    default: desc = ''; themeClass = 'card-theme card-black';
                 }
-                status += `<span class='effect-card' title='${desc}' style="background:#333;color:#ffd700;padding:2px 10px;margin:0 4px;border-radius:8px;font-size:1.08em;vertical-align:middle;box-shadow:0 2px 8px #ffd70044;">${cardName}</span>`;
+                status += `<span class='effect-card ${themeClass}' title='${desc}' style="padding:2px 10px;margin:0 4px;border-radius:8px;font-size:1.08em;vertical-align:middle;box-shadow:0 2px 8px #ffd70044;">${cardName}</span>`;
             });
         }
         status += '</div>';
@@ -1441,17 +1513,18 @@ function updatePlayersBoardGrid(roomState, myUniqueId) {
         if (player.tryalCards && Array.isArray(player.tryalCards)) {
             player.tryalCards.forEach((cardObj, idx) => {
                 const revealed = player.revealedTryalCardIndexes && player.revealedTryalCardIndexes.includes(idx);
-                let cardStyle = '';
+                let cardClass = 'player-board-tryal-card';
+                let cardThemeClass = '';
                 if (revealed) {
                     if (cardObj.name === 'Witch') {
-                        cardStyle = 'background: linear-gradient(135deg, #8B0000, #DC143C); color: #fff; border: 2px solid #FF0000;';
+                        cardThemeClass = ' card-theme card-red';
                     } else if (cardObj.name === 'Constable') {
-                        cardStyle = 'background: linear-gradient(135deg, #000080, #4169E1); color: #fff; border: 2px solid #1E90FF;';
+                        cardThemeClass = ' card-theme card-blue';
                     } else {
-                        cardStyle = 'background: linear-gradient(135deg, #228B22, #32CD32); color: #fff; border: 2px solid #00FF00;';
+                        cardThemeClass = ' card-theme card-black';
                     }
                 }
-                tryals += `<div class='player-board-tryal-card${revealed ? ' revealed' : ''}' style='${cardStyle}' title='${displayCardDescription(cardObj.name)}'>${revealed ? displayCardName(cardObj.name) : 'Card ' + (idx + 1)}</div>`;
+                tryals += `<div class='${cardClass}${revealed ? ' revealed' : ''}${cardThemeClass}' title='${displayCardDescription(cardObj.name)}'>${revealed ? displayCardName(cardObj.name) : 'Card ' + (idx + 1)}</div>`;
             });
         }
         tryals += '</div>';
@@ -1574,6 +1647,21 @@ socket.on('popup assign black cat', (potentialTargets) => {
     };
     container.appendChild(btn);
     document.body.appendChild(container);
+    // แสดงรายชื่อทีมปอบ
+    if (currentRoomState && currentRoomState.players) {
+        const witchTeam = Object.values(currentRoomState.players).filter(p => p.hasBeenWitch);
+        if (witchTeam.length > 0) {
+            const witchList = document.createElement('div');
+            witchList.style.background = '#222';
+            witchList.style.color = '#ffd700';
+            witchList.style.padding = '10px 16px';
+            witchList.style.borderRadius = '8px';
+            witchList.style.marginBottom = '18px';
+            witchList.style.fontWeight = 'bold';
+            witchList.innerHTML = 'ทีมปอบ: ' + witchTeam.map(p => p.name).join(', ');
+            container.appendChild(witchList);
+        }
+    }
 });
 
 function createNightActionPopup(actionType, timer) {
@@ -1633,6 +1721,21 @@ function createNightActionPopup(actionType, timer) {
     // Populate players list
     console.log('Calling populateNightActionPlayersList');
     populateNightActionPlayersList(actionType);
+    // แสดงรายชื่อทีมปอบ
+    if (currentRoomState && currentRoomState.players) {
+        const witchTeam = Object.values(currentRoomState.players).filter(p => p.hasBeenWitch);
+        if (witchTeam.length > 0) {
+            const witchList = document.createElement('div');
+            witchList.style.background = '#222';
+            witchList.style.color = '#ffd700';
+            witchList.style.padding = '10px 16px';
+            witchList.style.borderRadius = '8px';
+            witchList.style.marginBottom = '18px';
+            witchList.style.fontWeight = 'bold';
+            witchList.innerHTML = 'ทีมปอบ: ' + witchTeam.map(p => p.name).join(', ');
+            popup.appendChild(witchList);
+        }
+    }
 }
 
 function autoSubmitNightAction(actionType) {
@@ -1881,7 +1984,7 @@ socket.on('prompt select left tryal', ({ leftPlayerUniqueId, leftPlayerName, lef
 // --- Curse: show blue card names in popup ---
 function showCurseTargetSelection(targetUniqueId, blueCards) {
     const modal = document.createElement('div');
-    modal.className = 'modal curse-select-modal';
+    modal.className = 'modal curse-target-modal';
     modal.style.position = 'fixed';
     modal.style.top = '0';
     modal.style.left = '0';
@@ -1894,23 +1997,25 @@ function showCurseTargetSelection(targetUniqueId, blueCards) {
     modal.style.zIndex = '9999';
 
     const content = document.createElement('div');
-    content.style.background = '#fff';
+    content.style.background = 'rgba(34,34,34,0.97)';
+    content.style.color = '#fff';
     content.style.padding = '32px';
     content.style.borderRadius = '12px';
     content.style.boxShadow = '0 2px 16px rgba(0,0,0,0.3)';
     content.style.textAlign = 'center';
 
-    const title = document.createElement('h3');
-    title.textContent = 'เลือกการ์ดสีน้ำเงินที่จะทิ้ง';
-    title.style.color = '#222';
-    title.style.fontWeight = 'bold';
-    title.style.marginBottom = '18px';
-    content.appendChild(title);
+    const titleElem = document.createElement('h3');
+    titleElem.textContent = 'เลือกการ์ดสีน้ำเงินที่จะทำลาย';
+    titleElem.style.color = '#fff';
+    titleElem.style.fontWeight = 'bold';
+    titleElem.style.marginBottom = '18px';
+    content.appendChild(titleElem);
 
     const cardList = document.createElement('div');
     cardList.style.display = 'flex';
     cardList.style.justifyContent = 'center';
-    cardList.style.gap = '24px';
+    cardList.style.gap = '18px';
+    cardList.style.flexWrap = 'wrap';
 
     blueCards.forEach((card, idx) => {
         const cardDiv = document.createElement('div');
@@ -1921,16 +2026,24 @@ function showCurseTargetSelection(targetUniqueId, blueCards) {
         cardDiv.style.fontWeight = 'bold';
         cardDiv.style.fontSize = '1.15em';
         cardDiv.style.textShadow = '1px 1px 4px #000a';
-        cardDiv.style.padding = '24px 18px';
-        cardDiv.style.minWidth = '110px';
-        cardDiv.style.minHeight = '140px';
+        cardDiv.style.padding = '12px';
+        cardDiv.style.minWidth = '120px';
+        cardDiv.style.minHeight = '160px';
         cardDiv.style.display = 'flex';
         cardDiv.style.alignItems = 'center';
         cardDiv.style.justifyContent = 'center';
         cardDiv.style.cursor = 'pointer';
         cardDiv.style.transition = 'transform 0.18s, border-color 0.18s';
-        cardDiv.textContent = displayCardName(card.name) || 'Blue Card';
         cardDiv.title = displayCardDescription(card.name);
+        
+        // แสดงรูปการ์ดแทนข้อความ
+        const cardImage = createCardImage(card.name);
+        cardImage.style.width = '100%';
+        cardImage.style.height = '100%';
+        cardImage.style.objectFit = 'cover';
+        cardImage.style.borderRadius = '6px';
+        cardDiv.appendChild(cardImage);
+        
         cardDiv.addEventListener('mouseover', () => {
             cardDiv.style.transform = 'scale(1.08)';
             cardDiv.style.borderColor = '#ffd700';
@@ -1966,7 +2079,7 @@ function showCurseTargetSelection(targetUniqueId, blueCards) {
 }
 
 // --- Popup เลือกผู้เล่น (ใช้กับ Scapegoat/Robbery หรือเลือกเป้าหมายที่สอง) ---
-function showSelectPlayerPopup(title, playerList, callback, cardObj = null) {
+function showSelectPlayerPopup(title, playerList, callback, cardObj = null, actionType = null) {
     const modal = document.createElement('div');
     modal.className = 'modal select-player-modal';
     modal.style.position = 'fixed';
@@ -1990,7 +2103,7 @@ function showSelectPlayerPopup(title, playerList, callback, cardObj = null) {
 
     const titleElem = document.createElement('h3');
     titleElem.textContent = title;
-    titleElem.style.color = '#222';
+    titleElem.style.color = '#fff';
     titleElem.style.fontWeight = 'bold';
     titleElem.style.marginBottom = '18px';
     content.appendChild(titleElem);
@@ -2003,15 +2116,25 @@ function showSelectPlayerPopup(title, playerList, callback, cardObj = null) {
 
     // กรองเฉพาะผู้เล่นที่ alive
     let alivePlayers = playerList.filter(p => p.alive);
-    // --- ห้ามเลือกตัวเองสำหรับการ์ดจิตวิญญาณ (แดง, เขียว, น้ำเงิน) ---
-    if (cardObj && ['Red','Green','Blue'].includes(cardObj.color)) {
+    // --- ห้ามเลือกตัวเองสำหรับการ์ดสีน้ำเงิน ---
+    if (cardObj && cardObj.color === 'Blue') {
+        alivePlayers = alivePlayers.filter(p => p.uniqueId !== myUniqueId);
+    } else if (cardObj && ['Red','Green','Blue'].includes(cardObj.color)) {
+        alivePlayers = alivePlayers.filter(p => p.uniqueId !== myUniqueId);
+    }
+    // --- เงื่อนไขเพิ่มเติมสำหรับหมอผี ---
+    if (actionType === 'constable') {
+        alivePlayers = alivePlayers.filter(p => !p.inPlayCards || !p.inPlayCards.some(card => card === 'Asylum' || card.name === 'Asylum'));
+    }
+    // --- เงื่อนไขเพิ่มเติมสำหรับแม่มด ---
+    if (actionType === 'witch') {
         alivePlayers = alivePlayers.filter(p => p.uniqueId !== myUniqueId);
     }
     alivePlayers.forEach(player => {
         const btn = document.createElement('button');
         btn.textContent = player.name;
         btn.style.background = '#1976d2';
-        btn.style.color = '#fff';
+        btn.style.color = '#fff'; // บังคับให้ font เป็นสีขาว
         btn.style.fontWeight = 'bold';
         btn.style.fontSize = '1.1em';
         btn.style.padding = '16px 28px';
@@ -2112,3 +2235,224 @@ function displayCardDescription(name) {
     };
     return map[name] || '';
 }
+
+// ฟังก์ชันแสดงสถิติตอนจบเกม
+function showGameOverStats(roomState) {
+    // ลบ popup เดิมถ้ามี
+    const oldPopup = document.getElementById('game-over-popup');
+    if (oldPopup) oldPopup.remove();
+
+    // สร้าง popup
+    const popup = document.createElement('div');
+    popup.id = 'game-over-popup';
+    popup.style.position = 'fixed';
+    popup.style.top = '50%';
+    popup.style.left = '50%';
+    popup.style.transform = 'translate(-50%, -50%)';
+    popup.style.background = '#222';
+    popup.style.padding = '32px 24px';
+    popup.style.borderRadius = '16px';
+    popup.style.zIndex = 9999;
+    popup.style.boxShadow = '0 0 32px #000a';
+    popup.style.textAlign = 'center';
+    popup.style.minWidth = '340px';
+    popup.style.maxWidth = '95vw';
+    popup.style.color = '#fff';
+
+    // หัวข้อ
+    let winnerIcon = roomState.winner === 'witches' || roomState.winner === 'Witches' ? '🧙‍♀️' : (roomState.winner === 'constables' || roomState.winner === 'Townsfolk' ? '🛡️' : '🤝');
+    popup.innerHTML = `<h2 style="color:#ffd700;">${winnerIcon} เกมจบแล้ว!</h2><h3 style="margin-bottom:18px;">ผู้ชนะ: <span style="color:${roomState.winner === 'witches' || roomState.winner === 'Witches' ? '#ff1744' : (roomState.winner === 'constables' || roomState.winner === 'Townsfolk' ? '#43a047' : '#ffd700')};">${roomState.winner === 'witches' ? 'ทีมปอบ' : (roomState.winner === 'constables' || roomState.winner === 'Townsfolk' ? 'ทีมชาวบ้าน' : 'เสมอ')}</span></h3>`;
+
+    // ตารางสถิติ
+    let statTable = `<table style="width:100%;margin:0 auto 18px auto;border-collapse:collapse;font-size:1em;">
+        <thead><tr style="background:#333;"><th>ชื่อ</th><th>สถานะ</th><th>ทีม</th><th>บทบาท</th><th>Tryal Card</th></tr></thead><tbody>`;
+    const players = Object.values(roomState.players || {}).sort((a, b) => a.name.localeCompare(b.name));
+    players.forEach(player => {
+        const isAlive = player.alive;
+        const team = player.isWitch || player.hasBeenWitch ? 'ปอบ' : (player.isConstable ? 'หมอผี' : 'ชาวบ้าน');
+        const role = player.isWitch ? 'ปอบ' : (player.isConstable ? 'หมอผี' : 'ชาวบ้าน');
+        const tryalCards = (player.tryalCards || []).map((card, idx) => {
+            const revealed = player.revealedTryalCardIndexes && player.revealedTryalCardIndexes.includes ? player.revealedTryalCardIndexes.includes(idx) : (player.revealedTryalCardIndexes && player.revealedTryalCardIndexes.has && player.revealedTryalCardIndexes.has(idx));
+            return `<span style="display:inline-block;padding:2px 8px;margin:0 2px;border-radius:6px;background:${card.name==='Witch'?'#b71c1c':(card.name==='Constable'?'#1565c0':'#444')};color:#fff;font-weight:bold;opacity:${revealed?1:0.5};">${card.name==='Witch'?'ปอบ':(card.name==='Constable'?'หมอผี':'ชาวบ้าน')}</span>`;
+        }).join('');
+        statTable += `<tr style="background:${isAlive?'#263238':'#111'};"><td>${player.name}</td><td style="color:${isAlive?'#43a047':'#ff1744'};font-weight:bold;">${isAlive?'รอด':'ตาย'}</td><td>${team}</td><td>${role}</td><td>${tryalCards}</td></tr>`;
+    });
+    statTable += '</tbody></table>';
+    popup.innerHTML += statTable;
+
+    // ปุ่ม replay และกลับสู่ล็อบบี้
+    const btnReplay = document.createElement('button');
+    btnReplay.textContent = 'เล่นใหม่ (Replay)';
+    btnReplay.style.margin = '0 10px 0 0';
+    btnReplay.style.padding = '10px 22px';
+    btnReplay.style.fontSize = '1.1em';
+    btnReplay.style.background = '#1976d2';
+    btnReplay.style.color = '#fff';
+    btnReplay.style.border = 'none';
+    btnReplay.style.borderRadius = '8px';
+    btnReplay.style.cursor = 'pointer';
+    btnReplay.onclick = () => { window.location.reload(); };
+
+    const btnLobby = document.createElement('button');
+    btnLobby.textContent = 'กลับสู่ล็อบบี้';
+    btnLobby.style.padding = '10px 22px';
+    btnLobby.style.fontSize = '1.1em';
+    btnLobby.style.background = '#444';
+    btnLobby.style.color = '#fff';
+    btnLobby.style.border = 'none';
+    btnLobby.style.borderRadius = '8px';
+    btnLobby.style.cursor = 'pointer';
+    btnLobby.onclick = () => { window.location.href = '/'; };
+
+    popup.appendChild(btnReplay);
+    popup.appendChild(btnLobby);
+
+    document.body.appendChild(popup);
+}
+
+// ฟังก์ชันกลับไปหน้า Lobby
+function returnToLobby() {
+    // ลบ popup สถิติ
+    const statsPopup = document.querySelector('.stats-popup');
+    if (statsPopup) {
+        statsPopup.remove();
+    }
+    
+    // ออกจากห้องปัจจุบัน
+    if (currentRoomName) {
+        socket.emit('leave room');
+    }
+    
+    // แสดงหน้า Lobby
+    roomLobbySection.style.display = 'block';
+    gameSection.style.display = 'none';
+    
+    // รีเซ็ตสถานะเกม
+    currentRoomName = null;
+    myPlayerName = null;
+    isMyTurn = false;
+    selectedCard = null;
+    myCurrentHand = [];
+    myTryalCards = [];
+    myRevealedTryalCardIndexes = [];
+    
+    // ล้างข้อความเกม
+    gameMessagesDiv.innerHTML = '';
+    
+    addGameMessage('กลับไปหน้า Lobby แล้ว', 'blue');
+}
+
+// ฟังก์ชันไปหน้าตั้งชื่อใหม่
+function goToNameSetup() {
+    // ลบ popup สถิติ
+    const statsPopup = document.querySelector('.stats-popup');
+    if (statsPopup) {
+        statsPopup.remove();
+    }
+    
+    // ออกจากห้องปัจจุบัน
+    if (currentRoomName) {
+        socket.emit('leave room');
+    }
+    
+    // แสดงหน้าตั้งชื่อ
+    roomManagementSection.style.display = 'block';
+    roomLobbySection.style.display = 'none';
+    gameSection.style.display = 'none';
+    
+    // รีเซ็ตชื่อผู้เล่น
+    myPlayerName = null;
+    nameInput.value = '';
+    nameInputContainer.style.display = 'flex';
+    
+    // รีเซ็ตสถานะเกม
+    currentRoomName = null;
+    isMyTurn = false;
+    selectedCard = null;
+    myCurrentHand = [];
+    myTryalCards = [];
+    myRevealedTryalCardIndexes = [];
+    
+    // ล้างข้อความเกม
+    gameMessagesDiv.innerHTML = '';
+    
+    addGameMessage('ไปหน้าตั้งชื่อใหม่แล้ว', 'blue');
+}
+
+// Card name mapping (EN->TH)
+const cardNameMap = {
+    'Accusation': 'ข้อกล่าวหา',
+    'Evidence': 'หลักฐาน',
+    'Witness': 'พยาน',
+    'Scapegoat': 'แพะรับบาป',
+    'Curse': 'คำสาป',
+    'Alibi': 'ข้อแก้ต่าง',
+    'Robbery': 'ช่วงชิง',
+    'Stocks': 'พันธนาการ',
+    'Arson': 'วางเพลิง',
+    'Black Cat': 'เครื่องเซ่น',
+    'Asylum': 'ที่หลบภัย',
+    'Piety': 'พลังศรัทธา',
+    'Matchmaker': 'ผูกวิญญาณ',
+    'Conspiracy': 'พิธีเซ่นไหว้',
+    'Night': 'ยามวิกาล',
+    'Witch': 'ปอบ',
+    'Not A Witch': 'ชาวบ้าน',
+    'Constable': 'หมอผี',
+};
+function getCardNameTH(name) {
+    return cardNameMap[name] || name;
+}
+
+// ฟังก์ชันแทนที่ชื่อการ์ดอังกฤษในข้อความเป็นไทย
+function replaceCardNamesInMessage(message) {
+    // เรียงลำดับชื่อการ์ดจากยาวไปสั้นเพื่อป้องกันการแทนที่ซ้อน
+    const cardNames = Object.keys(cardNameMap).sort((a, b) => b.length - a.length);
+    let result = message;
+    cardNames.forEach(en => {
+        // ใช้ regex แบบ whole word (\b) เพื่อไม่ให้แทนที่คำที่ซ้อนกัน
+        const regex = new RegExp(`\\b${en}\\b`, 'g');
+        result = result.replace(regex, cardNameMap[en]);
+    });
+    return result;
+}
+
+// --- Game Rules Modal Popup ---
+document.addEventListener('DOMContentLoaded', function() {
+  const showRulesBtn = document.getElementById('show-rules-btn');
+  const rulesModal = document.getElementById('game-rules-modal');
+  const closeRulesModal = document.getElementById('close-rules-modal');
+  if (showRulesBtn && rulesModal && closeRulesModal) {
+    showRulesBtn.onclick = function() {
+      rulesModal.style.display = 'flex';
+    };
+    closeRulesModal.onclick = function() {
+      rulesModal.style.display = 'none';
+    };
+    window.addEventListener('click', function(event) {
+      if (event.target === rulesModal) {
+        rulesModal.style.display = 'none';
+      }
+    });
+  }
+});
+
+// --- Card Explain Modal Popup ---
+document.addEventListener('DOMContentLoaded', function() {
+  const showCardsBtn = document.getElementById('show-cards-btn');
+  const cardsModal = document.getElementById('card-explain-modal');
+  const closeCardsModal = document.getElementById('close-cards-modal');
+  if (showCardsBtn && cardsModal && closeCardsModal) {
+    showCardsBtn.onclick = function() {
+      cardsModal.style.display = 'flex';
+    };
+    closeCardsModal.onclick = function() {
+      cardsModal.style.display = 'none';
+    };
+    window.addEventListener('click', function(event) {
+      if (event.target === cardsModal) {
+        cardsModal.style.display = 'none';
+      }
+    });
+  }
+});

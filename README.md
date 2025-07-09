@@ -1,2 +1,0 @@
-﻿# The-cursed-village-1996
-ดัดแปลงมาจากเกม Salem 1692

@@ -30,27 +30,27 @@ const DEFAULT_PHASE_DURATIONS = {
 // --- Game Cards Configuration (Adapted from new rules) ---
 // Card templates to avoid duplication
 const CARD_TEMPLATES = {
-    conspiracy: { name: 'Conspiracy', type: 'Event', color: 'Black', description: 'ผู้เล่นที่เปิดได้การ์ดนี้ ให้เลือกเปิดการ์ดชีวิต 1 ใบ ของผู้เล่นที่มีการ์ดเครื่องเซ่นอยู่ข้างหน้า. จากนั้นจะเกิดเหตุการณ์ ผู้เล่นทุกคนหยิบการ์ดชีวิตจากผู้เล่นที่อยู่ทางซ้ายมือ 1 ใบ.' },
-    night: { name: 'Night', type: 'Event', color: 'Black', description: 'เมื่อจั่วได้การ์ดนี้ จะเกิดเหตุการณ์: ผู้ดำเนินเกมจะให้ผู้เล่นทุกคนหลับตา จากนั้นปอบทำการสังหารผู้เล่นหนึ่งคน และสายตรวจจะต้องทำการวางโทเคนค้อนเพื่อปกป้องผู้เล่น 1 คน.' }
+    conspiracy: { name: 'Conspiracy', type: 'Event', color: 'Black', description: 'ผู้เล่นที่เปิดได้การ์ดนี้ ให้เลือกเปิดการ์ดชีวิต 1 ใบ ของผู้เล่นที่มีการ์ดเครื่องเซ่นอยู่ข้างหน้า. จากนั้นจะเกิดเหตุการณ์ ผู้เล่นทุกคนหยิบการ์ดชีวิตจากผู้เล่นที่อยู่ทางซ้ายมือ 1 ใบ' },
+    night: { name: 'Night', type: 'Event', color: 'Black', description: 'เมื่อจั่วได้การ์ดนี้ จะเกิดเหตุการณ์: ผู้ดำเนินเกมจะให้ผู้เล่นทุกคนหลับตา จากนั้นปอบทำการสังหารผู้เล่นหนึ่งคน และหมอผีจะต้องทำการปัดเป่าเพื่อปกป้องผู้เล่น 1 คน' }
 };
 
 const GAME_CARDS = [
     // Accusation Cards (Red)
-    ...Array(26).fill({ name: 'Accusation', type: 'Accusation', color: 'Red', value: 1, description: 'กล่าวหาผู้เล่นคนอื่น (1 ข้อกล่าวหา).' }),
-    ...Array(8).fill({ name: 'Evidence', type: 'Accusation', color: 'Red', value: 3, description: 'กล่าวหาผู้เล่นคนอื่น (3 ข้อกล่าวหา).' }),
-    ...Array(3).fill({ name: 'Witness', type: 'Accusation', color: 'Red', value: 7, description: 'กล่าวหาผู้เล่นคนอื่น (7 ข้อกล่าวหา).' }),
+    ...Array(26).fill({ name: 'Accusation', type: 'Accusation', color: 'Red', value: 1, description: 'กล่าวหาผู้เล่นคนอื่น (1 ข้อกล่าวหา)' }),
+    ...Array(8).fill({ name: 'Evidence', type: 'Accusation', color: 'Red', value: 3, description: 'กล่าวหาผู้เล่นคนอื่น (3 ข้อกล่าวหา)' }),
+    ...Array(3).fill({ name: 'Witness', type: 'Accusation', color: 'Red', value: 7, description: 'กล่าวหาผู้เล่นคนอื่น (7 ข้อกล่าวหา)' }),
     // Action Cards (Green)
-    ...Array(2).fill({ name: 'Scapegoat', type: 'Action', color: 'Green', description: 'ย้ายการ์ดสีน้ำเงิน, เขียว และแดง ของจากผู้เล่นเป้าหมาย ไปอีกผู้เล่นหนึ่ง. (เลือกเป้าหมาย 2 คน)' }),
-    ...Array(2).fill({ name: 'Curse', type: 'Action', color: 'Green', description: 'ลบการ์ดสีน้ำเงินที่ผู้เล่นเป้าหมายโดน 1 ใบลงไปที่กองทิ้ง. (เลือกเป้าหมาย)' }),
-    ...Array(3).fill({ name: 'Alibi', type: 'Action', color: 'Green', description: 'ลบข้อกล่าวหาของผู้เล่นได้สูงสุด 3 ใบ. (เลือกเป้าหมาย)' }),
-    ...Array(2).fill({ name: 'Robbery', type: 'Action', color: 'Green', description: 'ขโมยการ์ดบนมือทั้งหมดจากผู้เล่นเป้าหมาย ไปอีกผู้เล่นหนึ่ง. (เลือกเป้าหมาย 2 คน)' }),
-    ...Array(2).fill({ name: 'Stocks', type: 'Permanent', color: 'Green', description: 'ข้ามตาของผู้เล่นที่โดนการ์ดนี้ สามารถ stack การ์ดนี้เพื่อข้ามตาหลายรอบได้. (เลือกเป้าหมาย)' }),
-    ...Array(2).fill({ name: 'Arson', type: 'Action', color: 'Green', description: 'ทิ้งการ์ดในมือทั้งหมดของผู้เล่นเป้าหมายไปที่กองทิ้ง. (เลือกเป้าหมาย)' }),
+    ...Array(2).fill({ name: 'Scapegoat', type: 'Action', color: 'Green', description: 'ย้ายการ์ดสีน้ำเงิน, เขียว และแดง ของจากผู้เล่นเป้าหมาย ไปอีกผู้เล่นหนึ่ง' }),
+    ...Array(2).fill({ name: 'Curse', type: 'Action', color: 'Green', description: 'ลบการ์ดสีน้ำเงินที่ผู้เล่นเป้าหมายโดน 1 ใบลงไปที่กองทิ้ง' }),
+    ...Array(3).fill({ name: 'Alibi', type: 'Action', color: 'Green', description: 'ลบข้อกล่าวหาของผู้เล่นได้สูงสุด 3 ใบ' }),
+    ...Array(2).fill({ name: 'Robbery', type: 'Action', color: 'Green', description: 'ขโมยการ์ดบนมือทั้งหมดจากผู้เล่นเป้าหมาย ไปอีกผู้เล่นหนึ่ง' }),
+    ...Array(2).fill({ name: 'Stocks', type: 'Permanent', color: 'Green', description: 'ข้ามตาของผู้เล่นที่โดนการ์ดนี้ สามารถ stack การ์ดนี้เพื่อข้ามตาหลายรอบได้' }),
+    ...Array(2).fill({ name: 'Arson', type: 'Action', color: 'Green', description: 'ทิ้งการ์ดในมือทั้งหมดของผู้เล่นเป้าหมายไปที่กองทิ้ง' }),
     // Permanent Cards (Blue)
-    ...Array(1).fill({ name: 'Black Cat', type: 'Permanent', color: 'Blue', description: 'หากการ์ดนี้อยู่กับผู้เล่นคนไหน จะต้องเริ่มเล่นเป็นคนแรก. หากมีผู้เล่นคนไหนเปิดได้การ์ดเจตนาร้าย, ผู้เล่นที่มีการ์ดเครื่องเซ่นจะต้องเปิดการ์ดชีวิต 1 ใบ.' }),
-    ...Array(2).fill({ name: 'Asylum', type: 'Permanent', color: 'Blue', description: 'เลือกผู้เล่นที่จะป้องกันการถูกฆ่าในรอบกลางคืน. (เลือกเป้าหมาย)' }),
-    ...Array(2).fill({ name: 'Piety', type: 'Permanent', color: 'Blue', description: 'เลือกผู้เล่นที่ไม่สามารถถูกโจมตีด้วยการ์ดสีแดงได้. (เลือกเป้าหมาย)' }),
-    ...Array(2).fill({ name: 'Matchmaker', type: 'Permanent', color: 'Blue', description: 'เลือกวางการ์ดหน้าผู้เล่นเป้าหมาย (ผู้เล่น 2 คนที่มีการ์ดนี้อยู่ตรงหน้า หากผู้เล่นคนใดคนหนึ่งตาย อีกคนต้องตายตาม). (เลือกเป้าหมาย)' }),
+    ...Array(1).fill({ name: 'Black Cat', type: 'Permanent', color: 'Blue', description: 'หากการ์ดนี้อยู่กับผู้เล่นคนไหน จะต้องเริ่มเล่นเป็นคนแรก. หากมีผู้เล่นคนไหนเปิดได้การ์ดพิธีเซ่นไหว้, ผู้เล่นที่มีการ์ดเครื่องเซ่นจะต้องเปิดการ์ดชีวิต 1 ใบ.' }),
+    ...Array(2).fill({ name: 'Asylum', type: 'Permanent', color: 'Blue', description: 'เลือกผู้เล่นที่จะป้องกันการถูกฆ่าในรอบกลางคืน' }),
+    ...Array(2).fill({ name: 'Piety', type: 'Permanent', color: 'Blue', description: 'เลือกผู้เล่นที่ไม่สามารถถูกโจมตีด้วยการ์ดสีแดงได้' }),
+    ...Array(2).fill({ name: 'Matchmaker', type: 'Permanent', color: 'Blue', description: 'เลือกวางการ์ดหน้าผู้เล่นเป้าหมาย (ผู้เล่น 2 คนที่มีการ์ดนี้อยู่ตรงหน้า หากผู้เล่นคนใดคนหนึ่งตาย อีกคนต้องตายตาม)' }),
     // Event Cards (Black)
     ...Array(1).fill(CARD_TEMPLATES.conspiracy), // 1 Conspiracy card
     ...Array(1).fill(CARD_TEMPLATES.night), // 1 Night card
@@ -388,12 +388,16 @@ function changePhase(roomName, forcedNextPhase = null) {
             player.isConstable = player.tryalCards.some(card => card.name === 'Constable');
         });
         emitRoomState(roomName);
+        // --- เพิ่มเช็ค win condition ทันทีเมื่อเข้า NIGHT ---
+        checkWinCondition(room);
+        if (room.gameOver) return; // ถ้าจบเกมแล้ว ไม่ต้องดำเนินต่อ
         const constables = getAlivePlayers(room).filter(p => p.isConstable);
         const witches = getAlivePlayers(room).filter(p => p.isWitch);
         
-        console.log('Night phase - Checking roles:');
-        console.log('Constables:', constables.map(p => ({ name: p.name, isConstable: p.isConstable })));
-        console.log('Witches:', witches.map(p => ({ name: p.name, isWitch: p.isWitch })));
+        // ลบหรือ comment out ทุก console.log
+        // console.log('Night phase - Checking roles:');
+        // console.log('Constables:', constables.map(p => ({ name: p.name, isConstable: p.isConstable })));
+        // console.log('Witches:', witches.map(p => ({ name: p.name, isWitch: p.isWitch })));
         
             if (witches.length > 0) {
             // ปอบเลือกเป้าหมาย
@@ -591,6 +595,7 @@ function startGame(roomName) {
 
 function playCard(roomName, playerUniqueId, cardIndex, targetUniqueId = null, secondTargetUniqueId = null) {
     const room = rooms[roomName];
+    if (!room || room.gameOver) return;
     if (!room || !room.gameStarted || room.currentPhase !== 'DAY') {
         io.to(room.players[playerUniqueId].id).emit('game message', 'ตอนนี้ยังเล่นการ์ดไม่ได้.', 'red');
         return;
@@ -756,7 +761,7 @@ function playCard(roomName, playerUniqueId, cardIndex, targetUniqueId = null, se
                     // If Black Cat is discarded, reset holder
                     if (cardToDiscard.name === 'Black Cat') {
                         room.blackCatHolder = null;
-                        sendGameMessage(room.name, 'Black Cat ถูกทิ้งแล้ว!', 'grey');
+                        sendGameMessage(room.name, 'การ์ดพิธีเซ่นไหว้ ถูกทิ้งแล้ว!', 'grey');
                     }
                 } else {
                         // Multiple blue cards, prompt player to choose
@@ -827,7 +832,7 @@ function playCard(roomName, playerUniqueId, cardIndex, targetUniqueId = null, se
             // Black Cat goes to the player who plays it
             player.inPlayCards.push(cardToPlay);
                 room.blackCatHolder = player.uniqueId;
-                sendGameMessage(room.name, `${player.name} ถือ Black Cat!`, 'grey', true);
+                sendGameMessage(room.name, `${player.name} ถือ การ์ดพิธีเซ่นไหว้!`, 'grey', true);
             io.to(player.id).emit('update in play cards', player.inPlayCards);
             break;
         case 'Asylum':
@@ -876,7 +881,7 @@ function playCard(roomName, playerUniqueId, cardIndex, targetUniqueId = null, se
                     sendGameMessage(room.name, `Black Cat holder ${bcHolder.name} ไม่มี Tryal Card ให้เปิดเผย.`, 'grey');
                 }
             } else {
-                sendGameMessage(room.name, 'ไม่มีผู้ถือ Black Cat อยู่ในเกม.', 'grey');
+                sendGameMessage(room.name, 'ไม่มีผู้ถือ การ์ดพิธีเซ่นไหว้ อยู่ในเกม.', 'grey');
                 // Conspiracy ไม่มีผล (ไม่ต้องเลือกไพ่ใคร)
                 // ไม่ break! ต้องวนซ้ายต่อ
             }
@@ -905,11 +910,14 @@ function playCard(roomName, playerUniqueId, cardIndex, targetUniqueId = null, se
     // --- Action Log: ทุกครั้งที่เล่นการ์ด ---
     sendGameMessage(room.name, `${player.name} ใช้การ์ด ${cardToPlay.name}${targetUniqueId ? ' กับ ' + room.players[targetUniqueId].name : ''}`,'orange', true);
 
-    // --- Prevent self-targeting for Salem (Red, Green, Blue) cards ---
+    // --- Prevent self-targeting for Salem cards (Red, Green, Blue) except Black Cat ---
     const SALEM_COLORS = ['Red', 'Green', 'Blue'];
+    const BLUE_CARDS_EXCEPT_BLACK_CAT = ['Asylum', 'Piety', 'Matchmaker'];
+    
+    // Check for Red and Green cards (no exceptions)
     if (
         cardNeedsTarget &&
-        cardToPlay.color && SALEM_COLORS.includes(cardToPlay.color) &&
+        (cardToPlay.color === 'Red' || cardToPlay.color === 'Green') &&
         targetUniqueId === playerUniqueId
     ) {
         io.to(player.id).emit('game message', 'ไม่สามารถใช้การ์ดซาเลมกับตัวเองได้', 'red');
@@ -917,16 +925,37 @@ function playCard(roomName, playerUniqueId, cardIndex, targetUniqueId = null, se
     }
     if (
         cardNeedsTwoTargets &&
-        cardToPlay.color && SALEM_COLORS.includes(cardToPlay.color) &&
+        (cardToPlay.color === 'Red' || cardToPlay.color === 'Green') &&
         (targetUniqueId === playerUniqueId || secondTargetUniqueId === playerUniqueId)
     ) {
         io.to(player.id).emit('game message', 'ไม่สามารถใช้การ์ดซาเลมกับตัวเองได้', 'red');
+        return;
+    }
+    
+    // Check for Blue cards (except Black Cat)
+    if (
+        cardNeedsTarget &&
+        cardToPlay.color === 'Blue' &&
+        BLUE_CARDS_EXCEPT_BLACK_CAT.includes(cardToPlay.name) &&
+        targetUniqueId === playerUniqueId
+    ) {
+        io.to(player.id).emit('game message', 'ไม่สามารถใช้การ์ดสีน้ำเงินกับตัวเองได้ (ยกเว้นการ์ดพิธีเซ่นไหว้)', 'red');
+        return;
+    }
+    if (
+        cardNeedsTwoTargets &&
+        cardToPlay.color === 'Blue' &&
+        BLUE_CARDS_EXCEPT_BLACK_CAT.includes(cardToPlay.name) &&
+        (targetUniqueId === playerUniqueId || secondTargetUniqueId === playerUniqueId)
+    ) {
+        io.to(player.id).emit('game message', 'ไม่สามารถใช้การ์ดสีน้ำเงินกับตัวเองได้ (ยกเว้นการ์ดพิธีเซ่นไหว้)', 'red');
         return;
     }
 }
 
 function endTurn(roomName, playerUniqueId) {
     const room = rooms[roomName];
+    if (!room || room.gameOver) return;
     if (!room || !room.gameStarted || room.currentPhase !== 'DAY') {
         io.to(room.players[playerUniqueId].id).emit('game message', 'ตอนนี้ยังจบเทิร์นไม่ได้.', 'red');
         return;
@@ -950,6 +979,7 @@ function endTurn(roomName, playerUniqueId) {
 
 function drawCards(roomName, playerUniqueId, count = 2) {
     const room = rooms[roomName];
+    if (!room || room.gameOver) return;
     if (!room || !room.gameStarted || room.currentPhase !== 'DAY') {
         io.to(room.players[playerUniqueId].id).emit('game message', 'ตอนนี้ยังจั่วการ์ดไม่ได้.', 'red');
         return;
@@ -1064,6 +1094,7 @@ function drawCards(roomName, playerUniqueId, count = 2) {
 
 function confessTryalCard(roomName, playerUniqueId, cardIndex) {
     const room = rooms[roomName];
+    if (!room || room.gameOver) return;
     if (!room || !room.gameStarted || room.currentPhase !== 'PRE_DAWN') {
         io.to(room.players[playerUniqueId].id).emit('game message', 'การสารภาพบาปใช้ได้เฉพาะในช่วงก่อนเช้าเท่านั้น.', 'red');
         return;
@@ -1152,6 +1183,7 @@ function confessTryalCard(roomName, playerUniqueId, cardIndex) {
 
 function confessDuringNight(roomName, playerUniqueId, cardIndex) {
     const room = rooms[roomName];
+    if (!room || room.gameOver) return;
     // เพิ่มเช็คว่าอยู่ใน PRE_DAWN เท่านั้น
     if (!room || !room.gameStarted || room.currentPhase !== 'PRE_DAWN') {
         io.to(room.players[playerUniqueId].id).emit('game message', 'ตอนนี้ยังสารภาพบาปไม่ได้.', 'red');
@@ -1250,14 +1282,14 @@ function confessDuringNight(roomName, playerUniqueId, cardIndex) {
 
 function resolveNightActions(roomName) {
     const room = rooms[roomName];
-    if (!room) return;
+    if (!room || room.gameOver) return;
 
     sendGameMessage(room.name, 'ช่วงเวลากลางคืนจบลงถึงช่วงเวลาสารภาพ...', 'purple', true);
 
     // Debug log
-    console.log('--- [DEBUG] resolveNightActions ---');
-    console.log('nightConfessors:', room.nightConfessors);
-    console.log('playersWhoActedAtNight:', room.playersWhoActedAtNight);
+    // console.log('--- [DEBUG] resolveNightActions ---');
+    // console.log('nightConfessors:', room.nightConfessors);
+    // console.log('playersWhoActedAtNight:', room.playersWhoActedAtNight);
 
     // 1. Witch Kill (if any alive witches) - but don't reveal who was killed yet
     const aliveWitches = getAlivePlayers(room).filter(p => p.isWitch);
@@ -1274,7 +1306,7 @@ function resolveNightActions(roomName) {
             const confessedDuringNight = room.nightConfessors && room.nightConfessors.includes(chosenToKillUniqueId);
 
             // Debug log
-            console.log('Witch target:', targetPlayer.name, 'hasAsylum:', hasAsylum, 'wasProtectedByConstable:', wasProtectedByConstable, 'confessedDuringNight:', confessedDuringNight);
+            // console.log('Witch target:', targetPlayer.name, 'hasAsylum:', hasAsylum, 'wasProtectedByConstable:', wasProtectedByConstable, 'confessedDuringNight:', confessedDuringNight);
             
             if (hasAsylum || wasProtectedByConstable || confessedDuringNight) {
                 if (hasAsylum) {
@@ -1399,7 +1431,7 @@ function checkWinCondition(room) {
 // Event for Conspiracy card and potentially others
 function promptTryalCardSelectionToLeft(roomName) {
     const room = rooms[roomName];
-    if (!room) return;
+    if (!room || room.gameOver) return;
 
     const alivePlayers = getAlivePlayers(room);
     if (alivePlayers.length <= 1) {
@@ -1893,9 +1925,19 @@ io.on('connection', (socket) => {
                 }
                 return;
             }
+            // ป้องกันไม่ให้เลือกเป้าหมายที่มี Asylum
+            if (room.players[targetUniqueId]?.inPlayCards.some(card => card.name === 'Asylum')) {
+                io.to(socket.id).emit('game message', 'คุณไม่สามารถเลือกเป้าหมายที่ได้รับการปกป้องจาก Asylum ได้.', 'red');
+                return;
+            }
             if (targetUniqueId && room.players[targetUniqueId]?.alive) {
                 room.playersWhoActedAtNight['witchKill'] = targetUniqueId;
                 io.to(socket.id).emit('game message', `คุณได้เลือก ${room.players[targetUniqueId].name} เป็นเป้าหมายการสังหาร.`, 'green');
+                // แจ้งเตือนทีมปอบทุกคนว่าเลือกฆ่าใคร (เฉพาะปอบเห็น)
+                const witches = getAlivePlayers(room).filter(p => p.isWitch);
+                witches.forEach(witchPlayer => {
+                    io.to(witchPlayer.id).emit('game message', `คืนนี้ทีมปอบเลือกจะฆ่า: ${room.players[targetUniqueId].name}`, 'darkred', true);
+                });
                 // ถ้ามีสายตรวจที่ยังไม่ได้เลือก ให้รอ
                 const constables = getAlivePlayers(room).filter(p => p.isConstable);
                 if (constables.length > 0 && !room.playersWhoActedAtNight['constableSave'] && room.playersWhoActedAtNight['constableSave'] !== null) {
@@ -2084,7 +2126,7 @@ io.on('connection', (socket) => {
                 // If Black Cat is discarded, reset holder
                 if (cardToDiscard.name === 'Black Cat') {
                     room.blackCatHolder = null;
-                    sendGameMessage(room.name, 'Black Cat ถูกทิ้งแล้ว!', 'grey');
+                    sendGameMessage(room.name, 'การ์ดพิธีเซ่นไหว้ ถูกทิ้งแล้ว!', 'grey');
                 }
                 
                 // Clean up
@@ -2219,6 +2261,8 @@ io.on('connection', (socket) => {
             }
             if (allWitchNow && witchCardLeftNow) {
                 room.pendingWitchWinByConspiracy = true;
+                // เรียก checkWinCondition ทันทีเพื่อจบเกมถ้าเข้าเงื่อนไข
+                checkWinCondition(room);
             } else {
                 checkWinCondition(room);
             }
@@ -2292,6 +2336,7 @@ function clearConfessionTimer(roomName) {
 
 function revealTryalCard(roomName, playerUniqueId, cardIndex) {
     const room = rooms[roomName];
+    if (!room || room.gameOver) return;
     if (!room || !room.gameStarted || room.currentPhase !== 'DAY') {
         io.to(room.players[playerUniqueId].id).emit('game message', 'การเปิดเผยการ์ดชีวิตใช้ได้เฉพาะในช่วงกลางวันเท่านั้น.', 'red');
         return;
@@ -2347,8 +2392,10 @@ function revealTryalCard(roomName, playerUniqueId, cardIndex) {
 
 // Helper function: Reveal all Tryal Cards and discard hand when a player dies
 function handlePlayerDeath(room, player) {
-    if (!player || !player.alive) return;
+    if (!player || !player.alive || room.gameOver) return;
     player.alive = false;
+    // แจ้งเตือนว่าผู้เล่นตาย
+    sendGameMessage(room.name, `${player.name} ตายแล้ว!`, 'red', true);
     // Reveal all Tryal Cards
     player.revealedTryalCardIndexes = new Set(player.tryalCards.map((_, idx) => idx));
     // Discard all cards in hand
@@ -2371,6 +2418,7 @@ function handlePlayerDeath(room, player) {
         }
         player.inPlayCards = [];
     }
+    emitRoomState(room.name); // อัปเดตสถานะผู้เล่น
 }
 
 // เพิ่มฟังก์ชัน helper
