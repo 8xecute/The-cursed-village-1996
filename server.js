@@ -2394,7 +2394,6 @@ function revealTryalCard(roomName, playerUniqueId, cardIndex) {
 function handlePlayerDeath(room, player) {
     if (!player || !player.alive || room.gameOver) return;
     player.alive = false;
-    // แจ้งเตือนว่าผู้เล่นตาย
     sendGameMessage(room.name, `${player.name} ตายแล้ว!`, 'red', true);
     // Reveal all Tryal Cards
     player.revealedTryalCardIndexes = new Set(player.tryalCards.map((_, idx) => idx));
@@ -2405,20 +2404,27 @@ function handlePlayerDeath(room, player) {
     }
     // Discard all inPlayCards (Permanent/Blue)
     if (player.inPlayCards && player.inPlayCards.length > 0) {
-        // แยกการ์ดสีน้ำเงินออกจากการ์ดอื่น
         const blueCards = player.inPlayCards.filter(card => card.color === 'Blue');
         const otherCards = player.inPlayCards.filter(card => card.color !== 'Blue');
         if (otherCards.length > 0) {
             room.discardPile.push(...otherCards);
         }
         // การ์ดสีน้ำเงิน (Blue) จะถูกลบออกจากเกม ไม่ใส่ discardPile
-        // Reset Black Cat holder if needed
         if (blueCards.some(card => card.name === 'Black Cat')) {
             room.blackCatHolder = null;
         }
         player.inPlayCards = [];
     }
-    emitRoomState(room.name); // อัปเดตสถานะผู้เล่น
+    // --- Matchmaker: If this player has Matchmaker, kill the other linked player immediately ---
+    const hadMatchmaker = player.inPlayCards && player.inPlayCards.some(c => c.name === 'Matchmaker');
+    if (hadMatchmaker) {
+        const otherMatchmakerHolder = getAlivePlayers(room).find(p => p.uniqueId !== player.uniqueId && p.inPlayCards.some(c => c.name === 'Matchmaker'));
+        if (otherMatchmakerHolder) {
+            sendGameMessage(room.name, `${otherMatchmakerHolder.name} ตายพร้อมกับ ${player.name} เนื่องจากผูกวิญญาณ!`, 'darkred', true);
+            handlePlayerDeath(room, otherMatchmakerHolder);
+        }
+    }
+    emitRoomState(room.name);
 }
 
 // เพิ่มฟังก์ชัน helper
