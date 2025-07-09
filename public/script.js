@@ -155,9 +155,11 @@ socket.on('room joined', (roomName) => {
     roomManagementSection.style.display = 'none';
     roomLobbySection.style.display = 'block';
     gameSection.style.display = 'none'; // Ensure game section is hidden initially
-    leaveRoomButton.style.display = 'block';
-    // ซ่อนปุ่มเริ่มเกมไว้ก่อนจนกว่าจะรู้ว่าเป็น host จริง
-    startGameButton.style.display = 'none';
+    if (isHost) {
+        startGameButton.style.display = 'inline-block';
+    } else {
+        startGameButton.style.display = 'none';
+    }
 });
 
 socket.on('room state update', (roomState) => {
