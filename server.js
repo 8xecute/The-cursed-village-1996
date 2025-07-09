@@ -49,8 +49,8 @@ const GAME_CARDS = [
     ...Array(2).fill({ name: 'Arson', type: 'Action', color: 'Green', description: 'ทิ้งการ์ดในมือทั้งหมดของผู้เล่นเป้าหมายไปที่กองทิ้ง' }),
     // Permanent Cards (Blue)
     ...Array(1).fill({ name: 'Black Cat', type: 'Permanent', color: 'Blue', description: 'หากการ์ดนี้อยู่กับผู้เล่นคนไหน จะต้องเริ่มเล่นเป็นคนแรก. หากมีผู้เล่นคนไหนเปิดได้การ์ดพิธีเซ่นไหว้, ผู้เล่นที่มีการ์ดเครื่องเซ่นจะต้องเปิดการ์ดชีวิต 1 ใบ.' }),
-    ...Array(1).fill({ name: 'Asylum', type: 'Permanent', color: 'Blue', description: 'เลือกผู้เล่นที่จะป้องกันการถูกฆ่าในรอบกลางคืน' }),
-    ...Array(1).fill({ name: 'Piety', type: 'Permanent', color: 'Blue', description: 'เลือกผู้เล่นที่ไม่สามารถถูกโจมตีด้วยการ์ดสีแดงได้' }),
+    ...Array(2).fill({ name: 'Asylum', type: 'Permanent', color: 'Blue', description: 'เลือกผู้เล่นที่จะป้องกันการถูกฆ่าในรอบกลางคืน' }),
+    ...Array(2).fill({ name: 'Piety', type: 'Permanent', color: 'Blue', description: 'เลือกผู้เล่นที่ไม่สามารถถูกโจมตีด้วยการ์ดสีแดงได้' }),
     ...Array(2).fill({ name: 'Matchmaker', type: 'Permanent', color: 'Blue', description: 'เลือกวางการ์ดหน้าผู้เล่นเป้าหมาย (ผู้เล่น 2 คนที่มีการ์ดนี้อยู่ตรงหน้า หากผู้เล่นคนใดคนหนึ่งตาย อีกคนต้องตายตาม)' }),
     // Event Cards (Black)
     ...Array(1).fill(CARD_TEMPLATES.conspiracy), // 1 Conspiracy card
@@ -2394,6 +2394,7 @@ function revealTryalCard(roomName, playerUniqueId, cardIndex) {
 function handlePlayerDeath(room, player) {
     if (!player || !player.alive || room.gameOver) return;
     player.alive = false;
+    // แจ้งเตือนว่าผู้เล่นตาย
     sendGameMessage(room.name, `${player.name} ตายแล้ว!`, 'red', true);
     // Reveal all Tryal Cards
     player.revealedTryalCardIndexes = new Set(player.tryalCards.map((_, idx) => idx));
@@ -2404,27 +2405,28 @@ function handlePlayerDeath(room, player) {
     }
     // Discard all inPlayCards (Permanent/Blue)
     if (player.inPlayCards && player.inPlayCards.length > 0) {
+        // แยกการ์ดสีน้ำเงินออกจากการ์ดอื่น
         const blueCards = player.inPlayCards.filter(card => card.color === 'Blue');
         const otherCards = player.inPlayCards.filter(card => card.color !== 'Blue');
         if (otherCards.length > 0) {
             room.discardPile.push(...otherCards);
         }
         // การ์ดสีน้ำเงิน (Blue) จะถูกลบออกจากเกม ไม่ใส่ discardPile
+        // Reset Black Cat holder if needed
         if (blueCards.some(card => card.name === 'Black Cat')) {
             room.blackCatHolder = null;
         }
+        // --- Matchmaker: ถ้าตายและมีการ์ดนี้ ให้ฆ่าคู่ผูกวิญญาณด้วย ---
+        if (blueCards.some(card => card.name === 'Matchmaker')) {
+            const otherMatchmaker = Object.values(room.players).find(p => p.uniqueId !== player.uniqueId && p.alive && p.inPlayCards && p.inPlayCards.some(c => c.name === 'Matchmaker'));
+            if (otherMatchmaker) {
+                sendGameMessage(room.name, `${otherMatchmaker.name} ตายพร้อมกับ ${player.name} เนื่องจาก Matchmaker!`, 'darkred', true);
+                handlePlayerDeath(room, otherMatchmaker);
+            }
+        }
         player.inPlayCards = [];
     }
-    // --- Matchmaker: If this player has Matchmaker, kill the other linked player immediately ---
-    const hadMatchmaker = player.inPlayCards && player.inPlayCards.some(c => c.name === 'Matchmaker');
-    if (hadMatchmaker) {
-        const otherMatchmakerHolder = getAlivePlayers(room).find(p => p.uniqueId !== player.uniqueId && p.inPlayCards.some(c => c.name === 'Matchmaker'));
-        if (otherMatchmakerHolder) {
-            sendGameMessage(room.name, `${otherMatchmakerHolder.name} ตายพร้อมกับ ${player.name} เนื่องจากผูกวิญญาณ!`, 'darkred', true);
-            handlePlayerDeath(room, otherMatchmakerHolder);
-        }
-    }
-    emitRoomState(room.name);
+    emitRoomState(room.name); // อัปเดตสถานะผู้เล่น
 }
 
 // เพิ่มฟังก์ชัน helper
