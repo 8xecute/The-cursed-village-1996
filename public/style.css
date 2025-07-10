@@ -181,7 +181,7 @@ button:disabled {
 .message-orange { color: #ffa07a; }
 .message-purple { color: #da70d6; }
 .message-darkred { color: #e53935; } /* ปรับแดงเข้มให้สว่างขึ้น */
-.message-gold { color: #bfa100; }
+.message-gold { color: #ffe066; }
 
 .player-item {
     display: flex;
@@ -221,8 +221,8 @@ button:disabled {
 
 .player-item.selected-night-target {
     background-color: #5a5a5a;
-    border: 2px solid #ffd700;
-    box-shadow: 0 0 10px #ffd700;
+    border: 2px solid #ffe066;
+    box-shadow: 0 0 10px #ffe066;
 }
 
 .night-action-section {
@@ -240,7 +240,7 @@ button:disabled {
 }
 
 .night-action-timer {
-    color: #ffd700;
+    color: #ffe066;
     font-weight: bold;
     margin-bottom: 10px;
 }
@@ -307,7 +307,7 @@ button:disabled {
 }
 
 .card.selected {
-    border-color: #ffd700;
+    border-color: #ffe066;
     box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
     transform: scale(1.05);
 }
@@ -444,7 +444,7 @@ button:disabled {
 
 .tryal-card:hover {
     transform: scale(1.1);
-    border-color: #ffd700;
+    border-color: #ffe066;
 }
 
 .tryal-card.revealed {
@@ -453,8 +453,8 @@ button:disabled {
 }
 
 .tryal-card.selectable {
-    border-color: #ffd700;
-    box-shadow: 0 0 5px #ffd700;
+    border-color: #ffe066;
+    box-shadow: 0 0 5px #ffe066;
 }
 
 /* Tryal card image styles */
@@ -502,7 +502,7 @@ button:disabled {
 
 #phase-timer-display {
     font-weight: bold;
-    color: #ffd700;
+    color: #ffe066;
     font-size: 1em;
 }
 
@@ -526,9 +526,9 @@ button:disabled {
 }
 
 .night-player-card.selected {
-    border-color: #ffd700;
+    border-color: #ffe066;
     background-color: #5a5a5a;
-    box-shadow: 0 0 15px #ffd700;
+    box-shadow: 0 0 15px #ffe066;
 }
 
 .night-player-card.dead {
@@ -611,7 +611,7 @@ button:disabled {
 
 .status-black-cat {
     background-color: #333;
-    color: #ffd700;
+    color: #ffe066;
 }
 
 .status-current-turn {
@@ -625,12 +625,12 @@ button:disabled {
 }
 
 .status-must-confess {
-    background-color: #ffd700;
+    background-color: #ffe066;
     color: #000;
 }
 
 .status-must-reveal-tryal {
-    background-color: #ffd700;
+    background-color: #ffe066;
     color: #000;
 }
 
@@ -816,7 +816,7 @@ button:disabled {
   opacity: 0.85;
 }
 .game-state-bar #current-turn-player-display {
-  background: #ffe699;
+  background: #ffe066;
   color: #222;
   border-radius: 6px;
   padding: 2px 8px;
@@ -934,7 +934,7 @@ button:disabled {
 
 /* ขอบหรือเงาทองเมื่อถึงเทิร์นของผู้เล่น */
 .main-game-content.my-turn-active {
-    box-shadow: 0 0 0 4px #ffd700, 0 0 18px #ffd70099;
+    box-shadow: 0 0 0 4px #ffe066, 0 0 18px #ffe06699;
     border-radius: 12px;
     transition: box-shadow 0.2s;
 }
@@ -963,9 +963,9 @@ button:disabled {
 /* Witch Tryal Card */
 .tryal-card.witch, .card-witch {
     background: linear-gradient(135deg, #7b1e1e 70%, #ff1744 100%);
-    border: 1.25px solid #ffd700;
+    border: 1.25px solid #ffe066;
     color: #fff;
-    box-shadow: 0 0 6px 1px #ff174499, 0 0 0 1.5px #ffd70055;
+    box-shadow: 0 0 6px 1px #ff174499, 0 0 0 1.5px #ffe06655;
     text-shadow: 1px 1px 4px #000a;
 }
 /* Constable Tryal Card */
@@ -1004,8 +1004,8 @@ button:disabled {
 }
 
 .card-red:hover, .card-green:hover, .card-blue:hover {
-    box-shadow: 0 0 18px 4px #ffd700cc, 0 0 0 4px #ffd70099;
-    border-color: #ffd700;
+    box-shadow: 0 0 18px 4px #ffe066cc, 0 0 0 4px #ffe06699;
+    border-color: #ffe066;
     transform: translateY(-7px) scale(1.07);
 }
 
@@ -1100,7 +1100,7 @@ button:disabled {
 
 #witch-chat-input:focus {
     outline: none;
-    border-color: #ffd700;
+    border-color: #ffe066;
     box-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
 }
 
@@ -1158,8 +1158,8 @@ button:disabled {
   .player-item.current-turn {
     font-size: 1em;
     border-width: 3px;
-    box-shadow: 0 0 12px #ffd700, 0 0 8px #2196f3;
-    background: linear-gradient(90deg, #2196f3 80%, #ffd700 100%);
+    box-shadow: 0 0 12px #ffe066, 0 0 8px #2196f3;
+    background: linear-gradient(90deg, #2196f3 80%, #ffe066 100%);
     color: #fff;
   }
 
@@ -1365,7 +1365,7 @@ button:disabled {
 .player-board-card.current-turn {
   background: #181818;
   color: #ffe066 !important;
-  border: 2.5px solid #ffe699;
+  border: 2.5px solid #ffe066;
   box-shadow: 0 0 8px 1px #ffe06655;
   position: relative;
 }

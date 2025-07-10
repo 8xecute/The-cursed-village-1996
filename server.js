@@ -2,70 +2,21 @@
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
-const { v4: uuidv4 } = require('uuid');
-const compression = require('compression');
-const helmet = require('helmet');
-const cors = require('cors');
-const path = require('path');
+const { v4: uuidv4 } = require('uuid'); // For unique player IDs (Ensure you 'npm install uuid')
 const { getGameCardsForPlayerCount } = require('./src/gameLogic');
 
 const app = express();
 const server = http.createServer(app);
+const io = new Server(server);
 
-// Production optimizations for Render
-const isProduction = process.env.NODE_ENV === 'production';
+app.use(express.static('public')); // Serve static files from the 'public' directory
+
 const PORT = process.env.PORT || 3000;
-
-// Security and performance middleware
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-      fontSrc: ["'self'", "https://fonts.gstatic.com"],
-      scriptSrc: ["'self'"],
-      imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'", "wss:", "ws:"]
-    }
-  }
-}));
-app.use(cors());
-app.use(compression());
-
-// Serve static files from public/ always
-app.use(express.static(path.join(__dirname, 'public')));
-
-// Fallback route for SPA (send index.html for any unknown route)
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
-// Health check endpoint for Render
-app.get('/health', (req, res) => {
-  res.status(200).json({
-    status: 'OK',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    memory: process.memoryUsage(),
-    rooms: Object.keys(rooms).length
-  });
-});
-
-// Socket.IO with production optimizations
-const io = new Server(server, {
-  cors: {
-    origin: isProduction ? process.env.ALLOWED_ORIGINS?.split(',') : "*",
-    methods: ["GET", "POST"]
-  },
-  transports: ['websocket', 'polling'],
-  pingTimeout: 60000,
-  pingInterval: 25000
-});
 
 // --- Game State Variables ---
 const rooms = {}; // Stores all active rooms and their game states
 
-const PLAYER_LIMIT = 12; // Max players per room based on the provided table (up to 12)
+const PLAYER_LIMIT = 12; // Max players per room (keep at 12)
 const MIN_PLAYERS_TO_START = 4; // Minimum players required to start a game
 
 // Base phase durations in milliseconds - ALL SET TO 0 FOR MANUAL PHASE ADVANCE by Host
@@ -1979,25 +1930,18 @@ io.on('connection', (socket) => {
                 io.to(socket.id).emit('game message', 'คุณไม่สามารถเลือกเป้าหมายที่ได้รับการปกป้องจาก Asylum ได้.', 'red');
                 return;
             }
+            // ป้องกันไม่ให้ปอบเลือกฆ่าตัวเอง
+            if (targetUniqueId === player.uniqueId) {
+                io.to(socket.id).emit('game message', 'คุณไม่สามารถเลือกฆ่าตัวเองได้.', 'red');
+                return;
+            }
             if (targetUniqueId && room.players[targetUniqueId]?.alive) {
-                if (targetUniqueId === player.uniqueId) {
-                    io.to(socket.id).emit('game message', 'คุณไม่สามารถเลือกฆ่าตัวเองได้.', 'red');
-                    return;
-                }
                 room.playersWhoActedAtNight['witchKill'] = targetUniqueId;
                 io.to(socket.id).emit('game message', `คุณได้เลือก ${room.players[targetUniqueId].name} เป็นเป้าหมายการสังหาร.`, 'green');
                 // แจ้งเตือนทีมปอบทุกคนว่าเลือกฆ่าใคร (เฉพาะปอบเห็น)
                 const witches = getAlivePlayers(room).filter(p => p.isWitch);
                 witches.forEach(witchPlayer => {
                     io.to(witchPlayer.id).emit('game message', `คืนนี้ทีมปอบเลือกจะฆ่า: ${room.players[targetUniqueId].name}`, 'darkred', true);
-                });
-                // เพิ่มข้อความนี้ใน gameMessageHistory เฉพาะปอบ (ไม่ส่ง global)
-                if (!room.witchNightMessages) room.witchNightMessages = [];
-                room.witchNightMessages.push({
-                    message: `คืนนี้ทีมปอบเลือกจะฆ่า: ${room.players[targetUniqueId].name}`,
-                    color: 'darkred',
-                    bold: true,
-                    timestamp: Date.now()
                 });
                 // ถ้ามีหมอผีที่ยังไม่ได้เลือก ให้รอ
                 const constables = getAlivePlayers(room).filter(p => p.isConstable);
@@ -2503,63 +2447,37 @@ function updateBlackCatHolder(room) {
     room.blackCatHolder = holder ? holder.uniqueId : null;
 }
 
-// Memory monitoring for production
+// --- Room Cleanup ---
+const ROOM_CLEANUP_INTERVAL = 60 * 1000; // Check every 1 minute
+const ROOM_EMPTY_TIMEOUT = 5 * 60 * 1000; // 5 minutes
+const roomLastActive = {};
+
+setInterval(() => {
+    const now = Date.now();
+    for (const roomName in rooms) {
+        const room = rooms[roomName];
+        const playerCount = Object.keys(room.players).filter(uid => room.players[uid].connected).length;
+        if (playerCount === 0) {
+            if (!roomLastActive[roomName]) {
+                roomLastActive[roomName] = now;
+            } else if (now - roomLastActive[roomName] > ROOM_EMPTY_TIMEOUT) {
+                delete rooms[roomName];
+                delete roomLastActive[roomName];
+                console.log(`Room ${roomName} deleted due to inactivity.`);
+            }
+        } else {
+            roomLastActive[roomName] = now;
+        }
+    }
+}, ROOM_CLEANUP_INTERVAL);
+
+// --- Remove unnecessary console.log in production ---
+const isProduction = process.env.NODE_ENV === 'production';
 if (isProduction) {
-  setInterval(() => {
-    const memUsage = process.memoryUsage();
-    console.log('Memory usage:', {
-      rss: `${Math.round(memUsage.rss / 1024 / 1024)}MB`,
-      heapUsed: `${Math.round(memUsage.heapUsed / 1024 / 1024)}MB`,
-      heapTotal: `${Math.round(memUsage.heapTotal / 1024 / 1024)}MB`,
-      external: `${Math.round(memUsage.external / 1024 / 1024)}MB`
-    });
-  }, 300000); // Log every 5 minutes
+    console.log = function(){};
 }
 
-// Graceful shutdown handling
-process.on('SIGTERM', () => {
-  console.log('SIGTERM received, shutting down gracefully...');
-  let exited = false;
-  server.close(() => {
-    if (!exited) {
-      exited = true;
-      console.log('Server closed');
-      process.exit(0);
-    }
-  });
-  setTimeout(() => {
-    if (!exited) {
-      exited = true;
-      console.log('Force exit after timeout.');
-      process.exit(1);
-    }
-  }, 10000);
-});
-
-process.on('SIGINT', () => {
-  console.log('SIGINT received, shutting down gracefully...');
-  let exited = false;
-  server.close(() => {
-    if (!exited) {
-      exited = true;
-      console.log('Server closed');
-      process.exit(0);
-    }
-  });
-  setTimeout(() => {
-    if (!exited) {
-      exited = true;
-      console.log('Force exit after timeout.');
-      process.exit(1);
-    }
-  }, 10000);
-});
-
 server.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`🌍 Environment: ${isProduction ? 'Production' : 'Development'}`);
-  console.log(`📊 Health check available at: http://localhost:${PORT}/health`);
-  if (!isProduction) {
-    console.log(`🎮 Visit http://localhost:${PORT}`);
-  }
+    console.log(`Server running on port ${PORT}`);
+    console.log(`Visit http://localhost:${PORT}`);
 });

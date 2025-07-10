@@ -1839,8 +1839,8 @@ function populateNightActionPlayersList(actionType) {
     // Filter players based on action type
     let eligiblePlayers = [];
     if (actionType === 'witch') {
-        // Witches can target any alive player who does NOT have Asylum and ไม่ใช่ตัวเอง
-        eligiblePlayers = Object.values(currentRoomState.players).filter(player => player.alive && player.uniqueId !== myUniqueId && !(player.inPlayCards && player.inPlayCards.some(cardName => cardName === 'Asylum')));
+        // Witches can target any alive player who does NOT have Asylum
+        eligiblePlayers = Object.values(currentRoomState.players).filter(player => player.alive && !(player.inPlayCards && player.inPlayCards.some(cardName => cardName === 'Asylum')));
     } else if (actionType === 'constable') {
         // Constables can target any player except themselves, and only alive
         eligiblePlayers = Object.values(currentRoomState.players).filter(player => player.uniqueId !== myUniqueId && player.alive);
