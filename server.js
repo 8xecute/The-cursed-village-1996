@@ -32,16 +32,13 @@ app.use(helmet({
 app.use(cors());
 app.use(compression());
 
-// Serve static files with caching for production
-if (isProduction) {
-  app.use(express.static('dist', {
-    maxAge: '1y',
-    etag: true,
-    lastModified: true
-  }));
-} else {
-  app.use(express.static('public'));
-}
+// Serve static files from public/ always
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Fallback route for SPA (send index.html for any unknown route)
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 
 // Health check endpoint for Render
 app.get('/health', (req, res) => {
