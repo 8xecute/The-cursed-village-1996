@@ -169,14 +169,19 @@ socket.on('room state update', (roomState) => {
     playerListDiv.innerHTML = '';
     let isHost = false;
     let myPlayer = null;
-    const playersInOrder = Object.values(roomState.players).sort((a,b) => a.name.localeCompare(b.name)); // Sort for consistent display
+    const playersInOrder = Object.values(roomState.players).sort((a, b) => a.name.localeCompare(b.name)); // Sort for consistent display
 
     // Populate player list and check host status
     playersInOrder.forEach(player => {
         const playerDiv = document.createElement('div');
         playerDiv.className = `player-item ${player.alive ? 'alive' : 'dead'} ${roomState.currentTurnPlayerUniqueId === player.uniqueId ? 'current-turn' : ''}`;
         playerDiv.dataset.uniqueId = player.uniqueId; // Store uniqueId for night actions
-        let html = `<span class="player-name-status">${player.name} ${player.isHost ? '(Host)' : ''} ${player.alive ? '' : '- Eliminated'} ${player.isBlackCatHolder ? ' (เครื่องเซ่น)' : ''}</span>`;
+        let html = `<span class="player-name-status">${player.name}`;
+        // เพิ่ม tag (ทีมปอบ) เฉพาะฝั่งปอบเห็น
+        if (myPlayer && myPlayer.hasBeenWitch && player.hasBeenWitch) {
+            html += ' <span style="color:#ff1744;font-size:0.95em;font-weight:bold;">(ทีมปอบ)</span>';
+        }
+        html += ` ${player.isHost ? '(Host)' : ''} ${player.alive ? '' : '- Eliminated'} ${player.isBlackCatHolder ? ' (เครื่องเซ่น)' : ''}</span>`;
         if (roomState.gameStarted) {
             html += `<span class="player-stats">การ์ด: ${player.handSize} | ชีวิต: ${player.tryalCardCount} | ข้อกล่าวหา: ${player.accusationPoints}</span>`;
         }
@@ -217,7 +222,7 @@ socket.on('room state update', (roomState) => {
 
         gameSection.style.display = 'block';
 
-        currentPhaseDisplay.textContent = roomState.currentPhase;
+        currentPhaseDisplay.textContent = getPhaseNameTH(roomState.currentPhase);
         dayNumberDisplay.textContent = roomState.dayNumber;
         currentTurnPlayerDisplay.textContent = roomState.currentTurnPlayerName || 'N/A';
         
@@ -395,10 +400,17 @@ socket.on('room state update', (roomState) => {
         gameSection.style.display = 'none';
         roomLobbySection.style.display = 'block';
     }
+    updateWitchChatTeamList();
 });
 
 socket.on('game message', (message, color = 'black', bold = false) => {
     addGameMessage(message, color, bold);
+    // ปิด popup เลือกเป้าหมายปอบถ้าได้รับแจ้งเตือนทีมปอบเลือกเป้าหมายแล้ว
+    if (message.startsWith('คืนนี้ทีมปอบ:')) {
+        disableNightTargetSelection();
+        // แสดงใน witch chat ด้วย
+        addWitchChatMessage('SYSTEM', message, Date.now());
+    }
     // Special handling for duplicate room or join-not-found
     if (message.includes('ชื่อห้องนี้ถูกใช้แล้ว')) {
         alert('Cannot create room: Room name already exists!');
@@ -553,13 +565,19 @@ witchChatInput.addEventListener('keypress', (e) => {
 
 // Function to show/hide witch chat based on witch status
 function updateWitchChatVisibility(isWitch) {
-    // แสดงแชทปอบตอนกลางคืนหรือช่วงวางเครื่องเซ่น (isAssigningBlackCat) และเป็นปอบเท่านั้น
-    const isNight = currentRoomState && currentRoomState.currentPhase === 'NIGHT';
-    const isAssigningBlackCat = currentRoomState && currentRoomState.isAssigningBlackCat;
-    if (isWitch && (isNight || isAssigningBlackCat) && currentRoomName) {
+    if (isWitch && currentRoomName) {
         witchChatSection.style.display = 'block';
-        // Request chat history when becoming visible
         socket.emit('request witch chat history', currentRoomName);
+        // ปรับปุ่มส่งข้อความและ input
+        const isNight = currentRoomState && currentRoomState.currentPhase === 'NIGHT';
+        const isAssigningBlackCat = currentRoomState && currentRoomState.isAssigningBlackCat;
+        witchChatInput.disabled = !(isNight || isAssigningBlackCat);
+        witchChatSendButton.disabled = !(isNight || isAssigningBlackCat);
+        if (!(isNight || isAssigningBlackCat)) {
+            witchChatInput.placeholder = 'ส่งข้อความได้เฉพาะตอนกลางคืนหรือช่วงเลือกเครื่องเซ่น';
+        } else {
+            witchChatInput.placeholder = '';
+        }
     } else {
         witchChatSection.style.display = 'none';
     }
@@ -748,8 +766,11 @@ joinRoomButton.addEventListener('click', () => {
     }
 });
 
-leaveRoomButton.addEventListener('click', () => {
+leaveRoomButton.addEventListener('click', (e) => {
+  e.preventDefault();
+  if (confirm('คุณแน่ใจหรือไม่ว่าต้องการออกจากห้อง?')) {
     socket.emit('leave room');
+  }
 });
 
 startGameButton.addEventListener('click', () => {
@@ -1046,23 +1067,8 @@ function updateHandDisplay(hand) {
             }
         });
         // --- Tooltip ---
-        cardElement.addEventListener('mouseover', () => {
-            if (card.description && cardDescriptionPopup) {
-                cardDescriptionPopup.textContent = card.description;
-                cardDescriptionPopup.classList.add('show');
-            }
-        });
-        cardElement.addEventListener('mousemove', (event) => {
-            if (cardDescriptionPopup) {
-                cardDescriptionPopup.style.left = `${event.pageX + 15}px`;
-                cardDescriptionPopup.style.top = `${event.pageY + 15}px`;
-            }
-        });
-        cardElement.addEventListener('mouseout', () => {
-            if (cardDescriptionPopup) {
-                cardDescriptionPopup.classList.remove('show');
-            }
-        });
+        cardElement.setAttribute('title', displayCardDescription(card.name)); // ใช้ custom tooltip แบบเดียวกับ tryal-card
+        // (ลบ eventListener mousemove, mouseout)
         // --- Click to select ---
         cardElement.addEventListener('click', () => {
             if (!isMyTurn) {
@@ -1267,7 +1273,7 @@ function updateTryalCardDisplay() {
             cardDiv.style.fontWeight = 'bold';
             cardDiv.style.cursor = 'grab';
             cardDiv.dataset.index = idx;
-            cardDiv.title = displayCardDescription(card.name); // <-- Add tooltip for tryal cards
+            cardDiv.setAttribute('title', displayCardDescription(card.name)); // <-- Add tooltip for tryal cards
             
             // แสดงรูปการ์ดแทนข้อความ
             const cardImage = createCardImage(card.name);
@@ -1358,6 +1364,8 @@ function updatePlayersGrid(roomState, myUniqueId, actionType = null) {
 
     const playersInOrder = Object.values(roomState.players).sort((a, b) => a.name.localeCompare(b.name));
 
+    let myPlayer = roomState.players && roomState.players[myUniqueId];
+    let isWitchView = myPlayer && myPlayer.hasBeenWitch;
     playersInOrder.forEach(player => {
         const card = document.createElement('div');
         card.className = 'player-board-card' + (!player.alive ? ' dead' : '') + (roomState.currentTurnPlayerUniqueId === player.uniqueId ? ' current-turn' : '');
@@ -1367,6 +1375,7 @@ function updatePlayersGrid(roomState, myUniqueId, actionType = null) {
             header += `<span style="color:#ffd700;font-size:1.2em;margin-right:6px;vertical-align:middle;">🔥</span>`;
         }
         header += `${player.name}`;
+        if (isWitchView && player.hasBeenWitch) header += ' <span style="color:#ff1744;font-size:0.95em;font-weight:bold;">(ทีมปอบ)</span>';
         if (player.isHost) header += ' <span style="color:#ff4500;">(Host)</span>';
         if (player.isBlackCatHolder) header += ' <span style="color:#ffd700;">(เครื่องเซ่น)</span>';
         if (roomState.currentTurnPlayerUniqueId === player.uniqueId) header += ' <span style="color:#2196f3;font-weight:bold;">[เทิร์น]</span>';
@@ -1380,8 +1389,7 @@ function updatePlayersGrid(roomState, myUniqueId, actionType = null) {
             effectCards = player.inPlayCards.filter(c => c === 'Stocks' || c === 'Black Cat' || c === 'Asylum' || c === 'Piety' || c === 'Matchmaker');
         }
         if (effectCards.length > 0) {
-            status += `<br><span class='effect-label' style="display:inline-block;margin-top:2px;font-size:1.08em;font-weight:bold;color:#ffd700;">✨ ผลพิเศษ:</span> `;
-            effectCards.forEach(cardName => {
+            effectCards.forEach((cardName, idx) => {
                 let desc = '';
                 let themeClass = '';
                 switch(cardName) {
@@ -1389,10 +1397,12 @@ function updatePlayersGrid(roomState, myUniqueId, actionType = null) {
                     case 'Black Cat': desc = 'เริ่มเล่นเป็นคนแรก/โดน พิธีเซ่นไหว้'; cardName = 'เครื่องเซ่น'; themeClass = 'card-theme card-blue'; break;
                     case 'Asylum': desc = 'ป้องกันถูกฆ่าตอนกลางคืน'; cardName = 'ที่หลบภัย'; themeClass = 'card-theme card-blue'; break;
                     case 'Piety': desc = 'กันโจมตีด้วยการ์ดแดง'; cardName = 'พลังศรัทธา'; themeClass = 'card-theme card-blue'; break;
-                    case 'Matchmaker': desc = 'ตายคู่'; cardName = 'ผูกวิญญาณ'; themeClass = 'card-theme card-green'; break;
+                    case 'Matchmaker': desc = 'ถ้าอีกคนที่มีสถานะนี้ตาย จะตายพร้อมกัน'; cardName = 'ผูกวิญญาณ'; themeClass = 'card-theme card-green'; break;
                     default: desc = ''; themeClass = 'card-theme card-black';
                 }
-                status += `<span class='effect-card ${themeClass}' title='${desc}' style="padding:2px 10px;margin:0 4px;border-radius:8px;font-size:1.08em;vertical-align:middle;box-shadow:0 2px 8px #ffd70044;">${cardName}</span>`;
+                // ขึ้นบรรทัดใหม่ทุก effect-card ลำดับคี่ (idx % 2 === 0) ยกเว้นตัวแรก
+                if (idx > 0 && idx % 2 === 0) status += '<br>';
+                status += `<span class='effect-card ${themeClass}' data-effect='${cardName}' title='${desc}' style=\"padding:2px 8px;margin:0 8px 4px 0;border-radius:8px;font-size:0.95em;vertical-align:middle;display:inline-block;\">${cardName}</span>`;
             });
         }
         status += '</div>';
@@ -1467,20 +1477,10 @@ function updatePlayersBoardGrid(roomState, myUniqueId) {
         return;
     }
     list.innerHTML = '';
-    // --- เรียงลำดับผู้เล่นตามลำดับเทิร์น ---
+    // --- เรียงลำดับผู้เล่นตามลำดับเดิม ---
     const allPlayers = Object.values(roomState.players);
-    let playersInOrder = [];
-    if (roomState.currentTurnPlayerUniqueId) {
-        // หา index ของ current turn
-        const idx = allPlayers.findIndex(p => p.uniqueId === roomState.currentTurnPlayerUniqueId);
-        if (idx !== -1) {
-            playersInOrder = allPlayers.slice(idx).concat(allPlayers.slice(0, idx));
-        } else {
-            playersInOrder = allPlayers;
-        }
-    } else {
-        playersInOrder = allPlayers;
-    }
+    let playersInOrder = allPlayers;
+    // ไม่ต้องย้าย current-turn ไปล่างสุด
     playersInOrder.forEach(player => {
         const card = document.createElement('div');
         card.className = 'player-board-card' + (!player.alive ? ' dead' : '') + (roomState.currentTurnPlayerUniqueId === player.uniqueId ? ' current-turn' : '');
@@ -1503,24 +1503,25 @@ function updatePlayersBoardGrid(roomState, myUniqueId) {
             effectCards = player.inPlayCards.filter(c => c === 'Stocks' || c === 'Black Cat' || c === 'Asylum' || c === 'Piety' || c === 'Matchmaker');
         }
         if (effectCards.length > 0) {
-            status += `<br><span class='effect-label' style="display:inline-block;margin-top:2px;font-size:1.08em;font-weight:bold;color:#ffd700;">✨ ผลพิเศษ:</span> `;
-            effectCards.forEach(cardName => {
+            effectCards.forEach((cardName, idx) => {
                 let desc = '';
                 let themeClass = '';
                 switch(cardName) {
-                    case 'Stocks': desc = 'ข้ามตา'; cardName = 'พันธนาการ'; themeClass = 'card-theme card-green'; break;
-                    case 'Black Cat': desc = 'เริ่มเล่นเป็นคนแรก/โดน พิธีเซ่นไหว้'; cardName = 'เครื่องเซ่น'; themeClass = 'card-theme card-blue'; break;
+                    case 'Stocks': desc = 'ข้ามตา 1 เทิร์น'; cardName = 'พันธนาการ'; themeClass = 'card-theme card-green'; break;
+                    case 'Black Cat': desc = 'โดนเปิดการ์ดชีวิตในพิธีเซ่นไหว้'; cardName = 'เครื่องเซ่น'; themeClass = 'card-theme card-blue'; break;
                     case 'Asylum': desc = 'ป้องกันถูกฆ่าตอนกลางคืน'; cardName = 'ที่หลบภัย'; themeClass = 'card-theme card-blue'; break;
-                    case 'Piety': desc = 'กันโจมตีด้วยการ์ดแดง'; cardName = 'พลังศรัทธา'; themeClass = 'card-theme card-blue'; break;
-                    case 'Matchmaker': desc = 'ตายคู่'; cardName = 'ผูกวิญญาณ'; themeClass = 'card-theme card-green'; break;
+                    case 'Piety': desc = 'ป้องกันการโจมตีจากการ์ดสีแดง'; cardName = 'พลังศรัทธา'; themeClass = 'card-theme card-blue'; break;
+                    case 'Matchmaker': desc = 'ถ้าอีกคนที่มีสถานะนี้ตาย จะตายพร้อมกัน'; cardName = 'ผูกวิญญาณ'; themeClass = 'card-theme card-green'; break;
                     default: desc = ''; themeClass = 'card-theme card-black';
                 }
-                status += `<span class='effect-card ${themeClass}' title='${desc}' style="padding:2px 10px;margin:0 4px;border-radius:8px;font-size:1.08em;vertical-align:middle;box-shadow:0 2px 8px #ffd70044;">${cardName}</span>`;
+                // ขึ้นบรรทัดใหม่ทุก effect-card ลำดับคี่ (idx % 2 === 0) ยกเว้นตัวแรก
+                if (idx > 0 && idx % 2 === 0) status += '<br>';
+                status += `<span class='effect-card ${themeClass}' data-effect='${cardName}' title='${desc}' style=\"padding:2px 8px;margin:0 8px 4px 0;border-radius:8px;font-size:0.95em;vertical-align:middle;display:inline-block;\">${cardName}</span>`;
             });
         }
         status += '</div>';
         // Tryal Cards (show only count, not images)
-        let tryals = `<div class='player-board-tryals'>ชีวิตที่เหลือ: <b>${player.tryalCardCount}</b> ใบ</div>`;
+        let tryals = `<div class='player-board-tryals'>การ์ดชีวิตที่เหลือ: <b>${player.tryalCardCount}</b> ใบ</div>`;
         card.innerHTML = header + status + tryals;
         list.appendChild(card);
     });
@@ -1839,8 +1840,8 @@ function populateNightActionPlayersList(actionType) {
     // Filter players based on action type
     let eligiblePlayers = [];
     if (actionType === 'witch') {
-        // Witches can target any alive player who does NOT have Asylum
-        eligiblePlayers = Object.values(currentRoomState.players).filter(player => player.alive && !(player.inPlayCards && player.inPlayCards.some(cardName => cardName === 'Asylum')));
+        // Witches can target any alive player who does NOT have Asylum and is not self
+        eligiblePlayers = Object.values(currentRoomState.players).filter(player => player.alive && player.uniqueId !== myUniqueId && !(player.inPlayCards && player.inPlayCards.some(cardName => cardName === 'Asylum')));
     } else if (actionType === 'constable') {
         // Constables can target any player except themselves, and only alive
         eligiblePlayers = Object.values(currentRoomState.players).filter(player => player.uniqueId !== myUniqueId && player.alive);
@@ -2025,9 +2026,9 @@ function showCurseTargetSelection(targetUniqueId, blueCards) {
         cardDiv.style.display = 'flex';
         cardDiv.style.alignItems = 'center';
         cardDiv.style.justifyContent = 'center';
-        cardDiv.style.cursor = 'pointer';
+        cardDiv.style.cursor = 'grab';
         cardDiv.style.transition = 'transform 0.18s, border-color 0.18s';
-        cardDiv.title = displayCardDescription(card.name);
+        cardDiv.setAttribute('title', displayCardDescription(card.name)); // <-- Add tooltip for tryal cards
         
         // แสดงรูปการ์ดแทนข้อความ
         const cardImage = createCardImage(card.name);
@@ -2207,9 +2208,9 @@ function displayCardName(name) {
 // --- Card Description Localization ---
 function displayCardDescription(name) {
     const map = {
-        'Accusation': 'มี 1 ข้อกล่าวหา ใช้เพื่อกล่าวหาผู้เล่นที่สงสัยว่าเป็นปอบ',
-        'Evidence': 'มี 3 ข้อกล่าวหา ใช้เพื่อกล่าวหาผู้เล่นที่สงสัยว่าเป็นปอบ',
-        'Witness': 'มี 7 ข้อกล่าวหา ใช้เพื่อกล่าวหาผู้เล่นที่สงสัยว่าเป็นปอบ',
+        'Accusation': 'ใช้เพื่อกล่าวหาผู้เล่นที่สงสัยว่าเป็นปอบ (เพิ่ม 1 ข้อกล่าวหา)',
+        'Evidence': 'ใช้เพื่อกล่าวหาผู้เล่นที่สงสัยว่าเป็นปอบ (เพิ่ม 3 ข้อกล่าวหา)',
+        'Witness': 'ใช้เพื่อกล่าวหาผู้เล่นที่สงสัยว่าเป็นปอบ (เพิ่ม 7 ข้อกล่าวหา)',
         'Scapegoat': 'ย้ายการ์ดสีน้ำเงิน, เขียว, แดงของผู้เล่นคนหนึ่ง ไปยังผู้เล่นอีกคนหนึ่ง',
         'Curse': 'ทำลายการ์ดสีน้ำเงิน 1 ใบ ที่อยู่หน้าผู้เล่นเป้าหมาย',
         'Alibi': 'ลบการ์ดข้อกล่าวหาออกจากผู้เล่นเป้าหมายได้สูงสุด 3 ใบ',
@@ -2449,3 +2450,75 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 });
+
+// --- Custom Tooltip for all elements with title attribute ---
+(function() {
+  let tooltipDiv = null;
+  function showTooltip(e) {
+    const text = this.getAttribute('title');
+    if (!text) return;
+    this.setAttribute('data-original-title', text);
+    this.removeAttribute('title');
+    if (!tooltipDiv) {
+      tooltipDiv = document.createElement('div');
+      tooltipDiv.className = 'custom-tooltip';
+      document.body.appendChild(tooltipDiv);
+    }
+    tooltipDiv.textContent = text;
+    tooltipDiv.classList.add('show');
+    // Position tooltip
+    const rect = this.getBoundingClientRect();
+    const scrollY = window.scrollY || window.pageYOffset;
+    const scrollX = window.scrollX || window.pageXOffset;
+    tooltipDiv.style.top = (rect.bottom + scrollY + 8) + 'px';
+    tooltipDiv.style.left = (rect.left + scrollX + rect.width/2 - tooltipDiv.offsetWidth/2) + 'px';
+  }
+  function hideTooltip(e) {
+    if (this.getAttribute('data-original-title')) {
+      this.setAttribute('title', this.getAttribute('data-original-title'));
+      this.removeAttribute('data-original-title');
+    }
+    if (tooltipDiv) {
+      tooltipDiv.classList.remove('show');
+      tooltipDiv.textContent = '';
+    }
+  }
+  document.addEventListener('mouseover', function(e) {
+    let el = e.target;
+    while (el && el !== document.body) {
+      if (el.hasAttribute('title')) {
+        showTooltip.call(el, e);
+        el.addEventListener('mouseleave', hideTooltip, { once: true });
+        break;
+      }
+      el = el.parentElement;
+    }
+  });
+})();
+
+drawCardButton.setAttribute('title', 'เมื่อจั่วการ์ดแล้วจบเทิร์นทันที');
+playCardButton.setAttribute('title', 'เลือกการ์ดในมือก่อนแล้วกดปุ่มนี้เพื่อใช้การ์ด');
+endTurnButton.setAttribute('title', 'กดปุ่มนี้เพื่อจบเทิร์นหลังเล่นการ์ด');
+
+// Helper: แปลงชื่อเฟสเป็นภาษาไทย
+function getPhaseNameTH(phase) {
+  switch (phase) {
+    case 'DAY': return 'กลางวัน';
+    case 'NIGHT': return 'กลางคืน';
+    case 'PRE_DAWN': return 'ก่อนรุ่งสาง';
+    case 'GAME_OVER': return 'จบเกม';
+    case 'LOBBY': return 'รอล็อบบี้';
+    default: return phase;
+  }
+}
+
+function updateWitchChatTeamList() {
+  const witchTeamDiv = document.getElementById('witch-team-list');
+  if (!witchTeamDiv) return;
+  if (!currentRoomState || !currentRoomState.players) {
+    witchTeamDiv.innerHTML = '';
+    return;
+  }
+  const witches = Object.values(currentRoomState.players).filter(p => p.hasBeenWitch);
+  witchTeamDiv.innerHTML = '<b>ทีมปอบ:</b> ' + witches.map(p => p.isWitch ? `<span style="color:#ff1744;font-weight:bold;">${p.name}</span>` : `<span style="color:#ffd700;">${p.name}</span>`).join(', ');
+}

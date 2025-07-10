@@ -20,6 +20,11 @@ body {
     align-items: center;
     min-height: 100vh;
     font-size: 0.97em;
+    background: #181818 url('Background/background.png') no-repeat center center fixed;
+    background-size: cover;
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+    background-position: center center;
 }
 
 h1 {
@@ -175,7 +180,7 @@ button:disabled {
 }
 
 .message-black { color: #ccc; }
-.message-red { color: #ff4444; }
+.message-red { color: #ffb300; }
 .message-green { color: #66ff66; }
 .message-blue { color: #66ccff; }
 .message-orange { color: #ffa07a; }
@@ -208,65 +213,8 @@ button:disabled {
 }
 
 /* Night Action UI Styles */
-.player-item.selectable-target {
-    cursor: pointer;
-    transition: background-color 0.2s ease, border-color 0.2s ease;
-    border: 2px solid transparent;
-}
-
-.player-item.selectable-target:hover {
-    background-color: #4a4a4a;
-    border-color: #ff7f50;
-}
-
-.player-item.selected-night-target {
-    background-color: #5a5a5a;
-    border: 2px solid #ffe066;
-    box-shadow: 0 0 10px #ffe066;
-}
-
-.night-action-section {
-    background-color: #3a3a3a;
-    padding: 15px;
-    border-radius: 8px;
-    margin-top: 10px;
-    border: 2px solid #ff7f50;
-}
-
-.night-action-section h3 {
-    color: #ff7f50;
-    margin-top: 8px;
-    margin-bottom: 6px;
-}
-
-.night-action-timer {
-    color: #ffe066;
-    font-weight: bold;
-    margin-bottom: 10px;
-}
-
-.night-action-instruction {
-    color: #ccc;
-    margin-bottom: 10px;
-}
-
-#confirm-night-action-button {
-    background-color: #ff4500;
-    color: white;
-    padding: 10px 15px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-weight: bold;
-}
-
-#confirm-night-action-button:hover {
-    background-color: #e63900;
-}
-
-#confirm-night-action-button:disabled {
-    background-color: #555;
-    cursor: not-allowed;
+#night-action-section {
+    display: none !important;
 }
 
 /* Card Display */
@@ -291,32 +239,34 @@ button:disabled {
     cursor: pointer;
     transition: all 0.2s ease;
     text-align: center;
-    min-width: 60px;
-    min-height: 90px;
-    max-width: 80px;
-    max-height: 120px;
+    min-width: 69px;
+    min-height: 104px;
+    max-width: 92px;
+    max-height: 138px;
     position: relative;
     overflow: hidden;
     border: 2px solid transparent;
     flex-shrink: 0;
 }
 
-.card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+.card:hover, .tryal-card:hover {
+    transform: scale(1.3) translateY(-2px);
+    z-index: 10;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.35);
 }
 
 .card.selected {
     border-color: #ffe066;
     box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
     transform: scale(1.05);
+    border-width: 0.5px !important;
 }
 
 /* Card Colors based on server data - no gold border */
 .card-red {
     background: linear-gradient(135deg, #8b0000 0%, #ff4444 100%);
     color: white;
-    border-color: #ff4444;
+    border: 0.5px solid #f44; /* ลดลงอีก 50% */
 }
 .card-green {
     background: linear-gradient(135deg, #006400 0%, #32cd32 100%);
@@ -424,8 +374,8 @@ button:disabled {
 }
 
 .tryal-card {
-    width: 60px;
-    height: 80px;
+    width: 69px;
+    height: 92px;
     background-color: #556B2F;
     border: 2px solid #8FBC8F;
     border-radius: 5px;
@@ -443,7 +393,6 @@ button:disabled {
 }
 
 .tryal-card:hover {
-    transform: scale(1.1);
     border-color: #ffe066;
 }
 
@@ -687,6 +636,13 @@ button:disabled {
     margin-left: 0;
     margin-right: 0;
 }
+#players-board-section > h3 {
+    text-align: center;
+    margin-top: 0.5em;
+    margin-bottom: 0.5em;
+    padding-top: 0;
+    font-size: 1.25em;
+}
 .player-board-card {
   background: #23272b;
   border-radius: 10px;
@@ -726,11 +682,22 @@ button:disabled {
 .effect-label {
   color: #ffd54f !important;
 }
+.effect-label + .effect-card {
+  margin-left: 6px;
+}
 .effect-card {
-  background: #263238;
-  color: #fff;
+  display: block;
+  margin: 4px 0 0 0;
   border: 1px solid #37474f;
-  font-size: 0.9em; /* ลดลง 10% จาก 1em เดิม */
+  border-radius: 8px;
+  font-size: 0.95em;
+  padding: 2px 8px;
+  box-shadow: none;
+  width: fit-content;
+  min-width: 60px;
+}
+.effect-card + .effect-card {
+  margin-left: 6px;
 }
 
 .player-board-tryal-card {
@@ -792,7 +759,7 @@ button:disabled {
   align-items: center;
   background: rgba(30,30,30,0.98);
   color: #fff;
-  font-size: 1.08em;
+  font-size: 0.97em; /* ลดลง 10% */
   padding: 8px 14px;
   border-radius: 10px;
   margin-bottom: 8px;
@@ -809,6 +776,7 @@ button:disabled {
   letter-spacing: 0.01em;
   min-width: 0;
   margin-right: 0;
+  font-size: 0.98em; /* ลดลง 10% */
 }
 .game-state-bar span .icon {
   margin-right: 6px;
@@ -849,10 +817,10 @@ button:disabled {
     margin: 0;
   }
   #leave-room-button {
-    padding: 7px 10px;
-    font-size: 0.98em;
-    height: 2em;
-    margin-left: 8px;
+    font-size: 0.86em;
+    padding: 0 14px;
+    height: 1.76em;
+    min-width: 54px;
   }
   .hand-action-buttons {
     gap: 10px;
@@ -896,23 +864,16 @@ button:disabled {
 }
 
 .hand-action-buttons button {
-    font-size: 1.08em;
-    font-weight: bold;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.10);
-    margin-right: 6px;
-    padding: 12px 22px;
-    transition: background 0.18s, color 0.18s, box-shadow 0.18s;
+    font-size: 0.86em; /* ลดลง 20% */
+    padding: 9px 18px; /* ลดลง 20% */
+    min-width: 80px;
+    min-height: 36px;
 }
-#draw-card-button, #play-card-button {
-    background: #444;
-    color: #fff;
-    border: 2px solid #888;
-}
-#draw-card-button:hover, #play-card-button:hover {
-    background: #ff7f50;
-    color: #fff;
-    border-color: #ff7f50;
+#draw-card-button, #play-card-button, #end-turn-button {
+    font-size: 0.86em !important;
+    padding: 9px 18px !important;
+    min-width: 80px;
+    min-height: 36px;
 }
 #end-turn-button {
     background: #dc3545;
@@ -1163,14 +1124,13 @@ button:disabled {
     color: #fff;
   }
 
-  .card, .player-board-tryal-card, .tryal-card {
-    min-width: 50px;
-    min-height: 75px;
-    max-width: 70px;
-    max-height: 105px;
-    font-size: 0.6em;
-    padding: 4px;
-    margin: 2px;
+  .card, .tryal-card, .player-board-tryal-card {
+    border-width: 0.5px !important;
+    max-width: 101px; /* 84px * 1.2 */
+    min-width: 72px;  /* 60px * 1.2 */
+    max-height: 151px; /* 126px * 1.2 */
+    min-height: 108px; /* 90px * 1.2 */
+    font-size: 0.86em; /* 0.72em * 1.2 */
   }
 
   #player-hand {
@@ -1181,8 +1141,10 @@ button:disabled {
   }
 
   .hand-action-buttons button, #end-turn-button {
-    padding: 8px 12px;
-    font-size: 0.9em;
+    font-size: 0.7em;
+    padding: 7px 14px;
+    min-width: 84px;
+    height: 36px;
   }
 
   .section, .sidebar, .main-game-content, .container {
@@ -1239,20 +1201,20 @@ button:disabled {
 } 
 
 #player-unique-id-display {
-  font-size: 0.6em;
-  color: #444;
+  font-size: 0.55em;
   opacity: 0.25;
+  color: #888;
   user-select: text;
-  letter-spacing: 0.02em;
-  font-family: monospace;
   word-break: break-all;
 }
 
 #leave-room-button {
-  padding: 6px 14px;
-  font-size: 0.95em;
-  border-radius: 4px;
-  margin-left: 10px;
+  font-size: 0.85em;
+  padding: 4px 10px;
+  height: 1.7em;
+  min-width: 54px;
+  float: right;
+  margin-left: 12px;
 }
 
 #room-management-section button {
@@ -1265,6 +1227,19 @@ button:disabled {
 .select-player-popup, #select-player-popup, #accused-tryal-select-popup, #blackcat-tryal-select-popup {
   background: #232323 !important;
   color: #686868;
+} 
+
+.select-player-popup button, #select-player-popup button, #accused-tryal-select-popup button, #blackcat-tryal-select-popup button {
+  background: #ffe066 !important;
+  color: #222 !important;
+  border-radius: 6px !important;
+  font-weight: bold;
+  border: none;
+  box-shadow: 0 0 8px 1px #ffe06655;
+  transition: background 0.18s;
+}
+.select-player-popup button:hover, #select-player-popup button:hover, #accused-tryal-select-popup button:hover, #blackcat-tryal-select-popup button:hover {
+  background: #ffe799 !important;
 } 
 
 /* Responsive card sizing */
@@ -1399,4 +1374,87 @@ button:disabled {
   padding: 0 18px;
   font-size: 1.08em;
   vertical-align: baseline;
+} 
+
+/* Effect label color overrides for specific cards */
+.effect-label[data-effect="Stocks"] {
+  background: #b71c1c;
+  color: #fff !important;
+}
+.effect-label[data-effect="Black Cat"] {
+  background: #b71c1c;
+  color: #fff !important;
+}
+.effect-label[data-effect="Matchmaker"] {
+  background: #b71c1c;
+  color: #fff !important;
+}
+.effect-label[data-effect="Asylum"] {
+  background: #1976d2;
+  color: #fff !important;
+}
+.effect-label[data-effect="Piety"] {
+  background: #1976d2;
+  color: #fff !important;
+} 
+
+.effect-card[data-effect="เครื่องเซ่น"],
+.effect-card[data-effect="พันธนาการ"],
+.effect-card[data-effect="ผูกวิญญาณ"] {
+  background: #b71c1c !important;
+  color: #fff !important;
+  border-color: #b71c1c !important;
+} 
+
+/* Custom tooltip style for all tooltips */
+.custom-tooltip {
+  position: absolute;
+  z-index: 9999;
+  background: rgba(20, 20, 20, 0.98);
+  color: #fff;
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-size: 1em;
+  box-shadow: 0 2px 8px #000a;
+  pointer-events: none;
+  max-width: 320px;
+  word-break: break-word;
+  white-space: pre-line;
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+.custom-tooltip.show {
+  opacity: 1;
+} 
+
+.game-title {
+  font-family: 'Creepster', 'Merriweather', 'Noto Serif Thai', serif;
+  color: #ff3c00;
+  text-align: center;
+  font-size: 2.7em; /* ลดลง 10% จาก 3em */
+  margin-top: 18px; /* ขยับขึ้นบน */
+  margin-bottom: 12px;
+  letter-spacing: 2px;
+  font-weight: bold;
+  text-shadow: 2px 2px 8px #000a;
+} 
+
+#host-controls-game {
+    display: none !important;
+} 
+
+#select-left-tryal-popup button {
+  background: #388e3c !important;
+  color: #fff !important;
+  border: 2px solid #ffe066 !important;
+  border-radius: 8px;
+  width: 80px;
+  height: 120px;
+  font-size: 1.1em;
+  cursor: pointer;
+  margin: 0 6px;
+  transition: background 0.18s;
+}
+#select-left-tryal-popup button:hover {
+  background: #43a047 !important;
 } 
