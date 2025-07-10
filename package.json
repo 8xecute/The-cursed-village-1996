@@ -12,19 +12,30 @@
     "build": "npm run build:client && npm run build:server",
     "build:client": "webpack --mode production",
     "build:server": "echo 'Server build complete'",
+    "build:render": "npm run build:client && npm run optimize:assets",
+    "optimize:assets": "node scripts/optimize-assets.js",
     "lint": "eslint . --ext .js",
     "lint:fix": "eslint . --ext .js --fix",
-    "optimize": "npm run lint:fix && npm run build"
+    "optimize": "npm run lint:fix && npm run build",
+    "postinstall": "npm run build:client",
+    "health": "node scripts/health-check.js"
   },
   "keywords": ["game", "salem", "card-game", "multiplayer"],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
   "dependencies": {
     "express": "^5.1.0",
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",
-    "uuid": "^11.1.0"
+    "uuid": "^11.1.0",
+    "compression": "^1.7.4",
+    "helmet": "^7.1.0",
+    "cors": "^2.8.5"
   },
   "devDependencies": {
     "jest": "^29.7.0",
@@ -36,7 +47,9 @@
     "css-minimizer-webpack-plugin": "^5.0.1",
     "mini-css-extract-plugin": "^2.7.6",
     "supertest": "^6.3.3",
-    "css-loader": "^6.8.1"
+    "css-loader": "^6.8.1",
+    "imagemin": "^8.0.1",
+    "imagemin-pngquant": "^9.0.2"
   },
   "jest": {
     "testEnvironment": "node",

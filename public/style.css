@@ -682,34 +682,55 @@ button:disabled {
     display: flex;
     flex-direction: column;
     gap: 6px;
+    padding-left: 0;
+    padding-right: 0;
+    margin-left: 0;
+    margin-right: 0;
 }
-
 .player-board-card {
-    width: 100%;
-    min-width: unset;
-    max-width: unset;
-    margin-bottom: 0;
+  background: #23272b;
+  border-radius: 10px;
+  margin: 0 0 10px 0;
+  padding: 10px 14px 8px 14px;
+  box-shadow: 0 2px 8px #00000022;
+  color: #f1f1f1;
+  position: relative;
+  font-size: 0.97em; /* ลดลง 10% จาก 1.08em เดิม */
+  border: none;
+  /* เพิ่มเส้นคั่นด้านล่าง */
+  border-bottom: 1.5px solid #444a50;
+  margin-left: 0;
+  margin-right: 0;
+  width: 100%;
+  box-sizing: border-box;
 }
-
+.player-board-card:last-child {
+  border-bottom: none;
+}
 .player-board-header {
-    font-weight: bold;
-    font-size: 1.1em;
-    margin-bottom: 6px;
+  font-weight: bold;
+  font-size: 1.02em; /* ลดลง 10% จาก 1.13em เดิม */
+  color: #ffe082;
+  margin-bottom: 2px;
 }
-
 .player-board-status {
-    font-size: 0.82em;
-    margin-bottom: 4px;
-    padding: 2px 0 2px 0;
-    display: block;
-    white-space: normal;
-    word-break: break-word;
+  color: #b0bec5;
+  font-size: 0.88em; /* ลดลง 10% จาก 0.98em เดิม */
+  margin-bottom: 2px;
 }
-
 .player-board-tryals {
-    display: flex;
-    gap: 6px;
-    margin-top: 6px;
+  color: #90caf9;
+  font-size: 0.9em; /* ลดลง 10% จาก 1em เดิม */
+  margin-bottom: 2px;
+}
+.effect-label {
+  color: #ffd54f !important;
+}
+.effect-card {
+  background: #263238;
+  color: #fff;
+  border: 1px solid #37474f;
+  font-size: 0.9em; /* ลดลง 10% จาก 1em เดิม */
 }
 
 .player-board-tryal-card {
@@ -747,7 +768,7 @@ button:disabled {
 .hand-action-buttons {
     display: flex;
     flex-direction: row;
-    gap: 6px;
+    gap: 24px;
     align-items: center;
     margin-top: 4px;
 }
@@ -761,23 +782,94 @@ button:disabled {
 #end-turn-button {
     padding: 10px 18px;
     font-size: 1em;
+    margin-left: 24px;
 }
 
-.game-state-bar, .deck-info-bar {
-    display: flex;
-    flex-direction: row;
-    gap: 16px;
-    font-size: 0.95em;
-    background: #333;
-    color: #eee;
-    border-radius: 6px;
-    padding: 4px 10px;
-    margin-bottom: 4px;
-    align-items: center;
+/* --- Game State Bar --- */
+.game-state-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  background: rgba(30,30,30,0.98);
+  color: #fff;
+  font-size: 1.08em;
+  padding: 8px 14px;
+  border-radius: 10px;
+  margin-bottom: 8px;
+  gap: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
 }
-
-.game-state-bar span, .deck-info-bar span {
-    white-space: nowrap;
+.game-state-bar span {
+  display: flex;
+  align-items: center;
+  background: rgba(60,60,60,0.7);
+  border-radius: 6px;
+  padding: 3px 10px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  min-width: 0;
+  margin-right: 0;
+}
+.game-state-bar span .icon {
+  margin-right: 6px;
+  font-size: 1.1em;
+  opacity: 0.85;
+}
+.game-state-bar #current-turn-player-display {
+  background: #ffe699;
+  color: #222;
+  border-radius: 6px;
+  padding: 2px 8px;
+  font-weight: bold;
+  margin-left: 4px;
+}
+@media (max-width: 600px) {
+  .game-state-bar {
+    font-size: 0.92em;
+    padding: 4px 3px;
+    gap: 4px;
+  }
+  .game-state-bar span {
+    padding: 2px 6px;
+    border-radius: 5px;
+    margin: 0;
+    font-size: 1em;
+  }
+  #name-section, #name-section h2, #name-section p, #name-section span, #leave-room-button {
+    font-size: 0.92em;
+    gap: 6px;
+  }
+  #name-section {
+    padding: 2px 2px;
+    gap: 6px;
+  }
+  #name-section p, #name-section span {
+    padding: 2px 6px;
+    border-radius: 5px;
+    margin: 0;
+  }
+  #leave-room-button {
+    padding: 7px 10px;
+    font-size: 0.98em;
+    height: 2em;
+    margin-left: 8px;
+  }
+  .hand-action-buttons {
+    gap: 10px;
+  }
+  .hand-action-buttons button {
+    padding: 7px 10px;
+    font-size: 0.98em;
+  }
+  .player-board-card {
+    padding: 7px 7px 6px 7px;
+    font-size: 0.92em;
+  }
+  .section, .sidebar, .main-game-content, .container {
+    font-size: 0.92em;
+    padding: 4px 4px;
+    gap: 6px;
+  }
 }
 
 /* Popup animations */
@@ -1268,4 +1360,43 @@ button:disabled {
   color: #fff;
   border: 1.25px solid #888;
   box-shadow: 0 0 4px #2228;
+} 
+
+.player-board-card.current-turn {
+  background: #181818;
+  color: #ffe066 !important;
+  border: 2.5px solid #ffe699;
+  box-shadow: 0 0 8px 1px #ffe06655;
+  position: relative;
+}
+.player-board-card.current-turn .player-board-header {
+  color: #ffe066;
+}
+.player-board-card.current-turn .effect-label, .player-board-card.current-turn .effect-card {
+  background: #232323;
+  color: #ffe066 !important;
+}
+@media (max-width: 600px) {
+  .player-board-card.current-turn {
+    background: #222;
+    border-width: 2px;
+    box-shadow: 0 0 4px 1px #ffe06699;
+  }
+} 
+
+#name-section, #name-section h2, #name-section p, #name-section span, #leave-room-button {
+  font-size: 0.97em;
+  vertical-align: baseline;
+}
+#name-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+#leave-room-button {
+  margin-left: 18px;
+  height: 2.2em;
+  padding: 0 18px;
+  font-size: 1.08em;
+  vertical-align: baseline;
 } 

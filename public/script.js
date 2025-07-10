@@ -1467,7 +1467,20 @@ function updatePlayersBoardGrid(roomState, myUniqueId) {
         return;
     }
     list.innerHTML = '';
-    const playersInOrder = Object.values(roomState.players).sort((a, b) => a.name.localeCompare(b.name));
+    // --- เรียงลำดับผู้เล่นตามลำดับเทิร์น ---
+    const allPlayers = Object.values(roomState.players);
+    let playersInOrder = [];
+    if (roomState.currentTurnPlayerUniqueId) {
+        // หา index ของ current turn
+        const idx = allPlayers.findIndex(p => p.uniqueId === roomState.currentTurnPlayerUniqueId);
+        if (idx !== -1) {
+            playersInOrder = allPlayers.slice(idx).concat(allPlayers.slice(0, idx));
+        } else {
+            playersInOrder = allPlayers;
+        }
+    } else {
+        playersInOrder = allPlayers;
+    }
     playersInOrder.forEach(player => {
         const card = document.createElement('div');
         card.className = 'player-board-card' + (!player.alive ? ' dead' : '') + (roomState.currentTurnPlayerUniqueId === player.uniqueId ? ' current-turn' : '');
@@ -1506,26 +1519,8 @@ function updatePlayersBoardGrid(roomState, myUniqueId) {
             });
         }
         status += '</div>';
-        // Tryal Cards
-        let tryals = `<div class='player-board-tryals'>`;
-        if (player.tryalCards && Array.isArray(player.tryalCards)) {
-            player.tryalCards.forEach((cardObj, idx) => {
-                const revealed = player.revealedTryalCardIndexes && player.revealedTryalCardIndexes.includes(idx);
-                let cardClass = 'player-board-tryal-card';
-                let cardThemeClass = '';
-                if (revealed) {
-                    if (cardObj.name === 'Witch') {
-                        cardThemeClass = ' card-theme card-red';
-                    } else if (cardObj.name === 'Constable') {
-                        cardThemeClass = ' card-theme card-blue';
-                    } else {
-                        cardThemeClass = ' card-theme card-black';
-                    }
-                }
-                tryals += `<div class='${cardClass}${revealed ? ' revealed' : ''}${cardThemeClass}' title='${displayCardDescription(cardObj.name)}'>${revealed ? displayCardName(cardObj.name) : 'Card ' + (idx + 1)}</div>`;
-            });
-        }
-        tryals += '</div>';
+        // Tryal Cards (show only count, not images)
+        let tryals = `<div class='player-board-tryals'>ชีวิตที่เหลือ: <b>${player.tryalCardCount}</b> ใบ</div>`;
         card.innerHTML = header + status + tryals;
         list.appendChild(card);
     });
@@ -1844,8 +1839,8 @@ function populateNightActionPlayersList(actionType) {
     // Filter players based on action type
     let eligiblePlayers = [];
     if (actionType === 'witch') {
-        // Witches can target any alive player who does NOT have Asylum
-        eligiblePlayers = Object.values(currentRoomState.players).filter(player => player.alive && !(player.inPlayCards && player.inPlayCards.some(cardName => cardName === 'Asylum')));
+        // Witches can target any alive player who does NOT have Asylum and ไม่ใช่ตัวเอง
+        eligiblePlayers = Object.values(currentRoomState.players).filter(player => player.alive && player.uniqueId !== myUniqueId && !(player.inPlayCards && player.inPlayCards.some(cardName => cardName === 'Asylum')));
     } else if (actionType === 'constable') {
         // Constables can target any player except themselves, and only alive
         eligiblePlayers = Object.values(currentRoomState.players).filter(player => player.uniqueId !== myUniqueId && player.alive);

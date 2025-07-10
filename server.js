@@ -2,16 +2,68 @@
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
-const { v4: uuidv4 } = require('uuid'); // For unique player IDs (Ensure you 'npm install uuid')
+const { v4: uuidv4 } = require('uuid');
+const compression = require('compression');
+const helmet = require('helmet');
+const cors = require('cors');
+const path = require('path');
 const { getGameCardsForPlayerCount } = require('./src/gameLogic');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
 
-app.use(express.static('public')); // Serve static files from the 'public' directory
-
+// Production optimizations for Render
+const isProduction = process.env.NODE_ENV === 'production';
 const PORT = process.env.PORT || 3000;
+
+// Security and performance middleware
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      scriptSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "https:"],
+      connectSrc: ["'self'", "wss:", "ws:"]
+    }
+  }
+}));
+app.use(cors());
+app.use(compression());
+
+// Serve static files with caching for production
+if (isProduction) {
+  app.use(express.static('dist', {
+    maxAge: '1y',
+    etag: true,
+    lastModified: true
+  }));
+} else {
+  app.use(express.static('public'));
+}
+
+// Health check endpoint for Render
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    memory: process.memoryUsage(),
+    rooms: Object.keys(rooms).length
+  });
+});
+
+// Socket.IO with production optimizations
+const io = new Server(server, {
+  cors: {
+    origin: isProduction ? process.env.ALLOWED_ORIGINS?.split(',') : "*",
+    methods: ["GET", "POST"]
+  },
+  transports: ['websocket', 'polling'],
+  pingTimeout: 60000,
+  pingInterval: 25000
+});
 
 // --- Game State Variables ---
 const rooms = {}; // Stores all active rooms and their game states
@@ -49,8 +101,8 @@ const GAME_CARDS = [
     ...Array(2).fill({ name: 'Arson', type: 'Action', color: 'Green', description: 'ทิ้งการ์ดในมือทั้งหมดของผู้เล่นเป้าหมายไปที่กองทิ้ง' }),
     // Permanent Cards (Blue)
     ...Array(1).fill({ name: 'Black Cat', type: 'Permanent', color: 'Blue', description: 'หากการ์ดนี้อยู่กับผู้เล่นคนไหน จะต้องเริ่มเล่นเป็นคนแรก. หากมีผู้เล่นคนไหนเปิดได้การ์ดพิธีเซ่นไหว้, ผู้เล่นที่มีการ์ดเครื่องเซ่นจะต้องเปิดการ์ดชีวิต 1 ใบ.' }),
-    ...Array(2).fill({ name: 'Asylum', type: 'Permanent', color: 'Blue', description: 'เลือกผู้เล่นที่จะป้องกันการถูกฆ่าในรอบกลางคืน' }),
-    ...Array(2).fill({ name: 'Piety', type: 'Permanent', color: 'Blue', description: 'เลือกผู้เล่นที่ไม่สามารถถูกโจมตีด้วยการ์ดสีแดงได้' }),
+    ...Array(1).fill({ name: 'Asylum', type: 'Permanent', color: 'Blue', description: 'เลือกผู้เล่นที่จะป้องกันการถูกฆ่าในรอบกลางคืน' }),
+    ...Array(1).fill({ name: 'Piety', type: 'Permanent', color: 'Blue', description: 'เลือกผู้เล่นที่ไม่สามารถถูกโจมตีด้วยการ์ดสีแดงได้' }),
     ...Array(2).fill({ name: 'Matchmaker', type: 'Permanent', color: 'Blue', description: 'เลือกวางการ์ดหน้าผู้เล่นเป้าหมาย (ผู้เล่น 2 คนที่มีการ์ดนี้อยู่ตรงหน้า หากผู้เล่นคนใดคนหนึ่งตาย อีกคนต้องตายตาม)' }),
     // Event Cards (Black)
     ...Array(1).fill(CARD_TEMPLATES.conspiracy), // 1 Conspiracy card
@@ -413,7 +465,7 @@ function changePhase(roomName, forcedNextPhase = null) {
                 io.to(constable.id).emit('prompt constable action');
             });
                     } else {
-            // ไม่มีปอบ ไม่มีสายตรวจ ข้ามไป PRE_DAWN
+            // ไม่มีปอบ ไม่มีหมอผี ข้ามไป PRE_DAWN
             changePhase(roomName, 'PRE_DAWN');
         }
     } else if (nextPhase === 'DAY') {
@@ -1312,7 +1364,7 @@ function resolveNightActions(roomName) {
                 if (hasAsylum) {
                     sendGameMessage(room.name, `${targetPlayer.name} ได้รับการปกป้องจาก Asylum!`, 'green', true);
                 } else if (wasProtectedByConstable) {
-                    sendGameMessage(room.name, `${targetPlayer.name} ได้รับการปกป้องจากสายตรวจ!`, 'green', true);
+                    sendGameMessage(room.name, `${targetPlayer.name} ได้รับการปกป้องจากหมอผี!`, 'green', true);
                 } else if (confessedDuringNight) {
                     sendGameMessage(room.name, `${targetPlayer.name} ได้รับการปกป้องจากการสารภาพบาป!`, 'green', true);
                 }
@@ -1345,7 +1397,7 @@ function resolveNightActions(roomName) {
         // If constable saved someone who was killed, revive them
         const targetPlayer = room.players[chosenToSaveUniqueId];
         targetPlayer.alive = true;
-        sendGameMessage(room.name, `${targetPlayer.name} ได้รับการช่วยเหลือจากสายตรวจ!`, 'green', true);
+        sendGameMessage(room.name, `${targetPlayer.name} ได้รับการช่วยเหลือจากหมอผี!`, 'green', true);
     }
 
     checkWinCondition(room);
@@ -1913,10 +1965,10 @@ io.on('connection', (socket) => {
             if (!targetUniqueId) {
                 sendGameMessage(room.name, `${player.name} ไม่ได้เลือกสังหารใครในคืนนี้.`, 'orange');
                 room.playersWhoActedAtNight['witchKill'] = null;
-                // ถ้ามีสายตรวจที่ยังไม่ได้เลือก ให้รอ
+                // ถ้ามีหมอผีที่ยังไม่ได้เลือก ให้รอ
                 const constables = getAlivePlayers(room).filter(p => p.isConstable);
                 if (constables.length > 0 && !room.playersWhoActedAtNight['constableSave'] && room.playersWhoActedAtNight['constableSave'] !== null) {
-                    sendGameMessage(room.name, 'สายตรวจ, เตรียมตัวใช้ค้อนเพื่อปกป้องผู้เล่น.', 'purple', true);
+                    sendGameMessage(room.name, 'หมอผี, เตรียมตัวใช้ค้อนเพื่อปกป้องผู้เล่น.', 'purple', true);
                     constables.forEach(constable => {
                         io.to(constable.id).emit('prompt constable action');
                     });
@@ -1931,6 +1983,10 @@ io.on('connection', (socket) => {
                 return;
             }
             if (targetUniqueId && room.players[targetUniqueId]?.alive) {
+                if (targetUniqueId === player.uniqueId) {
+                    io.to(socket.id).emit('game message', 'คุณไม่สามารถเลือกฆ่าตัวเองได้.', 'red');
+                    return;
+                }
                 room.playersWhoActedAtNight['witchKill'] = targetUniqueId;
                 io.to(socket.id).emit('game message', `คุณได้เลือก ${room.players[targetUniqueId].name} เป็นเป้าหมายการสังหาร.`, 'green');
                 // แจ้งเตือนทีมปอบทุกคนว่าเลือกฆ่าใคร (เฉพาะปอบเห็น)
@@ -1938,10 +1994,18 @@ io.on('connection', (socket) => {
                 witches.forEach(witchPlayer => {
                     io.to(witchPlayer.id).emit('game message', `คืนนี้ทีมปอบเลือกจะฆ่า: ${room.players[targetUniqueId].name}`, 'darkred', true);
                 });
-                // ถ้ามีสายตรวจที่ยังไม่ได้เลือก ให้รอ
+                // เพิ่มข้อความนี้ใน gameMessageHistory เฉพาะปอบ (ไม่ส่ง global)
+                if (!room.witchNightMessages) room.witchNightMessages = [];
+                room.witchNightMessages.push({
+                    message: `คืนนี้ทีมปอบเลือกจะฆ่า: ${room.players[targetUniqueId].name}`,
+                    color: 'darkred',
+                    bold: true,
+                    timestamp: Date.now()
+                });
+                // ถ้ามีหมอผีที่ยังไม่ได้เลือก ให้รอ
                 const constables = getAlivePlayers(room).filter(p => p.isConstable);
                 if (constables.length > 0 && !room.playersWhoActedAtNight['constableSave'] && room.playersWhoActedAtNight['constableSave'] !== null) {
-                    sendGameMessage(room.name, 'สายตรวจ, เตรียมตัวใช้ค้อนเพื่อปกป้องผู้เล่น.', 'purple', true);
+                    sendGameMessage(room.name, 'หมอผี, เตรียมตัวใช้ค้อนเพื่อปกป้องผู้เล่น.', 'purple', true);
                     constables.forEach(constable => {
                         io.to(constable.id).emit('prompt constable action');
                     });
@@ -2075,7 +2139,7 @@ io.on('connection', (socket) => {
                     sendGameMessage(room.name, `${targetPlayer.name} คือปอบ!`, 'darkred', true);
                 } else if (selectedCard.name === 'Constable') {
                     targetPlayer.isConstable = true;
-                    sendGameMessage(room.name, `${targetPlayer.name} คือสายตรวจ!`, 'green', true);
+                    sendGameMessage(room.name, `${targetPlayer.name} คือหมอผี!`, 'green', true);
                 }
                 
                 // Reset accusation points and discard RED cards
@@ -2380,7 +2444,7 @@ function revealTryalCard(roomName, playerUniqueId, cardIndex) {
         }
     } else if (revealedCard.name === 'Constable') {
         player.isConstable = true; // Confirm Constable status
-        sendGameMessage(room.name, `${player.name} คือสายตรวจ!`, 'green', true);
+        sendGameMessage(room.name, `${player.name} คือหมอผี!`, 'green', true);
     }
 
     // Clear the forced reveal state so the game can continue
@@ -2396,16 +2460,15 @@ function handlePlayerDeath(room, player) {
     player.alive = false;
     // แจ้งเตือนว่าผู้เล่นตาย
     sendGameMessage(room.name, `${player.name} ตายแล้ว!`, 'red', true);
-    // Reveal all Tryal Cards
+    // Reveal all Tryal Cards (เปิดการ์ดชีวิตทั้งหมด)
     player.revealedTryalCardIndexes = new Set(player.tryalCards.map((_, idx) => idx));
-    // Discard all cards in hand
+    // ทิ้งการ์ดในมือทั้งหมดลงกองทิ้ง
     if (player.hand && player.hand.length > 0) {
         room.discardPile.push(...player.hand);
         player.hand = [];
     }
-    // Discard all inPlayCards (Permanent/Blue)
+    // ทิ้งการ์ด inPlayCards (Permanent/Blue)
     if (player.inPlayCards && player.inPlayCards.length > 0) {
-        // แยกการ์ดสีน้ำเงินออกจากการ์ดอื่น
         const blueCards = player.inPlayCards.filter(card => card.color === 'Blue');
         const otherCards = player.inPlayCards.filter(card => card.color !== 'Blue');
         if (otherCards.length > 0) {
@@ -2426,6 +2489,7 @@ function handlePlayerDeath(room, player) {
         }
         player.inPlayCards = [];
     }
+    updateBlackCatHolder(room);
     emitRoomState(room.name); // อัปเดตสถานะผู้เล่น
 }
 
@@ -2436,7 +2500,69 @@ function allWitchesActed(room) {
     return witches.length === 0 || room.playersWhoActedAtNight['witchKill'] !== undefined;
 }
 
+// Helper: Sync blackCatHolder with actual card holder
+function updateBlackCatHolder(room) {
+    const holder = Object.values(room.players).find(p => p.inPlayCards && p.inPlayCards.some(card => card.name === 'Black Cat'));
+    room.blackCatHolder = holder ? holder.uniqueId : null;
+}
+
+// Memory monitoring for production
+if (isProduction) {
+  setInterval(() => {
+    const memUsage = process.memoryUsage();
+    console.log('Memory usage:', {
+      rss: `${Math.round(memUsage.rss / 1024 / 1024)}MB`,
+      heapUsed: `${Math.round(memUsage.heapUsed / 1024 / 1024)}MB`,
+      heapTotal: `${Math.round(memUsage.heapTotal / 1024 / 1024)}MB`,
+      external: `${Math.round(memUsage.external / 1024 / 1024)}MB`
+    });
+  }, 300000); // Log every 5 minutes
+}
+
+// Graceful shutdown handling
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received, shutting down gracefully...');
+  let exited = false;
+  server.close(() => {
+    if (!exited) {
+      exited = true;
+      console.log('Server closed');
+      process.exit(0);
+    }
+  });
+  setTimeout(() => {
+    if (!exited) {
+      exited = true;
+      console.log('Force exit after timeout.');
+      process.exit(1);
+    }
+  }, 10000);
+});
+
+process.on('SIGINT', () => {
+  console.log('SIGINT received, shutting down gracefully...');
+  let exited = false;
+  server.close(() => {
+    if (!exited) {
+      exited = true;
+      console.log('Server closed');
+      process.exit(0);
+    }
+  });
+  setTimeout(() => {
+    if (!exited) {
+      exited = true;
+      console.log('Force exit after timeout.');
+      process.exit(1);
+    }
+  }, 10000);
+});
+
 server.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-    console.log(`Visit http://localhost:${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`🌍 Environment: ${isProduction ? 'Production' : 'Development'}`);
+  console.log(`📊 Health check available at: http://localhost:${PORT}/health`);
+  if (!isProduction) {
+    console.log(`🎮 Visit http://localhost:${PORT}`);
+  }
 });
