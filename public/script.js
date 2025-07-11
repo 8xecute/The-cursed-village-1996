@@ -10,6 +10,119 @@ function uuidv4() {
 
 const socket = io();
 
+// --- Background Music Controls ---
+const backgroundMusic = document.getElementById('background-music');
+const toggleMusicBtn = document.getElementById('toggle-music-btn');
+const musicIcon = document.getElementById('music-icon');
+const musicVolumeSlider = document.getElementById('music-volume-slider');
+const musicVolumeLabel = document.getElementById('music-volume-label');
+
+let isMusicPlaying = false;
+let currentVolume = 0.3; // Start at 30% volume
+let hasUserStartedMusic = false; // เพิ่ม flag นี้
+let userPausedMusic = false; // เพิ่ม flag นี้
+
+function updateMusicUI() {
+    if (isMusicPlaying) {
+        musicIcon.textContent = '⏸️'; // แสดง pause icon เมื่อเล่นอยู่
+    } else {
+        musicIcon.textContent = '▶️'; // แสดง play icon เมื่อหยุด
+    }
+    musicVolumeLabel.textContent = `${Math.round(currentVolume * 100)}%`;
+    musicVolumeSlider.value = Math.round(currentVolume * 100);
+}
+
+toggleMusicBtn.addEventListener('click', () => {
+    if (isMusicPlaying) {
+        backgroundMusic.pause();
+        isMusicPlaying = false;
+        userPausedMusic = true; // ผู้ใช้ pause เอง
+    } else {
+        backgroundMusic.play().catch(()=>{});
+        isMusicPlaying = true;
+        userPausedMusic = false; // ผู้ใช้ play เอง
+    }
+    updateMusicUI();
+});
+
+// Slider event
+musicVolumeSlider.addEventListener('input', (e) => {
+    setMusicVolume(e.target.value / 100);
+});
+
+function setMusicVolume(vol) {
+    currentVolume = Math.max(0, Math.min(1, vol));
+    backgroundMusic.volume = currentVolume;
+    updateMusicUI();
+}
+
+// --- Play lobby music on page load ---
+// window.addEventListener('DOMContentLoaded', () => {
+//     backgroundMusic.src = 'audio/lobby-music.mp3';
+//     setMusicVolume(0.3);
+//     backgroundMusic.play().then(()=>{
+//         isMusicPlaying = true;
+//         updateMusicUI();
+//     }).catch(() => {
+//         // Autoplay blocked, wait for user interaction
+//         isMusicPlaying = false;
+//         updateMusicUI();
+//     });
+// });
+
+// --- Play lobby music on room creation ---
+socket.on('room joined', (roomName) => {
+    currentRoomName = roomName;
+    currentRoomDisplay.textContent = roomName || 'ไม่มี';
+    roomManagementSection.style.display = 'none';
+    roomLobbySection.style.display = 'block';
+    gameSection.style.display = 'none'; // Ensure game section is hidden initially
+    leaveRoomButton.style.display = 'block';
+    // ไม่ต้องสั่งเปิดเพลงหรือเปลี่ยน src ที่นี่อีก ปล่อยให้ระบบเพลงจัดการเองตามเฟส
+});
+
+// --- Music for different game phases ---
+const phaseMusic = {
+    'LOBBY': 'audio/lobby-music.mp3',
+    'DAY': 'audio/day-music.mp3', 
+    'NIGHT': 'audio/night-music.mp3',
+    'PRE_DAWN': 'audio/predawn-music.mp3',
+    'GAME_OVER': 'audio/gameover-music.mp3'
+};
+
+let lastMusicPhase = null;
+
+function changePhaseMusic(phase) {
+    if (phase === lastMusicPhase) return;
+    lastMusicPhase = phase;
+    const musicFile = phaseMusic[phase];
+    if (musicFile) {
+        const isSameSrc = backgroundMusic.src && backgroundMusic.src.includes(musicFile);
+        const isActuallyPlaying = !backgroundMusic.paused && !backgroundMusic.ended && backgroundMusic.currentTime > 0;
+        if (!isSameSrc) {
+            backgroundMusic.src = musicFile;
+        }
+        // เฟสที่ต้องบังคับเปิดเพลง
+        if (["DAY", "NIGHT", "PRE_DAWN"].includes(phase)) {
+            backgroundMusic.play().then(() => {
+                isMusicPlaying = true;
+                userPausedMusic = false;
+                updateMusicUI();
+            }).catch(()=>{});
+        } else if (hasUserStartedMusic && !userPausedMusic) {
+            if (!isActuallyPlaying) {
+                backgroundMusic.play().then(() => {
+                    isMusicPlaying = true;
+                    updateMusicUI();
+                }).catch(()=>{});
+            }
+        } else {
+            isMusicPlaying = false;
+            updateMusicUI();
+        }
+    }
+}
+
 // --- UI Elements ---
 const nameInputContainer = document.getElementById('name-input-container');
 const nameInput = document.getElementById('name-input');
@@ -156,12 +269,18 @@ socket.on('room joined', (roomName) => {
     roomLobbySection.style.display = 'block';
     gameSection.style.display = 'none'; // Ensure game section is hidden initially
     leaveRoomButton.style.display = 'block';
+    // ไม่ต้องสั่งเปิดเพลงหรือเปลี่ยน src ที่นี่อีก ปล่อยให้ระบบเพลงจัดการเองตามเฟส
 });
 
 socket.on('room state update', (roomState) => {
     console.log('Room state updated:', roomState);
     currentRoomState = roomState; // Store room state for night actions
     updateTryalCardDisplay(); // Always update tryal card display on room state update
+    
+    // Change background music based on game phase
+    if (roomState.currentPhase) {
+        changePhaseMusic(roomState.currentPhase);
+    }
     // Update lobby/game UI based on roomState
     lobbyRoomName.textContent = roomState.name;
     lobbyPlayerCount.textContent = roomState.playerCount;
@@ -401,6 +520,11 @@ socket.on('room state update', (roomState) => {
         roomLobbySection.style.display = 'block';
     }
     updateWitchChatTeamList();
+
+    // --- Hide overlay on room state update if not in LOBBY phase ---
+    if (window.hideMusicOverlayIfNeeded) {
+        window.hideMusicOverlayIfNeeded(roomState.currentPhase);
+    }
 });
 
 socket.on('game message', (message, color = 'black', bold = false) => {
@@ -478,7 +602,18 @@ socket.on('update hand', (hand) => {
     updateHandDisplay(myCurrentHand);
 });
 
+// --- Track previous tryal cards for Witch popup detection ---
+let prevTryalCards = [];
+
 socket.on('update tryal cards initial', (tryalCards) => {
+    // Detect if a Witch card was newly received (after Conspiracy)
+    const prevWitchCount = prevTryalCards.filter(card => card.name === 'Witch').length;
+    const newWitchCount = tryalCards.filter(card => card.name === 'Witch').length;
+    if (newWitchCount > prevWitchCount) {
+        // Show popup (fromName can be improved if you track the sender)
+        showWitchPopup('...');
+    }
+    prevTryalCards = tryalCards.slice();
     myTryalCards = tryalCards;
     updateTryalCardDisplay();
     // Also update witch chat visibility in case hasBeenWitch changed
@@ -1803,7 +1938,9 @@ function showConfessPopup(tryalCards) {
     tryalCards.forEach((card, i) => {
         const btn = document.createElement('button');
         btn.textContent = displayCardName(card.name);
-        btn.style = 'width:80px;height:120px;font-size:1.1em;background:#556B2F;color:#fff;border:2px solid #ffd700;border-radius:8px;cursor:pointer;';
+        btn.style = 'width:80px;height:120px;font-size:1.1em;background:linear-gradient(135deg, #3a6351 0%, #5c946e 100%);color:#fff;border:2.5px solid #b2b2b2;border-radius:10px;cursor:pointer;box-shadow:0 4px 16px #2228;margin:0 6px;transition:background 0.18s,box-shadow 0.18s;';
+        btn.onmouseover = () => { btn.style.background = 'linear-gradient(135deg, #49796b 0%, #7bb992 100%)'; btn.style.boxShadow = '0 6px 24px #49796b55'; };
+        btn.onmouseout = () => { btn.style.background = 'linear-gradient(135deg, #3a6351 0%, #5c946e 100%)'; btn.style.boxShadow = '0 4px 16px #2228'; };
         btn.onclick = () => {
             socket.emit('confess during night', i);
             if (document.body.contains(popup)) document.body.removeChild(popup);
@@ -2521,4 +2658,64 @@ function updateWitchChatTeamList() {
   }
   const witches = Object.values(currentRoomState.players).filter(p => p.hasBeenWitch);
   witchTeamDiv.innerHTML = '<b>ทีมปอบ:</b> ' + witches.map(p => p.isWitch ? `<span style="color:#ff1744;font-weight:bold;">${p.name}</span>` : `<span style="color:#ffd700;">${p.name}</span>`).join(', ');
+}
+
+// --- Overlay interaction for music start ---
+document.addEventListener('DOMContentLoaded', () => {
+    const overlay = document.getElementById('music-overlay');
+    const enterBtn = document.getElementById('enter-village-btn');
+    // แสดง overlay เฉพาะหน้าแรก (ก่อน join/create lobby)
+    let hasEnteredVillage = false;
+    if (overlay) {
+        // Hide overlay permanently afterเข้า lobby ครั้งแรก
+        window.hideMusicOverlayIfNeeded = function(phase) {
+            if (phase && phase !== 'LOBBY') {
+                overlay.style.display = 'none';
+                hasEnteredVillage = true;
+            }
+        };
+    }
+    if (overlay && enterBtn) {
+        enterBtn.addEventListener('click', () => {
+            overlay.style.opacity = '0';
+            setTimeout(() => overlay.style.display = 'none', 500);
+            // บังคับเปิดเพลง lobby-music แค่ตอนนี้เท่านั้น (ก่อนเข้า lobby/game)
+            if (!isMusicPlaying) {
+                if (!backgroundMusic.src || !backgroundMusic.src.includes('lobby-music.mp3')) {
+                    backgroundMusic.src = 'audio/lobby-music.mp3';
+                }
+                backgroundMusic.play().then(()=>{
+                    isMusicPlaying = true;
+                    hasUserStartedMusic = true; // เซ็ต flag ว่า user เคยกดเริ่มเพลงเองแล้ว
+                    updateMusicUI();
+                }).catch(()=>{});
+            } else {
+                hasUserStartedMusic = true; // เซ็ต flag แม้จะเล่นอยู่แล้ว
+            }
+            hasEnteredVillage = true;
+        });
+    }
+    // ถ้า reload แล้วอยู่ใน lobby/game ไม่ต้องแสดง overlay
+    socket.on('room state update', (roomState) => {
+        if (window.hideMusicOverlayIfNeeded) {
+            window.hideMusicOverlayIfNeeded(roomState.currentPhase);
+        }
+    });
+});
+
+// --- Witch Card Popup Logic ---
+function showWitchPopup(fromName) {
+    // ถ้าเคยกดเข้าใจแล้ว ไม่ต้องแสดง popup อีก
+    if (localStorage.getItem('witchPopupAcknowledged') === '1') return;
+    const popup = document.getElementById('witch-popup');
+    const desc = document.getElementById('witch-popup-desc');
+    const closeBtn = document.getElementById('witch-popup-close');
+    if (popup && desc && closeBtn) {
+        desc.innerHTML = `คุณได้รับการ์ดปอบจาก <b>${fromName}</b><br>คุณจะกลายเป็นทีมปอบ จะต้องช่วยเหลือปอบในการกำจัดชาวบ้าน หรือปกป้องการ์ดปอบเพื่อแพร่เชื้อ`;
+        popup.style.display = 'flex';
+        closeBtn.onclick = () => {
+            popup.style.display = 'none';
+            localStorage.setItem('witchPopupAcknowledged', '1');
+        };
+    }
 }

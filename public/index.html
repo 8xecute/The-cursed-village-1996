@@ -12,13 +12,80 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1 class="game-title">หมู่บ้านต้องคำสาป 1996</h1>
+    <h1 class="game-title">หมู่บ้านต้องสาป 1996</h1>
+    
+    <!-- Background Music Controls -->
+    <div class="music-controls">
+        <button id="toggle-music-btn" class="music-btn">
+          <span class="music-icon" id="music-icon">🔇</span>
+        </button>
+        <input id="music-volume-slider" type="range" min="0" max="100" value="30" step="1" class="music-slider">
+        <span id="music-volume-label" class="music-volume-label">30%</span>
+    </div>
+    
     <div class="top-buttons">
       <button id="show-cards-btn" class="rules-btn">อธิบายการ์ด</button>
       <button id="show-rules-btn" class="rules-btn">กฎของเกม</button>
     </div>
 
     <style>
+      .music-controls {
+        position: fixed;
+        top: 16px;
+        left: 16px;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 10px;
+        z-index: 1000;
+      }
+      .music-btn {
+        background: rgba(0, 0, 0, 0.7);
+        color: white;
+        border: 2px solid #666;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        cursor: pointer;
+        font-size: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+        padding: 0;
+        position: relative;
+      }
+      .music-btn:hover {
+        background: rgba(0, 0, 0, 0.9);
+        border-color: #999;
+        transform: scale(1.1);
+      }
+      .music-btn.active {
+        background: rgba(255, 165, 0, 0.8);
+        border-color: #ffa500;
+      }
+      .music-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+        font-size: 18px;
+        margin: 0 auto;
+      }
+      .music-slider {
+        width: 90px;
+        accent-color: #ffa500;
+        vertical-align: middle;
+      }
+      .music-volume-label {
+        color: #fff;
+        font-size: 1em;
+        min-width: 36px;
+        text-align: right;
+        margin-left: 2px;
+        font-family: 'Montserrat', sans-serif;
+      }
       .top-buttons {
         position: fixed;
         top: 16px;
@@ -29,6 +96,23 @@
         z-index: 1000;
       }
       @media (max-width: 600px) {
+        .music-controls {
+          position: static !important;
+          width: 100vw;
+          justify-content: center;
+          margin-top: 8px;
+          margin-bottom: 8px;
+          gap: 8px;
+        }
+        .music-btn {
+          position: static !important;
+          width: 35px !important;
+          height: 35px !important;
+          font-size: 16px !important;
+        }
+        .music-slider {
+          width: 70px;
+        }
         .top-buttons {
           position: static !important;
           width: 100vw;
@@ -55,6 +139,101 @@
         }
       }
     </style>
+    
+    <!-- Interactive Overlay for Music Start -->
+    <div id="music-overlay" class="music-overlay">
+      <div class="music-overlay-content">
+        <div class="moon-glow">🌕</div>
+        <h2 class="overlay-title">หมู่บ้านต้องสาป 1996</h2>
+        <p class="overlay-desc">เพลงจะเล่นอัตโนมัติหลังกดปุ่มเข้าสู่หมู่บ้านต้องสาป<br>สามารถปิดเสียงได้ที่มุมซ้ายบน</p>
+        <button id="enter-village-btn" class="enter-village-btn">เข้าสู่หมู่บ้านต้องสาป</button>
+      </div>
+    </div>
+
+    <style>
+      .music-overlay {
+        position: fixed;
+        z-index: 3000;
+        left: 0; top: 0; width: 100vw; height: 100vh;
+        background: rgba(10,10,20,0.92);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: opacity 0.5s;
+      }
+      .music-overlay-content {
+        text-align: center;
+        color: #fff;
+        background: rgba(30,20,20,0.7);
+        border-radius: 18px;
+        padding: 48px 32px 36px 32px;
+        box-shadow: 0 0 32px 8px #000a;
+        min-width: 320px;
+        max-width: 90vw;
+      }
+      .moon-glow {
+        font-size: 3.5em;
+        filter: drop-shadow(0 0 32px #fffde4cc) drop-shadow(0 0 12px #fff8);
+        margin-bottom: 18px;
+        animation: moon-flicker 2.2s infinite alternate;
+      }
+      @keyframes moon-flicker {
+        0% { filter: drop-shadow(0 0 24px #fffde4cc) drop-shadow(0 0 8px #fff8); }
+        100% { filter: drop-shadow(0 0 48px #fffde4cc) drop-shadow(0 0 18px #fff8); }
+      }
+      .overlay-title {
+        font-family: 'Creepster', 'Noto Serif Thai', serif;
+        font-size: 2.2em;
+        color: #ff5722;
+        margin-bottom: 8px;
+        letter-spacing: 2px;
+        text-shadow: 0 2px 12px #000a;
+      }
+      .overlay-desc {
+        font-size: 1.1em;
+        color: #ffe0b2;
+        margin-bottom: 28px;
+        text-shadow: 0 1px 8px #000a;
+      }
+      .enter-village-btn {
+        font-size: 1.25em;
+        background: linear-gradient(90deg, #ff9800 60%, #ff5722 100%);
+        color: #fff;
+        border: none;
+        border-radius: 10px;
+        padding: 16px 38px;
+        font-family: 'Montserrat', 'Noto Serif Thai', sans-serif;
+        font-weight: bold;
+        box-shadow: 0 2px 12px #0007;
+        cursor: pointer;
+        letter-spacing: 1px;
+        transition: background 0.2s, transform 0.2s;
+        outline: none;
+      }
+      .enter-village-btn:hover {
+        background: linear-gradient(90deg, #ffb300 60%, #ff7043 100%);
+        transform: scale(1.06);
+        box-shadow: 0 4px 24px #ff9800aa;
+      }
+      @media (max-width: 600px) {
+        .music-overlay-content {
+          padding: 28px 8px 18px 8px;
+          min-width: 0;
+        }
+        .moon-glow { font-size: 2.2em; }
+        .overlay-title { font-size: 1.3em; }
+        .overlay-desc { font-size: 1em; }
+        .enter-village-btn { font-size: 1em; padding: 12px 18px; }
+      }
+    </style>
+
+    <!-- Background Music Audio Element -->
+    <audio id="background-music" loop>
+        <source src="audio/background-music.mp3" type="audio/mpeg">
+        <source src="audio/background-music.ogg" type="audio/ogg">
+        Your browser does not support the audio element.
+    </audio>
+
     <div class="container game-layout">
         <div class="sidebar" id="sidebar-left">
             <div id="players-board-section" class="section" style="display: none;">
@@ -360,6 +539,90 @@
 </div>
       </div>
     </div>
+
+    <!-- Witch Card Received Popup -->
+    <div id="witch-popup" class="witch-popup-modal" style="display:none;">
+      <div class="witch-popup-content">
+        <img src="cards/witch.png" alt="การ์ดปอบ" class="witch-card-img" />
+        <h2 class="witch-popup-title">คุณได้รับการ์ดปอบ!</h2>
+        <p class="witch-popup-desc" id="witch-popup-desc">คุณได้รับการ์ดปอบจาก ...<br>คุณจะกลายเป็นทีมปอบ จะต้องช่วยเหลือปอบในการกำจัดชาวบ้าน หรือปกป้องการ์ดปอบเพื่อแพร่เชื้อ</p>
+        <button id="witch-popup-close" class="witch-popup-close-btn">เข้าใจแล้ว</button>
+      </div>
+    </div>
+
+    <style>
+      .witch-popup-modal {
+        position: fixed;
+        z-index: 4000;
+        left: 0; top: 0; width: 100vw; height: 100vh;
+        background: rgba(20,10,30,0.92);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: opacity 0.4s;
+      }
+      .witch-popup-content {
+        background: #1a0e1a;
+        color: #fff;
+        border-radius: 18px;
+        padding: 40px 32px 32px 32px;
+        box-shadow: 0 0 32px 8px #000a;
+        min-width: 320px;
+        max-width: 90vw;
+        text-align: center;
+        position: relative;
+      }
+      .witch-card-img {
+        width: 120px;
+        height: auto;
+        margin-bottom: 18px;
+        filter: drop-shadow(0 0 18px #ff1744cc) drop-shadow(0 0 8px #fff8);
+      }
+      .witch-popup-title {
+        font-family: 'Creepster', 'Noto Serif Thai', serif;
+        font-size: 2em;
+        color: #ff1744;
+        margin-bottom: 10px;
+        letter-spacing: 2px;
+        text-shadow: 0 2px 12px #000a;
+      }
+      .witch-popup-desc {
+        font-size: 1.1em;
+        color: #ffe0b2;
+        margin-bottom: 28px;
+        text-shadow: 0 1px 8px #000a;
+      }
+      .witch-popup-close-btn {
+        font-size: 1.15em;
+        background: linear-gradient(90deg, #ff1744 60%, #ff7043 100%);
+        color: #fff;
+        border: none;
+        border-radius: 10px;
+        padding: 12px 32px;
+        font-family: 'Montserrat', 'Noto Serif Thai', sans-serif;
+        font-weight: bold;
+        box-shadow: 0 2px 12px #0007;
+        cursor: pointer;
+        letter-spacing: 1px;
+        transition: background 0.2s, transform 0.2s;
+        outline: none;
+      }
+      .witch-popup-close-btn:hover {
+        background: linear-gradient(90deg, #ff7043 60%, #ff1744 100%);
+        transform: scale(1.06);
+        box-shadow: 0 4px 24px #ff1744aa;
+      }
+      @media (max-width: 600px) {
+        .witch-popup-content {
+          padding: 24px 8px 18px 8px;
+          min-width: 0;
+        }
+        .witch-card-img { width: 80px; }
+        .witch-popup-title { font-size: 1.2em; }
+        .witch-popup-desc { font-size: 1em; }
+        .witch-popup-close-btn { font-size: 1em; padding: 10px 18px; }
+      }
+    </style>
 
     <script src="/socket.io/socket.io.js"></script>
     <script src="script.js"></script>

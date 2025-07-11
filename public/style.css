@@ -180,12 +180,12 @@ button:disabled {
 }
 
 .message-black { color: #ccc; }
-.message-red { color: #ffb300; }
+.message-red { color: #ff7043; } /* เดิม #ffb300, ปรับเป็นส้มแดงสดใส */
 .message-green { color: #66ff66; }
 .message-blue { color: #66ccff; }
 .message-orange { color: #ffa07a; }
 .message-purple { color: #da70d6; }
-.message-darkred { color: #e53935; } /* ปรับแดงเข้มให้สว่างขึ้น */
+.message-darkred { color: #ff3d00; } /* เดิม #e53935, ปรับเป็นแดงอมส้มสดใส */
 .message-gold { color: #ffe066; }
 
 .player-item {
@@ -657,14 +657,14 @@ button:disabled {
   border-bottom: 1.5px solid #444a50;
   margin-left: 0;
   margin-right: 0;
-  width: 100%;
+    width: 100%;
   box-sizing: border-box;
 }
 .player-board-card:last-child {
   border-bottom: none;
 }
 .player-board-header {
-  font-weight: bold;
+    font-weight: bold;
   font-size: 1.02em; /* ลดลง 10% จาก 1.13em เดิม */
   color: #ffe082;
   margin-bottom: 2px;
@@ -754,9 +754,9 @@ button:disabled {
 
 /* --- Game State Bar --- */
 .game-state-bar {
-  display: flex;
+    display: flex;
   flex-wrap: wrap;
-  align-items: center;
+    align-items: center;
   background: rgba(30,30,30,0.98);
   color: #fff;
   font-size: 0.97em; /* ลดลง 10% */
@@ -1444,17 +1444,25 @@ button:disabled {
 } 
 
 #select-left-tryal-popup button {
-  background: #388e3c !important;
+  background: linear-gradient(135deg, #3a6351 0%, #5c946e 100%) !important;
   color: #fff !important;
-  border: 2px solid #ffe066 !important;
-  border-radius: 8px;
+  border: 2.5px solid #b2b2b2 !important;
+  border-radius: 10px;
   width: 80px;
   height: 120px;
   font-size: 1.1em;
   cursor: pointer;
   margin: 0 6px;
-  transition: background 0.18s;
+  box-shadow: 0 4px 16px #2228;
+  transition: background 0.18s, box-shadow 0.18s;
 }
 #select-left-tryal-popup button:hover {
-  background: #43a047 !important;
+  background: linear-gradient(135deg, #49796b 0%, #7bb992 100%) !important;
+  box-shadow: 0 6px 24px #49796b55;
+}
+#select-left-tryal-popup {
+  background: rgba(40, 50, 50, 0.97) !important;
+  border: 1.5px solid #5c946e !important;
+  border-radius: 16px !important;
+  box-shadow: 0 4px 32px #222a;
 } 
