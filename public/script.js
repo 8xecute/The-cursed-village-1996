@@ -18,7 +18,7 @@ const musicVolumeSlider = document.getElementById('music-volume-slider');
 const musicVolumeLabel = document.getElementById('music-volume-label');
 
 let isMusicPlaying = false;
-let currentVolume = 0.3; // Start at 30% volume
+let currentVolume = 0.1; // Start at 10% volume
 let hasUserStartedMusic = false; // เพิ่ม flag นี้
 let userPausedMusic = false; // เพิ่ม flag นี้
 
@@ -29,7 +29,7 @@ function updateMusicUI() {
         musicIcon.textContent = '▶️'; // แสดง play icon เมื่อหยุด
     }
     musicVolumeLabel.textContent = `${Math.round(currentVolume * 100)}%`;
-    musicVolumeSlider.value = Math.round(currentVolume * 100);
+    musicVolumeSlider.value = Math.round(currentVolume * 100); // default to 10
 }
 
 toggleMusicBtn.addEventListener('click', () => {
@@ -2711,3 +2711,13 @@ function showWitchPopup(fromName) {
         };
     }
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+  var btn = document.getElementById('enter-village-btn');
+  var modal = document.getElementById('music-overlay');
+  if (btn && modal) {
+    btn.onclick = function() {
+      modal.classList.add('hidden');
+    };
+  }
+});

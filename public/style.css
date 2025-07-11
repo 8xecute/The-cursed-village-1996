@@ -1438,3 +1438,7 @@ button:disabled {
   border-radius: 16px !important;
   box-shadow: 0 4px 32px #222a;
 } 
+
+.hidden {
+  display: none !important;
+} 
