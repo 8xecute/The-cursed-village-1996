@@ -606,18 +606,17 @@ socket.on('update hand', (hand) => {
 let prevTryalCards = [];
 
 socket.on('update tryal cards initial', (tryalCards) => {
-    // Detect if a Witch card was newly received (after Conspiracy)
-    const prevWitchCount = prevTryalCards.filter(card => card.name === 'Witch').length;
-    const newWitchCount = tryalCards.filter(card => card.name === 'Witch').length;
-    if (newWitchCount > prevWitchCount) {
-        // Show popup (fromName can be improved if you track the sender)
+    // เงื่อนไขใหม่: แสดง popup เฉพาะเมื่อได้รับการ์ด Witch ครั้งแรกในแต่ละเกม และไม่ใช่ช่วง assigning Black Cat
+    const prevHadWitch = prevTryalCards.some(card => card.name === 'Witch');
+    const newHasWitch = tryalCards.some(card => card.name === 'Witch');
+    const myPlayer = currentRoomState && currentRoomState.players && currentRoomState.players[myUniqueId];
+    const isAssigningBlackCat = currentRoomState && currentRoomState.isAssigningBlackCat;
+    if (!prevHadWitch && newHasWitch && myPlayer && myPlayer.hasBeenWitch && !isAssigningBlackCat) {
         showWitchPopup('...');
     }
     prevTryalCards = tryalCards.slice();
     myTryalCards = tryalCards;
     updateTryalCardDisplay();
-    // Also update witch chat visibility in case hasBeenWitch changed
-    const myPlayer = currentRoomState && currentRoomState.players && currentRoomState.players[myUniqueId];
     if (myPlayer) updateWitchChatVisibility(myPlayer.hasBeenWitch);
 });
 
@@ -730,63 +729,50 @@ function showAccusedTryalSelection(accusedUniqueId, tryalCount) {
     container.style.left = '50%';
     container.style.transform = 'translate(-50%, -50%)';
     container.style.background = '#222';
-    container.style.padding = '30px';
-    container.style.borderRadius = '10px';
-    container.style.zIndex = 9999;
-    container.style.boxShadow = '0 0 20px #000';
+    container.style.borderRadius = '12px';
+    container.style.boxShadow = '0 0 30px #000a';
+    container.style.padding = '28px 24px';
+    container.style.zIndex = '9999';
     container.style.textAlign = 'center';
-
-    const title = document.createElement('h3');
+    
+    const title = document.createElement('div');
     title.textContent = 'เลือก การ์ดชีวิต ของผู้ถูกกล่าวหาเพื่อเปิดเผย';
-    title.style.color = '#ffd700';
+    title.style.color = '#ffe799';
+    title.style.fontWeight = 'bold';
+    title.style.fontSize = '1.18em';
+    title.style.marginBottom = '18px';
     container.appendChild(title);
 
     const cardsDiv = document.createElement('div');
     cardsDiv.style.display = 'flex';
-    cardsDiv.style.gap = '10px';
     cardsDiv.style.justifyContent = 'center';
-    cardsDiv.style.margin = '20px 0';
+    cardsDiv.style.gap = '18px';
+    cardsDiv.style.margin = '18px 0';
 
     for (let i = 0; i < tryalCount; i++) {
         const cardBtn = document.createElement('button');
         cardBtn.textContent = `Card ${i + 1}`;
-        cardBtn.style.width = '80px';
-        cardBtn.style.height = '120px';
-        cardBtn.style.fontSize = '1.1em';
-        cardBtn.style.background = '#556B2F';
+        cardBtn.style.width = '100px';
+        cardBtn.style.height = '140px';
+        cardBtn.style.fontSize = '1.15em';
+        cardBtn.style.fontWeight = 'bold';
+        cardBtn.style.background = 'linear-gradient(135deg, #a97c50 0%, #e9c891 100%)'; // น้ำตาลทองลายไทย
         cardBtn.style.color = '#fff';
-        cardBtn.style.border = '2px solid #ffd700';
-        cardBtn.style.borderRadius = '8px';
+        cardBtn.style.border = '2.5px solid #7c5a36';
+        cardBtn.style.borderRadius = '12px';
+        cardBtn.style.boxShadow = '0 4px 18px #a97c5088';
         cardBtn.style.cursor = 'pointer';
-        cardBtn.style.transition = 'transform 0.2s';
-        cardBtn.onmouseover = () => cardBtn.style.transform = 'scale(1.08)';
-        cardBtn.onmouseout = () => cardBtn.style.transform = '';
+        cardBtn.style.transition = 'transform 0.18s, box-shadow 0.18s';
+        cardBtn.onmouseover = () => { cardBtn.style.transform = 'scale(1.08)'; cardBtn.style.boxShadow = '0 8px 28px #a97c50cc'; };
+        cardBtn.onmouseout = () => { cardBtn.style.transform = ''; cardBtn.style.boxShadow = '0 4px 18px #a97c5088'; };
         cardBtn.onclick = () => {
             socket.emit('select tryal card for confession', accusedUniqueId, i);
             document.body.removeChild(container);
-            accusedTryalSelection = null;
         };
         cardsDiv.appendChild(cardBtn);
     }
-
     container.appendChild(cardsDiv);
-
-    // Cancel button
-    const cancelBtn = document.createElement('button');
-    cancelBtn.textContent = 'ยกเลิก';
-    cancelBtn.style.marginTop = '10px';
-    cancelBtn.style.background = '#444';
-    cancelBtn.style.color = '#fff';
-    cancelBtn.style.border = '1px solid #888';
-    cancelBtn.style.borderRadius = '5px';
-    cancelBtn.style.padding = '8px 18px';
-    cancelBtn.style.cursor = 'pointer';
-    cancelBtn.onclick = () => {
-        document.body.removeChild(container);
-        accusedTryalSelection = null;
-    };
-    container.appendChild(cancelBtn);
-
+    // ไม่มีปุ่มยกเลิก
     document.body.appendChild(container);
 }
 
@@ -2709,9 +2695,15 @@ function showWitchPopup(fromName) {
     if (localStorage.getItem('witchPopupAcknowledged') === '1') return;
     const popup = document.getElementById('witch-popup');
     const desc = document.getElementById('witch-popup-desc');
+    const fromElem = document.getElementById('witch-popup-from');
     const closeBtn = document.getElementById('witch-popup-close');
     if (popup && desc && closeBtn) {
-        desc.innerHTML = `คุณได้รับการ์ดปอบจาก <b>${fromName}</b><br>คุณจะกลายเป็นทีมปอบ จะต้องช่วยเหลือปอบในการกำจัดชาวบ้าน หรือปกป้องการ์ดปอบเพื่อแพร่เชื้อ`;
+        // เพิ่มบรรทัดแสดงชื่อผู้ส่งการ์ดปอบ
+        if (fromElem) {
+            fromElem.innerHTML = fromName && fromName !== '...' ? `คุณได้รับการ์ดปอบจาก <b>${fromName}</b>` : '';
+            fromElem.style.display = fromName && fromName !== '...' ? 'block' : 'none';
+        }
+        desc.innerHTML = `คุณได้การ์ดปอบจาก ...<br>คุณจะกลายเป็นทีมปอบ จะต้องช่วยเหลือปอบในการกำจัดชาวบ้าน หรือปกป้องการ์ดปอบเพื่อแพร่เชื้อ`;
         popup.style.display = 'flex';
         closeBtn.onclick = () => {
             popup.style.display = 'none';
