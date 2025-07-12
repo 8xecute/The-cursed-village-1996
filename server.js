@@ -770,13 +770,19 @@ function playCard(roomName, playerUniqueId, cardIndex, targetUniqueId = null, se
                         // Only one blue card, discard it automatically
                         const cardToDiscard = blueCards[0];
                         targetPlayer.inPlayCards = targetPlayer.inPlayCards.filter(c => c !== cardToDiscard);
-                        room.discardPile.push(cardToDiscard);
-                        io.to(targetPlayer.id).emit('update in play cards', targetPlayer.inPlayCards);
-                        // If Black Cat is discarded, reset holder
+                        // Black Cat: remove from game, not to discard
                         if (cardToDiscard.name === 'Black Cat') {
-                            updateBlackCatHolder(room);
-                            sendGameMessage(room.name, 'การ์ดพิธีเซ่นไหว้ ถูกทิ้งแล้ว!', 'grey', true);
+                            updateBlackCatHolder(room); // reset holder
+                            sendGameMessage(room.name, 'การ์ดพิธีเซ่นไหว้ ถูกลบออกจากเกม!', 'grey', true);
+                            // ไม่ต้อง push เข้า discardPile
+                        } else if (cardToDiscard.name === 'Asylum') {
+                            // Remove Asylum effect
+                            sendGameMessage(room.name, 'การ์ดที่หลบภัยถูกลบและสถานะป้องกันถูกยกเลิก!', 'grey', true);
+                            // ไม่ต้อง push เข้า discardPile
+                        } else {
+                            room.discardPile.push(cardToDiscard);
                         }
+                        io.to(targetPlayer.id).emit('update in play cards', targetPlayer.inPlayCards);
                         // --- ตรวจสอบและลบ Curse ซ้ำในมือ (ถ้ามี) ---
                         player.hand = player.hand.filter(card => card.name !== 'Curse');
                         io.to(player.id).emit('update hand', player.hand);
@@ -788,20 +794,16 @@ function playCard(roomName, playerUniqueId, cardIndex, targetUniqueId = null, se
                         room.awaitingCurseSelection = {
                             selector: playerUniqueId,
                             target: targetUniqueId,
-                            blueCards: blueCards
                         };
-                        sendGameMessage(room.name, `<b>${player.name}</b> ใช้การ์ด <b>${CARD_NAME_THAI['Curse']}</b> ใส่ <b>${targetPlayer.name}</b> ต้องเลือกการ์ดสีน้ำเงินเพื่อทิ้ง.`, 'orange', true);
-                        sendGameMessage(room.name, `<b>${player.name}</b> ต้องเลือกการ์ดสีน้ำเงินของ <b>${targetPlayer.name}</b> เพื่อทิ้ง.`, 'orange', true);
                         io.to(player.id).emit('prompt select curse target', {
-                            targetUniqueId: targetUniqueId,
-                            blueCards: blueCards
+                            targetUniqueId,
+                            blueCards: blueCards.map(card => ({ name: card.name }))
                         });
-                        return; // Don't end turn yet
+                        return;
                     }
+                } else {
+                    sendGameMessage(room.name, `<b>${targetPlayer.name}</b> ไม่มีการ์ดสีน้ำเงินให้ลบ`, 'orange', true);
                 }
-                // --- ตรวจสอบและลบ Curse ซ้ำในมือ (ถ้ามี) ---
-                player.hand = player.hand.filter(card => card.name !== 'Curse');
-                io.to(player.id).emit('update hand', player.hand);
             }
             break;
         case 'Alibi':
