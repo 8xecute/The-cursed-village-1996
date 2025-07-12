@@ -616,10 +616,13 @@ function playCard(roomName, playerUniqueId, cardIndex, targetUniqueId = null, se
         io.to(room.players[playerUniqueId].id).emit('game message', 'ตอนนี้ยังเล่นการ์ดไม่ได้.', 'red');
         return;
     }
-
     const player = room.players[playerUniqueId];
     if (!player || !player.alive || player.uniqueId !== room.currentTurnPlayerUniqueId) {
-        io.to(player.id).emit('game message', 'ไม่ใช่ตาของคุณหรือคุณไม่สามารถเล่นได้.', 'red');
+        if (player && !player.alive) {
+            setNextTurn(room); // ข้ามเทิร์นคนตาย
+        } else if (player) {
+            io.to(player.id).emit('game message', 'ไม่ใช่ตาของคุณหรือคุณไม่สามารถเล่นการ์ดได้.', 'red');
+        }
         return;
     }
 
@@ -967,10 +970,13 @@ function endTurn(roomName, playerUniqueId) {
         io.to(room.players[playerUniqueId].id).emit('game message', 'ตอนนี้ยังจบเทิร์นไม่ได้.', 'red');
         return;
     }
-
     const player = room.players[playerUniqueId];
     if (!player || !player.alive || player.uniqueId !== room.currentTurnPlayerUniqueId) {
-        io.to(player.id).emit('game message', 'ไม่ใช่ตาของคุณหรือคุณไม่สามารถจบเทิร์นได้.', 'red');
+        if (player && !player.alive) {
+            setNextTurn(room); // ข้ามเทิร์นคนตาย
+        } else if (player) {
+            io.to(player.id).emit('game message', 'ไม่ใช่ตาของคุณหรือคุณไม่สามารถจบเทิร์นได้.', 'red');
+        }
         return;
     }
 
@@ -991,10 +997,13 @@ function drawCards(roomName, playerUniqueId, count = 2) {
         io.to(room.players[playerUniqueId].id).emit('game message', 'ตอนนี้ยังจั่วการ์ดไม่ได้.', 'red');
         return;
     }
-
     const player = room.players[playerUniqueId];
     if (!player || !player.alive || player.uniqueId !== room.currentTurnPlayerUniqueId) {
-        io.to(player.id).emit('game message', 'ไม่ใช่ตาของคุณหรือคุณไม่สามารถจั่วการ์ดได้.', 'red');
+        if (player && !player.alive) {
+            setNextTurn(room); // ข้ามเทิร์นคนตาย
+        } else if (player) {
+            io.to(player.id).emit('game message', 'ไม่ใช่ตาของคุณหรือคุณไม่สามารถจั่วการ์ดได้.', 'red');
+        }
         return;
     }
 

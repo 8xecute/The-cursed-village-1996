@@ -702,8 +702,8 @@ socket.on('witch chat message', (senderName, message, timestamp) => {
 
 // Witch chat history (do NOT clear on phase change)
 socket.on('witch chat history', (messages) => {
-    // ไม่ต้องลบ witchChatMessages.innerHTML = '';
-    // ให้ append ต่อท้ายเสมอ
+    // ลบข้อความเก่าก่อน append ใหม่
+    witchChatMessages.innerHTML = '';
     messages.forEach(msg => {
         addWitchChatMessage(msg.senderName, msg.message, msg.timestamp);
     });
@@ -832,7 +832,8 @@ socket.on('prompt select accused tryal', ({ accusedUniqueId, tryalCount }) => {
 let blackCatTryalSelection = null;
 
 function showBlackCatTryalSelection(blackCatHolder, tryalCount) {
-    if (document.getElementById('blackcat-tryal-select-popup')) return;
+    const old = document.getElementById('blackcat-tryal-select-popup');
+    if (old) old.remove();
     const container = document.createElement('div');
     container.id = 'blackcat-tryal-select-popup';
     container.style.position = 'fixed';
