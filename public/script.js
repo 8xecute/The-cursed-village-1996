@@ -51,8 +51,10 @@ musicVolumeSlider.addEventListener('input', (e) => {
 });
 
 function setMusicVolume(vol) {
-    currentVolume = Math.max(0, Math.min(1, vol));
-    backgroundMusic.volume = currentVolume;
+    // vol is 0.0-1.0 from UI
+    const scaledVol = Math.max(0, Math.min(1, vol)) * 0.7;
+    currentVolume = Math.max(0, Math.min(1, vol)); // for UI only
+    backgroundMusic.volume = scaledVol;
     updateMusicUI();
 }
 
@@ -79,6 +81,7 @@ socket.on('room joined', (roomName) => {
     gameSection.style.display = 'none'; // Ensure game section is hidden initially
     leaveRoomButton.style.display = 'block';
     // ไม่ต้องสั่งเปิดเพลงหรือเปลี่ยน src ที่นี่อีก ปล่อยให้ระบบเพลงจัดการเองตามเฟส
+    localStorage.removeItem('witchPopupAcknowledged'); // <-- Reset flag for new game
 });
 
 // --- Music for different game phases ---
@@ -228,6 +231,10 @@ if (!myUniqueId) {
 }
 playerUniqueIdDisplay.textContent = myUniqueId;
 
+// Set default music volume to 50% (UI), which is 0.35 real volume
+musicVolumeSlider.value = 50;
+setMusicVolume(0.5);
+
 if (myPlayerName) {
     playerNameDisplay.textContent = myPlayerName;
     nameInput.value = myPlayerName;
@@ -270,6 +277,7 @@ socket.on('room joined', (roomName) => {
     gameSection.style.display = 'none'; // Ensure game section is hidden initially
     leaveRoomButton.style.display = 'block';
     // ไม่ต้องสั่งเปิดเพลงหรือเปลี่ยน src ที่นี่อีก ปล่อยให้ระบบเพลงจัดการเองตามเฟส
+    localStorage.removeItem('witchPopupAcknowledged'); // <-- Reset flag for new game
 });
 
 socket.on('room state update', (roomState) => {
@@ -566,20 +574,43 @@ socket.on('room left', () => {
     if (statsPopup) {
         statsPopup.remove();
     }
-    
-    currentRoomName = null;
+    // Clear player board and player list
+    const playersBoardList = document.getElementById('players-board-list');
+    if (playersBoardList) playersBoardList.innerHTML = '';
+    const nightPlayersList = document.getElementById('night-players-list');
+    if (nightPlayersList) nightPlayersList.innerHTML = '';
+    // Hide all game/lobby sections except room management
     roomManagementSection.style.display = 'block';
     roomLobbySection.style.display = 'none';
     gameSection.style.display = 'none';
     leaveRoomButton.style.display = 'none';
+    // Reset game state variables
+    currentRoomName = null;
+    currentRoomState = null;
+    myCurrentHand = [];
+    myTryalCards = [];
+    myRevealedTryalCardIndexes = [];
+    selectedCard = null;
+    isMyTurn = false;
+    hasPlayedCardsThisTurn = false;
+    drawButtonDisabled = false;
+    // Hide/clear other UI as needed
+    updateHandDisplay([]);
+    updateTryalCardDisplay();
+    updatePlayersGrid(null, myUniqueId);
+    updateWitchChatVisibility(false);
+    confessSection.style.display = 'none';
+    // Show name input if not set
+    if (!myPlayerName) {
+        nameInputContainer.style.display = 'flex';
+    }
     addGameMessage('คุณออกจากห้องแล้ว.', 'orange');
-    // รีเฟรชหน้าเว็บหลังออกจากห้อง
-    setTimeout(() => { location.reload(); }, 500);
 });
 
 socket.on('your turn', () => {
     isMyTurn = true;
     hasPlayedCardsThisTurn = false;
+    hasDrawnCardThisTurn = false;
     updateTurnUI();
     addGameMessage('นี่คือตาของคุณ!', 'blue', true);
     // Reset forced reveal flag
@@ -598,26 +629,46 @@ socket.on('enable draw button', () => {
 });
 
 socket.on('update hand', (hand) => {
+    // Detect if a card was played (hand size decreased)
+    const playedCard = isMyTurn && hand.length < myCurrentHand.length;
     myCurrentHand = hand;
     updateHandDisplay(myCurrentHand);
+    if (isMyTurn && !hasDrawnCardThisTurn && hand.length > myCurrentHand.length) {
+        hasDrawnCardThisTurn = true;
+        updateTurnUI();
+    }
+    if (playedCard) {
+        afterPlayCard();
+    }
 });
 
 // --- Track previous tryal cards for Witch popup detection ---
 let prevTryalCards = [];
 
-socket.on('update tryal cards initial', (tryalCards) => {
-    // เงื่อนไขใหม่: แสดง popup เฉพาะเมื่อได้รับการ์ด Witch ครั้งแรกในแต่ละเกม และไม่ใช่ช่วง assigning Black Cat
+// Reset Witch popup flag at the start of each game
+socket.on('room joined', (roomName) => {
+    // ... existing code ...
+    localStorage.removeItem('witchPopupAcknowledged'); // <-- Reset flag for new game
+});
+
+// Show Witch popup when receiving Witch card for the first time (not during Black Cat assignment)
+socket.on('update tryal cards initial', (tryalCards, fromName) => {
     const prevHadWitch = prevTryalCards.some(card => card.name === 'Witch');
     const newHasWitch = tryalCards.some(card => card.name === 'Witch');
     const myPlayer = currentRoomState && currentRoomState.players && currentRoomState.players[myUniqueId];
     const isAssigningBlackCat = currentRoomState && currentRoomState.isAssigningBlackCat;
     if (!prevHadWitch && newHasWitch && myPlayer && myPlayer.hasBeenWitch && !isAssigningBlackCat) {
-        showWitchPopup('...');
+        showWitchPopup(fromName || '...');
     }
     prevTryalCards = tryalCards.slice();
     myTryalCards = tryalCards;
     updateTryalCardDisplay();
     if (myPlayer) updateWitchChatVisibility(myPlayer.hasBeenWitch);
+});
+
+// เพิ่ม listener สำหรับ popup ปอบทุกครั้งที่ได้รับการ์ดแม่มดจากคนอื่น
+socket.on('show witch popup', (data) => {
+    showWitchPopup(data.senderName || '...');
 });
 
 socket.on('update revealed tryal indexes', (revealedIndexes) => {
@@ -639,6 +690,7 @@ socket.on('prompt constable action', () => {
 });
 
 socket.on('deck info update', (deckInfo) => {
+    console.log('[DEBUG] deck info update:', deckInfo);
     deckCountDisplay.textContent = deckInfo.deckCount;
     discardPileCountDisplay.textContent = deckInfo.discardPileCount;
 });
@@ -648,37 +700,32 @@ socket.on('witch chat message', (senderName, message, timestamp) => {
     addWitchChatMessage(senderName, message, timestamp);
 });
 
+// Witch chat history (do NOT clear on phase change)
 socket.on('witch chat history', (messages) => {
-    // Clear existing messages and load history
-    witchChatMessages.innerHTML = '';
+    // ไม่ต้องลบ witchChatMessages.innerHTML = '';
+    // ให้ append ต่อท้ายเสมอ
     messages.forEach(msg => {
         addWitchChatMessage(msg.senderName, msg.message, msg.timestamp);
     });
 });
 
-// Witch chat functionality
 function addWitchChatMessage(senderName, message, timestamp) {
-    const messageDiv = document.createElement('div');
-    messageDiv.className = 'witch-chat-message';
-    
-    const senderDiv = document.createElement('div');
-    senderDiv.className = 'sender';
-    senderDiv.textContent = senderName;
-    
-    const messageTextDiv = document.createElement('div');
-    messageTextDiv.className = 'message';
-    messageTextDiv.textContent = message;
-    
-    const timestampDiv = document.createElement('div');
-    timestampDiv.className = 'timestamp';
-    timestampDiv.textContent = new Date(timestamp).toLocaleTimeString();
-    
-    messageDiv.appendChild(senderDiv);
-    messageDiv.appendChild(messageTextDiv);
-    messageDiv.appendChild(timestampDiv);
-    
-    witchChatMessages.appendChild(messageDiv);
+    const msgDiv = document.createElement('div');
+    msgDiv.className = 'witch-chat-message';
+    if (senderName === 'SYSTEM') {
+        msgDiv.style.color = '#ff1744';
+        msgDiv.style.fontWeight = 'bold';
+        msgDiv.innerHTML = `<span style='color:#ff1744;font-weight:bold;'>SYSTEM</span><br>${message}<br><span style='font-size:0.85em;color:#fff;'>${formatTime(timestamp)}</span>`;
+    } else {
+        msgDiv.innerHTML = `<span class='sender'>${senderName}</span>: <span class='message'>${message}</span><br><span class='timestamp'>${formatTime(timestamp)}</span>`;
+    }
+    witchChatMessages.appendChild(msgDiv);
     witchChatMessages.scrollTop = witchChatMessages.scrollHeight;
+}
+
+function formatTime(ts) {
+    const d = new Date(ts);
+    return d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 }
 
 function sendWitchChatMessage() {
@@ -702,16 +749,10 @@ function updateWitchChatVisibility(isWitch) {
     if (isWitch && currentRoomName) {
         witchChatSection.style.display = 'block';
         socket.emit('request witch chat history', currentRoomName);
-        // ปรับปุ่มส่งข้อความและ input
-        const isNight = currentRoomState && currentRoomState.currentPhase === 'NIGHT';
-        const isAssigningBlackCat = currentRoomState && currentRoomState.isAssigningBlackCat;
-        witchChatInput.disabled = !(isNight || isAssigningBlackCat);
-        witchChatSendButton.disabled = !(isNight || isAssigningBlackCat);
-        if (!(isNight || isAssigningBlackCat)) {
-            witchChatInput.placeholder = 'ส่งข้อความได้เฉพาะตอนกลางคืนหรือช่วงเลือกเครื่องเซ่น';
-        } else {
-            witchChatInput.placeholder = '';
-        }
+        // ปรับปุ่มส่งข้อความและ input: ปล่อยให้ใช้งานได้ตลอดทุกเฟส
+        witchChatInput.disabled = false;
+        witchChatSendButton.disabled = false;
+        witchChatInput.placeholder = '';
     } else {
         witchChatSection.style.display = 'none';
     }
@@ -1104,6 +1145,12 @@ function updateTurnUI() {
         document.querySelector('.hand-action-buttons')?.classList.remove('my-turn-active');
     }
     updateDrawCardButton();
+    // Only enable end turn if player has drawn or played at least one card
+    if (isMyTurn && (hasPlayedCardsThisTurn || hasDrawnCardThisTurn)) {
+        endTurnButton.disabled = false;
+    } else {
+        endTurnButton.disabled = true;
+    }
 }
 
 function updateDrawCardButton() {
@@ -2721,3 +2768,144 @@ document.addEventListener('DOMContentLoaded', function() {
     };
   }
 });
+
+// Track if player has drawn a card this turn
+let hasDrawnCardThisTurn = false;
+
+// When player draws a card
+socket.on('update hand', (hand) => {
+    // ... existing code ...
+    if (isMyTurn && !hasDrawnCardThisTurn && hand.length > myCurrentHand.length) {
+        hasDrawnCardThisTurn = true;
+        updateTurnUI();
+    }
+    myCurrentHand = hand;
+    updateHandDisplay(myCurrentHand);
+});
+
+// When player plays a card
+function afterPlayCard() {
+    hasPlayedCardsThisTurn = true;
+    updateTurnUI();
+}
+
+// --- พิธีเซ่นไหว้: เลือกไพ่ ชีวิต ของผู้เล่นซ้ายมือ ---
+socket.on('prompt select blackcat tryal', ({ blackCatHolder, tryalCount, blackCatHolderName }) => {
+    // Remove existing popup if any
+    const existing = document.getElementById('select-blackcat-tryal-popup');
+    if (existing) existing.remove();
+    const popup = document.createElement('div');
+    popup.id = 'select-blackcat-tryal-popup';
+    popup.style = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#222;padding:30px;border-radius:10px;z-index:9999;text-align:center;box-shadow:0 0 20px #000;';
+
+    const title = document.createElement('h3');
+    title.textContent = `เลือก การ์ดชีวิต ของผู้ถือเครื่องเซ่น (${blackCatHolderName}) เพื่อเปิดเผย`;
+    title.style.color = '#ffd700';
+    popup.appendChild(title);
+
+    const cardsDiv = document.createElement('div');
+    cardsDiv.style.display = 'flex';
+    cardsDiv.style.gap = '10px';
+    cardsDiv.style.justifyContent = 'center';
+    cardsDiv.style.margin = '20px 0';
+
+    for (let i = 0; i < tryalCount; i++) {
+        const cardBtn = document.createElement('button');
+        cardBtn.textContent = `Card ${i + 1}`;
+        cardBtn.style.width = '100px';
+        cardBtn.style.height = '140px';
+        cardBtn.style.fontSize = '1.15em';
+        cardBtn.style.fontWeight = 'bold';
+        cardBtn.style.background = 'linear-gradient(135deg, #5a3a1b 0%, #a97c50 100%)'; // น้ำตาลแก่
+        cardBtn.style.color = '#fff';
+        cardBtn.style.border = '2.5px solid #7c5a36';
+        cardBtn.style.borderRadius = '12px';
+        cardBtn.style.boxShadow = '0 4px 18px #5a3a1b88';
+        cardBtn.style.cursor = 'pointer';
+        cardBtn.style.transition = 'transform 0.18s, box-shadow 0.18s';
+        cardBtn.onmouseover = () => { cardBtn.style.transform = 'scale(1.08)'; cardBtn.style.boxShadow = '0 8px 28px #a97c50cc'; };
+        cardBtn.onmouseout = () => { cardBtn.style.transform = ''; cardBtn.style.boxShadow = '0 4px 18px #5a3a1b88'; };
+        cardBtn.onclick = () => {
+            socket.emit('select blackcat tryal', blackCatHolder, i);
+            if (document.body.contains(popup)) document.body.removeChild(popup);
+        };
+        cardsDiv.appendChild(cardBtn);
+    }
+
+    popup.appendChild(cardsDiv);
+    document.body.appendChild(popup);
+});
+
+function showWitchPopup(senderName) {
+    // Remove existing popup if any
+    const existing = document.getElementById('witch-popup');
+    if (existing) existing.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'witch-popup';
+    overlay.style.position = 'fixed';
+    overlay.style.top = '0';
+    overlay.style.left = '0';
+    overlay.style.width = '100vw';
+    overlay.style.height = '100vh';
+    overlay.style.background = 'rgba(20,10,20,0.92)';
+    overlay.style.zIndex = '99999';
+    overlay.style.display = 'flex';
+    overlay.style.flexDirection = 'column';
+    overlay.style.alignItems = 'center';
+    overlay.style.justifyContent = 'center';
+
+    const cardImg = document.createElement('img');
+    cardImg.src = 'cards/witch.png';
+    cardImg.alt = 'ปอบ';
+    cardImg.style.width = '160px';
+    cardImg.style.height = '220px';
+    cardImg.style.marginBottom = '18px';
+    cardImg.style.boxShadow = '0 0 32px #ff1744cc';
+    overlay.appendChild(cardImg);
+
+    const title = document.createElement('div');
+    title.textContent = 'คุณได้รับการ์ดปอบ!';
+    title.style.color = '#ff1744';
+    title.style.fontWeight = 'bold';
+    title.style.fontSize = '2em';
+    title.style.marginBottom = '12px';
+    overlay.appendChild(title);
+
+    // เพิ่มชื่อผู้ส่งถ้ามี
+    if (senderName && senderName !== '...') {
+        const fromDiv = document.createElement('div');
+        fromDiv.textContent = `คุณได้รับการ์ดปอบจาก ${senderName}`;
+        fromDiv.style.color = '#ffd180';
+        fromDiv.style.fontWeight = 'bold';
+        fromDiv.style.fontSize = '1.15em';
+        fromDiv.style.marginBottom = '10px';
+        overlay.appendChild(fromDiv);
+    }
+
+    const desc = document.createElement('div');
+    desc.innerHTML = 'คุณจะกลายเป็นทีมปอบ จะต้องช่วยเหลือปอบในการกำจัดชาวบ้าน หรือปกป้องการ์ดปอบเพื่อแพร่เชื้อ';
+    desc.style.color = '#ffe0b2';
+    desc.style.fontSize = '1.1em';
+    desc.style.marginBottom = '28px';
+    desc.style.textAlign = 'center';
+    overlay.appendChild(desc);
+
+    const btn = document.createElement('button');
+    btn.textContent = 'เข้าใจแล้ว';
+    btn.style.fontSize = '1.25em';
+    btn.style.background = 'linear-gradient(90deg, #ff9800 60%, #ff5722 100%)';
+    btn.style.color = '#fff';
+    btn.style.border = 'none';
+    btn.style.borderRadius = '8px';
+    btn.style.padding = '14px 38px';
+    btn.style.fontWeight = 'bold';
+    btn.style.boxShadow = '0 2px 16px #ff572288';
+    btn.style.cursor = 'pointer';
+    btn.onclick = () => {
+        overlay.remove();
+    };
+    overlay.appendChild(btn);
+
+    document.body.appendChild(overlay);
+}
