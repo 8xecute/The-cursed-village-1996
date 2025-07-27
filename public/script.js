@@ -826,7 +826,10 @@ function updateWitchChatVisibility(isWitch) {
 let accusedTryalSelection = null;
 
 function showAccusedTryalSelection(accusedUniqueId, tryalCount) {
-    if (document.getElementById('accused-tryal-select-popup')) return;
+    // Remove any existing popups to prevent overlapping
+    const existing = document.getElementById('accused-tryal-select-popup');
+    if (existing) existing.remove();
+    
     const container = document.createElement('div');
     container.id = 'accused-tryal-select-popup';
     container.style.position = 'fixed';
@@ -897,8 +900,13 @@ socket.on('prompt select accused tryal', ({ accusedUniqueId, tryalCount }) => {
 let blackCatTryalSelection = null;
 
 function showBlackCatTryalSelection(blackCatHolder, tryalCount) {
+    // Remove any existing popups to prevent overlapping
     const old = document.getElementById('blackcat-tryal-select-popup');
     if (old) old.remove();
+    
+    const existing = document.getElementById('select-blackcat-tryal-popup');
+    if (existing) existing.remove();
+    
     const container = document.createElement('div');
     container.id = 'blackcat-tryal-select-popup';
     container.style.position = 'fixed';
@@ -2149,7 +2157,10 @@ function submitNightAction(actionType) {
 }
 
 function showConfessPopup(tryalCards) {
-    if (document.getElementById('confess-popup')) return;
+    // Remove any existing popups to prevent overlapping
+    const existing = document.getElementById('confess-popup');
+    if (existing) existing.remove();
+    
     if (!tryalCards || tryalCards.length === 0) return; // ไม่เด้ง popup ถ้าไม่มีไพ่
     const popup = document.createElement('div');
     popup.id = 'confess-popup';
@@ -2298,7 +2309,12 @@ function populateNightActionPlayersList(actionType) {
 
 // --- พิธีเซ่นไหว้: เลือกไพ่ ชีวิต ของผู้เล่นซ้ายมือ ---
 socket.on('prompt select left tryal', ({ leftPlayerUniqueId, leftPlayerName, leftPlayerTryalCount }) => {
-    if (document.getElementById('select-left-tryal-popup')) return;
+    // Remove any existing popups to prevent overlapping
+    const existing = document.getElementById('select-left-tryal-popup');
+    if (existing) existing.remove();
+    
+    const existingOverlay = document.getElementById('select-left-tryal-overlay');
+    if (existingOverlay) existingOverlay.remove();
     
     // สร้าง background overlay
     const overlay = document.createElement('div');
@@ -3130,6 +3146,11 @@ socket.on('prompt select blackcat tryal', ({ blackCatHolder, tryalCount, blackCa
     // Remove existing popup if any
     const existing = document.getElementById('select-blackcat-tryal-popup');
     if (existing) existing.remove();
+    
+    // Remove any old popup that might be behind
+    const oldPopup = document.getElementById('blackcat-tryal-select-popup');
+    if (oldPopup) oldPopup.remove();
+    
     const popup = document.createElement('div');
     popup.id = 'select-blackcat-tryal-popup';
     popup.style = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#222;padding:30px;border-radius:10px;z-index:9999;text-align:center;box-shadow:0 0 20px #000;';
@@ -3147,7 +3168,7 @@ socket.on('prompt select blackcat tryal', ({ blackCatHolder, tryalCount, blackCa
 
     for (let i = 0; i < tryalCount; i++) {
         const cardBtn = document.createElement('button');
-        cardBtn.textContent = `Card ${i + 1}`;
+        cardBtn.textContent = `การ์ด ${i + 1}`;
         cardBtn.style.width = '100px';
         cardBtn.style.height = '140px';
         cardBtn.style.fontSize = '1.15em';

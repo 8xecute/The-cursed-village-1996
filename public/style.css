@@ -1442,3 +1442,58 @@ button:disabled {
 .hidden {
   display: none !important;
 } 
+
+@media (max-width: 600px) {
+  #accused-tryal-select-popup, #blackcat-tryal-select-popup, .select-player-popup, #select-player-popup, #must-play-night-popup, #card-description-popup, #night-action-popup, #assign-blackcat-popup, #select-left-tryal-popup {
+    width: 95vw !important;
+    min-width: unset !important;
+    max-width: 98vw !important;
+    left: 50% !important;
+    top: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    padding: 10vw 2vw !important;
+    font-size: 1.05em !important;
+    border-radius: 12px !important;
+    box-sizing: border-box !important;
+  }
+  #accused-tryal-select-popup button, #blackcat-tryal-select-popup button, .select-player-popup button, #select-player-popup button, #must-play-night-popup button, #night-action-popup button, #assign-blackcat-popup button, #select-left-tryal-popup button {
+    width: 80vw !important;
+    max-width: 90vw !important;
+    min-width: 60vw !important;
+    height: 48px !important;
+    font-size: 1.1em !important;
+    margin: 8px 0 !important;
+    padding: 8px 0 !important;
+    border-radius: 10px !important;
+  }
+  #card-description-popup {
+    max-width: 90vw !important;
+    font-size: 1em !important;
+    padding: 8vw 2vw !important;
+  }
+} 
+
+@media (max-width: 600px) {
+  #enter-village-btn {
+    position: fixed !important;
+    left: 50% !important;
+    bottom: 24px !important;
+    transform: translateX(-50%) !important;
+    width: 90vw !important;
+    max-width: 400px !important;
+    font-size: 1.2em !important;
+    padding: 18px 0 !important;
+    border-radius: 14px !important;
+    z-index: 4000 !important;
+    background: linear-gradient(90deg, #ff9800 60%, #ffb300 100%) !important;
+    color: #222 !important;
+    font-weight: bold !important;
+    box-shadow: 0 4px 24px #000a !important;
+    border: none !important;
+    margin: 0 !important;
+    display: block !important;
+  }
+  .music-overlay-content {
+    padding-bottom: 90px !important;
+  }
+} 
