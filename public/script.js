@@ -20,38 +20,48 @@ let hasUserStartedMusic = false; // เพิ่ม flag นี้
 let userPausedMusic = false; // เพิ่ม flag นี้
 
 function updateMusicUI() {
+    if (!musicIcon || !musicVolumeLabel || !musicVolumeSlider) return;
+    
     if (isMusicPlaying) {
         musicIcon.textContent = '⏸️'; // แสดง pause icon เมื่อเล่นอยู่
     } else {
         musicIcon.textContent = '▶️'; // แสดง play icon เมื่อหยุด
     }
     musicVolumeLabel.textContent = `${Math.round(currentVolume * 100)}%`;
-            musicVolumeSlider.value = Math.round(currentVolume * 100); // default to 20
+    musicVolumeSlider.value = Math.round(currentVolume * 100); // default to 20
 }
 
-toggleMusicBtn.addEventListener('click', () => {
-    if (isMusicPlaying) {
-        backgroundMusic.pause();
-        isMusicPlaying = false;
-        userPausedMusic = true; // ผู้ใช้ pause เอง
-    } else {
-        backgroundMusic.play().catch(()=>{});
-        isMusicPlaying = true;
-        userPausedMusic = false; // ผู้ใช้ play เอง
-    }
-    updateMusicUI();
-});
+if (toggleMusicBtn) {
+    toggleMusicBtn.addEventListener('click', () => {
+        if (!backgroundMusic) return;
+        
+        if (isMusicPlaying) {
+            backgroundMusic.pause();
+            isMusicPlaying = false;
+            userPausedMusic = true; // ผู้ใช้ pause เอง
+        } else {
+            backgroundMusic.play().catch(()=>{});
+            isMusicPlaying = true;
+            userPausedMusic = false; // ผู้ใช้ play เอง
+        }
+        updateMusicUI();
+    });
+}
 
 // Slider event
-musicVolumeSlider.addEventListener('input', (e) => {
-    setMusicVolume(e.target.value / 100);
-});
+if (musicVolumeSlider) {
+    musicVolumeSlider.addEventListener('input', (e) => {
+        setMusicVolume(e.target.value / 100);
+    });
+}
 
 function setMusicVolume(vol) {
     // vol is 0.0-1.0 from UI
     const scaledVol = Math.max(0, Math.min(1, vol)) * 0.3;
     currentVolume = Math.max(0, Math.min(1, vol)); // for UI only
-    backgroundMusic.volume = scaledVol;
+    if (backgroundMusic) {
+        backgroundMusic.volume = scaledVol;
+    }
     updateMusicUI();
 }
 
@@ -93,7 +103,7 @@ const phaseMusic = {
 let lastMusicPhase = null;
 
 function changePhaseMusic(phase) {
-    if (phase === lastMusicPhase) return;
+    if (!backgroundMusic || phase === lastMusicPhase) return;
     lastMusicPhase = phase;
     const musicFile = phaseMusic[phase];
     if (musicFile) {

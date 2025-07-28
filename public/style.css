@@ -1413,6 +1413,10 @@ button:disabled {
 
 #host-controls-game {
     display: none !important;
+}
+
+#host-controls-lobby {
+    display: none !important;
 } 
 
 #select-left-tryal-popup button {

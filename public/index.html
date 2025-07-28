@@ -241,13 +241,6 @@
       }
     </style>
 
-    <!-- Background Music Audio Element -->
-    <audio id="background-music" loop>
-        <source src="audio/background-music.mp3" type="audio/mpeg">
-        <source src="audio/background-music.ogg" type="audio/ogg">
-        Your browser does not support the audio element.
-    </audio>
-
     <div class="container game-layout">
         <div class="sidebar" id="sidebar-left">
             <div id="players-board-section" class="section" style="display: none;">
@@ -720,14 +713,53 @@
           #card-explain-modal .modal-content {
             max-width: 100vw;
             min-width: 0;
-            padding: 0;
+            padding: 16px 8px;
             min-height: 0;
             height: 99vh;
+            overflow-y: auto;
+            overflow-x: hidden;
           }
-          #cards-content .card-group-row { gap: 6px; }
-          #cards-content .card-row { gap: 6px; }
-          #cards-content .card-box { width: 80px; }
-          #cards-content .card-box img { width: 44px; }
+          #cards-content {
+            width: 100%;
+            padding: 0 4px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+          }
+          #cards-content .card-group-row { 
+            gap: 20px; 
+            margin-bottom: 24px;
+            flex-direction: column;
+            width: 100%;
+            max-width: 300px;
+          }
+          #cards-content .card-row { 
+            gap: 12px; 
+            padding-bottom: 12px;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+          }
+          #cards-content .card-box { 
+            width: 100%; 
+            max-width: 280px;
+            min-width: 280px;
+            padding: 16px 12px 20px 12px;
+            margin-bottom: 12px;
+          }
+          #cards-content .card-box img { 
+            width: 100px; 
+            margin-bottom: 12px;
+          }
+          #cards-content .card-title {
+            font-size: 1.2em;
+            margin-bottom: 6px;
+          }
+          #cards-content .card-desc {
+            font-size: 1em;
+            max-width: 100%;
+            line-height: 1.4;
+          }
         }
       </style>
       </div>
