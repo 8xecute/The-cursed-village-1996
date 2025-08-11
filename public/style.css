@@ -1413,7 +1413,7 @@ button:disabled {
 
 #host-controls-game {
     display: none !important;
-} 
+}
 
 #host-controls-lobby {
     display: none !important;
@@ -1455,35 +1455,12 @@ button:disabled {
     left: 50% !important;
     top: 50% !important;
     transform: translate(-50%, -50%) !important;
-    padding: 20px !important;
+    padding: 10vw 2vw !important;
     font-size: 1.05em !important;
     border-radius: 12px !important;
     box-sizing: border-box !important;
   }
-  
-  /* Special handling for tryal card selection popups */
-  #accused-tryal-select-popup, #blackcat-tryal-select-popup {
-    padding: 20px 15px !important;
-    max-height: 90vh !important;
-    overflow-y: auto !important;
-  }
-  
-  /* Tryal card buttons - override the inline styles for better mobile experience */
-  #accused-tryal-select-popup button, #blackcat-tryal-select-popup button {
-    width: 80px !important;
-    height: 100px !important;
-    font-size: 1.1em !important;
-    margin: 4px !important;
-    padding: 8px !important;
-    border-radius: 15px !important;
-    min-height: 44px !important;
-    min-width: 44px !important;
-    border: none !important;
-    touch-action: manipulation !important;
-  }
-  
-  /* Other popup buttons */
-  .select-player-popup button, #select-player-popup button, #must-play-night-popup button, #night-action-popup button, #assign-blackcat-popup button, #select-left-tryal-popup button {
+  #accused-tryal-select-popup button, #blackcat-tryal-select-popup button, .select-player-popup button, #select-player-popup button, #must-play-night-popup button, #night-action-popup button, #assign-blackcat-popup button, #select-left-tryal-popup button {
     width: 80vw !important;
     max-width: 90vw !important;
     min-width: 60vw !important;
@@ -1493,11 +1470,10 @@ button:disabled {
     padding: 8px 0 !important;
     border-radius: 10px !important;
   }
-  
   #card-description-popup {
     max-width: 90vw !important;
     font-size: 1em !important;
-    padding: 20px !important;
+    padding: 8vw 2vw !important;
   }
 } 
 
@@ -1523,15 +1499,5 @@ button:disabled {
   }
   .music-overlay-content {
     padding-bottom: 90px !important;
-  }
-} 
-
-@media (max-width: 600px) {
-  .custom-tooltip {
-    font-size: 0.92em;
-    max-width: 98vw;
-    padding: 6px 10px;
-    border-radius: 7px;
-    line-height: 1.3;
   }
 } 
