@@ -839,6 +839,7 @@ function showAccusedTryalSelection(accusedUniqueId, tryalCount) {
     
     const container = document.createElement('div');
     container.id = 'accused-tryal-select-popup';
+    container.classList.add('tryal-select-popup');
     container.style.position = 'fixed';
     container.style.top = '50%';
     container.style.left = '50%';
@@ -846,9 +847,12 @@ function showAccusedTryalSelection(accusedUniqueId, tryalCount) {
     container.style.background = '#222';
     container.style.borderRadius = '12px';
     container.style.boxShadow = '0 0 30px #000a';
-    container.style.padding = '28px 24px';
+    container.style.padding = window.innerWidth <= 600 ? '20px' : '28px 24px';
     container.style.zIndex = '9999';
     container.style.textAlign = 'center';
+    container.style.maxWidth = window.innerWidth <= 600 ? '95vw' : '600px';
+    container.style.maxHeight = window.innerWidth <= 600 ? '90vh' : 'auto';
+    container.style.overflowY = 'auto';
     
     const title = document.createElement('div');
     title.textContent = 'เลือก การ์ดชีวิต ของผู้ถูกกล่าวหาเพื่อเปิดเผย';
@@ -860,32 +864,18 @@ function showAccusedTryalSelection(accusedUniqueId, tryalCount) {
 
     const cardsDiv = document.createElement('div');
     cardsDiv.style.display = 'flex';
-    cardsDiv.style.flexWrap = 'wrap'; // ให้ wrap ลงมา
+    cardsDiv.style.flexWrap = 'wrap';
     cardsDiv.style.justifyContent = 'center';
-    cardsDiv.style.gap = window.innerWidth <= 600 ? '4px' : '18px';
+    cardsDiv.style.gap = window.innerWidth <= 600 ? '4px' : '10px';
     cardsDiv.style.margin = '12px 0';
     cardsDiv.style.overflowX = 'hidden';
     cardsDiv.style.maxWidth = '98vw';
     cardsDiv.style.paddingBottom = '8px';
-    // Responsive card size
     const isMobile = window.innerWidth <= 600;
     for (let i = 0; i < tryalCount; i++) {
         const cardBtn = document.createElement('button');
         cardBtn.textContent = `การ์ด ${i+1}`;
-        cardBtn.style.width = isMobile ? '42px' : '100px';
-        cardBtn.style.height = isMobile ? '58px' : '140px';
-        cardBtn.style.fontSize = isMobile ? '0.82em' : '1.15em';
-        cardBtn.style.fontWeight = 'bold';
-        cardBtn.style.background = 'linear-gradient(135deg, #7b5e3b 0%, #a97c50 100%)';
-        cardBtn.style.color = '#fff8e1';
-        cardBtn.style.borderRadius = '12px';
-        cardBtn.style.boxShadow = '0 4px 18px #a97c5088';
-        cardBtn.style.cursor = 'pointer';
-        cardBtn.style.margin = isMobile ? '0 2px' : '0 8px';
-        cardBtn.style.opacity = '0.95';
-        cardBtn.style.transition = 'transform 0.18s, box-shadow 0.18s';
-        cardBtn.onmouseover = () => { cardBtn.style.transform = 'scale(1.08)'; cardBtn.style.boxShadow = '0 8px 28px #a97c50cc'; };
-        cardBtn.onmouseout = () => { cardBtn.style.transform = ''; cardBtn.style.boxShadow = '0 4px 18px #a97c5088'; };
+        cardBtn.className = 'tryal-card-select-btn';
         cardBtn.onclick = () => {
             socket.emit('select tryal card for confession', accusedUniqueId, i);
             document.body.removeChild(container);
@@ -893,7 +883,6 @@ function showAccusedTryalSelection(accusedUniqueId, tryalCount) {
         cardsDiv.appendChild(cardBtn);
     }
     container.appendChild(cardsDiv);
-    // ไม่มีปุ่มยกเลิก
     document.body.appendChild(container);
 }
 
@@ -921,16 +910,20 @@ function showBlackCatTryalSelection(blackCatHolder, tryalCount) {
     
     const container = document.createElement('div');
     container.id = 'blackcat-tryal-select-popup';
+    container.classList.add('tryal-select-popup'); // เพิ่ม class นี้
     container.style.position = 'fixed';
     container.style.top = '50%';
     container.style.left = '50%';
     container.style.transform = 'translate(-50%, -50%)';
     container.style.background = '#222';
-    container.style.padding = '30px';
+    container.style.padding = window.innerWidth <= 600 ? '20px' : '30px';
     container.style.borderRadius = '10px';
-    container.style.zIndex = 9999;
+    container.style.zIndex = '9999';
     container.style.boxShadow = '0 0 20px #000';
     container.style.textAlign = 'center';
+    container.style.maxWidth = window.innerWidth <= 600 ? '95vw' : '600px';
+    container.style.maxHeight = window.innerWidth <= 600 ? '90vh' : 'auto';
+    container.style.overflowY = 'auto';
 
     const title = document.createElement('h3');
     title.textContent = 'เลือก การ์ดชีวิต ของผู้ถือ การ์ดเครื่องเซ่น เพื่อเปิดเผย';
@@ -939,32 +932,65 @@ function showBlackCatTryalSelection(blackCatHolder, tryalCount) {
 
     const cardsDiv = document.createElement('div');
     cardsDiv.style.display = 'flex';
-    cardsDiv.style.flexWrap = 'wrap'; // ให้ wrap ลงมา
-    cardsDiv.style.justifyContent = 'center';
-    cardsDiv.style.gap = window.innerWidth <= 600 ? '4px' : '18px';
-    cardsDiv.style.margin = '12px 0';
-    cardsDiv.style.overflowX = 'hidden';
-    cardsDiv.style.maxWidth = '98vw';
+    cardsDiv.style.flexDirection = 'column';
+    cardsDiv.style.alignItems = 'center';
+    cardsDiv.style.gap = '12px';
+    cardsDiv.style.margin = '20px 0';
+    cardsDiv.style.maxWidth = '100%';
     cardsDiv.style.paddingBottom = '8px';
-    // Responsive card size
+    
+    // Create large, prominent card buttons like in the image
     const isMobile = window.innerWidth <= 600;
     for (let i = 0; i < tryalCount; i++) {
         const cardBtn = document.createElement('button');
         cardBtn.textContent = `การ์ด ${i+1}`;
-        cardBtn.style.width = isMobile ? '42px' : '100px';
-        cardBtn.style.height = isMobile ? '58px' : '140px';
-        cardBtn.style.fontSize = isMobile ? '0.82em' : '1.15em';
+        
+        // Large, prominent buttons matching the image design
+        cardBtn.style.width = isMobile ? '280px' : '350px';
+        cardBtn.style.height = '60px';
+        cardBtn.style.fontSize = isMobile ? '1.3em' : '1.5em';
         cardBtn.style.fontWeight = 'bold';
-        cardBtn.style.background = 'linear-gradient(135deg, #7b5e3b 0%, #a97c50 100%)';
-        cardBtn.style.color = '#fff8e1';
-        cardBtn.style.borderRadius = '12px';
-        cardBtn.style.boxShadow = '0 4px 18px #a97c5088';
+        cardBtn.style.background = 'linear-gradient(135deg, #f4d03f 0%, #f7dc6f 50%, #f9e79f 100%)';
+        cardBtn.style.color = '#2c3e50';
+        cardBtn.style.border = '2px solid #d4ac0d';
+        cardBtn.style.borderRadius = '15px';
+        cardBtn.style.boxShadow = '0 6px 20px rgba(212, 172, 13, 0.3)';
         cardBtn.style.cursor = 'pointer';
-        cardBtn.style.margin = isMobile ? '0 2px' : '0 8px';
-        cardBtn.style.opacity = '0.95';
-        cardBtn.style.transition = 'transform 0.18s, box-shadow 0.18s';
-        cardBtn.onmouseover = () => { cardBtn.style.transform = 'scale(1.08)'; cardBtn.style.boxShadow = '0 8px 28px #a97c50cc'; };
-        cardBtn.onmouseout = () => { cardBtn.style.transform = ''; cardBtn.style.boxShadow = '0 4px 18px #a97c5088'; };
+        cardBtn.style.margin = '0';
+        cardBtn.style.transition = 'all 0.2s ease';
+        cardBtn.style.textShadow = '1px 1px 2px rgba(0,0,0,0.1)';
+        
+        // Enhanced interaction effects
+        if (isMobile) {
+            cardBtn.style.minHeight = '60px';
+            cardBtn.style.minWidth = '280px';
+            cardBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                cardBtn.style.transform = 'scale(0.98)';
+                cardBtn.style.boxShadow = '0 3px 15px rgba(212, 172, 13, 0.4)';
+                cardBtn.style.background = 'linear-gradient(135deg, #f1c40f 0%, #f4d03f 50%, #f7dc6f 100%)';
+            });
+            cardBtn.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                setTimeout(() => {
+                    cardBtn.style.transform = '';
+                    cardBtn.style.boxShadow = '0 6px 20px rgba(212, 172, 13, 0.3)';
+                    cardBtn.style.background = 'linear-gradient(135deg, #f4d03f 0%, #f7dc6f 50%, #f9e79f 100%)';
+                }, 100);
+            });
+        } else {
+            cardBtn.onmouseover = () => { 
+                cardBtn.style.transform = 'translateY(-2px)';
+                cardBtn.style.boxShadow = '0 8px 25px rgba(212, 172, 13, 0.4)';
+                cardBtn.style.background = 'linear-gradient(135deg, #f1c40f 0%, #f4d03f 50%, #f7dc6f 100%)';
+            };
+            cardBtn.onmouseout = () => { 
+                cardBtn.style.transform = '';
+                cardBtn.style.boxShadow = '0 6px 20px rgba(212, 172, 13, 0.3)';
+                cardBtn.style.background = 'linear-gradient(135deg, #f4d03f 0%, #f7dc6f 50%, #f9e79f 100%)';
+            };
+        }
+        
         cardBtn.onclick = () => {
             socket.emit('select blackcat tryal', i);
             document.body.removeChild(container);
@@ -2177,28 +2203,27 @@ function showConfessPopup(tryalCards) {
     const existing = document.getElementById('confess-popup');
     if (existing) existing.remove();
     
-    if (!tryalCards || tryalCards.length === 0) return; // ไม่เด้ง popup ถ้าไม่มีไพ่
+    if (!tryalCards || tryalCards.length === 0) return;
     const popup = document.createElement('div');
     popup.id = 'confess-popup';
-    popup.style = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#222;padding:30px;border-radius:10px;z-index:9999;text-align:center;box-shadow:0 0 20px #000;';
-
+    popup.classList.add('tryal-select-popup');
     const title = document.createElement('h3');
     title.textContent = 'เลือก การ์ดชีวิต เพื่อสารภาพ';
     title.style.color = '#ffd700';
     popup.appendChild(title);
-
     const cardsDiv = document.createElement('div');
     cardsDiv.style.display = 'flex';
-    cardsDiv.style.gap = '10px';
+    cardsDiv.style.flexWrap = 'wrap';
     cardsDiv.style.justifyContent = 'center';
-    cardsDiv.style.margin = '20px 0';
-
+    cardsDiv.style.gap = window.innerWidth <= 600 ? '4px' : '10px';
+    cardsDiv.style.margin = '12px 0';
+    cardsDiv.style.overflowX = 'hidden';
+    cardsDiv.style.maxWidth = '98vw';
+    cardsDiv.style.paddingBottom = '8px';
     tryalCards.forEach((card, i) => {
         const btn = document.createElement('button');
         btn.textContent = `การ์ด ${i+1}`;
-        btn.style = 'width:100px;height:140px;font-size:1.15em;font-weight:bold;background:linear-gradient(135deg, #7b5e3b 0%, #a97c50 100%);color:#fff8e1;border:2.5px solid #b2b2b2;border-radius:12px;cursor:pointer;box-shadow:0 4px 16px #2228;margin:0 8px;opacity:0.95;transition:background 0.18s,box-shadow 0.18s;';
-        btn.onmouseover = () => { btn.style.background = 'linear-gradient(135deg, #a97c50 0%, #7b5e3b 100%)'; btn.style.boxShadow = '0 8px 28px #a97c50cc'; };
-        btn.onmouseout = () => { btn.style.background = 'linear-gradient(135deg, #7b5e3b 0%, #a97c50 100%)'; btn.style.boxShadow = '0 4px 16px #2228'; };
+        btn.className = 'tryal-card-select-btn';
         btn.onclick = () => {
             socket.emit('confess tryal card', i);
             document.body.removeChild(popup);
@@ -2206,7 +2231,6 @@ function showConfessPopup(tryalCards) {
         cardsDiv.appendChild(btn);
     });
     popup.appendChild(cardsDiv);
-
     // Skip button
     const skipBtn = document.createElement('button');
     skipBtn.textContent = 'ข้ามการสารภาพ';
@@ -2216,7 +2240,6 @@ function showConfessPopup(tryalCards) {
         if (document.body.contains(popup)) document.body.removeChild(popup);
     };
     popup.appendChild(skipBtn);
-
     document.body.appendChild(popup);
 }
 
@@ -2343,7 +2366,7 @@ socket.on('prompt select left tryal', ({ leftPlayerUniqueId, leftPlayerName, lef
     popup.style = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#222;padding:30px;border-radius:10px;z-index:9999;text-align:center;box-shadow:0 0 20px #000;';
 
     const title = document.createElement('h3');
-    title.textContent = `เลือก การ์ดชีวิต จากผู้เล่นซ้ายมือ: ${leftPlayerName}`;
+    title.textContent = `เลือก การ์ดชีวิต จากผู้เล่นซ้ายมือ: ${leftPlayerName} และรอผู้เล่นอื่นเพื่อดำเนินการต่อ`;
     title.style.color = '#ffd700';
     popup.appendChild(title);
 
@@ -3191,10 +3214,11 @@ socket.on('prompt select blackcat tryal', ({ blackCatHolder, tryalCount, blackCa
     
     const popup = document.createElement('div');
     popup.id = 'select-blackcat-tryal-popup';
+    popup.classList.add('tryal-select-popup'); // เพิ่ม class นี้
     popup.style = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#222;padding:30px;border-radius:10px;z-index:9999;text-align:center;box-shadow:0 0 20px #000;';
 
     const title = document.createElement('h3');
-    title.textContent = `เลือก การ์ดชีวิต ของผู้ถือเครื่องเซ่น (${blackCatHolderName || ''}) เพื่อเปิดเผย`;
+    title.textContent = `เลือก การ์ดชีวิต ของผู้ถือเครื่องเซ่นเพื่อเปิดเผย`;
     title.style.color = '#ffd700';
     popup.appendChild(title);
 

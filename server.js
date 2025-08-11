@@ -333,11 +333,13 @@ function setNextTurn(room) {
                                         tryalCount: bcHolder.tryalCards.length
                                     });
                                     room.discardPile.push(card);
+                                    // Don't proceed to next turn until selection is complete
                                     return;
                                 }
                             }
                             promptTryalCardSelectionToLeft(room.name);
                             room.discardPile.push(card);
+                            // Don't proceed to next turn until selection is complete
                             return;
                         case 'Night':
                             room.nightCardDrawer = nextPlayerUniqueId;
@@ -379,11 +381,13 @@ function setNextTurn(room) {
                                             tryalCount: bcHolder.tryalCards.length
                                         });
                                         room.discardPile.push(card);
+                                        // Don't proceed to next turn until selection is complete
                                         return;
                                     }
                                 }
                                 promptTryalCardSelectionToLeft(room.name);
                                 room.discardPile.push(card);
+                                // Don't proceed to next turn until selection is complete
                                 return;
                             case 'Night':
                                 room.nightCardDrawer = nextPlayerUniqueId;
@@ -1333,11 +1337,13 @@ function drawCards(roomName, playerUniqueId, count = 2) {
                                         tryalCount: bcHolder.tryalCards.length
                                     });
                                     room.discardPile.push(card);
+                                    // Don't set next turn yet - wait for Tryal selection to complete
                                     return;
                                 }
                             }
                             promptTryalCardSelectionToLeft(roomName);
                             room.discardPile.push(card);
+                            // Don't set next turn yet - wait for Tryal selection to complete
                             return;
                         case 'Night':
                             room.nightCardDrawer = playerUniqueId;
