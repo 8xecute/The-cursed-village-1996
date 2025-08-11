@@ -404,13 +404,6 @@ socket.on('room state update', (roomState) => {
             if (typeof witchChatInput !== 'undefined' && witchChatInput) witchChatInput.placeholder = 'คุณตายแล้ว ไม่สามารถส่งข้อความได้';
         }
 
-        // --- NEW: Disable all controls if awaitingLeftTryalSelections (พิธีเซ่นไหว้) ---
-        if (roomState.awaitingLeftTryalSelections) {
-            if (typeof drawCardButton !== 'undefined' && drawCardButton) drawCardButton.disabled = true;
-            if (typeof playCardButton !== 'undefined' && playCardButton) playCardButton.disabled = true;
-            if (typeof endTurnButton !== 'undefined' && endTurnButton) endTurnButton.disabled = true;
-        }
-
         // Update my hand display (only if my hand data is sent by server)
         // Server only sends myHand via specific 'update hand' event
         handCardCount.textContent = myPlayer ? myPlayer.handSize : 0;
@@ -864,6 +857,7 @@ function showAccusedTryalSelection(accusedUniqueId, tryalCount) {
 
     const cardsDiv = document.createElement('div');
     cardsDiv.style.display = 'flex';
+<<<<<<< HEAD
     cardsDiv.style.flexWrap = 'wrap';
     cardsDiv.style.justifyContent = 'center';
     cardsDiv.style.gap = window.innerWidth <= 600 ? '4px' : '10px';
@@ -876,6 +870,29 @@ function showAccusedTryalSelection(accusedUniqueId, tryalCount) {
         const cardBtn = document.createElement('button');
         cardBtn.textContent = `การ์ด ${i+1}`;
         cardBtn.className = 'tryal-card-select-btn';
+=======
+    cardsDiv.style.justifyContent = 'center';
+    cardsDiv.style.gap = '18px';
+    cardsDiv.style.margin = '18px 0';
+
+    for (let i = 0; i < tryalCount; i++) {
+        const cardBtn = document.createElement('button');
+        cardBtn.textContent = `การ์ด ${i+1}`;
+        cardBtn.style.width = '100px';
+        cardBtn.style.height = '140px';
+        cardBtn.style.fontSize = '1.15em';
+        cardBtn.style.fontWeight = 'bold';
+        cardBtn.style.background = 'linear-gradient(135deg, #7b5e3b 0%, #a97c50 100%)';
+        cardBtn.style.color = '#fff8e1';
+        cardBtn.style.borderRadius = '12px';
+        cardBtn.style.boxShadow = '0 4px 18px #a97c5088';
+        cardBtn.style.cursor = 'pointer';
+        cardBtn.style.margin = '0 8px';
+        cardBtn.style.opacity = '0.95';
+        cardBtn.style.transition = 'transform 0.18s, box-shadow 0.18s';
+        cardBtn.onmouseover = () => { cardBtn.style.transform = 'scale(1.08)'; cardBtn.style.boxShadow = '0 8px 28px #a97c50cc'; };
+        cardBtn.onmouseout = () => { cardBtn.style.transform = ''; cardBtn.style.boxShadow = '0 4px 18px #a97c5088'; };
+>>>>>>> parent of 983997c (V. 2.0.1)
         cardBtn.onclick = () => {
             socket.emit('select tryal card for confession', accusedUniqueId, i);
             document.body.removeChild(container);
@@ -932,6 +949,7 @@ function showBlackCatTryalSelection(blackCatHolder, tryalCount) {
 
     const cardsDiv = document.createElement('div');
     cardsDiv.style.display = 'flex';
+<<<<<<< HEAD
     cardsDiv.style.flexDirection = 'column';
     cardsDiv.style.alignItems = 'center';
     cardsDiv.style.gap = '12px';
@@ -949,6 +967,18 @@ function showBlackCatTryalSelection(blackCatHolder, tryalCount) {
         cardBtn.style.width = isMobile ? '280px' : '350px';
         cardBtn.style.height = '60px';
         cardBtn.style.fontSize = isMobile ? '1.3em' : '1.5em';
+=======
+    cardsDiv.style.gap = '10px';
+    cardsDiv.style.justifyContent = 'center';
+    cardsDiv.style.margin = '20px 0';
+
+    for (let i = 0; i < tryalCount; i++) {
+        const cardBtn = document.createElement('button');
+        cardBtn.textContent = `การ์ด ${i + 1}`;
+        cardBtn.style.width = '100px';
+        cardBtn.style.height = '140px';
+        cardBtn.style.fontSize = '1.15em';
+>>>>>>> parent of 983997c (V. 2.0.1)
         cardBtn.style.fontWeight = 'bold';
         cardBtn.style.background = 'linear-gradient(135deg, #f4d03f 0%, #f7dc6f 50%, #f9e79f 100%)';
         cardBtn.style.color = '#2c3e50';
@@ -956,6 +986,7 @@ function showBlackCatTryalSelection(blackCatHolder, tryalCount) {
         cardBtn.style.borderRadius = '15px';
         cardBtn.style.boxShadow = '0 6px 20px rgba(212, 172, 13, 0.3)';
         cardBtn.style.cursor = 'pointer';
+<<<<<<< HEAD
         cardBtn.style.margin = '0';
         cardBtn.style.transition = 'all 0.2s ease';
         cardBtn.style.textShadow = '1px 1px 2px rgba(0,0,0,0.1)';
@@ -991,12 +1022,20 @@ function showBlackCatTryalSelection(blackCatHolder, tryalCount) {
             };
         }
         
+=======
+        cardBtn.style.margin = '0 8px';
+        cardBtn.style.opacity = '0.95';
+        cardBtn.style.transition = 'transform 0.18s, box-shadow 0.18s';
+        cardBtn.onmouseover = () => { cardBtn.style.transform = 'scale(1.08)'; cardBtn.style.boxShadow = '0 8px 28px #a97c50cc'; };
+        cardBtn.onmouseout = () => { cardBtn.style.transform = ''; cardBtn.style.boxShadow = '0 4px 18px #a97c5088'; };
+>>>>>>> parent of 983997c (V. 2.0.1)
         cardBtn.onclick = () => {
-            socket.emit('select blackcat tryal', i);
+            socket.emit('select blackcat tryal', blackCatHolder, i);
             document.body.removeChild(container);
         };
         cardsDiv.appendChild(cardBtn);
     }
+
     container.appendChild(cardsDiv);
     // (No cancel button)
     document.body.appendChild(container);
@@ -2385,23 +2424,14 @@ socket.on('prompt select left tryal', ({ leftPlayerUniqueId, leftPlayerName, lef
 
     const cardsDiv = document.createElement('div');
     cardsDiv.style.display = 'flex';
-    cardsDiv.style.flexWrap = 'wrap'; // ให้ wrap ลงมา
+    cardsDiv.style.gap = '10px';
     cardsDiv.style.justifyContent = 'center';
-    cardsDiv.style.gap = window.innerWidth <= 600 ? '4px' : '10px';
-    cardsDiv.style.margin = '12px 0';
-    cardsDiv.style.overflowX = 'hidden';
-    cardsDiv.style.maxWidth = '98vw';
-    cardsDiv.style.paddingBottom = '8px';
-    const isMobile = window.innerWidth <= 600;
+    cardsDiv.style.margin = '20px 0';
+
     for (let i = 0; i < leftPlayerTryalCount; i++) {
         const btn = document.createElement('button');
         btn.textContent = `การ์ด ${i + 1}`;
-        btn.style =
-          `width:${isMobile ? '42px' : '80px'};`+
-          `height:${isMobile ? '58px' : '120px'};`+
-          `font-size:${isMobile ? '0.82em' : '1.1em'};`+
-          'background:linear-gradient(135deg, #7b5e3b 0%, #a97c50 100%);'+
-          'color:#fff8e1;border:2px solid #a97c50;border-radius:8px;cursor:pointer;font-weight:bold;box-shadow:0 4px 18px #a97c5088;transition:transform 0.18s, box-shadow 0.18s;';
+        btn.style = 'width:80px;height:120px;font-size:1.1em;background:linear-gradient(135deg, #7b5e3b 0%, #a97c50 100%);color:#fff8e1;border:2px solid #a97c50;border-radius:8px;cursor:pointer;font-weight:bold;box-shadow:0 4px 18px #a97c5088;transition:transform 0.18s, box-shadow 0.18s;';
         btn.onmouseover = () => { 
             btn.style.transform = 'scale(1.08)'; 
             btn.style.boxShadow = '0 8px 28px #a97c50cc'; 
@@ -2414,6 +2444,7 @@ socket.on('prompt select left tryal', ({ leftPlayerUniqueId, leftPlayerName, lef
             socket.emit('select left tryal', i);
             if (document.body.contains(popup)) document.body.removeChild(popup);
             if (document.body.contains(overlay)) document.body.removeChild(overlay);
+            // หลังเลือกแล้ว ให้ refresh tryal card display (ป้องกันไม่สลับ)
             setTimeout(() => { updateTryalCardDisplay(); }, 300);
         };
         cardsDiv.appendChild(btn);
@@ -3029,26 +3060,12 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     tooltipDiv.textContent = text;
     tooltipDiv.classList.add('show');
-    // Always show above the card
+    // Position tooltip
     const rect = this.getBoundingClientRect();
     const scrollY = window.scrollY || window.pageYOffset;
     const scrollX = window.scrollX || window.pageXOffset;
-    const margin = 8;
-    // Temporarily show to get height
-    tooltipDiv.style.top = '0px';
-    tooltipDiv.style.left = '0px';
-    const tooltipRect = tooltipDiv.getBoundingClientRect();
-    let top = rect.top + scrollY - tooltipRect.height - margin;
-    let left = rect.left + scrollX + rect.width/2 - tooltipRect.width/2;
-    // Clamp top
-    if (top < scrollY) top = scrollY + margin;
-    // Clamp left/right
-    if (left < scrollX) left = scrollX + margin;
-    if (left + tooltipRect.width > window.innerWidth + scrollX) {
-      left = window.innerWidth + scrollX - tooltipRect.width - margin;
-    }
-    tooltipDiv.style.top = top + 'px';
-    tooltipDiv.style.left = left + 'px';
+    tooltipDiv.style.top = (rect.bottom + scrollY + 8) + 'px';
+    tooltipDiv.style.left = (rect.left + scrollX + rect.width/2 - tooltipDiv.offsetWidth/2) + 'px';
   }
   function hideTooltip(e) {
     if (this.getAttribute('data-original-title')) {
@@ -3224,32 +3241,26 @@ socket.on('prompt select blackcat tryal', ({ blackCatHolder, tryalCount, blackCa
 
     const cardsDiv = document.createElement('div');
     cardsDiv.style.display = 'flex';
-    cardsDiv.style.flexWrap = 'wrap'; // ให้ wrap ลงมา
+    cardsDiv.style.gap = '10px';
     cardsDiv.style.justifyContent = 'center';
-    cardsDiv.style.gap = window.innerWidth <= 600 ? '4px' : '10px';
-    cardsDiv.style.margin = '12px 0';
-    cardsDiv.style.overflowX = 'hidden';
-    cardsDiv.style.maxWidth = '98vw';
-    cardsDiv.style.paddingBottom = '8px';
-    // Responsive card size
-    const isMobile = window.innerWidth <= 600;
+    cardsDiv.style.margin = '20px 0';
+
     for (let i = 0; i < tryalCount; i++) {
         const cardBtn = document.createElement('button');
         cardBtn.textContent = `การ์ด ${i + 1}`;
-        cardBtn.style.width = isMobile ? '42px' : '100px';
-        cardBtn.style.height = isMobile ? '58px' : '140px';
-        cardBtn.style.fontSize = isMobile ? '0.82em' : '1.15em';
+        cardBtn.style.width = '100px';
+        cardBtn.style.height = '140px';
+        cardBtn.style.fontSize = '1.15em';
         cardBtn.style.fontWeight = 'bold';
-        cardBtn.style.background = 'linear-gradient(135deg, #7b5e3b 0%, #a97c50 100%)';
-        cardBtn.style.color = '#fff8e1';
+        cardBtn.style.background = 'linear-gradient(135deg, #5a3a1b 0%, #a97c50 100%)'; // น้ำตาลแก่
+        cardBtn.style.color = '#fff';
+        cardBtn.style.border = '2.5px solid #7c5a36';
         cardBtn.style.borderRadius = '12px';
-        cardBtn.style.boxShadow = '0 4px 18px #a97c5088';
+        cardBtn.style.boxShadow = '0 4px 18px #5a3a1b88';
         cardBtn.style.cursor = 'pointer';
-        cardBtn.style.margin = isMobile ? '0 2px' : '0 8px';
-        cardBtn.style.opacity = '0.95';
         cardBtn.style.transition = 'transform 0.18s, box-shadow 0.18s';
         cardBtn.onmouseover = () => { cardBtn.style.transform = 'scale(1.08)'; cardBtn.style.boxShadow = '0 8px 28px #a97c50cc'; };
-        cardBtn.onmouseout = () => { cardBtn.style.transform = ''; cardBtn.style.boxShadow = '0 4px 18px #a97c5088'; };
+        cardBtn.onmouseout = () => { cardBtn.style.transform = ''; cardBtn.style.boxShadow = '0 4px 18px #5a3a1b88'; };
         cardBtn.onclick = () => {
             socket.emit('select blackcat tryal', blackCatHolder, i);
             if (document.body.contains(popup)) document.body.removeChild(popup);

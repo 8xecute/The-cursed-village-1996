@@ -1413,7 +1413,7 @@ button:disabled {
 
 #host-controls-game {
     display: none !important;
-} 
+}
 
 #host-controls-lobby {
     display: none !important;
@@ -1524,6 +1524,7 @@ button:disabled {
   .music-overlay-content {
     padding-bottom: 90px !important;
   }
+<<<<<<< HEAD
 } 
 
 @media (max-width: 600px) {
@@ -1597,4 +1598,6 @@ button:disabled {
     margin: 0 2px 0 2px !important;
     border-radius: 7px !important;
   }
+=======
+>>>>>>> parent of 983997c (V. 2.0.1)
 } 
