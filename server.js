@@ -10,6 +10,7 @@ const server = http.createServer(app);
 const io = new Server(server);
 
 app.use(express.static('public')); // Serve static files from the 'public' directory
+app.use('/dist', express.static('dist')); // Serve built files from the 'dist' directory
 
 const PORT = process.env.PORT || 3000;
 
@@ -853,7 +854,33 @@ function playCard(roomName, playerUniqueId, cardIndex, targetUniqueId = null, se
     switch (cardToPlay.name) {
         case 'Accusation':
         case 'Evidence':
-        
+        case 'Witness':
+            if (targetUniqueId) {
+                const targetPlayer = room.players[targetUniqueId];
+                room.accusedPlayers[targetUniqueId] = (room.accusedPlayers[targetUniqueId] || 0) + cardToPlay.value;
+                sendGameMessage(room.name, `<b>${player.name}</b> ใช้การ์ด ${getCardNameWithColor(cardToPlay.name)} ใส่ <b>${targetPlayer.name}</b>`, 'orange', true);
+
+                // Place RED card in front of the target player
+                targetPlayer.inPlayCards.push(cardToPlay);
+                io.to(targetPlayer.id).emit('update in play cards', targetPlayer.inPlayCards);
+
+                const totalAccusations = room.accusedPlayers[targetUniqueId];
+                if (totalAccusations >= 7) {
+                    // Force Tryal Card reveal instead of confession
+                    room.playerForcedToRevealTryal = targetUniqueId;
+                    room.playerForcedToRevealSelector = player.uniqueId;
+                    sendGameMessage(room.name, `<b>${targetPlayer.name}</b> มีข้อกล่าวหาถึง 7 แต้มและต้องเปิดเผยการ์ดชีวิต!`, 'gold', true);
+                    // ส่ง event ไปยังผู้กล่าวหาให้เลือก tryal card ของเป้าหมาย
+                    io.to(player.id).emit('prompt select accused tryal', {
+                        accusedUniqueId: targetUniqueId,
+                        tryalCount: targetPlayer.tryalCards.length
+                    });
+                    emitRoomState(room.name);
+                    return;
+                }
+                emitCardUsedOnYou(targetUniqueId, cardToPlay);
+            }
+            break;
         case 'Scapegoat':
             if (targetUniqueId && secondTargetUniqueId) {
                 const sourcePlayer = room.players[targetUniqueId];
@@ -1086,15 +1113,11 @@ function playCard(roomName, playerUniqueId, cardIndex, targetUniqueId = null, se
                     return; // ไม่จบเทิร์นทันที
                 }
             }
-            // --- เพิ่ม flag สำหรับพิธีเซ่นไหว้ ---
-            room.awaitingLeftTryalSelections = true;
-            room.conspiracyDrawer = playerUniqueId;
             promptTryalCardSelectionToLeft(roomName);
-            emitRoomState(roomName);
             room.discardPile.push(cardToPlay); // <--- FIX: discard Conspiracy after use
             break;
         case 'Witness':
-            if (targetUniqueId && room.players[targetUniqueId]) {
+            if (targetUniqueId) {
                 const targetPlayer = room.players[targetUniqueId];
                 // เพิ่มแต้มข้อกล่าวหา
                 room.accusedPlayers[targetUniqueId] = (room.accusedPlayers[targetUniqueId] || 0) + cardToPlay.value;
@@ -1111,13 +1134,11 @@ function playCard(roomName, playerUniqueId, cardIndex, targetUniqueId = null, se
                     tryalCount: targetPlayer.tryalCards.length
                 });
                 emitRoomState(room.name);
-            }
-            // ไม่ว่า target จะถูกหรือไม่ ให้ลบการ์ดออกจากมือและทิ้งลงกองทิ้งเสมอ
-            if (cardIndex >= 0 && cardIndex < player.hand.length) {
+                // ลบการ์ดออกจากมือและไปกองทิ้งทันที
                 player.hand.splice(cardIndex, 1);
                 room.discardPile.push(cardToPlay);
             }
-            return;
+            break;
         default:
             break;
     }
@@ -2663,17 +2684,25 @@ io.on('connection', (socket) => {
                 }
             });
             delete room.conspiracyTryalSelections;
-            room.awaitingLeftTryalSelections = false;
-            // --- setNextTurn ต่อจากคนจั่ว ---
-            if (room.conspiracyDrawer) {
-                setNextTurn(room, room.conspiracyDrawer, true);
-                room.conspiracyDrawer = null;
-            } else {
-                setNextTurn(room);
-            }
             emitRoomState(roomName);
-            // ... (logic เดิม)
-            return;
+            // --- เงื่อนไขพิเศษ: ถ้าทุกคนที่รอดชีวิตกลายเป็นปอบ และยังมีการ์ดปอบเหลือ ให้รอเช็คตอน NIGHT ---
+            const alivePlayersNow = getAlivePlayers(room);
+            const allWitchNow = alivePlayersNow.length > 0 && alivePlayersNow.every(p => p.hasBeenWitch);
+            let witchCardLeftNow = false;
+            for (const p of Object.values(room.players)) {
+                if (p.tryalCards && p.tryalCards.some(card => card.name === 'Witch')) {
+                    witchCardLeftNow = true;
+                    break;
+                }
+            }
+            if (allWitchNow && witchCardLeftNow) {
+                room.pendingWitchWinByConspiracy = true;
+                // เรียก checkWinCondition ทันทีเพื่อจบเกมถ้าเข้าเงื่อนไข
+                checkWinCondition(room);
+            } else {
+                checkWinCondition(room);
+            }
+            setNextTurn(room); // Continue normal turn order
         }
     });
 

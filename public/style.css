@@ -1413,7 +1413,7 @@ button:disabled {
 
 #host-controls-game {
     display: none !important;
-} 
+}
 
 #host-controls-lobby {
     display: none !important;
@@ -1499,15 +1499,5 @@ button:disabled {
   }
   .music-overlay-content {
     padding-bottom: 90px !important;
-  }
-} 
-
-@media (max-width: 600px) {
-  .custom-tooltip {
-    font-size: 0.92em;
-    max-width: 98vw;
-    padding: 6px 10px;
-    border-radius: 7px;
-    line-height: 1.3;
   }
 } 
