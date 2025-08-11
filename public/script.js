@@ -863,62 +863,55 @@ function showAccusedTryalSelection(accusedUniqueId, tryalCount) {
 
     const cardsDiv = document.createElement('div');
     cardsDiv.style.display = 'flex';
-    cardsDiv.style.flexDirection = 'column';
-    cardsDiv.style.alignItems = 'center';
-    cardsDiv.style.gap = '12px';
-    cardsDiv.style.margin = '20px 0';
-    cardsDiv.style.maxWidth = '100%';
+    cardsDiv.style.flexWrap = 'wrap';
+    cardsDiv.style.justifyContent = 'center';
+    cardsDiv.style.gap = window.innerWidth <= 600 ? '8px' : '18px';
+    cardsDiv.style.margin = '12px 0';
+    cardsDiv.style.overflowX = 'hidden';
+    cardsDiv.style.maxWidth = '98vw';
     cardsDiv.style.paddingBottom = '8px';
     
-    // Create large, prominent card buttons like in the image
+    // Responsive card size - much larger for mobile
     const isMobile = window.innerWidth <= 600;
     for (let i = 0; i < tryalCount; i++) {
         const cardBtn = document.createElement('button');
         cardBtn.textContent = `การ์ด ${i+1}`;
         
-        // Large, prominent buttons matching the image design
-        cardBtn.style.width = isMobile ? '280px' : '350px';
-        cardBtn.style.height = '60px';
-        cardBtn.style.fontSize = isMobile ? '1.3em' : '1.5em';
+        // Much larger mobile buttons for better tapping
+        cardBtn.style.width = isMobile ? '80px' : '100px';
+        cardBtn.style.height = isMobile ? '100px' : '140px';
+        cardBtn.style.fontSize = isMobile ? '1.1em' : '1.15em';
         cardBtn.style.fontWeight = 'bold';
-        cardBtn.style.background = 'linear-gradient(135deg, #f4d03f 0%, #f7dc6f 50%, #f9e79f 100%)';
-        cardBtn.style.color = '#2c3e50';
-        cardBtn.style.border = '2px solid #d4ac0d';
-        cardBtn.style.borderRadius = '15px';
-        cardBtn.style.boxShadow = '0 6px 20px rgba(212, 172, 13, 0.3)';
+        cardBtn.style.background = 'linear-gradient(135deg, #7b5e3b 0%, #a97c50 100%)';
+        cardBtn.style.color = '#fff8e1';
+        cardBtn.style.border = 'none';
+        cardBtn.style.borderRadius = isMobile ? '15px' : '12px';
+        cardBtn.style.boxShadow = '0 4px 18px #a97c5088';
         cardBtn.style.cursor = 'pointer';
-        cardBtn.style.margin = '0';
-        cardBtn.style.transition = 'all 0.2s ease';
-        cardBtn.style.textShadow = '1px 1px 2px rgba(0,0,0,0.1)';
+        cardBtn.style.margin = isMobile ? '4px' : '0 8px';
+        cardBtn.style.opacity = '0.95';
+        cardBtn.style.transition = 'transform 0.18s, box-shadow 0.18s';
         
-        // Enhanced interaction effects
+        // Better mobile interaction - use touch events
         if (isMobile) {
-            cardBtn.style.minHeight = '60px';
-            cardBtn.style.minWidth = '280px';
-            cardBtn.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                cardBtn.style.transform = 'scale(0.98)';
-                cardBtn.style.boxShadow = '0 3px 15px rgba(212, 172, 13, 0.4)';
-                cardBtn.style.background = 'linear-gradient(135deg, #f1c40f 0%, #f4d03f 50%, #f7dc6f 100%)';
+            cardBtn.style.minHeight = '44px'; // iOS minimum touch target
+            cardBtn.style.minWidth = '44px';
+            cardBtn.addEventListener('touchstart', () => {
+                cardBtn.style.transform = 'scale(0.95)';
+                cardBtn.style.boxShadow = '0 2px 12px #a97c50aa';
             });
-            cardBtn.addEventListener('touchend', (e) => {
-                e.preventDefault();
-                setTimeout(() => {
-                    cardBtn.style.transform = '';
-                    cardBtn.style.boxShadow = '0 6px 20px rgba(212, 172, 13, 0.3)';
-                    cardBtn.style.background = 'linear-gradient(135deg, #f4d03f 0%, #f7dc6f 50%, #f9e79f 100%)';
-                }, 100);
+            cardBtn.addEventListener('touchend', () => {
+                cardBtn.style.transform = '';
+                cardBtn.style.boxShadow = '0 4px 18px #a97c5088';
             });
         } else {
             cardBtn.onmouseover = () => { 
-                cardBtn.style.transform = 'translateY(-2px)';
-                cardBtn.style.boxShadow = '0 8px 25px rgba(212, 172, 13, 0.4)';
-                cardBtn.style.background = 'linear-gradient(135deg, #f1c40f 0%, #f4d03f 50%, #f7dc6f 100%)';
+                cardBtn.style.transform = 'scale(1.08)'; 
+                cardBtn.style.boxShadow = '0 8px 28px #a97c50cc'; 
             };
             cardBtn.onmouseout = () => { 
-                cardBtn.style.transform = '';
-                cardBtn.style.boxShadow = '0 6px 20px rgba(212, 172, 13, 0.3)';
-                cardBtn.style.background = 'linear-gradient(135deg, #f4d03f 0%, #f7dc6f 50%, #f9e79f 100%)';
+                cardBtn.style.transform = ''; 
+                cardBtn.style.boxShadow = '0 4px 18px #a97c5088'; 
             };
         }
         
@@ -978,62 +971,55 @@ function showBlackCatTryalSelection(blackCatHolder, tryalCount) {
 
     const cardsDiv = document.createElement('div');
     cardsDiv.style.display = 'flex';
-    cardsDiv.style.flexDirection = 'column';
-    cardsDiv.style.alignItems = 'center';
-    cardsDiv.style.gap = '12px';
-    cardsDiv.style.margin = '20px 0';
-    cardsDiv.style.maxWidth = '100%';
+    cardsDiv.style.flexWrap = 'wrap';
+    cardsDiv.style.justifyContent = 'center';
+    cardsDiv.style.gap = window.innerWidth <= 600 ? '8px' : '18px';
+    cardsDiv.style.margin = '12px 0';
+    cardsDiv.style.overflowX = 'hidden';
+    cardsDiv.style.maxWidth = '98vw';
     cardsDiv.style.paddingBottom = '8px';
     
-    // Create large, prominent card buttons like in the image
+    // Responsive card size - much larger for mobile
     const isMobile = window.innerWidth <= 600;
     for (let i = 0; i < tryalCount; i++) {
         const cardBtn = document.createElement('button');
         cardBtn.textContent = `การ์ด ${i+1}`;
         
-        // Large, prominent buttons matching the image design
-        cardBtn.style.width = isMobile ? '280px' : '350px';
-        cardBtn.style.height = '60px';
-        cardBtn.style.fontSize = isMobile ? '1.3em' : '1.5em';
+        // Much larger mobile buttons for better tapping
+        cardBtn.style.width = isMobile ? '80px' : '100px';
+        cardBtn.style.height = isMobile ? '100px' : '140px';
+        cardBtn.style.fontSize = isMobile ? '1.1em' : '1.15em';
         cardBtn.style.fontWeight = 'bold';
-        cardBtn.style.background = 'linear-gradient(135deg, #f4d03f 0%, #f7dc6f 50%, #f9e79f 100%)';
-        cardBtn.style.color = '#2c3e50';
-        cardBtn.style.border = '2px solid #d4ac0d';
-        cardBtn.style.borderRadius = '15px';
-        cardBtn.style.boxShadow = '0 6px 20px rgba(212, 172, 13, 0.3)';
+        cardBtn.style.background = 'linear-gradient(135deg, #7b5e3b 0%, #a97c50 100%)';
+        cardBtn.style.color = '#fff8e1';
+        cardBtn.style.border = 'none';
+        cardBtn.style.borderRadius = isMobile ? '15px' : '12px';
+        cardBtn.style.boxShadow = '0 4px 18px #a97c5088';
         cardBtn.style.cursor = 'pointer';
-        cardBtn.style.margin = '0';
-        cardBtn.style.transition = 'all 0.2s ease';
-        cardBtn.style.textShadow = '1px 1px 2px rgba(0,0,0,0.1)';
+        cardBtn.style.margin = isMobile ? '4px' : '0 8px';
+        cardBtn.style.opacity = '0.95';
+        cardBtn.style.transition = 'transform 0.18s, box-shadow 0.18s';
         
-        // Enhanced interaction effects
+        // Better mobile interaction - use touch events
         if (isMobile) {
-            cardBtn.style.minHeight = '60px';
-            cardBtn.style.minWidth = '280px';
-            cardBtn.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                cardBtn.style.transform = 'scale(0.98)';
-                cardBtn.style.boxShadow = '0 3px 15px rgba(212, 172, 13, 0.4)';
-                cardBtn.style.background = 'linear-gradient(135deg, #f1c40f 0%, #f4d03f 50%, #f7dc6f 100%)';
+            cardBtn.style.minHeight = '44px'; // iOS minimum touch target
+            cardBtn.style.minWidth = '44px';
+            cardBtn.addEventListener('touchstart', () => {
+                cardBtn.style.transform = 'scale(0.95)';
+                cardBtn.style.boxShadow = '0 2px 12px #a97c50aa';
             });
-            cardBtn.addEventListener('touchend', (e) => {
-                e.preventDefault();
-                setTimeout(() => {
-                    cardBtn.style.transform = '';
-                    cardBtn.style.boxShadow = '0 6px 20px rgba(212, 172, 13, 0.3)';
-                    cardBtn.style.background = 'linear-gradient(135deg, #f4d03f 0%, #f7dc6f 50%, #f9e79f 100%)';
-                }, 100);
+            cardBtn.addEventListener('touchend', () => {
+                cardBtn.style.transform = '';
+                cardBtn.style.boxShadow = '0 4px 18px #a97c5088';
             });
         } else {
             cardBtn.onmouseover = () => { 
-                cardBtn.style.transform = 'translateY(-2px)';
-                cardBtn.style.boxShadow = '0 8px 25px rgba(212, 172, 13, 0.4)';
-                cardBtn.style.background = 'linear-gradient(135deg, #f1c40f 0%, #f4d03f 50%, #f7dc6f 100%)';
+                cardBtn.style.transform = 'scale(1.08)'; 
+                cardBtn.style.boxShadow = '0 8px 28px #a97c50cc'; 
             };
             cardBtn.onmouseout = () => { 
-                cardBtn.style.transform = '';
-                cardBtn.style.boxShadow = '0 6px 20px rgba(212, 172, 13, 0.3)';
-                cardBtn.style.background = 'linear-gradient(135deg, #f4d03f 0%, #f7dc6f 50%, #f9e79f 100%)';
+                cardBtn.style.transform = ''; 
+                cardBtn.style.boxShadow = '0 4px 18px #a97c5088'; 
             };
         }
         
