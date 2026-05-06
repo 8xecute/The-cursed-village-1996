@@ -1196,6 +1196,68 @@ button:disabled {
   margin-top: 12px;
 }
 
+#room-management-section > div {
+  margin-bottom: 12px;
+}
+
+.active-rooms-panel {
+  margin-top: 16px;
+  padding-top: 10px;
+  border-top: 1px solid #3d3d3d;
+}
+
+.active-rooms-panel h3 {
+  margin: 0 0 8px 0;
+  color: #ffd166;
+}
+
+.active-rooms-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.active-room-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.active-room-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.active-room-name {
+  font-weight: 700;
+  color: #fff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.active-room-meta {
+  color: #d0d0d0;
+  font-size: 0.9em;
+}
+
+.active-room-join-btn {
+  min-width: 90px;
+}
+
+.room-list-empty {
+  color: #bdbdbd;
+  font-style: italic;
+  padding: 8px 0;
+}
+
 .select-player-popup, #select-player-popup, #accused-tryal-select-popup, #blackcat-tryal-select-popup {
   background: #232323 !important;
   color: #686868;

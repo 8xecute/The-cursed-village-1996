@@ -139,6 +139,7 @@ const newRoomNameInput = document.getElementById('new-room-name-input');
 const createRoomButton = document.getElementById('create-room-button');
 const joinRoomNameInput = document.getElementById('join-room-name-input');
 const joinRoomButton = document.getElementById('join-room-button');
+const activeRoomsList = document.getElementById('active-rooms-list');
 const leaveRoomButton = document.getElementById('leave-room-button');
 
 const roomLobbySection = document.getElementById('room-lobby-section');
@@ -263,10 +264,8 @@ socket.on('connect', () => {
 });
 
 socket.on('active rooms list', (rooms) => {
-    // This event is primarily for the initial lobby view
-    // Not directly displaying them in this simplified UI
     console.log('Active rooms:', rooms);
-    // You would typically render these in a list for the user to choose
+    renderActiveRooms(rooms || []);
 });
 
 socket.on('room joined', (roomName) => {
@@ -676,8 +675,44 @@ socket.on('room left', () => {
     if (!myPlayerName) {
         nameInputContainer.style.display = 'flex';
     }
+    socket.emit('request rooms list');
     addGameMessage('คุณออกจากห้องแล้ว.', 'orange');
 });
+
+function renderActiveRooms(rooms) {
+    if (!activeRoomsList) return;
+    activeRoomsList.innerHTML = '';
+
+    if (!rooms || rooms.length === 0) {
+        activeRoomsList.innerHTML = '<div class="room-list-empty">ยังไม่มีห้องที่เปิดอยู่</div>';
+        return;
+    }
+
+    rooms.forEach((room) => {
+        const roomRow = document.createElement('div');
+        roomRow.className = 'active-room-item';
+
+        const info = document.createElement('div');
+        info.className = 'active-room-info';
+        info.innerHTML = `<div class="active-room-name">${room.name}</div><div class="active-room-meta">โฮสต์: ${room.hostName} | ผู้เล่น ${room.playerCount}/${room.maxPlayers}</div>`;
+
+        const joinBtn = document.createElement('button');
+        joinBtn.className = 'active-room-join-btn';
+        joinBtn.textContent = 'เข้าร่วม';
+        joinBtn.disabled = !myPlayerName || room.playerCount >= room.maxPlayers;
+        joinBtn.addEventListener('click', () => {
+            if (!myPlayerName) {
+                addGameMessage('โปรดตั้งชื่อก่อนเข้าร่วมห้อง.', 'red');
+                return;
+            }
+            socket.emit('join room', room.name, myPlayerName);
+        });
+
+        roomRow.appendChild(info);
+        roomRow.appendChild(joinBtn);
+        activeRoomsList.appendChild(roomRow);
+    });
+}
 
 socket.on('your turn', () => {
     isMyTurn = true;

@@ -248,6 +248,22 @@ function getAlivePlayers(room) {
     return Object.values(room.players).filter(p => p.alive && p.connected);
 }
 
+function getPublicRoomsList() {
+    return Object.values(rooms)
+        .filter(room => room && room.currentPhase === 'LOBBY' && !room.gameStarted)
+        .map(room => ({
+            name: room.name,
+            playerCount: Object.keys(room.players || {}).length,
+            maxPlayers: PLAYER_LIMIT,
+            hostName: room.players?.[room.hostUniqueId]?.name || 'Unknown'
+        }))
+        .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+function broadcastActiveRooms() {
+    io.emit('active rooms list', getPublicRoomsList());
+}
+
 function setNextTurn(room) {
     const alivePlayers = getAlivePlayers(room);
     if (alivePlayers.length === 0) {
@@ -653,6 +669,7 @@ function startGame(roomName) {
     room.currentPhase = 'LOBBY'; // Set to Lobby, next changePhase will move to DAY
     room.blackCatHolder = null; // Will be assigned the first Black Cat drawn
     room.gameMessageHistory = []; // Reset game message history for new game
+    broadcastActiveRooms();
 
     // --- Dynamically create TRYAL_CARDS deck based on player count ---
     const playerCount = alivePlayers.length;
@@ -1121,6 +1138,11 @@ function playCard(roomName, playerUniqueId, cardIndex, targetUniqueId = null, se
                 player.hand.splice(cardIndex, 1);
                 room.discardPile.push(cardToPlay);
             }
+            player.hasPlayedCardsThisTurn = true;
+            io.to(player.id).emit('disable draw button');
+            io.to(player.id).emit('card played successfully');
+            io.to(player.id).emit('update hand', player.hand);
+            sendDeckInfo(roomName);
             return;
         default:
             break;
@@ -1886,6 +1908,10 @@ io.on('connection', (socket) => {
         // No direct player object exists here yet until they join a room
     });
 
+    socket.on('request rooms list', () => {
+        io.to(socket.id).emit('active rooms list', getPublicRoomsList());
+    });
+
 
     // Room Management
     socket.on('create room', (roomName, playerName) => {
@@ -1953,6 +1979,7 @@ io.on('connection', (socket) => {
         sendGameMessage(roomName, `${playerName} สร้างห้อง ${roomName} แล้ว.`, 'green');
         sendGameMessage(roomName, 'คุณคือผู้ดูแลห้อง.', 'blue', true);
         emitRoomState(roomName);
+        broadcastActiveRooms();
     });
 
     socket.on('join room', (roomName, playerName) => {
@@ -2006,6 +2033,7 @@ io.on('connection', (socket) => {
             sendGameMessage(roomName, `${playerName} เข้าร่วมห้อง ${roomName} แล้ว.`, 'green');
         }
         emitRoomState(roomName);
+        broadcastActiveRooms();
         // --- ส่ง hand และ tryalCards ให้ผู้เล่นนี้ ---
         const player = room.players[socket.uniqueId];
         if (player) {
@@ -2051,6 +2079,10 @@ io.on('connection', (socket) => {
 
             // Use helper function to handle disconnection logic
             handlePlayerDisconnection(room, playerUniqueId, playerName, false);
+            if (Object.keys(room.players).length === 0) {
+                delete rooms[roomName];
+            }
+            broadcastActiveRooms();
         }
     });
 
@@ -2405,6 +2437,10 @@ io.on('connection', (socket) => {
                         delete room.players[playerUniqueId];
                         sendGameMessage(room.name, `${playerName} ออกจากเกมแล้ว.`, 'red');
                         handlePlayerDisconnection(room, playerUniqueId, playerName, true);
+                        if (Object.keys(room.players).length === 0) {
+                            delete rooms[roomName];
+                        }
+                        broadcastActiveRooms();
                     }
                 }, 30000); // 30 seconds timeout for reconnection
             }
@@ -2521,13 +2557,19 @@ io.on('connection', (socket) => {
         }
     });
 
-    socket.on('select blackcat tryal', (targetUniqueId, cardIndex) => {
+    socket.on('select blackcat tryal', (targetUniqueIdOrCardIndex, maybeCardIndex) => {
         // Only allow if awaitingConspiracySelection and this socket is the selector
         const roomName = socket.currentRoom;
         if (!roomName) return;
         const room = rooms[roomName];
         if (!room.awaitingConspiracySelection) return;
         if (room.awaitingConspiracySelection.selector !== socket.uniqueId) return;
+        const targetUniqueId = maybeCardIndex === undefined
+            ? room.awaitingConspiracySelection.target
+            : targetUniqueIdOrCardIndex;
+        const cardIndex = maybeCardIndex === undefined
+            ? targetUniqueIdOrCardIndex
+            : maybeCardIndex;
         if (room.awaitingConspiracySelection.target !== targetUniqueId) return;
         const player = room.players[socket.uniqueId];
         const bcHolder = room.players[targetUniqueId];
