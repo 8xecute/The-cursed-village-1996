@@ -195,7 +195,11 @@ function emitRoomState(roomName) {
             handSize: player.hand.length,
             tryalCardCount: player.tryalCards.length, // Send total count of Tryal Cards
             tryalCards: player.tryalCards.map(card => ({ name: card.name, type: card.type })), // Send tryal cards for display
-            inPlayCards: player.inPlayCards.map(c => c.name), // Send names of permanent cards
+            inPlayCards: player.inPlayCards.map(c => ({
+                name: c.name,
+                color: c.color,
+                value: c.value || 0,
+            })),
             alive: player.alive,
             isSilenced: player.isSilenced,
             isWitch: player.isWitch, // Crucial for win condition
@@ -232,6 +236,14 @@ function emitRoomState(roomName) {
         // เพิ่มสำหรับ PRE_DAWN confession popup
         confessionOrder: room.confessionOrder,
         currentConfessionIndex: room.currentConfessionIndex,
+        awaitingLeftTryalSelections: !!room.awaitingLeftTryalSelections,
+        leftTryalSelectedCount: room.conspiracyTryalSelections
+            ? Object.keys(room.conspiracyTryalSelections).length
+            : 0,
+        leftTryalTotalCount: room.awaitingLeftTryalSelections
+            ? getAlivePlayers(room).length
+            : 0,
+        infectionLog: room.infectionLog || [],
     });
 
     // --- ส่ง hand และ tryalCards ให้แต่ละผู้เล่น (เฉพาะตัวเอง) ---
@@ -669,6 +681,7 @@ function startGame(roomName) {
     room.currentPhase = 'LOBBY'; // Set to Lobby, next changePhase will move to DAY
     room.blackCatHolder = null; // Will be assigned the first Black Cat drawn
     room.gameMessageHistory = []; // Reset game message history for new game
+    room.infectionLog = [];
     broadcastActiveRooms();
 
     // --- Dynamically create TRYAL_CARDS deck based on player count ---
@@ -874,6 +887,31 @@ function playCard(roomName, playerUniqueId, cardIndex, targetUniqueId = null, se
     switch (cardToPlay.name) {
         case 'Accusation':
         case 'Evidence':
+            if (targetUniqueId && room.players[targetUniqueId]) {
+                const targetPlayer = room.players[targetUniqueId];
+                room.accusedPlayers[targetUniqueId] = (room.accusedPlayers[targetUniqueId] || 0) + (cardToPlay.value || 0);
+                targetPlayer.inPlayCards.push(cardToPlay);
+                io.to(targetPlayer.id).emit('update in play cards', targetPlayer.inPlayCards);
+                sendGameMessage(room.name, `<b>${player.name}</b> ใช้การ์ด ${getCardNameWithColor(cardToPlay.name)} ใส่ <b>${targetPlayer.name}</b> (+${cardToPlay.value || 0})`, 'orange', true);
+                emitCardUsedOnYou(targetUniqueId, cardToPlay);
+
+                if ((room.accusedPlayers[targetUniqueId] || 0) >= 7) {
+                    room.playerForcedToRevealTryal = targetUniqueId;
+                    room.playerForcedToRevealSelector = player.uniqueId;
+                    sendGameMessage(room.name, `<b>${targetPlayer.name}</b> มีข้อกล่าวหาถึง 7 แต้มและต้องเปิดเผยการ์ดชีวิต!`, 'gold', true);
+                    io.to(player.id).emit('prompt select accused tryal', {
+                        accusedUniqueId: targetUniqueId,
+                        tryalCount: targetPlayer.tryalCards.length
+                    });
+                    io.to(targetPlayer.id).emit('forced reveal notice', {
+                        byPlayerName: player.name,
+                        reason: 'accusation_threshold',
+                        points: room.accusedPlayers[targetUniqueId] || 0
+                    });
+                }
+                emitRoomState(room.name);
+            }
+            break;
         
         case 'Scapegoat':
             if (targetUniqueId && secondTargetUniqueId) {
@@ -911,6 +949,11 @@ function playCard(roomName, playerUniqueId, cardIndex, targetUniqueId = null, se
                         io.to(player.id).emit('prompt select accused tryal', {
                             accusedUniqueId: secondTargetUniqueId,
                             tryalCount: destPlayer.tryalCards.length
+                        });
+                        io.to(destPlayer.id).emit('forced reveal notice', {
+                            byPlayerName: player.name,
+                            reason: 'accusation_threshold',
+                            points: room.accusedPlayers[secondTargetUniqueId] || 0
                         });
                         emitRoomState(room.name);
                         // ลบการ์ด Scapegoat ออกจากมือก่อน return
@@ -1130,6 +1173,11 @@ function playCard(roomName, playerUniqueId, cardIndex, targetUniqueId = null, se
                 io.to(player.id).emit('prompt select accused tryal', {
                     accusedUniqueId: targetUniqueId,
                     tryalCount: targetPlayer.tryalCards.length
+                });
+                io.to(targetPlayer.id).emit('forced reveal notice', {
+                    byPlayerName: player.name,
+                    reason: 'witness_card',
+                    points: room.accusedPlayers[targetUniqueId] || 0
                 });
                 emitRoomState(room.name);
             }
@@ -1782,10 +1830,13 @@ function promptTryalCardSelectionToLeft(roomName) {
 
     const alivePlayers = getAlivePlayers(room);
     if (alivePlayers.length <= 1) {
+        room.awaitingLeftTryalSelections = false;
         sendGameMessage(room.name, 'จำนวนผู้เล่นไม่พอที่จะส่ง Tryal Card.', 'grey');
+        emitRoomState(roomName);
         return;
     }
 
+    room.awaitingLeftTryalSelections = true;
     room.conspiracyTryalSelections = {}; // uniqueId -> index/null
 
     // Map uniqueId → player object for easier lookup
@@ -1810,6 +1861,7 @@ function promptTryalCardSelectionToLeft(roomName) {
             room.conspiracyTryalSelections[player.uniqueId] = null;
         }
     });
+    emitRoomState(roomName);
 }
 
 // --- Helper Functions for Player Disconnection ---
@@ -1954,6 +2006,7 @@ io.on('connection', (socket) => {
             phaseConfig: { ...DEFAULT_PHASE_DURATIONS }, // Default durations for this room
             witchChatHistory: [], // Chat history for witch team
             gameMessageHistory: [], // Game message history for reconnection
+            infectionLog: [],
         };
 
         const newPlayer = {
@@ -2699,6 +2752,14 @@ io.on('connection', (socket) => {
                     if (card.name === 'Witch') {
                         player.isWitch = true;
                         player.hasBeenWitch = true;
+                        if (!room.infectionLog) room.infectionLog = [];
+                        room.infectionLog.push({
+                            from: leftPlayer.name,
+                            to: player.name,
+                            card: 'Witch',
+                            day: room.dayNumber,
+                            timestamp: Date.now(),
+                        });
                         io.to(player.id).emit('update tryal cards initial', player.tryalCards, leftPlayer.name);
                         // แสดง popup ปอบทุกครั้งที่ได้รับการ์ดปอบจาก Conspiracy
                         io.to(player.id).emit('show witch popup', { senderName: leftPlayer.name });

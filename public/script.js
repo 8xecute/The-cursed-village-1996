@@ -158,6 +158,7 @@ const dayNumberDisplay = document.getElementById('day-number-display');
 const currentTurnPlayerDisplay = document.getElementById('current-turn-player-display');
 const deckCountDisplay = document.getElementById('deck-count-display');
 const discardPileCountDisplay = document.getElementById('discard-pile-count-display');
+const waitingStatusBanner = document.getElementById('waiting-status-banner');
 const handCardCount = document.getElementById('hand-card-count');
 const playerHandDiv = document.getElementById('player-hand');
 const tryalCardsDisplay = document.getElementById('tryal-cards-display');
@@ -385,6 +386,17 @@ socket.on('room state update', (roomState) => {
             hasPlayedCardsThisTurn = false; // Reset when turn changes
         }
         updateTurnUI();
+
+        // Show waiting status for global card selection flow
+        if (waitingStatusBanner) {
+            if (roomState.awaitingLeftTryalSelections) {
+                waitingStatusBanner.style.display = 'block';
+                waitingStatusBanner.textContent = `กำลังรอผู้เล่นเลือกการ์ดชีวิต ${roomState.leftTryalSelectedCount || 0}/${roomState.leftTryalTotalCount || 0}`;
+            } else {
+                waitingStatusBanner.style.display = 'none';
+                waitingStatusBanner.textContent = '';
+            }
+        }
 
         // --- NEW: Disable all controls if player is dead ---
         if (myPlayer && !myPlayer.alive) {
@@ -944,6 +956,35 @@ socket.on('prompt select accused tryal', ({ accusedUniqueId, tryalCount }) => {
     // Disable draw card button until next turn
     drawCardButton.disabled = true;
     forcedRevealJustHappened = true;
+});
+
+socket.on('forced reveal notice', ({ byPlayerName, reason, points }) => {
+    const old = document.getElementById('forced-reveal-notice-popup');
+    if (old) old.remove();
+    const popup = document.createElement('div');
+    popup.id = 'forced-reveal-notice-popup';
+    popup.style.position = 'fixed';
+    popup.style.top = '50%';
+    popup.style.left = '50%';
+    popup.style.transform = 'translate(-50%, -50%)';
+    popup.style.background = '#2b1d1d';
+    popup.style.border = '2px solid #ff5252';
+    popup.style.borderRadius = '12px';
+    popup.style.padding = '20px 18px';
+    popup.style.zIndex = '10000';
+    popup.style.maxWidth = '90vw';
+    popup.style.textAlign = 'center';
+    popup.style.color = '#ffeaea';
+    const detail = reason === 'witness_card'
+        ? 'คุณถูกใช้การ์ดพยานและกำลังจะถูกเปิดการ์ดชีวิต'
+        : `คุณมีข้อกล่าวหาสะสม ${points || 0} แต้มและกำลังจะถูกเปิดการ์ดชีวิต`;
+    popup.innerHTML = `<div style="font-size:1.08em;font-weight:bold;margin-bottom:10px;">คุณกำลังถูกบังคับเปิดการ์ดชีวิต</div><div style="margin-bottom:14px;">ผู้ที่ทำให้เกิดเหตุการณ์: <b>${byPlayerName || 'ไม่ทราบชื่อ'}</b></div><div style="margin-bottom:16px;">${detail}</div>`;
+    const okBtn = document.createElement('button');
+    okBtn.textContent = 'รับทราบ';
+    okBtn.style.padding = '8px 18px';
+    okBtn.onclick = () => popup.remove();
+    popup.appendChild(okBtn);
+    document.body.appendChild(popup);
 });
 
 // --- Black Cat Tryal Card Selection Popup (สำหรับ พิธีเซ่นไหว้) ---
@@ -2852,6 +2893,18 @@ function showGameOverStats(roomState) {
     });
     statTable += '</tbody></table>';
     popup.innerHTML += statTable;
+
+    const infectionLog = Array.isArray(roomState.infectionLog) ? roomState.infectionLog : [];
+    if (infectionLog.length > 0) {
+        let recapHtml = '<div style="text-align:left;background:#1b1b1b;border-radius:10px;padding:12px;margin:8px 0 14px 0;"><h4 style="margin:0 0 8px 0;color:#ffb74d;">Recap: การแพร่เชื้อ (Witch)</h4><ul style="margin:0;padding-left:18px;">';
+        infectionLog.forEach(item => {
+            recapHtml += `<li style="margin-bottom:4px;">วันที่ ${item.day || '-'}: <b>${item.from}</b> แพร่เชื้อให้ <b>${item.to}</b></li>`;
+        });
+        recapHtml += '</ul></div>';
+        popup.innerHTML += recapHtml;
+    } else {
+        popup.innerHTML += '<div style="margin:8px 0 14px 0;color:#bdbdbd;">Recap: เกมนี้ยังไม่มีเหตุการณ์แพร่เชื้อ</div>';
+    }
 
     // ปุ่ม replay และกลับสู่ล็อบบี้
     const btnReplay = document.createElement('button');
