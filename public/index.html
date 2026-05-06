@@ -20,13 +20,15 @@
         <button id="toggle-music-btn" class="music-btn">
           <span class="music-icon" id="music-icon">🔇</span>
         </button>
-        <input id="music-volume-slider" type="range" min="0" max="100" value="30" step="1" class="music-slider">
-        <span id="music-volume-label" class="music-volume-label">30%</span>
+        <input id="music-volume-slider" type="range" min="0" max="100" value="20" step="1" class="music-slider">
+        <span id="music-volume-label" class="music-volume-label">20%</span>
     </div>
     
+    <!-- เพิ่มปุ่มดูเนื้อเรื่อง -->
     <div class="top-buttons">
+      <button id="show-story-btn" class="rules-btn">ดูเนื้อเรื่อง</button>
       <button id="show-cards-btn" class="rules-btn">อธิบายการ์ด</button>
-      <button id="show-rules-btn" class="rules-btn">กฎของเกม</button>
+      <button id="show-rules-btn" class="rules-btn">คู่มือการเล่น</button>
     </div>
 
     <style>
@@ -143,11 +145,24 @@
     
     <!-- Interactive Overlay for Music Start -->
     <div id="music-overlay" class="music-overlay">
-      <div class="music-overlay-content">
-        <div class="moon-glow">🌕</div>
-        <h2 class="overlay-title">หมู่บ้านต้องสาป 1996</h2>
-        <p class="overlay-desc">เพลงจะเล่นอัตโนมัติหลังกดปุ่มเข้าสู่หมู่บ้านต้องสาป<br>สามารถปิดเสียงได้ที่มุมซ้ายบน</p>
-        <button id="enter-village-btn" class="enter-village-btn">เข้าสู่หมู่บ้านต้องสาป</button>
+      <div class="music-overlay-content" style="background: #181818; color: #fff; border-radius: 16px; max-width: 700px; width:95vw; margin:auto; box-shadow: 0 8px 32px rgba(0,0,0,0.5); padding:0 0 32px 0; display:flex; flex-direction:column; align-items:center;">
+        <img src="Background/story.png" alt="เนื้อเรื่องหมู่บ้านต้องสาป" style="width:100%; max-height:400px; object-fit:cover; border-radius: 16px 16px 0 0; display:block;">
+        <div style="padding: 28px 24px 0 24px; width:100%; box-sizing:border-box;">
+          <h2 style="margin-top:0; color:#ff9800; font-family:'Creepster','Noto Serif Thai',serif; text-align:center;">หมู่บ้านต้องสาป 1996</h2>
+          <p style="font-size:1.1em; color:#ffe0b2; line-height:1.7; text-align:center;">
+            <b>ปี ค.ศ. 1996 ณ เมืองลับแล จังหวัดอุตรดิตถ์</b><br>
+            ความชั่วร้ายได้แฝงตัวอยู่ในเงามืดของหมู่บ้าน<br>
+            คุณเชื่อว่าเพื่อนบ้านบางคนของคุณคือปอบ!<br>
+            <br>
+            ตลอดทั้งเกม คุณจะได้จั่วและเล่นการ์ดเพื่อกล่าวหาผู้เล่นที่คุณไม่ไว้ใจ และช่วยเหลือผู้เล่นที่คุณเชื่อว่าอยู่ฝ่ายเดียวกับคุณ
+            เมื่อกองการ์ดหมดลงและการ์ดยามวิกาลถูกเปิดขึ้น เหล่าปอบจะพยายามสังหารผู้เล่นที่ชาวบ้านบริสุทธิ์<br>
+            <br>
+            คุณจะสามารถเอาชีวิตรอดจากหมู่บ้านต้องสาปแห่งนี้ได้หรือไม่?
+          </p>
+          <div style="text-align:center; margin-top:24px;">
+            <button id="enter-village-btn" class="enter-village-btn" style="font-size:1.1em; padding: 12px 36px;">เข้าสู่หมู่บ้านต้องสาป</button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -163,46 +178,44 @@
         transition: opacity 0.5s;
       }
       .music-overlay-content {
-        text-align: center;
         color: #fff;
-        background: rgba(30,20,20,0.7);
-        border-radius: 18px;
-        padding: 48px 32px 36px 32px;
-        box-shadow: 0 0 32px 8px #000a;
-        min-width: 320px;
-        max-width: 90vw;
+        background: #181818;
+        border-radius: 16px;
+        max-width: 700px;
+        width: 95vw;
+        margin: auto;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+        padding: 0 0 32px 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
       }
-      .moon-glow {
-        font-size: 3.5em;
-        filter: drop-shadow(0 0 32px #fffde4cc) drop-shadow(0 0 12px #fff8);
-        margin-bottom: 18px;
-        animation: moon-flicker 2.2s infinite alternate;
+      .music-overlay-content img {
+        width: 100%;
+        max-height: 400px;
+        object-fit: cover;
+        border-radius: 16px 16px 0 0;
+        display: block;
       }
-      @keyframes moon-flicker {
-        0% { filter: drop-shadow(0 0 24px #fffde4cc) drop-shadow(0 0 8px #fff8); }
-        100% { filter: drop-shadow(0 0 48px #fffde4cc) drop-shadow(0 0 18px #fff8); }
+      .music-overlay-content h2 {
+        margin-top: 0;
+        color: #ff9800;
+        font-family: 'Creepster','Noto Serif Thai',serif;
+        text-align: center;
       }
-      .overlay-title {
-        font-family: 'Creepster', 'Noto Serif Thai', serif;
-        font-size: 2.2em;
-        color: #ff5722;
-        margin-bottom: 8px;
-        letter-spacing: 2px;
-        text-shadow: 0 2px 12px #000a;
-      }
-      .overlay-desc {
+      .music-overlay-content p {
         font-size: 1.1em;
         color: #ffe0b2;
-        margin-bottom: 28px;
-        text-shadow: 0 1px 8px #000a;
+        line-height: 1.7;
+        text-align: center;
       }
       .enter-village-btn {
-        font-size: 1.25em;
+        font-size: 1.1em;
         background: linear-gradient(90deg, #ff9800 60%, #ff5722 100%);
         color: #fff;
         border: none;
         border-radius: 10px;
-        padding: 16px 38px;
+        padding: 12px 36px;
         font-family: 'Montserrat', 'Noto Serif Thai', sans-serif;
         font-weight: bold;
         box-shadow: 0 2px 12px #0007;
@@ -218,12 +231,12 @@
       }
       @media (max-width: 600px) {
         .music-overlay-content {
-          padding: 28px 8px 18px 8px;
+          padding: 0 0 18px 0;
           min-width: 0;
         }
-        .moon-glow { font-size: 2.2em; }
-        .overlay-title { font-size: 1.3em; }
-        .overlay-desc { font-size: 1em; }
+        .music-overlay-content img { max-height: 180px; }
+        .music-overlay-content h2 { font-size: 1.1em; }
+        .music-overlay-content p { font-size: 1em; }
         .enter-village-btn { font-size: 1em; padding: 12px 18px; }
       }
     </style>
@@ -381,35 +394,54 @@
     <div id="game-rules-modal" class="modal" style="display:none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.7); align-items: center; justify-content: center;">
       <div class="modal-content" style="background: #222; color: #fff; margin: auto; padding: 32px; border-radius: 12px; width: 90%; max-width: 600px; position: relative; max-height: 80vh; overflow-y: auto;">
         <span id="close-rules-modal" class="close" style="position: absolute; right: 18px; top: 12px; color: #fff; font-size: 2em; cursor: pointer;">&times;</span>
-        <h2>กฎของเกม</h2>
+        <h2 style="text-align:center; margin-bottom:24px;">คู่มือการเล่น</h2>
         <div id="rules-content">
-          <h3>กติกาเกม (ฉบับย่อ)</h3>
-          <ul>
-            <li><b>เป้าหมายของเกมและวิธีชนะ</b><br>
-              <span style="color:#42a5f5;">ชาวบ้าน:</span> เปิดการ์ดปอบให้ครบ<br>
-              <span style="color:#ff000d;">ทีมปอบ:</span> ทำให้ชาวบ้านตายหมด หรือทุกคนกลายเป็นปอบ<br>
-            </li>
+          <h4 style="color:#ff7043; margin-top:18px;">🎯 เป้าหมายของเกม</h4>
+          <ul style="margin-bottom:12px;">
+            <li><b style="color:#ec274f;">ฝ่ายปอบ:</b> ฆ่าชาวบ้านให้หมด หรือแพร่เชื้อให้ทุกคนเป็นปอบ</li>
+            <li><b style="color:#4caf50;">ฝ่ายชาวบ้าน:</b> เปิดการ์ด "ปอบ" ให้ครบทุกใบที่ยังไม่ถูกเปิด</li>
           </ul>
-          <h4 style="margin-top:18px;">ในเทิร์นของคุณ (กลางวัน)</h4>
-          <ol>
-            <li>🃏 จั่วการ์ด 2 ใบ หรือ เล่นการ์ดจากมือ</li>
-            <li>⚖️ กล่าวหาผู้เล่นที่สงสัยว่าเป็นปอบ</li>
-            <li>🔚 จบเทิร์น (ส่งให้ผู้เล่นถัดไป)</li>
+          <h4 style="color:#ff7043; margin-top:18px;">🃏 การตั้งค่าเกม</h4>
+          <ol style="margin-bottom:12px;">
+            <li>แจกการ์ดชีวิตคนละ 5 ใบ ผู้เล่น 4-5 คน ปอบ 1 ใบ หมอผี 1 ใบ</li>
+            <li>หากผู้เล่นมากกว่า 6 คนจะมีปอบ 2 ใบ หมอผี 1 ใบ</li>
+            <li>ดูการ์ดของตัวเอง ห้ามบอกใคร</li>
           </ol>
-          <h4 style="margin-top:18px;">กลางคืน</h4>
-          <ul>
-            <li><b style="color:#42a5f5;">ปอบ:</b> เลือกเหยื่อเพื่อสังหาร</li>
-            <li><b style="color:#ff000d;">หมอผี:</b> เลือกผู้เล่นเพื่อปกป้อง</li>
+          <h4 style="color:#ff7043; margin-top:18px;">🚩 การเริ่มเกม</h4>
+          <ol style="margin-bottom:12px;">
+            <li>ฝ่ายปอบปรึกษากันและเลือกผู้เล่น 1 คนรับ "เครื่องเซ่น" (ปอบสามารถวางทีมตัวเองได้)</li>
+            <li>ผู้ที่ได้ "เครื่องเซ่น" จะได้เริ่มเล่นเป็นคนแรก</li>
+            <li>เล่นวนตามเข็มนาฬิกา</li>
+          </ol>
+          <h4 style="color:#ff7043; margin-top:18px;">🔄 การเล่นแต่ละตา</h4>
+          <ul style="margin-bottom:12px;">
+            <li>เลือก <b>จั่วการ์ด 2 ใบ</b> หรือ <b>เล่นการ์ด</b> ใส่คนอื่น</li>
+            <li>จั่วได้การ์ดสีดำ ต้องใช้ทันที</li>
+            <li>เล่นการ์ดใส่ตัวเองไม่ได้</li>
           </ul>
-          <h4 style="margin-top:18px;">การ์ดชีวิต (บทบาท)</h4>
-          <ul>
-            <li><b>ปอบ:</b> ฆ่าคนตอนกลางคืน + พูดคุยกับทีมปอบได้</li>
-            <li><b>หมอผี:</b> ป้องกันผู้เล่นไม่ให้ถูกฆ่าตอนกลางคืน</li>
-            <li><b>ชาวบ้าน:</b> ไม่มีความสามารถพิเศษ</li>
+          <h4 style="color:#ff7043; margin-top:18px;">🃏 ประเภทของการ์ด</h4>
+          <ul style="margin-bottom:12px;">
+            <li><b style="color:#e53935;">การ์ดสีแดง:</b> วางหน้าผู้เล่นอื่น สะสมครบ 7 ใบต้องเปิดการ์ดชีวิต</li>
+            <li><b style="color:#43a047;">การ์ดสีเขียว:</b> ใช้แล้วทิ้งทันที</li>
+            <li><b style="color:#1976d2;">การ์ดสีน้ำเงิน:</b> วางหน้าผู้เล่น มีผลต่อเนื่อง</li>
+            <li><b style="color:#ffd700; background:#222; border-radius:4px; padding:0 6px;">การ์ดสีดำ:</b> จั่วแล้วต้องใช้ทันที</li>
           </ul>
-          <div style="margin-top:18px; color:#bbb; font-size:0.98em;">
-            <b>หมายเหตุ:</b> เมื่อถูกกล่าวหาครบ 7 แต้ม ต้องเปิดการ์ดชีวิต 1 ใบ<br>
-            ดูรายละเอียดการ์ดแต่ละใบได้ที่ปุ่ม "อธิบายการ์ด"
+          <h4 style="color:#ff7043; margin-top:18px;">🌙 เหตุการณ์พิเศษ</h4>
+          <ul style="margin-bottom:12px;">
+            <li><b>พิธีเซ่นไหว้:</b> เปิดการ์ดชีวิตของผู้ที่มีการ์ดเครื่องเซ่นอยู่ตรงหน้า 1 ใบ และทุกคนหยิบการ์ดชีวิตจากซ้ายมือ 1 ใบ ถ้าได้ "การ์ดปอบ" จะกลายเป็นปอบทันที</li>
+            <li><b>ยามวิกาล:</b> ปอบเลือกเหยื่อ หมอผีเลือกป้องกัน ผู้เล่นสามารถ "สารภาพ" เพื่อรอดตาย</li>
+          </ul>
+          <h4 style="color:#ff7043; margin-top:18px;">💡 หมายเหตุสำคัญ</h4>
+          <div style="background:#333; color:#ffe082; border-left:5px solid #ff9800; padding:10px 16px; border-radius:8px; margin-bottom:12px;">
+            <ul style="margin:0; padding-left:18px;">
+              <li>ถ้าได้การ์ด "ปอบ" จะเป็นปอบตลอดเกม</li>
+              <li>ฝ่ายชาวบ้านชนะเมื่อเปิดการ์ด "ปอบ" ครบ</li>
+              <li>ฝ่ายปอบชนะเมื่อชาวบ้านตายหมด หรือทุกคนเป็นปอบ</li>
+              <li>เมื่อผู้เล่นตายจะสามารถพูดคำสั่งเสียได้ แต่ห้ามส่งผลกระทบกับเกม</li>
+            </ul>
+          </div>
+          <div style="font-size:0.97em; color:#bbb; margin-top:18px; background:#232323; border-radius:8px; padding:10px 16px;">
+            <b>Tip:</b> อ่านรายละเอียดการ์ดแต่ละใบได้ที่ปุ่ม <span style="color:#ff9800;">"อธิบายการ์ด"</span> ด้านบน
           </div>
         </div>
       </div>
@@ -417,126 +449,326 @@
 
     <!-- Modal popup สำหรับอธิบายการ์ด -->
     <div id="card-explain-modal" class="modal" style="display:none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.7); align-items: center; justify-content: center;">
-      <div class="modal-content" style="background: #222; color: #fff; margin: auto; padding: 32px; border-radius: 12px; width: 90%; max-width: 600px; position: relative; max-height: 90vh; overflow-y: auto;">
+      <div class="modal-content" style="background: #222; color: #fff; margin: auto; padding: 32px; border-radius: 12px; width: 90%; max-width: 1600px; min-width: 1100px; height: 91vh; max-height: 93vh; min-height: 600px; margin: auto; display: flex; flex-direction: column; justify-content: flex-start; align-items: center;">
         <span id="close-cards-modal" class="close" style="position: absolute; top: 12px; right: 18px; font-size: 2em; cursor: pointer;">&times;</span>
         <h2 style="margin-top:0;">อธิบายการ์ด</h2>
         <div id="cards-content">
-  <!-- การ์ดสีแดง -->
-  <h3 style="color:#e53935; margin-bottom:8px;">การ์ดสีแดง</h3>
-  <div style="display: flex; flex-wrap: wrap; gap: 18px; margin-bottom: 18px;">
-    <div class="card-box" style="width: 120px; text-align: center; border: 3px solid #e53935; border-radius: 12px; padding: 8px; background: #2a1818;">
-      <img src="cards/accusation.png" alt="ข้อกล่าวหา" style="width: 80px; height: auto; border-radius: 8px;">
-      <div style="margin-top: 8px; font-weight: bold;">ข้อกล่าวหา</div>
-      <div style="font-size: 0.95em; color: #ccc;">ใช้เพื่อกล่าวหาผู้เล่นที่สงสัยว่าเป็นปอบ (เพิ่ม 1 ข้อกล่าวหา)</div>
+  <!-- บรรทัดที่ 1: การ์ดสีแดง + การ์ดสีเขียว -->
+  <div class="card-group-row" style="display:flex; flex-direction:row; justify-content:center; gap:48px; margin-bottom:24px; flex-wrap:wrap;">
+    <div>
+      <div style="text-align:center; margin-bottom:2px;">
+        <span style="color:#e53935; font-weight:bold; font-size:1.1em; letter-spacing:1px;">การ์ดสีแดง</span>
+      </div>
+      <div class="card-row card-row-red">
+        <div class="card-box red-bg">
+          <img src="cards/accusation.png" alt="ข้อกล่าวหา">
+          <div class="card-title">ข้อกล่าวหา</div>
+          <div class="card-desc">เพิ่ม 1 ข้อกล่าวหาให้เป้าหมาย</div>
     </div>
-    <div class="card-box" style="width: 120px; text-align: center; border: 3px solid #e53935; border-radius: 12px; padding: 8px; background: #2a1818;">
-      <img src="cards/evidence.png" alt="หลักฐาน" style="width: 80px; height: auto; border-radius: 8px;">
-      <div style="margin-top: 8px; font-weight: bold;">หลักฐาน</div>
-      <div style="font-size: 0.95em; color: #ccc;">ใช้เพื่อกล่าวหาผู้เล่นที่สงสัยว่าเป็นปอบ (เพิ่ม 3 ข้อกล่าวหา)</div>
+        <div class="card-box red-bg">
+          <img src="cards/evidence.png" alt="หลักฐาน">
+          <div class="card-title">หลักฐาน</div>
+          <div class="card-desc">เพิ่ม 3 ข้อกล่าวหาให้เป้าหมาย</div>
     </div>
-    <div class="card-box" style="width: 120px; text-align: center; border: 3px solid #e53935; border-radius: 12px; padding: 8px; background: #2a1818;">
-      <img src="cards/witness.png" alt="พยาน" style="width: 80px; height: auto; border-radius: 8px;">
-      <div style="margin-top: 8px; font-weight: bold;">พยาน</div>
-      <div style="font-size: 0.95em; color: #ccc;">ใช้เพื่อกล่าวหาผู้เล่นที่สงสัยว่าเป็นปอบ (เพิ่ม 7 ข้อกล่าวหา)</div>
-    </div>
-  </div>
-
-  <!-- การ์ดสีเขียว -->
-  <h3 style="color:#43a047; margin-bottom:8px;">การ์ดสีเขียว</h3>
-  <div style="display: flex; flex-wrap: wrap; gap: 18px; margin-bottom: 18px;">
-    <div class="card-box" style="width: 120px; text-align: center; border: 3px solid #43a047; border-radius: 12px; padding: 8px; background: #182a18;">
-      <img src="cards/scapegoat.png" alt="แพะรับบาป" style="width: 80px; height: auto; border-radius: 8px;">
-      <div style="margin-top: 8px; font-weight: bold;">แพะรับบาป</div>
-      <div style="font-size: 0.95em; color: #ccc;">ย้ายการ์ดสีน้ำเงิน, เขียว, แดงของผู้เล่นคนหนึ่ง ไปยังผู้เล่นอีกคนหนึ่ง</div>
-    </div>
-    <div class="card-box" style="width: 120px; text-align: center; border: 3px solid #43a047; border-radius: 12px; padding: 8px; background: #182a18;">
-      <img src="cards/curse.png" alt="คำสาป" style="width: 80px; height: auto; border-radius: 8px;">
-      <div style="margin-top: 8px; font-weight: bold;">คำสาป</div>
-      <div style="font-size: 0.95em; color: #ccc;">ทำลายการ์ดสีน้ำเงิน 1 ใบ ที่อยู่หน้าผู้เล่นเป้าหมาย</div>
-    </div>
-    <div class="card-box" style="width: 120px; text-align: center; border: 3px solid #43a047; border-radius: 12px; padding: 8px; background: #182a18;">
-      <img src="cards/alibi.png" alt="ข้อแก้ต่าง" style="width: 80px; height: auto; border-radius: 8px;">
-      <div style="margin-top: 8px; font-weight: bold;">ข้อแก้ต่าง</div>
-      <div style="font-size: 0.95em; color: #ccc;">ลบการ์ดข้อกล่าวหาออกจากผู้เล่นเป้าหมาย 3 ข้อกล่าวหา</div>
-    </div>
-    <div class="card-box" style="width: 120px; text-align: center; border: 3px solid #43a047; border-radius: 12px; padding: 8px; background: #182a18;">
-      <img src="cards/robbery.png" alt="ช่วงชิง" style="width: 80px; height: auto; border-radius: 8px;">
-      <div style="margin-top: 8px; font-weight: bold;">ช่วงชิง</div>
-      <div style="font-size: 0.95em; color: #ccc;">ขโมยการ์ดบนมือทั้งหมดจากผู้เล่นคนหนึ่ง ไปให้ผู้เล่นอีกคนหนึ่ง</div>
-    </div>
-    <div class="card-box" style="width: 120px; text-align: center; border: 3px solid #43a047; border-radius: 12px; padding: 8px; background: #182a18;">
-      <img src="cards/stocks.png" alt="พันธนาการ" style="width: 80px; height: auto; border-radius: 8px;">
-      <div style="margin-top: 8px; font-weight: bold;">พันธนาการ</div>
-      <div style="font-size: 0.95em; color: #ccc;">ผู้เล่นที่ถูกการ์ดนี้จะต้องข้ามตาของตัวเอง</div>
-    </div>
-    <div class="card-box" style="width: 120px; text-align: center; border: 3px solid #43a047; border-radius: 12px; padding: 8px; background: #182a18;">
-      <img src="cards/arson.png" alt="วางเพลิง" style="width: 80px; height: auto; border-radius: 8px;">
-      <div style="margin-top: 8px; font-weight: bold;">วางเพลิง</div>
-      <div style="font-size: 0.95em; color: #ccc;">บังคับให้ผู้เล่นเป้าหมายทิ้งการ์ดบนมือทั้งหมด</div>
+        <div class="card-box red-bg">
+          <img src="cards/witness.png" alt="พยาน">
+          <div class="card-title">พยาน</div>
+          <div class="card-desc">เพิ่ม 7 ข้อกล่าวหาให้เป้าหมาย</div>
     </div>
   </div>
-
-  <!-- การ์ดสีน้ำเงิน -->
-  <h3 style="color:#1976d2; margin-bottom:8px;">การ์ดสีน้ำเงิน</h3>
-  <div style="display: flex; flex-wrap: wrap; gap: 18px; margin-bottom: 18px;">
-    <div class="card-box" style="width: 120px; text-align: center; border: 3px solid #1976d2; border-radius: 12px; padding: 8px; background: #18202a;">
-      <img src="cards/blackcat.png" alt="เครื่องเซ่น" style="width: 80px; height: auto; border-radius: 8px;">
-      <div style="margin-top: 8px; font-weight: bold;">เครื่องเซ่น</div>
-      <div style="font-size: 0.95em; color: #ccc;">ผู้เล่นที่ถือการ์ดนี้จะต้องเริ่มเล่นเป็นคนแรก และหากมีผู้เล่นเปิดได้ "พิธีเซ่นไหว้" ผู้เล่นที่ถือ "เครื่องเซ่น" จะต้องเปิดการ์ดชีวิต 1 ใบ</div>
     </div>
-    <div class="card-box" style="width: 120px; text-align: center; border: 3px solid #1976d2; border-radius: 12px; padding: 8px; background: #18202a;">
-      <img src="cards/asylum.png" alt="ที่หลบภัย" style="width: 80px; height: auto; border-radius: 8px;">
-      <div style="margin-top: 8px; font-weight: bold;">ที่หลบภัย</div>
-      <div style="font-size: 0.95em; color: #ccc;">ป้องกันการถูกสังหารในช่วง "ยามวิกาล"</div>
+    <div>
+      <div style="text-align:center; margin-bottom:2px;">
+        <span style="color:#43a047; font-weight:bold; font-size:1.1em; letter-spacing:1px;">การ์ดสีเขียว</span>
+      </div>
+      <div class="card-row card-row-green">
+        <div class="card-box green-bg">
+          <img src="cards/scapegoat.png" alt="แพะรับบาป">
+          <div class="card-title">แพะรับบาป</div>
+          <div class="card-desc">ย้ายการ์ดสีแดง/เขียว/น้ำเงินจากผู้เล่นหนึ่งไปอีกคน</div>
+        </div>
+        <div class="card-box green-bg">
+          <img src="cards/curse.png" alt="คำสาป">
+          <div class="card-title">คำสาป</div>
+          <div class="card-desc">ทำลายการ์ดสีน้ำเงิน 1 ใบของเป้าหมาย</div>
+        </div>
+        <div class="card-box green-bg">
+          <img src="cards/alibi.png" alt="ข้อแก้ต่าง">
+          <div class="card-title">ข้อแก้ต่าง</div>
+          <div class="card-desc">ลบข้อกล่าวหา 3 ใบจากเป้าหมาย</div>
+        </div>
+        <div class="card-box green-bg">
+          <img src="cards/robbery.png" alt="ช่วงชิง">
+          <div class="card-title">ช่วงชิง</div>
+          <div class="card-desc">ขโมยการ์ดบนมือทั้งหมดจากผู้เล่นหนึ่งไปให้อีกคน</div>
     </div>
-    <div class="card-box" style="width: 120px; text-align: center; border: 3px solid #1976d2; border-radius: 12px; padding: 8px; background: #18202a;">
-      <img src="cards/piety.png" alt="พลังศรัทธา" style="width: 80px; height: auto; border-radius: 8px;">
-      <div style="margin-top: 8px; font-weight: bold;">พลังศรัทธา</div>
-      <div style="font-size: 0.95em; color: #ccc;">การ์ดข้อกล่าวหา (สีแดง) จะไม่มีผลกับผู้เล่นที่ถือการ์ดนี้</div>
+        <div class="card-box green-bg">
+          <img src="cards/stocks.png" alt="พันธนาการ">
+          <div class="card-title">พันธนาการ</div>
+          <div class="card-desc">ผู้เล่นนี้ข้ามตาตัวเอง</div>
     </div>
-    <div class="card-box" style="width: 120px; text-align: center; border: 3px solid #1976d2; border-radius: 12px; padding: 8px; background: #18202a;">
-      <img src="cards/matchmaker.png" alt="ผูกวิญญาณ" style="width: 80px; height: auto; border-radius: 8px;">
-      <div style="margin-top: 8px; font-weight: bold;">ผูกวิญญาณ</div>
-      <div style="font-size: 0.95em; color: #ccc;">ผู้เล่น 2 คนที่ถือการ์ดนี้ หากคนใดคนหนึ่งตาย อีกคนต้องตายตาม</div>
+        <div class="card-box green-bg">
+          <img src="cards/arson.png" alt="วางเพลิง">
+          <div class="card-title">วางเพลิง</div>
+          <div class="card-desc">บังคับเป้าหมายทิ้งการ์ดบนมือทั้งหมด</div>
     </div>
-  </div>
-
-  <!-- การ์ดสีดำ -->
-  <h3 style="color:#222; background:#ffd700; display:inline-block; padding:2px 12px; border-radius:8px; margin-bottom:8px;">การ์ดสีดำ</h3>
-  <div style="display: flex; flex-wrap: wrap; gap: 18px; margin-bottom: 18px;">
-    <div class="card-box" style="width: 120px; text-align: center; border: 3px solid #222; border-radius: 12px; padding: 8px; background: #111;">
-      <img src="cards/conspiracy.png" alt="พิธีเซ่นไหว้" style="width: 80px; height: auto; border-radius: 8px;">
-      <div style="margin-top: 8px; font-weight: bold;">พิธีเซ่นไหว้</div>
-      <div style="font-size: 0.95em; color: #ccc;">ผู้เล่นที่เปิดการ์ดนี้ ต้องเปิดการ์ดชีวิต 1 ใบของผู้เล่นที่มี "เครื่องเซ่น" จากนั้นจะเกิดเหตุการณ์ให้ผู้เล่นทุกคนหยิบการ์ดชีวิตจากผู้เล่นทางซ้ายมือ 1 ใบ (ช่วงที่ปอบแพร่เชื้อ)</div>
     </div>
-    <div class="card-box" style="width: 120px; text-align: center; border: 3px solid #222; border-radius: 12px; padding: 8px; background: #111;">
-      <img src="cards/night.png" alt="ยามวิกาล" style="width: 80px; height: auto; border-radius: 8px;">
-      <div style="margin-top: 8px; font-weight: bold;">ยามวิกาล</div>
-      <div style="font-size: 0.95em; color: #ccc;">ผู้ดำเนินเกมสั่งให้ทุกคนหลับตา "ปอบ" เลือกเหยื่อเพื่อสังหาร และ "หมอผี" เลือก 1 คนเพื่อปัดเป่าป้องกัน</div>
-    </div>
-  </div>
-
-  <!-- การ์ดบทบาท (Role Cards) -->
-  <h3 style="color:#bbb; margin-bottom:8px;">การ์ดบทบาท</h3>
-  <div style="display: flex; flex-wrap: wrap; gap: 18px; margin-bottom: 8px;">
-    <div style="width: 120px; text-align: center; border: 3px solid #888; border-radius: 12px; padding: 8px; background: #232323;">
-      <img src="cards/witch.png" alt="ปอบ" style="width: 80px; height: auto; border-radius: 8px;">
-      <div style="margin-top: 8px; font-weight: bold;">ปอบ</div>
-      <div style="font-size: 0.95em; color: #ccc;">ผู้เล่นที่มีการ์ดนี้จะเป็น “ปอบ” ไปจนจบเกม แม้การ์ดจะถูกส่งต่อให้คนอื่นก็ตาม</div>
-    </div>
-    <div style="width: 120px; text-align: center; border: 3px solid #888; border-radius: 12px; padding: 8px; background: #232323;">
-      <img src="cards/notawitch.png" alt="ชาวบ้าน" style="width: 80px; height: auto; border-radius: 8px;">
-      <div style="margin-top: 8px; font-weight: bold;">ชาวบ้าน</div>
-      <div style="font-size: 0.95em; color: #ccc;">เป็นชาวบ้านธรรมดา ไม่มีความสามารถพิเศษ</div>
-    </div>
-    <div style="width: 120px; text-align: center; border: 3px solid #888; border-radius: 12px; padding: 8px; background: #232323;">
-      <img src="cards/constable.png" alt="หมอผี" style="width: 80px; height: auto; border-radius: 8px;">
-      <div style="margin-top: 8px; font-weight: bold;">หมอผี</div>
-      <div style="font-size: 0.95em; color: #ccc;">สามารถปัดเป่าปกป้องผู้เล่นคนอื่นจากการถูกปอบสิงฆ่าในยามวิกาล</div>
     </div>
   </div>
-  <p style="font-size:0.95em; color:#bbb; margin-top:18px;">* หมายเหตุ: ความสามารถของการ์ดอาจมีรายละเอียดเพิ่มเติมในแต่ละสถานการณ์ โปรดดูคู่มือหรือสอบถามผู้ดูแลเกม</p>
+  <!-- บรรทัดที่ 2: การ์ดสีน้ำเงิน + การ์ดสีดำ + การ์ดชีวิต -->
+  <div class="card-group-row" style="display:flex; flex-direction:row; justify-content:center; gap:48px; margin-bottom:0; flex-wrap:wrap;">
+    <div>
+      <div style="text-align:center; margin-bottom:2px;">
+        <span style="color:#1976d2; font-weight:bold; font-size:1.1em; letter-spacing:1px;">การ์ดสีน้ำเงิน</span>
+      </div>
+      <div class="card-row card-row-blue">
+        <div class="card-box blue-bg">
+          <img src="cards/blackcat.png" alt="เครื่องเซ่น">
+          <div class="card-title">เครื่องเซ่น</div>
+          <div class="card-desc">ผู้ถือเริ่มเล่นคนแรก, ถ้าเปิดพิธีเซ่นไหว้ต้องเปิดการ์ดชีวิต</div>
+    </div>
+        <div class="card-box blue-bg">
+          <img src="cards/asylum.png" alt="ที่หลบภัย">
+          <div class="card-title">ที่หลบภัย</div>
+          <div class="card-desc">ป้องกันถูกฆ่าในยามวิกาล</div>
+    </div>
+        <div class="card-box blue-bg">
+          <img src="cards/piety.png" alt="พลังศรัทธา">
+          <div class="card-title">พลังศรัทธา</div>
+          <div class="card-desc">ข้อกล่าวหาไม่มีผลกับผู้ถือ</div>
+    </div>
+        <div class="card-box blue-bg">
+          <img src="cards/matchmaker.png" alt="ผูกวิญญาณ">
+          <div class="card-title">ผูกวิญญาณ</div>
+          <div class="card-desc">ถ้าคนหนึ่งตาย อีกคนต้องตายตาม</div>
+    </div>
+  </div>
+    </div>
+    <div>
+      <div style="text-align:center; margin-bottom:2px;">
+        <span style="color:#ffd700; background:#222; border-radius:6px; padding:2px 12px; font-weight:bold; font-size:1.1em; letter-spacing:1px;">การ์ดสีดำ</span>
+      </div>
+      <div class="card-row card-row-black">
+        <div class="card-box black-bg">
+          <img src="cards/conspiracy.png" alt="พิธีเซ่นไหว้">
+          <div class="card-title">พิธีเซ่นไหว้</div>
+          <div class="card-desc">เปิดการ์ดชีวิตของผู้มีเครื่องเซ่น, ทุกคนหยิบการ์ดชีวิตจากซ้ายมือ 1 ใบ</div>
+        </div>
+        <div class="card-box black-bg">
+          <img src="cards/night.png" alt="ยามวิกาล">
+          <div class="card-title">ยามวิกาล</div>
+          <div class="card-desc">ปอบเลือกเหยื่อ หมอผีเลือกป้องกัน</div>
+    </div>
+  </div>
+    </div>
+    <div>
+      <div style="text-align:center; margin-bottom:2px;">
+        <span style="color:#fff; background:#232323; border-radius:6px; padding:2px 12px; font-weight:bold; font-size:1.1em; letter-spacing:1px;">การ์ดชีวิต</span>
+      </div>
+      <div class="card-row card-row-role">
+        <div class="card-box role-bg" rolecard="witch">
+          <img src="cards/witch.png" alt="ปอบ">
+          <div class="card-title">ปอบ</div>
+          <div class="card-desc">ได้การ์ดนี้จะเป็นปอบตลอดเกม</div>
+        </div>
+        <div class="card-box role-bg" rolecard="villager">
+          <img src="cards/notawitch.png" alt="ชาวบ้าน">
+          <div class="card-title">ชาวบ้าน</div>
+          <div class="card-desc">ไม่มีความสามารถพิเศษ</div>
+        </div>
+        <div class="card-box role-bg" rolecard="constable">
+          <img src="cards/constable.png" alt="หมอผี">
+          <div class="card-title">หมอผี</div>
+          <div class="card-desc">ปัดเป่าป้องกันผู้เล่นจากปอบในยามวิกาล</div>
+        </div>
+    </div>
+    </div>
+  </div>
 </div>
+      <style>
+        #card-explain-modal .modal-content {
+          font-size: 1.12em;
+          padding: 0;
+          width: 99vw;
+          max-width: 1600px;
+          min-width: 1100px;
+          height: 91vh;
+          max-height: 93vh;
+          min-height: 600px;
+          margin: auto;
+          display: flex;
+          flex-direction: column;
+          justify-content: flex-start;
+          align-items: center;
+          border-radius: 24px;
+        }
+        #cards-content {
+          width: 100%;
+          max-width: 1800px;
+          margin: 0 auto;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+        }
+        #cards-content .card-group-row {
+          display: flex;
+          flex-direction: row;
+          justify-content: center;
+          gap: 48px;
+          margin-bottom: 24px;
+          flex-wrap: wrap;
+        }
+        #cards-content .card-row {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 18px;
+          justify-content: center;
+          align-items: stretch;
+          overflow-x: visible;
+          padding-bottom: 8px;
+        }
+        #cards-content .card-box {
+          width: 140px;
+          min-width: 0;
+          background: #232323;
+          border-radius: 12px;
+          padding: 14px 8px 16px 8px;
+          text-align: center;
+          border: 2px solid #444;
+          box-shadow: 0 2px 8px #0002;
+          flex: 1 1 0;
+          margin-bottom: 0;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          height: 100%;
+        }
+        /* สีการ์ดชีวิต (role) */
+        #cards-content .card-box.role-bg[rolecard="villager"] {
+          background: #204d26;
+          border-color: #43a047;
+        }
+        #cards-content .card-box.role-bg[rolecard="witch"] {
+          background: #4d1a1a;
+          border-color: #e53935;
+        }
+        #cards-content .card-box.role-bg[rolecard="constable"] {
+          background: #18202a;
+          border-color: #1976d2;
+        }
+        #cards-content .card-box img {
+          width: 99px;
+          height: auto;
+          border-radius: 10px;
+          margin-bottom: 8px;
+        }
+        #cards-content .card-title {
+          font-weight: bold;
+          font-size: 1.13em;
+          margin-bottom: 2px;
+          color: #fff;
+        }
+        #cards-content .card-desc {
+          font-size: 0.95em;
+          color: #ccc;
+          line-height: 1.2;
+          max-width: 130px;
+          text-align: center;
+          white-space: normal;
+          overflow: visible;
+          display: block;
+        }
+        #cards-content .red-bg { background: #2a1818; border-radius: 8px; padding: 6px 0; }
+        #cards-content .green-bg { background: #182a18; border-radius: 8px; padding: 6px 0; }
+        #cards-content .blue-bg { background: #18202a; border-radius: 8px; padding: 6px 0; }
+        #cards-content .black-bg { background: #181818; border-radius: 8px; padding: 6px 0; }
+        #cards-content .role-bg { background: #232323; border-radius: 8px; padding: 6px 0; }
+        #cards-content .card-row-red, #cards-content .card-row-green, #cards-content .card-row-blue, #cards-content .card-row-black, #cards-content .card-row-role {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 18px;
+          justify-content: center;
+          align-items: stretch;
+          overflow-x: visible;
+          padding-bottom: 8px;
+        }
+        @media (max-width: 1400px) {
+          #cards-content .card-box { width: 110px; }
+          #cards-content .card-box img { width: 70px; }
+        }
+        @media (max-width: 1200px) {
+          #card-explain-modal .modal-content {
+            max-width: 99vw;
+            min-width: 0;
+            padding: 0;
+          }
+          #cards-content .card-group-row { gap: 14px; }
+          #cards-content .card-row { gap: 8px; }
+        }
+        @media (max-width: 900px) {
+          #card-explain-modal .modal-content {
+            max-width: 100vw;
+            min-width: 0;
+            padding: 0;
+          }
+          #cards-content .card-group-row { gap: 8px; }
+          #cards-content .card-row { gap: 8px; }
+          #cards-content .card-box { width: 90px; }
+          #cards-content .card-box img { width: 54px; }
+        }
+        @media (max-width: 600px) {
+          #card-explain-modal .modal-content {
+            max-width: 100vw;
+            min-width: 0;
+            padding: 16px 8px;
+            min-height: 0;
+            height: 99vh;
+            overflow-y: auto;
+            overflow-x: hidden;
+          }
+          #cards-content {
+            width: 100%;
+            padding: 0 4px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+          }
+          #cards-content .card-group-row { 
+            gap: 20px; 
+            margin-bottom: 24px;
+            flex-direction: column;
+            width: 100%;
+            max-width: 300px;
+          }
+          #cards-content .card-row { 
+            gap: 12px; 
+            padding-bottom: 12px;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+          }
+          #cards-content .card-box { 
+            width: 100%; 
+            max-width: 280px;
+            min-width: 280px;
+            padding: 16px 12px 20px 12px;
+            margin-bottom: 12px;
+          }
+          #cards-content .card-box img { 
+            width: 100px; 
+            margin-bottom: 12px;
+          }
+          #cards-content .card-title {
+            font-size: 1.2em;
+            margin-bottom: 6px;
+          }
+          #cards-content .card-desc {
+            font-size: 1em;
+            max-width: 100%;
+            line-height: 1.4;
+          }
+        }
+      </style>
       </div>
     </div>
 
@@ -623,6 +855,63 @@
         .witch-popup-close-btn { font-size: 1em; padding: 10px 18px; }
       }
     </style>
+
+    <!-- Popup เนื้อเรื่อง -->
+    <div id="story-modal" class="modal" style="display:none; position: fixed; z-index: 2100; left: 0; top: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); align-items: center; justify-content: center;">
+      <div class="modal-content" style="background: #181818; color: #fff; margin: auto; padding: 0 0 32px 0; border-radius: 16px; width: 95%; max-width: 700px; position: relative; max-height: 90vh; overflow-y: auto; box-shadow: 0 8px 32px rgba(0,0,0,0.5);">
+        <span id="close-story-modal" class="close" style="position: absolute; right: 18px; top: 12px; color: #fff; font-size: 2em; cursor: pointer; z-index:2;">&times;</span>
+        <img src="Background/story.png" alt="เนื้อเรื่องหมู่บ้านต้องสาป" style="width:100%; max-height:400px; object-fit:cover; border-radius: 16px 16px 0 0; display:block;">
+        <div style="padding: 28px 24px 0 24px;">
+          <h2 style="margin-top:0; color:#ff9800; font-family:'Creepster','Noto Serif Thai',serif;">หมู่บ้านต้องสาป 1996</h2>
+          <p style="font-size:1.1em; color:#ffe0b2; line-height:1.7;">
+            ปี ค.ศ. 1996 ณ เมืองลับแล จังหวัดอุตรดิตถ์<br>
+            ความชั่วร้ายได้แฝงตัวอยู่ในเงามืดของหมู่บ้าน<br>
+            คุณเชื่อว่าเพื่อนบ้านบางคนของคุณคือปอบ!<br>
+            <br>
+            ตลอดทั้งเกม คุณจะได้จั่วและเล่นการ์ดเพื่อกล่าวหาผู้เล่นที่คุณไม่ไว้ใจ และช่วยเหลือผู้เล่นที่คุณเชื่อว่าอยู่ฝ่ายเดียวกับคุณ
+            เมื่อกองการ์ดหมดลงและการ์ดยามวิกาลถูกเปิดขึ้น เหล่าปอบจะพยายามสังหารผู้เล่นที่ชาวบ้านบริสุทธิ์<br>
+            <br>
+            คุณจะสามารถเอาชีวิตรอดจากหมู่บ้านต้องสาปแห่งนี้ได้หรือไม่?
+          </p>
+          <div style="text-align:center; margin-top:24px;">
+            <button id="enter-village-from-story" class="enter-village-btn" style="font-size:1.1em; padding: 12px 36px;">เข้าสู่หมู่บ้านต้องสาป</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+    // Popup เนื้อเรื่อง
+    const storyModal = document.getElementById('story-modal');
+    const showStoryBtn = document.getElementById('show-story-btn');
+    const closeStoryModal = document.getElementById('close-story-modal');
+    const enterVillageFromStory = document.getElementById('enter-village-from-story');
+    if(showStoryBtn && storyModal) {
+      showStoryBtn.onclick = () => { storyModal.style.display = 'flex'; document.body.style.overflow = 'hidden'; };
+    }
+    if(closeStoryModal && storyModal) {
+      closeStoryModal.onclick = () => { storyModal.style.display = 'none'; document.body.style.overflow = ''; };
+    }
+    if(enterVillageFromStory && storyModal) {
+      enterVillageFromStory.onclick = () => { storyModal.style.display = 'none'; document.body.style.overflow = ''; };
+    }
+    // ปิด popup เมื่อกด ESC
+    window.addEventListener('keydown', function(e) {
+      if (e.key === "Escape" && storyModal.style.display === 'flex') {
+        storyModal.style.display = 'none';
+        document.body.style.overflow = '';
+      }
+    });
+    // ปิด popup เมื่อคลิกพื้นหลัง
+    if(storyModal) {
+      storyModal.addEventListener('click', function(e) {
+        if (e.target === storyModal) {
+          storyModal.style.display = 'none';
+          document.body.style.overflow = '';
+        }
+      });
+    }
+    </script>
 
     <script src="/socket.io/socket.io.js"></script>
     <script src="script.js"></script>

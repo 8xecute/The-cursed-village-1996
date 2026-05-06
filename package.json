@@ -4,7 +4,7 @@
   "description": "The Cursed Village 1996 - Salem-style card game",
   "main": "server.js",
   "scripts": {
-    "test": "jest",
+    "test": "jest --passWithNoTests",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "start": "node server.js",

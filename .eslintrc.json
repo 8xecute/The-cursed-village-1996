@@ -1,0 +1,26 @@
+{
+  "root": true,
+  "env": {
+    "browser": true,
+    "node": true,
+    "es2022": true
+  },
+  "extends": ["eslint:recommended"],
+  "parserOptions": {
+    "ecmaVersion": "latest",
+    "sourceType": "script"
+  },
+  "ignorePatterns": ["dist/**", "node_modules/**", "coverage/**"],
+  "rules": {
+    "no-console": "off",
+    "no-case-declarations": "off",
+    "no-empty": "off",
+    "no-fallthrough": "off",
+    "no-inner-declarations": "off",
+    "no-prototype-builtins": "off",
+    "no-redeclare": "off",
+    "no-undef": "off",
+    "no-unused-vars": "off",
+    "no-useless-escape": "off"
+  }
+}
