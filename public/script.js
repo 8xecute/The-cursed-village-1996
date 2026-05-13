@@ -211,6 +211,7 @@ let lastConfessDay = null;
 let isMyTurn = false; // Track if it's currently my turn
 let hasPlayedCardsThisTurn = false; // Track if I've played any cards this turn
 let drawButtonDisabled = false; // Track if draw button is disabled
+let deathNotified = false;
 
 // Constants to avoid duplication with server
 const CARDS_NEED_TARGET = ['Accusation', 'Evidence', 'Witness', 'Curse', 'Alibi', 'Stocks', 'Arson', 'Asylum', 'Piety', 'Matchmaker'];
@@ -310,7 +311,7 @@ socket.on('room state update', (roomState) => {
         }
         html += ` ${player.isHost ? '(Host)' : ''} ${player.isBlackCatHolder ? ' (เครื่องเซ่น)' : ''}`;
         if (!player.alive) {
-            html += ' <span class="dead-label">ผู้เล่นตาย</span>';
+            html += ' <span class="dead-label">ผู้เล่นนี้ตายแล้ว</span>';
         }
         html += '</span>';
         if (roomState.gameStarted) {
@@ -346,6 +347,7 @@ socket.on('room state update', (roomState) => {
     // Host controls visibility
     if (isHost) {
         hostControlsLobby.style.display = 'block';
+        startGameButton.style.display = roomState.gameStarted ? 'none' : 'inline-block';
         // Make the game-specific host controls visible if the game has started
         if (roomState.gameStarted) {
             hostControlsGame.style.display = 'block';
@@ -355,6 +357,7 @@ socket.on('room state update', (roomState) => {
     } else {
         hostControlsLobby.style.display = 'none';
         hostControlsGame.style.display = 'none';
+        startGameButton.style.display = 'none';
     }
 
     // Game state updates
@@ -400,6 +403,10 @@ socket.on('room state update', (roomState) => {
 
         // --- NEW: Disable all controls if player is dead ---
         if (myPlayer && !myPlayer.alive) {
+            if (!deathNotified) {
+                addGameMessage('คุณตายแล้ว! คุณจะไม่สามารถทำแอ็กชันใดๆ ได้อีก', 'red', true);
+                deathNotified = true;
+            }
             if (typeof drawCardButton !== 'undefined' && drawCardButton) drawCardButton.disabled = true;
             if (typeof playCardButton !== 'undefined' && playCardButton) playCardButton.disabled = true;
             if (typeof endTurnButton !== 'undefined' && endTurnButton) endTurnButton.disabled = true;
@@ -416,6 +423,9 @@ socket.on('room state update', (roomState) => {
             if (typeof witchChatInput !== 'undefined' && witchChatInput) witchChatInput.disabled = true;
             if (typeof witchChatSendButton !== 'undefined' && witchChatSendButton) witchChatSendButton.disabled = true;
             if (typeof witchChatInput !== 'undefined' && witchChatInput) witchChatInput.placeholder = 'คุณตายแล้ว ไม่สามารถส่งข้อความได้';
+        }
+        if (myPlayer && myPlayer.alive) {
+            deathNotified = false;
         }
 
         // --- NEW: Disable all controls if awaitingLeftTryalSelections (พิธีเซ่นไหว้) ---
@@ -791,15 +801,22 @@ socket.on('update revealed tryal indexes', (revealedIndexes) => {
 });
 
 socket.on('update in play cards', (inPlayCards) => {
-    // Update in-play cards display if needed
     console.log('In-play cards updated:', inPlayCards);
+    if (currentRoomState && currentRoomState.players && currentRoomState.players[myUniqueId]) {
+        currentRoomState.players[myUniqueId].inPlayCards = inPlayCards;
+        updatePlayersGrid(currentRoomState, myUniqueId, nightActionState.actionType);
+        updatePlayersBoardGrid(currentRoomState, myUniqueId);
+    }
 });
 
 socket.on('prompt witch kill', () => {
+    nightActionState.hasSubmitted = false;
     createNightActionPopup('witch');
 });
 
 socket.on('prompt constable action', () => {
+    nightActionState.hasSubmitted = false;
+    nightActionState.selectedTargetId = null;
     createNightActionPopup('constable');
 });
 
@@ -845,6 +862,10 @@ function formatTime(ts) {
 function sendWitchChatMessage() {
     const message = witchChatInput.value.trim();
     if (message && currentRoomName) {
+        if (!currentRoomState || currentRoomState.currentPhase !== 'NIGHT') {
+            addGameMessage('แชทปอบใช้งานได้เฉพาะช่วงกลางคืนเท่านั้น', 'orange');
+            return;
+        }
         socket.emit('send witch chat message', currentRoomName, message);
         witchChatInput.value = '';
     }
@@ -861,7 +882,8 @@ witchChatInput.addEventListener('keypress', (e) => {
 // Function to show/hide witch chat based on witch status
 function updateWitchChatVisibility(isWitch) {
     const myPlayer = currentRoomState && currentRoomState.players && currentRoomState.players[myUniqueId];
-    if (isWitch && currentRoomName) {
+    const isNight = currentRoomState && currentRoomState.currentPhase === 'NIGHT';
+    if (isWitch && currentRoomName && isNight) {
         witchChatSection.style.display = 'block';
         socket.emit('request witch chat history', currentRoomName);
         // ปรับปุ่มส่งข้อความและ input: ปล่อยให้ใช้งานได้เฉพาะถ้ายังมีชีวิต
@@ -990,7 +1012,7 @@ socket.on('forced reveal notice', ({ byPlayerName, reason, points }) => {
 // --- Black Cat Tryal Card Selection Popup (สำหรับ พิธีเซ่นไหว้) ---
 let blackCatTryalSelection = null;
 
-function showBlackCatTryalSelection(blackCatHolder, tryalCount) {
+function showBlackCatTryalSelection(blackCatHolder, tryalCount, fromConspiracyDraw = false) {
     // Remove any existing popups to prevent overlapping
     const old = document.getElementById('blackcat-tryal-select-popup');
     if (old) old.remove();
@@ -1012,7 +1034,9 @@ function showBlackCatTryalSelection(blackCatHolder, tryalCount) {
     container.style.textAlign = 'center';
 
     const title = document.createElement('h3');
-    title.textContent = 'เลือก การ์ดชีวิต ของผู้ถือ การ์ดเครื่องเซ่น เพื่อเปิดเผย';
+    title.textContent = fromConspiracyDraw
+        ? 'คุณจั่วได้การ์ดพิธีเซ่นไหว้: ต้องเปิดการ์ดชีวิตของผู้เล่นที่ถือเครื่องเซ่น'
+        : 'เลือก การ์ดชีวิต ของผู้ถือ การ์ดเครื่องเซ่น เพื่อเปิดเผย';
     title.style.color = '#ffd700';
     container.appendChild(title);
 
@@ -1055,10 +1079,7 @@ function showBlackCatTryalSelection(blackCatHolder, tryalCount) {
     document.body.appendChild(container);
 }
 
-socket.on('prompt select blackcat tryal', ({ blackCatHolder, tryalCount }) => {
-    blackCatTryalSelection = { blackCatHolder, tryalCount };
-    showBlackCatTryalSelection(blackCatHolder, tryalCount);
-});
+// handled by the unified popup listener near the bottom of this file
 
 socket.on('prompt select curse target', (data) => {
     showCurseTargetSelection(data.targetUniqueId, data.blueCards);
@@ -1123,6 +1144,11 @@ forceNextPhaseButton.addEventListener('click', handleForceNextPhase);
 forceNextPhaseGameButton.addEventListener('click', handleForceNextPhase);
 
 drawCardButton.addEventListener('click', () => {
+    const me = currentRoomState && currentRoomState.players && currentRoomState.players[myUniqueId];
+    if (me && !me.alive) {
+        addGameMessage('คุณตายแล้ว ไม่สามารถทำแอ็กชันได้', 'red');
+        return;
+    }
     if (!isMyTurn) {
         addGameMessage('ไม่ใช่ตาของคุณ.', 'red');
         return;
@@ -1131,6 +1157,11 @@ drawCardButton.addEventListener('click', () => {
 });
 
 playCardButton.addEventListener('click', () => {
+    const me = currentRoomState && currentRoomState.players && currentRoomState.players[myUniqueId];
+    if (me && !me.alive) {
+        addGameMessage('คุณตายแล้ว ไม่สามารถทำแอ็กชันได้', 'red');
+        return;
+    }
     if (!isMyTurn) {
         addGameMessage('ไม่ใช่ตาของคุณ.', 'red');
         return;
@@ -1178,6 +1209,11 @@ playCardButton.addEventListener('click', () => {
 });
 
 endTurnButton.addEventListener('click', () => {
+    const me = currentRoomState && currentRoomState.players && currentRoomState.players[myUniqueId];
+    if (me && !me.alive) {
+        addGameMessage('คุณตายแล้ว ไม่สามารถทำแอ็กชันได้', 'red');
+        return;
+    }
     if (!isMyTurn) {
         addGameMessage('ไม่ใช่ตาของคุณ.', 'red');
         return;
@@ -1225,6 +1261,11 @@ confessButton.addEventListener('click', () => {
 // Add skip confession button event listener
 const skipConfessButton = document.getElementById('skip-confess-button');
 skipConfessButton.addEventListener('click', () => {
+    const me = currentRoomState && currentRoomState.players && currentRoomState.players[myUniqueId];
+    if (me && !me.alive) {
+        addGameMessage('คุณตายแล้ว ไม่สามารถทำแอ็กชันได้', 'red');
+        return;
+    }
     if (currentRoomName) {
         socket.emit('skip confession');
         confessPopupShownForThisPreDawn = false;
@@ -1679,7 +1720,15 @@ function updateTryalCardDisplay() {
         });
     }
     if (myRevealedTryalCardIndexes && myRevealedTryalCardIndexes.length > 0) {
-        myRevealedTryalCards.textContent = `Revealed: ${myRevealedTryalCardIndexes.map(i => myTryalCards[i]?.name).filter(Boolean).join(', ')}`;
+        const revealedNames = myRevealedTryalCardIndexes
+            .map((item) => {
+                if (typeof item === 'number') return myTryalCards[item]?.name;
+                if (typeof item === 'string') return item;
+                return null;
+            })
+            .filter(Boolean)
+            .map((name) => displayCardName(name));
+        myRevealedTryalCards.textContent = `Revealed: ${revealedNames.join(', ')}`;
     } else {
         myRevealedTryalCards.textContent = '';
     }
@@ -1740,7 +1789,7 @@ function updatePlayersGrid(roomState, myUniqueId, actionType = null) {
         if (isWitchView && player.hasBeenWitch) header += ' <span style="color:#ff1744;font-size:0.95em;font-weight:bold;">(ทีมปอบ)</span>';
         if (player.isHost) header += ' <span style="color:#ff4500;">(Host)</span>';
         if (player.isBlackCatHolder) header += ' <span style="color:#ffd700;">(เครื่องเซ่น)</span>';
-        if (!player.alive) header += ' <span class="dead-label">ผู้เล่นตาย</span>';
+        if (!player.alive) header += ' <span class="dead-label">ผู้เล่นนี้ตายแล้ว</span>';
         if (roomState.currentTurnPlayerUniqueId === player.uniqueId) header += ' <span style="color:#2196f3;font-weight:bold;">[เทิร์น]</span>';
         header += '</div>';
         // Status
@@ -1826,7 +1875,13 @@ function updatePlayersGrid(roomState, myUniqueId, actionType = null) {
         let tryals = `<div class='player-board-tryals'>`;
         if (player.tryalCards && Array.isArray(player.tryalCards)) {
             player.tryalCards.forEach((cardObj, idx) => {
-                const revealed = player.revealedTryalCardIndexes && player.revealedTryalCardIndexes.includes(idx);
+                const revealed = !!(
+                    player.revealedTryalCardIndexes &&
+                    (
+                        player.revealedTryalCardIndexes.includes(idx) ||
+                        player.revealedTryalCardIndexes.includes(cardObj.name)
+                    )
+                );
                 let cardClass = 'player-board-tryal-card';
                 let cardThemeClass = '';
                 if (revealed) {
@@ -1907,7 +1962,7 @@ function updatePlayersBoardGrid(roomState, myUniqueId) {
         header += `${player.name}`;
         if (player.isHost) header += ' <span style="color:#ff4500;">(Host)</span>';
         if (player.isBlackCatHolder) header += ' <span style="color:#ffd700;">(เครื่องเซ่น)</span>';
-        if (!player.alive) header += ' <span class="dead-label">ผู้เล่นตาย</span>';
+        if (!player.alive) header += ' <span class="dead-label">ผู้เล่นนี้ตายแล้ว</span>';
         if (roomState.currentTurnPlayerUniqueId === player.uniqueId) header += ' <span style="color:#2196f3;font-weight:bold;">[เทิร์น]</span>';
         header += '</div>';
         // Status
@@ -2316,7 +2371,11 @@ function populateNightActionPlayersList(actionType) {
     let eligiblePlayers = [];
     if (actionType === 'witch') {
         // Witches can target any alive player who does NOT have Asylum and is not self
-        eligiblePlayers = Object.values(currentRoomState.players).filter(player => player.alive && player.uniqueId !== myUniqueId && !(player.inPlayCards && player.inPlayCards.some(cardName => cardName === 'Asylum')));
+        eligiblePlayers = Object.values(currentRoomState.players).filter(player =>
+            player.alive &&
+            player.uniqueId !== myUniqueId &&
+            !(player.inPlayCards && player.inPlayCards.some(card => (typeof card === 'string' ? card === 'Asylum' : card.name === 'Asylum')))
+        );
     } else if (actionType === 'constable') {
         // Constables can target any player except themselves, and only alive
         eligiblePlayers = Object.values(currentRoomState.players).filter(player => player.uniqueId !== myUniqueId && player.alive);
@@ -2405,6 +2464,10 @@ function populateNightActionPlayersList(actionType) {
 
 // --- พิธีเซ่นไหว้: เลือกไพ่ ชีวิต ของผู้เล่นซ้ายมือ ---
 socket.on('prompt select left tryal', ({ leftPlayerUniqueId, leftPlayerName, leftPlayerTryalCount }) => {
+    const me = currentRoomState && currentRoomState.players && currentRoomState.players[myUniqueId];
+    if (me && !me.alive) {
+        return;
+    }
     // Remove any existing popups to prevent overlapping
     const existing = document.getElementById('select-left-tryal-popup');
     if (existing) existing.remove();
@@ -2877,6 +2940,20 @@ function showGameOverStats(roomState) {
     let winnerIcon = roomState.winner === 'witches' || roomState.winner === 'Witches' ? '🧙‍♀️' : (roomState.winner === 'constables' || roomState.winner === 'Townsfolk' ? '🛡️' : '🤝');
     popup.innerHTML = `<h2 style="color:#ffd700;">${winnerIcon} เกมจบแล้ว!</h2><h3 style="margin-bottom:18px;">ผู้ชนะ: <span style="color:${roomState.winner === 'witches' || roomState.winner === 'Witches' ? '#ff1744' : (roomState.winner === 'constables' || roomState.winner === 'Townsfolk' ? '#43a047' : '#ffd700')};">${roomState.winner === 'witches' ? 'ทีมปอบ' : (roomState.winner === 'constables' || roomState.winner === 'Townsfolk' ? 'ทีมชาวบ้าน' : 'เสมอ')}</span></h3>`;
 
+    // แสดงการ์ดของทีมผู้ชนะ
+    const winnerIsWitch = roomState.winner === 'witches' || roomState.winner === 'Witches';
+    const winnerPlayers = Object.values(roomState.players || {}).filter((p) => winnerIsWitch ? p.hasBeenWitch : !p.hasBeenWitch);
+    const winnerCards = [];
+    winnerPlayers.forEach((p) => {
+        (p.tryalCards || []).forEach((card) => {
+            if (!winnerCards.includes(card.name)) winnerCards.push(card.name);
+        });
+    });
+    popup.innerHTML += `<div style="margin:8px 0 12px 0;text-align:left;background:#1a1a1a;border-radius:8px;padding:10px;">
+        <div style="font-weight:bold;color:#ffd166;margin-bottom:6px;">การ์ดเด่นของทีมผู้ชนะ</div>
+        <div>${winnerCards.length ? winnerCards.map((name) => `<span style="display:inline-block;margin:0 6px 6px 0;padding:3px 8px;border-radius:6px;background:#333;">${displayCardName(name)}</span>`).join('') : 'ไม่มีข้อมูลการ์ด'}</div>
+    </div>`;
+
     // ตารางสถิติ
     let statTable = `<table style="width:100%;margin:0 auto 18px auto;border-collapse:collapse;font-size:1em;">
         <thead><tr style="background:#333;"><th>ชื่อ</th><th>สถานะ</th><th>ทีม</th><th>บทบาท</th><th>Tryal Card</th></tr></thead><tbody>`;
@@ -2886,7 +2963,19 @@ function showGameOverStats(roomState) {
         const team = player.isWitch || player.hasBeenWitch ? 'ปอบ' : (player.isConstable ? 'หมอผี' : 'ชาวบ้าน');
         const role = player.isWitch ? 'ปอบ' : (player.isConstable ? 'หมอผี' : 'ชาวบ้าน');
         const tryalCards = (player.tryalCards || []).map((card, idx) => {
-            const revealed = player.revealedTryalCardIndexes && player.revealedTryalCardIndexes.includes ? player.revealedTryalCardIndexes.includes(idx) : (player.revealedTryalCardIndexes && player.revealedTryalCardIndexes.has && player.revealedTryalCardIndexes.has(idx));
+            const revealed = !!(
+                player.revealedTryalCardIndexes &&
+                (
+                    (player.revealedTryalCardIndexes.includes && (
+                        player.revealedTryalCardIndexes.includes(idx) ||
+                        player.revealedTryalCardIndexes.includes(card.name)
+                    )) ||
+                    (player.revealedTryalCardIndexes.has && (
+                        player.revealedTryalCardIndexes.has(idx) ||
+                        player.revealedTryalCardIndexes.has(card.name)
+                    ))
+                )
+            );
             return `<span style="display:inline-block;padding:2px 8px;margin:0 2px;border-radius:6px;background:${card.name==='Witch'?'#b71c1c':(card.name==='Constable'?'#1565c0':'#444')};color:#fff;font-weight:bold;opacity:${revealed?1:0.5};">${card.name==='Witch'?'ปอบ':(card.name==='Constable'?'หมอผี':'ชาวบ้าน')}</span>`;
         }).join('');
         statTable += `<tr style="background:${isAlive?'#263238':'#111'};"><td>${player.name}</td><td style="color:${isAlive?'#43a047':'#ff1744'};font-weight:bold;">${isAlive?'รอด':'ตาย'}</td><td>${team}</td><td>${role}</td><td>${tryalCards}</td></tr>`;
@@ -2904,6 +2993,26 @@ function showGameOverStats(roomState) {
         popup.innerHTML += recapHtml;
     } else {
         popup.innerHTML += '<div style="margin:8px 0 14px 0;color:#bdbdbd;">Recap: เกมนี้ยังไม่มีเหตุการณ์แพร่เชื้อ</div>';
+    }
+
+    const deathLog = Array.isArray(roomState.deathLog) ? roomState.deathLog : [];
+    if (deathLog.length > 0) {
+        let deathHtml = '<div style="text-align:left;background:#1b1b1b;border-radius:10px;padding:12px;margin:8px 0 14px 0;"><h4 style="margin:0 0 8px 0;color:#ef9a9a;">Recap: ผู้เล่นที่ตายและสาเหตุ</h4><ul style="margin:0;padding-left:18px;">';
+        deathLog.forEach((item) => {
+            const causeMap = {
+                night_kill: 'ถูกสังหารตอนกลางคืน',
+                matchmaker_link: 'ตายตามเงื่อนไข Matchmaker',
+                revealed_witch: 'เปิดการ์ดปอบแล้วตายทันที',
+                unknown: 'ตายจากเหตุการณ์ในเกม',
+            };
+            const causeText = causeMap[item.cause] || causeMap.unknown;
+            const byText = item.byPlayerName ? ` โดย <b>${item.byPlayerName}</b>` : '';
+            deathHtml += `<li style="margin-bottom:4px;">วันที่ ${item.day || '-'}: <b>${item.playerName}</b> - ${causeText}${byText}</li>`;
+        });
+        deathHtml += '</ul></div>';
+        popup.innerHTML += deathHtml;
+    } else {
+        popup.innerHTML += '<div style="margin:8px 0 14px 0;color:#bdbdbd;">Recap: เกมนี้ยังไม่มีผู้เล่นตาย</div>';
     }
 
     // ปุ่ม replay และกลับสู่ล็อบบี้
@@ -3027,6 +3136,9 @@ const cardNameMap = {
     'Constable': 'หมอผี',
 };
 function getCardNameTH(name) {
+    if (name && typeof name === 'object') {
+        return cardNameMap[name.name] || name.name || '';
+    }
     return cardNameMap[name] || name;
 }
 
@@ -3272,7 +3384,7 @@ socket.on('card played successfully', () => {
 });
 
 // --- พิธีเซ่นไหว้: เลือกไพ่ ชีวิต ของผู้เล่นซ้ายมือ ---
-socket.on('prompt select blackcat tryal', ({ blackCatHolder, tryalCount, blackCatHolderName }) => {
+socket.on('prompt select blackcat tryal', ({ blackCatHolder, tryalCount, blackCatHolderName, fromConspiracyDraw = false }) => {
     // Remove existing popup if any
     const existing = document.getElementById('select-blackcat-tryal-popup');
     if (existing) existing.remove();
@@ -3286,7 +3398,9 @@ socket.on('prompt select blackcat tryal', ({ blackCatHolder, tryalCount, blackCa
     popup.style = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#222;padding:30px;border-radius:10px;z-index:9999;text-align:center;box-shadow:0 0 20px #000;';
 
     const title = document.createElement('h3');
-    title.textContent = `เลือก การ์ดชีวิต ของผู้ถือเครื่องเซ่นเพื่อเปิดเผย`;
+    title.textContent = fromConspiracyDraw
+        ? 'คุณจั่วได้การ์ดพิธีเซ่นไหว้: ต้องเปิดการ์ดชีวิตของผู้ถือเครื่องเซ่น'
+        : 'เลือก การ์ดชีวิต ของผู้ถือเครื่องเซ่นเพื่อเปิดเผย';
     title.style.color = '#ffd700';
     popup.appendChild(title);
 

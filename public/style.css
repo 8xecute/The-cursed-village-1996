@@ -1269,6 +1269,102 @@ button:disabled {
   text-align: center;
 }
 
+html, body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.container {
+  width: min(100%, 1600px);
+}
+
+@media (max-width: 1024px) {
+  body {
+    padding: 10px;
+  }
+
+  .container {
+    padding: 8px;
+    border-radius: 8px;
+  }
+
+  .game-layout {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  #sidebar-left, #sidebar-right, .sidebar, .main-game-content {
+    min-width: 0;
+    max-width: 100%;
+    width: 100%;
+    flex: 1 1 auto;
+    position: static;
+    max-height: none;
+  }
+
+  #player-hand, #tryal-cards-display, #game-messages {
+    max-height: none;
+  }
+}
+
+@media (max-width: 600px) {
+  h1 {
+    font-size: 1.8em;
+    letter-spacing: 0.05em;
+  }
+
+  button, input[type="text"], input[type="number"], select {
+    width: 100%;
+    margin: 4px 0;
+  }
+
+  .hand-action-buttons {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .section {
+    padding: 10px 8px;
+  }
+
+  #game-state-bar {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    font-size: 0.9em;
+  }
+
+  #player-list .player-item,
+  #players-board-list .player-board-card {
+    font-size: 0.92em;
+  }
+
+  #game-messages {
+    max-height: 220px !important;
+    min-height: 180px;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+@media (max-width: 1024px) {
+  #game-messages {
+    max-height: 260px;
+    overflow-y: auto;
+  }
+}
+
+.hand-action-buttons {
+  position: sticky;
+  bottom: 0;
+  background: rgba(35, 35, 35, 0.92);
+  backdrop-filter: blur(3px);
+  padding: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  z-index: 30;
+}
+
 .select-player-popup, #select-player-popup, #accused-tryal-select-popup, #blackcat-tryal-select-popup {
   background: #232323 !important;
   color: #686868;

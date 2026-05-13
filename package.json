@@ -12,15 +12,20 @@
     "build": "npm run build:client && npm run build:server",
     "build:client": "webpack --mode production",
     "build:server": "echo 'Server build complete'",
-    "build:render": "npm run build:client && npm run optimize:assets",
-    "optimize:assets": "node scripts/optimize-assets.js",
+    "build:render": "npm run build:client",
+    "optimize:assets": "echo \"No asset optimizer configured\"",
     "lint": "eslint . --ext .js",
     "lint:fix": "eslint . --ext .js --fix",
     "optimize": "npm run lint:fix && npm run build",
     "postinstall": "npm run build:client",
     "health": "node scripts/health-check.js"
   },
-  "keywords": ["game", "salem", "card-game", "multiplayer"],
+  "keywords": [
+    "game",
+    "salem",
+    "card-game",
+    "multiplayer"
+  ],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
@@ -29,27 +34,25 @@
     "npm": ">=8.0.0"
   },
   "dependencies": {
+    "compression": "^1.8.1",
+    "cors": "^2.8.5",
     "express": "^5.1.0",
+    "helmet": "^7.1.0",
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",
-    "uuid": "^11.1.0",
-    "compression": "^1.7.4",
-    "helmet": "^7.1.0",
-    "cors": "^2.8.5"
+    "uuid": "^14.0.0"
   },
   "devDependencies": {
-    "jest": "^29.7.0",
-    "nodemon": "^3.0.2",
-    "eslint": "^8.56.0",
-    "webpack": "^5.89.0",
-    "webpack-cli": "^5.1.4",
-    "terser-webpack-plugin": "^5.3.9",
-    "css-minimizer-webpack-plugin": "^5.0.1",
-    "mini-css-extract-plugin": "^2.7.6",
-    "supertest": "^6.3.3",
     "css-loader": "^6.8.1",
-    "imagemin": "^8.0.1",
-    "imagemin-pngquant": "^9.0.2"
+    "css-minimizer-webpack-plugin": "^8.0.0",
+    "eslint": "^8.56.0",
+    "jest": "^29.7.0",
+    "mini-css-extract-plugin": "^2.7.6",
+    "nodemon": "^3.0.2",
+    "supertest": "^6.3.3",
+    "terser-webpack-plugin": "^5.5.0",
+    "webpack": "^5.106.2",
+    "webpack-cli": "^5.1.4"
   },
   "jest": {
     "testEnvironment": "node",
@@ -59,6 +62,10 @@
       "!**/node_modules/**"
     ],
     "coverageDirectory": "coverage",
-    "coverageReporters": ["text", "lcov", "html"]
+    "coverageReporters": [
+      "text",
+      "lcov",
+      "html"
+    ]
   }
 }
