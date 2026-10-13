@@ -1099,6 +1099,7 @@ setNameButton.addEventListener('click', () => {
         playerNameDisplay.textContent = myPlayerName;
         nameInputContainer.style.display = 'none';
         socket.emit('set player name', myPlayerName);
+        socket.emit('request rooms list');
     }
 });
 
@@ -2863,6 +2864,7 @@ roomSetNameButton.addEventListener('click', () => {
     playerNameDisplay.textContent = myPlayerName;
     nameInput.value = myPlayerName;
     socket.emit('set player name', myPlayerName);
+    socket.emit('request rooms list');
     addGameMessage('Name updated successfully!', 'green', true);
 });
 

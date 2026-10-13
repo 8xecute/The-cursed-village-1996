@@ -606,6 +606,16 @@ function changePhase(roomName, forcedNextPhase = null) {
             return;
     }
 
+    // A Curse selection is only valid during the turn in which it was played.
+    // Cancel it if a phase transition interrupts that turn.
+    if (nextPhase !== 'DAY' && room.awaitingCurseSelection) {
+        const selector = room.players[room.awaitingCurseSelection.selector];
+        if (selector) {
+            io.to(selector.id).emit('game message', 'หมดช่วงเลือกการ์ดจาก Curse แล้ว การเลือกถูกยกเลิก.', 'orange');
+        }
+        delete room.awaitingCurseSelection;
+    }
+
     room.currentPhase = nextPhase;
     nextDuration = room.phaseConfig[nextPhase] || DEFAULT_PHASE_DURATIONS[nextPhase];
     startPhaseTimer(roomName, nextDuration);
@@ -845,6 +855,11 @@ function playCard(roomName, playerUniqueId, cardIndex, targetUniqueId = null, se
         return;
     }
 
+    if (room.awaitingCurseSelection?.selector === playerUniqueId) {
+        io.to(player.id).emit('game message', 'กรุณาเลือกการ์ดจาก Curse ให้เสร็จก่อนทำ action อื่น.', 'orange');
+        return;
+    }
+
     if (player.isSilenced) {
         io.to(player.id).emit('game message', 'คุณถูกทำให้เงียบและไม่สามารถเล่นการ์ดได้.', 'red');
         return;
@@ -1035,9 +1050,6 @@ function playCard(roomName, playerUniqueId, cardIndex, targetUniqueId = null, se
                             room.discardPile.push(cardToDiscard);
                         io.to(targetPlayer.id).emit('update in play cards', targetPlayer.inPlayCards);
                         }
-                        // --- ตรวจสอบและลบ Curse ซ้ำในมือ (ถ้ามี) ---
-                        player.hand = player.hand.filter(card => card.name !== 'Curse');
-                        io.to(player.id).emit('update hand', player.hand);
                         // --- เพิ่ม game message ---
                         sendGameMessage(room.name, `<b>${player.name}</b> ใช้การ์ด ${getCardNameWithColor('Curse')} ใส่ <b>${targetPlayer.name}</b> ทิ้งการ์ด ${getCardNameWithColor(cardToDiscard.name)}`, 'orange', true);
                         // Do NOT end turn here; allow player to continue
@@ -1047,10 +1059,18 @@ function playCard(roomName, playerUniqueId, cardIndex, targetUniqueId = null, se
                             selector: playerUniqueId,
                             target: targetUniqueId,
                         };
+                        // Consume only the Curse that was played. Keep any
+                        // duplicate Curse cards in the player's hand.
+                        player.hand.splice(cardIndex, 1);
+                        player.hasPlayedCardsThisTurn = true;
+                        io.to(player.id).emit('update hand', player.hand);
+                        io.to(player.id).emit('disable draw button');
+                        io.to(player.id).emit('card played successfully');
                         io.to(player.id).emit('prompt select curse target', {
                             targetUniqueId,
                             blueCards: blueCards.map(card => ({ name: card.name }))
                         });
+                        emitRoomState(room.name);
                         return;
                     }
                 } else {
@@ -1290,6 +1310,11 @@ function endTurn(roomName, playerUniqueId) {
         return;
     }
 
+    if (room.awaitingCurseSelection?.selector === playerUniqueId) {
+        io.to(player.id).emit('game message', 'กรุณาเลือกการ์ดจาก Curse ให้เสร็จก่อนจบเทิร์น.', 'orange');
+        return;
+    }
+
 
     
     setNextTurn(room); // Now advance to next player's turn
@@ -1313,6 +1338,11 @@ function drawCards(roomName, playerUniqueId, count = 2) {
 
     if (room.playerForcedToConfess) {
         io.to(player.id).emit('game message', `รอให้ ${room.players[room.playerForcedToConfess].name} สารภาพก่อน`, 'orange');
+        return;
+    }
+
+    if (room.awaitingCurseSelection?.selector === playerUniqueId) {
+        io.to(player.id).emit('game message', 'กรุณาเลือกการ์ดจาก Curse ให้เสร็จก่อนจั่วการ์ด.', 'orange');
         return;
     }
 
@@ -2565,14 +2595,27 @@ io.on('connection', (socket) => {
         if (!room || room.gameOver) return;
         const player = room.players[socket.uniqueId];
 
-        if (player && player.alive && room.awaitingCurseSelection &&
+        if (player && player.alive && room.currentPhase === 'DAY' &&
+            room.currentTurnPlayerUniqueId === player.uniqueId && room.awaitingCurseSelection &&
             room.awaitingCurseSelection.selector === socket.uniqueId &&
             room.awaitingCurseSelection.target === targetPlayerUniqueId) {
             
             const targetPlayer = room.players[targetPlayerUniqueId];
             if (!targetPlayer || !targetPlayer.alive) return;
             const blueCards = targetPlayer.inPlayCards.filter(c => c.color === 'Blue');
-            
+
+            if (blueCards.length === 0) {
+                delete room.awaitingCurseSelection;
+                io.to(player.id).emit('game message', 'เป้าหมายไม่มีการ์ดสีน้ำเงินให้เลือกแล้ว.', 'orange');
+                emitRoomState(room.name);
+                return;
+            }
+
+            if (!Number.isInteger(cardIndex) || cardIndex < 0 || cardIndex >= blueCards.length) {
+                io.to(player.id).emit('game message', 'หมายเลขการ์ดที่เลือกไม่ถูกต้อง.', 'red');
+                return;
+            }
+
             if (targetPlayer && blueCards.length > cardIndex) {
                 const cardToDiscard = blueCards[cardIndex];
                 // --- แก้ไขตรงนี้ ---
@@ -2602,9 +2645,6 @@ io.on('connection', (socket) => {
                     room.discardPile.push(cardToDiscard);
                     io.to(targetPlayer.id).emit('update in play cards', targetPlayer.inPlayCards);
                 }
-                // --- ตรวจสอบและลบ Curse ซ้ำในมือ (ถ้ามี) ---
-                player.hand = player.hand.filter(card => card.name !== 'Curse');
-                io.to(player.id).emit('update hand', player.hand);
                 // --- เพิ่ม game message ---
                                         sendGameMessage(room.name, `<b>${player.name}</b> เลือกให้<b>${targetPlayer.name}</b> ทิ้งการ์ด ${getCardNameWithColor(cardToDiscard.name)} เนื่องจากโดนคำสาป.`, 'red');
                 // Clean up
