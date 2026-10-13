@@ -1893,7 +1893,10 @@ function updatePlayersGrid(roomState, myUniqueId, actionType = null) {
                         cardThemeClass = ' card-theme card-black';
                     }
                 }
-                tryals += `<div class='${cardClass}${revealed ? ' revealed' : ''}${cardThemeClass}' title='${displayCardDescription(cardObj.name)}'>${revealed ? displayCardName(cardObj.name) : 'Card ' + (idx + 1)}</div>`;
+                const cardTitle = revealed
+                    ? displayCardDescription(cardObj.name)
+                    : 'การ์ดชีวิตที่ยังไม่เปิดเผย';
+                tryals += `<div class='${cardClass}${revealed ? ' revealed' : ''}${cardThemeClass}' title='${cardTitle}'>${revealed ? displayCardName(cardObj.name) : 'Card ' + (idx + 1)}</div>`;
             });
         }
         tryals += '</div>';

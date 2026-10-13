@@ -184,9 +184,13 @@ function emitRoomState(roomName) {
     const room = rooms[roomName];
     if (!room) return;
 
-    const playersState = {};
-    for (const uniqueId in room.players) {
+    const buildPlayersStateFor = (viewer) => {
+      const playersState = {};
+      for (const uniqueId in room.players) {
         const player = room.players[uniqueId];
+        const isSelf = viewer?.uniqueId === uniqueId;
+        const viewerKnowsWitchTeam = !!(room.gameOver || isSelf || viewer?.hasBeenWitch);
+        const revealedIndexes = new Set(player.revealedTryalCardIndexes || []);
         playersState[uniqueId] = {
             id: player.id, // socket id
             name: player.name,
@@ -194,7 +198,11 @@ function emitRoomState(roomName) {
             isHost: player.isHost,
             handSize: player.hand.length,
             tryalCardCount: player.tryalCards.length, // Send total count of Tryal Cards
-            tryalCards: player.tryalCards.map(card => ({ name: card.name, type: card.type })), // Send tryal cards for display
+            tryalCards: player.tryalCards.map((card, index) => (
+                room.gameOver || !player.alive || isSelf || revealedIndexes.has(index)
+                    ? { name: card.name, type: card.type }
+                    : { name: null, type: null }
+            )),
             inPlayCards: player.inPlayCards.map(c => ({
                 name: c.name,
                 color: c.color,
@@ -202,18 +210,20 @@ function emitRoomState(roomName) {
             })),
             alive: player.alive,
             isSilenced: player.isSilenced,
-            isWitch: player.isWitch, // Crucial for win condition
-            isConstable: player.isConstable, // Crucial for Night action
-            hasBeenWitch: player.hasBeenWitch, // For witch chat access
+            isWitch: room.gameOver || isSelf ? player.isWitch : false,
+            isConstable: room.gameOver || isSelf ? player.isConstable : false,
+            hasBeenWitch: viewerKnowsWitchTeam ? player.hasBeenWitch : false,
             // Explicitly send blackCatHolder and gavelHolder for the player list display
             accusationPoints: room.accusedPlayers[uniqueId] || 0,
             isBlackCatHolder: room.blackCatHolder === player.uniqueId,
             mustRevealTryal: room.playerForcedToRevealTryal === uniqueId,
             revealedTryalCardIndexes: Array.from(player.revealedTryalCardIndexes), // Send revealed roles as array
         };
-    }
+      }
+      return playersState;
+    };
 
-    io.to(roomName).emit('room state update', {
+    const publicState = {
         name: room.name,
         playerCount: Object.keys(room.players).length,
         maxPlayers: PLAYER_LIMIT,
@@ -223,7 +233,6 @@ function emitRoomState(roomName) {
         dayNumber: room.dayNumber,
         currentTurnPlayerUniqueId: room.currentTurnPlayerUniqueId,
         currentTurnPlayerName: room.currentTurnPlayerUniqueId ? room.players[room.currentTurnPlayerUniqueId]?.name : null,
-        players: playersState,
         phaseConfig: room.phaseConfig,
         confessors: room.confessors, // Players who have confessed this day
         playerForcedToRevealTryal: room.playerForcedToRevealTryal,
@@ -243,14 +252,18 @@ function emitRoomState(roomName) {
         leftTryalTotalCount: room.awaitingLeftTryalSelections
             ? getAlivePlayers(room).length
             : 0,
-        infectionLog: room.infectionLog || [],
-        deathLog: room.deathLog || [],
-    });
+        infectionLog: room.gameOver ? (room.infectionLog || []) : [],
+        deathLog: room.gameOver ? (room.deathLog || []) : [],
+    };
 
     // --- ส่ง hand และ tryalCards ให้แต่ละผู้เล่น (เฉพาะตัวเอง) ---
     for (const uniqueId in room.players) {
         const player = room.players[uniqueId];
         if (player && player.id) {
+            io.to(player.id).emit('room state update', {
+                ...publicState,
+                players: buildPlayersStateFor(player),
+            });
             io.to(player.id).emit('update hand', player.hand);
             io.to(player.id).emit('update tryal cards initial', player.tryalCards);
         }
@@ -820,14 +833,13 @@ function playCard(roomName, playerUniqueId, cardIndex, targetUniqueId = null, se
     const room = rooms[roomName];
     if (!room || room.gameOver) return;
     if (!room || !room.gameStarted || room.currentPhase !== 'DAY') {
-        io.to(room.players[playerUniqueId].id).emit('game message', 'ตอนนี้ยังเล่นการ์ดไม่ได้.', 'red');
+        const player = room?.players[playerUniqueId];
+        if (player) io.to(player.id).emit('game message', 'ตอนนี้ยังเล่นการ์ดไม่ได้.', 'red');
         return;
     }
     const player = room.players[playerUniqueId];
     if (!player || !player.alive || player.uniqueId !== room.currentTurnPlayerUniqueId) {
-        if (player && !player.alive) {
-            setNextTurn(room); // ข้ามเทิร์นคนตาย
-        } else if (player) {
+        if (player) {
             io.to(player.id).emit('game message', 'ไม่ใช่ตาของคุณหรือคุณไม่สามารถเล่นการ์ดได้.', 'red');
         }
         return;
@@ -874,6 +886,19 @@ function playCard(roomName, playerUniqueId, cardIndex, targetUniqueId = null, se
         return;
     }
 
+    // Enforce the no-self-target rule before applying any card effects or
+    // consuming the card. Black Cat is played onto its owner automatically.
+    const BLUE_CARDS_THAT_CANNOT_TARGET_SELF = ['Asylum', 'Piety', 'Matchmaker'];
+    const targetsSelf = targetUniqueId === playerUniqueId || secondTargetUniqueId === playerUniqueId;
+    const cannotTargetSelf =
+        ((cardToPlay.color === 'Red' || cardToPlay.color === 'Green') && targetsSelf) ||
+        (cardToPlay.color === 'Blue' &&
+            BLUE_CARDS_THAT_CANNOT_TARGET_SELF.includes(cardToPlay.name) && targetsSelf);
+    if (cannotTargetSelf) {
+        io.to(player.id).emit('game message', 'ไม่สามารถใช้การ์ดซาเลมกับตัวเองได้', 'red');
+        return;
+    }
+
     // --- Piety effect: Prevent red cards from targeting players with Piety ---
     const RED_CARD_NAMES = ['Accusation', 'Evidence', 'Witness'];
     if (
@@ -886,7 +911,7 @@ function playCard(roomName, playerUniqueId, cardIndex, targetUniqueId = null, se
     }
     
     // Move red and green cards to discard pile (Action and Accusation cards)
-    if (cardToPlay.color === 'Green') {
+    if (cardToPlay.color === 'Green' && cardToPlay.name !== 'Stocks') {
         room.discardPile.push(cardToPlay);
     }
     // Note: Blue cards (Permanent) stay in play, Black cards (Event) are resolved and discarded
@@ -973,8 +998,6 @@ function playCard(roomName, playerUniqueId, cardIndex, targetUniqueId = null, se
                 }
                 emitCardUsedOnYou(targetUniqueId, cardToPlay);
                 emitCardUsedOnYou(secondTargetUniqueId, cardToPlay);
-                // เพิ่มบรรทัดนี้: ทิ้งการ์ด Scapegoat หลังใช้
-                room.discardPile.push(cardToPlay);
             }
             break;
         case 'Curse':
@@ -1235,48 +1258,6 @@ function playCard(roomName, playerUniqueId, cardIndex, targetUniqueId = null, se
     // Send deck information update
     sendDeckInfo(roomName);
 
-    // --- Prevent self-targeting for Salem cards (Red, Green, Blue) except Black Cat ---
-    const SALEM_COLORS = ['Red', 'Green', 'Blue'];
-    const BLUE_CARDS_EXCEPT_BLACK_CAT = ['Asylum', 'Piety', 'Matchmaker'];
-    
-    // Check for Red and Green cards (no exceptions)
-    if (
-        cardNeedsTarget &&
-        (cardToPlay.color === 'Red' || cardToPlay.color === 'Green') &&
-        targetUniqueId === playerUniqueId
-    ) {
-        io.to(player.id).emit('game message', 'ไม่สามารถใช้การ์ดซาเลมกับตัวเองได้', 'red');
-        return;
-    }
-    if (
-        cardNeedsTwoTargets &&
-        (cardToPlay.color === 'Red' || cardToPlay.color === 'Green') &&
-        (targetUniqueId === playerUniqueId || secondTargetUniqueId === playerUniqueId)
-    ) {
-        io.to(player.id).emit('game message', 'ไม่สามารถใช้การ์ดซาเลมกับตัวเองได้', 'red');
-        return;
-    }
-    
-    // Check for Blue cards (except Black Cat)
-    if (
-        cardNeedsTarget &&
-        cardToPlay.color === 'Blue' &&
-        BLUE_CARDS_EXCEPT_BLACK_CAT.includes(cardToPlay.name) &&
-        targetUniqueId === playerUniqueId
-    ) {
-        io.to(player.id).emit('game message', 'ไม่สามารถใช้การ์ดสีน้ำเงินกับตัวเองได้ (ยกเว้นการ์ดพิธีเซ่นไหว้)', 'red');
-        return;
-    }
-    if (
-        cardNeedsTwoTargets &&
-        cardToPlay.color === 'Blue' &&
-        BLUE_CARDS_EXCEPT_BLACK_CAT.includes(cardToPlay.name) &&
-        (targetUniqueId === playerUniqueId || secondTargetUniqueId === playerUniqueId)
-    ) {
-        io.to(player.id).emit('game message', 'ไม่สามารถใช้การ์ดสีน้ำเงินกับตัวเองได้ (ยกเว้นการ์ดพิธีเซ่นไหว้)', 'red');
-        return;
-    }
-
     // Helper สำหรับ emit popup
     function emitCardUsedOnYou(targetId, cardObj) {
         if (!room.players[targetId] || !room.players[targetId].alive) return;
@@ -1292,14 +1273,13 @@ function endTurn(roomName, playerUniqueId) {
     const room = rooms[roomName];
     if (!room || room.gameOver) return;
     if (!room || !room.gameStarted || room.currentPhase !== 'DAY') {
-        io.to(room.players[playerUniqueId].id).emit('game message', 'ตอนนี้ยังจบเทิร์นไม่ได้.', 'red');
+        const player = room?.players[playerUniqueId];
+        if (player) io.to(player.id).emit('game message', 'ตอนนี้ยังจบเทิร์นไม่ได้.', 'red');
         return;
     }
     const player = room.players[playerUniqueId];
     if (!player || !player.alive || player.uniqueId !== room.currentTurnPlayerUniqueId) {
-        if (player && !player.alive) {
-            setNextTurn(room); // ข้ามเทิร์นคนตาย
-        } else if (player) {
+        if (player) {
             io.to(player.id).emit('game message', 'ไม่ใช่ตาของคุณหรือคุณไม่สามารถจบเทิร์นได้.', 'red');
         }
         return;
@@ -1319,14 +1299,13 @@ function drawCards(roomName, playerUniqueId, count = 2) {
     const room = rooms[roomName];
     if (!room || room.gameOver) return;
     if (!room || !room.gameStarted || room.currentPhase !== 'DAY') {
-        io.to(room.players[playerUniqueId].id).emit('game message', 'ตอนนี้ยังจั่วการ์ดไม่ได้.', 'red');
+        const player = room?.players[playerUniqueId];
+        if (player) io.to(player.id).emit('game message', 'ตอนนี้ยังจั่วการ์ดไม่ได้.', 'red');
         return;
     }
     const player = room.players[playerUniqueId];
     if (!player || !player.alive || player.uniqueId !== room.currentTurnPlayerUniqueId) {
-        if (player && !player.alive) {
-            setNextTurn(room); // ข้ามเทิร์นคนตาย
-        } else if (player) {
+        if (player) {
             io.to(player.id).emit('game message', 'ไม่ใช่ตาของคุณหรือคุณไม่สามารถจั่วการ์ดได้.', 'red');
         }
         return;
@@ -1467,14 +1446,14 @@ function drawCards(roomName, playerUniqueId, count = 2) {
 function confessTryalCard(roomName, playerUniqueId, cardIndex) {
     const room = rooms[roomName];
     if (!room || room.gameOver) return;
-    if (!room || !room.gameStarted || room.currentPhase !== 'PRE_DAWN') {
-        io.to(room.players[playerUniqueId].id).emit('game message', 'การสารภาพบาปใช้ได้เฉพาะในช่วงก่อนเช้าเท่านั้น.', 'red');
+    const player = room.players[playerUniqueId];
+    if (!room.gameStarted || room.currentPhase !== 'PRE_DAWN') {
+        if (player) io.to(player.id).emit('game message', 'การสารภาพบาปใช้ได้เฉพาะในช่วงก่อนเช้าเท่านั้น.', 'red');
         return;
     }
 
-    const player = room.players[playerUniqueId];
     if (!player || !player.alive) {
-        io.to(player.id).emit('game message', 'คุณไม่สามารถสารภาพบาปได้.', 'red');
+        if (player) io.to(player.id).emit('game message', 'คุณไม่สามารถสารภาพบาปได้.', 'red');
         return;
     }
 
@@ -1529,6 +1508,7 @@ function confessTryalCard(roomName, playerUniqueId, cardIndex) {
     emitRoomState(room.name);
     checkWinCondition(room);
     }
+    if (room.gameOver) return;
 
     // Advance to next confessor if any
     if (room.confessionOrder && room.currentConfessionIndex < room.confessionOrder.length - 1) {
@@ -1543,6 +1523,8 @@ function confessTryalCard(roomName, playerUniqueId, cardIndex) {
         }
     } else {
         // สารภาพครบแล้ว เปลี่ยนเป็น DAY
+        resolveNightActions(roomName);
+        if (room.gameOver) return;
         // reset state for new day
         room.dayNumber++;
         room.blackCatHolderAlreadyActedThisDay = false;
@@ -1560,9 +1542,10 @@ function confessTryalCard(roomName, playerUniqueId, cardIndex) {
 function confessDuringNight(roomName, playerUniqueId, cardIndex) {
     const room = rooms[roomName];
     if (!room || room.gameOver) return;
+    const player = room.players[playerUniqueId];
     // เพิ่มเช็คว่าอยู่ใน PRE_DAWN เท่านั้น
-    if (!room || !room.gameStarted || room.currentPhase !== 'PRE_DAWN') {
-        io.to(room.players[playerUniqueId].id).emit('game message', 'ตอนนี้ยังสารภาพบาปไม่ได้.', 'red');
+    if (!room.gameStarted || room.currentPhase !== 'PRE_DAWN') {
+        if (player) io.to(player.id).emit('game message', 'ตอนนี้ยังสารภาพบาปไม่ได้.', 'red');
         return;
     }
 
@@ -1570,14 +1553,13 @@ function confessDuringNight(roomName, playerUniqueId, cardIndex) {
     if (room.confessionOrder && room.confessionOrder.length > 0) {
         const currentConfessor = room.confessionOrder[room.currentConfessionIndex];
         if (playerUniqueId !== currentConfessor) {
-            io.to(room.players[playerUniqueId].id).emit('game message', 'ยังไม่ถึงลำดับของคุณในการสารภาพบาป.', 'red');
+            if (player) io.to(player.id).emit('game message', 'ยังไม่ถึงลำดับของคุณในการสารภาพบาป.', 'red');
             return;
         }
     }
 
-    const player = room.players[playerUniqueId];
     if (!player || !player.alive) {
-        io.to(player.id).emit('game message', 'คุณไม่สามารถสารภาพบาปได้.', 'red');
+        if (player) io.to(player.id).emit('game message', 'คุณไม่สามารถสารภาพบาปได้.', 'red');
         return;
     }
 
@@ -1632,6 +1614,7 @@ function confessDuringNight(roomName, playerUniqueId, cardIndex) {
     emitRoomState(room.name);
     checkWinCondition(room);
     }
+    if (room.gameOver) return;
 
     // Advance to next confessor if any
     if (room.confessionOrder && room.currentConfessionIndex < room.confessionOrder.length - 1) {
@@ -1646,6 +1629,8 @@ function confessDuringNight(roomName, playerUniqueId, cardIndex) {
         }
     } else {
         // สารภาพครบแล้ว เปลี่ยนเป็น DAY
+        resolveNightActions(roomName);
+        if (room.gameOver) return;
         // reset state for new day
         // --- SHUFFLE DISCARD INTO DECK IMMEDIATELY ---
         if (room.discardPile && room.discardPile.length > 0) {
@@ -1751,6 +1736,7 @@ function resolveNightActions(roomName) {
             byPlayerName: room.lastNightKillerName || null,
             cause: 'night_kill',
         });
+        if (room.gameOver) return;
         // เก็บชื่อไว้ก่อน set เป็น null
         var killedPlayerName = room.killedPlayer.name;
         room.killedPlayer = null;
@@ -1796,58 +1782,38 @@ function checkWinCondition(room) {
         }
     }
 
-    // 1. ทีมปอบชนะ: ทุกคนที่รอดชีวิตถูกแพร่เชื้อเป็นปอบ (hasBeenWitch==true) และยังมีการ์ดปอบที่ยังไม่เปิดอยู่ในเกม
+    // 1. ทีมปอบชนะเมื่อไม่มีชาวบ้านที่ยังไม่เคยติดเชื้อเหลืออยู่
     if (alivePlayers.length > 0 && aliveWitches.length === alivePlayers.length) {
-        room.gameOver = true;
-        room.winner = 'Witches';
-        sendGameMessage(room.name, 'ปอบชนะ! ทุกคนถูกแพร่เชื้อเป็นปอบ (การ์ดปอบซ่อนอยู่ในเกม!)', 'red', true);
-        // --- Add player summary ---
-        const summary = Object.values(room.players)
-            .map(p => `${p.name} - ${p.hasBeenWitch ? 'ทีมปอบ' : 'ทีมชาวบ้าน'}`)
-            .join('<br>');
-        sendGameMessage(room.name, `<b>สรุปทีมผู้เล่น:</b><br>${summary}`, 'gold', true);
-        emitRoomState(room.name);
+        finishGame(room, 'Witches', 'ปอบชนะ! ผู้เล่นที่ยังรอดทั้งหมดอยู่ฝ่ายปอบแล้ว!', 'red');
         return;
     }
-    // 2. ทีมปอบชนะ: ทีมปอบฆ่าทีมชาวบ้านตายหมด (ไม่มี aliveTownsfolk) และยังมีการ์ดปอบที่ยังไม่เปิดอยู่ในเกม
-    if (alivePlayers.length > 0 && aliveTownsfolk.length === 0 && witchCardLeft) {
-        room.gameOver = true;
-        room.winner = 'Witches';
-        sendGameMessage(room.name, 'ปอบชนะ! ทีมชาวบ้านถูกกำจัดหมด (การ์ดปอบซ่อนอยู่ในเกม!)', 'red', true);
-        // --- Add player summary ---
-        const summary = Object.values(room.players)
-            .map(p => `${p.name} - ${p.hasBeenWitch ? 'ทีมปอบ' : 'ทีมชาวบ้าน'}`)
-            .join('<br>');
-        sendGameMessage(room.name, `<b>สรุปทีมผู้เล่น:</b><br>${summary}`, 'gold', true);
-        emitRoomState(room.name);
+    // 2. ทีมชาวบ้านชนะทันทีเมื่อเปิด Tryal Card ที่เป็น Witch ครบ
+    if (!witchCardLeft && aliveTownsfolk.length > 0) {
+        finishGame(room, 'Townsfolk', 'ชาวบ้านชนะ! เปิดเผยการ์ดปอบครบทุกใบแล้ว!', 'green');
         return;
     }
-    // 3. ทีมชาวบ้านชนะ: เปิดการ์ดปอบหมด และไม่มีผู้เล่นที่ติดเชื้อปอบเหลืออยู่ในเกม
-    if (!witchCardLeft && aliveWitches.length === 0 && aliveTownsfolk.length > 0) {
-        room.gameOver = true;
-        room.winner = 'Townsfolk';
-        sendGameMessage(room.name, 'ชาวบ้านชนะ! การ์ดปอบที่ยังอยู่ในเกมถูกเปิดเผยครบ และไม่มีผู้ติดเชื้อปอบเหลืออยู่!', 'green', true);
-        // --- Add player summary ---
-        const summary = Object.values(room.players)
-            .map(p => `${p.name} - ${p.hasBeenWitch ? 'ทีมปอบ' : 'ทีมชาวบ้าน'}`)
-            .join('<br>');
-        sendGameMessage(room.name, `<b>สรุปทีมผู้เล่น:</b><br>${summary}`, 'gold', true);
-        emitRoomState(room.name);
-        return;
-    }
-    // 4. ไม่มีผู้เล่นเหลืออยู่ (เสมอ)
+    // 3. ไม่มีผู้เล่นเหลืออยู่ (เสมอ)
     if (alivePlayers.length === 0) {
-        room.gameOver = true;
-        room.winner = 'None (Draw)';
-        sendGameMessage(room.name, 'ไม่มีผู้เล่นเหลืออยู่... เสมอ!', 'grey', true);
-        // --- Add player summary ---
-        const summary = Object.values(room.players)
-            .map(p => `${p.name} - ${p.hasBeenWitch ? 'ทีมปอบ' : 'ทีมชาวบ้าน'}`)
-            .join('<br>');
-        sendGameMessage(room.name, `<b>สรุปทีมผู้เล่น:</b><br>${summary}`, 'gold', true);
-        emitRoomState(room.name);
+        finishGame(room, 'None (Draw)', 'ไม่มีผู้เล่นเหลืออยู่... เสมอ!', 'grey');
         return;
     }
+}
+
+function finishGame(room, winner, message, color) {
+    if (room.gameOver) return;
+    room.gameOver = true;
+    room.currentPhase = 'GAME_OVER';
+    room.winner = winner;
+    clearInterval(room.phaseInterval);
+    clearTimeout(room.nightActionTimeout);
+    clearTimeout(room.confessionTimer);
+    room.phaseTimer = 0;
+    sendGameMessage(room.name, message, color, true);
+    const summary = Object.values(room.players)
+        .map(player => `${player.name} - ${player.hasBeenWitch ? 'ทีมปอบ' : 'ทีมชาวบ้าน'}`)
+        .join('<br>');
+    sendGameMessage(room.name, `<b>สรุปทีมผู้เล่น:</b><br>${summary}`, 'gold', true);
+    emitRoomState(room.name);
 }
 
 // Event for Conspiracy card and potentially others
@@ -1904,9 +1870,7 @@ function handlePlayerDisconnection(room, playerUniqueId, playerName, isDisconnec
             sendGameMessage(room.name, `${newHost.name} กลายเป็นผู้ดูแลห้องใหม่.`, 'blue', true);
         } else {
             // No players left, end the game
-            room.gameOver = true;
-            room.winner = 'None (All players left)';
-            sendGameMessage(room.name, 'ผู้เล่นทั้งหมดออกจากเกมแล้ว. เกมจบลง.', 'grey', true);
+            finishGame(room, 'None (All players left)', 'ผู้เล่นทั้งหมดออกจากเกมแล้ว. เกมจบลง.', 'grey');
         }
     }
 
@@ -1916,9 +1880,7 @@ function handlePlayerDisconnection(room, playerUniqueId, playerName, isDisconnec
         
         // If less than minimum players, end game
         if (alivePlayers.length < MIN_PLAYERS_TO_START) {
-            room.gameOver = true;
-            room.winner = 'None (Not enough players)';
-            sendGameMessage(room.name, `ผู้เล่นเหลือน้อยเกินไป (${alivePlayers.length}/${MIN_PLAYERS_TO_START}). เกมจบลง.`, 'red', true);
+            finishGame(room, 'None (Not enough players)', `ผู้เล่นเหลือน้อยเกินไป (${alivePlayers.length}/${MIN_PLAYERS_TO_START}). เกมจบลง.`, 'red');
         } else {
             // Check win conditions
             checkWinCondition(room);
@@ -2223,11 +2185,12 @@ io.on('connection', (socket) => {
         const roomName = socket.currentRoom;
         if (!roomName) return;
         const room = rooms[roomName];
+        if (!room || room.gameOver) return;
         const player = room.players[socket.uniqueId];
 
         // เพิ่มเช็คว่าอยู่ใน PRE_DAWN เท่านั้น
-        if (!room || room.currentPhase !== 'PRE_DAWN' || !player || !player.alive) {
-            io.to(player.id).emit('game message', 'ตอนนี้ยังข้ามการสารภาพบาปไม่ได้.', 'red');
+        if (room.currentPhase !== 'PRE_DAWN' || !player || !player.alive) {
+            if (player) io.to(player.id).emit('game message', 'ตอนนี้ยังข้ามการสารภาพบาปไม่ได้.', 'red');
             return;
         }
 
@@ -2273,6 +2236,7 @@ io.on('connection', (socket) => {
             } else {
                 // สารภาพครบแล้ว resolveNightActions และเปลี่ยนเป็น DAY
                 resolveNightActions(roomName);
+                if (room.gameOver) return;
                 // ประกาศการตายและเปลี่ยนเฟสเป็น DAY
                 sendGameMessage(room.name, 'เช้าแล้ว! ถึงเวลาเวลาตามล่าบอป...', 'blue', true);
                 if (room.killedPlayer) {
@@ -2308,9 +2272,10 @@ io.on('connection', (socket) => {
         const roomName = socket.currentRoom;
         if (!roomName) return;
         const room = rooms[roomName];
+        if (!room || room.gameOver) return;
         const player = room.players[socket.uniqueId];
 
-        if (room && room.currentPhase === 'NIGHT' && player.isConstable && player.alive) {
+        if (room.currentPhase === 'NIGHT' && player && player.isConstable && player.alive) {
             if (hasNightActionChosen(room, 'constableSave')) {
                 io.to(socket.id).emit('game message', 'คุณได้ใช้ปัดเป่าไปแล้วในคืนนี้.', 'red');
                 return;
@@ -2348,9 +2313,10 @@ io.on('connection', (socket) => {
         const roomName = socket.currentRoom;
         if (!roomName) return;
         const room = rooms[roomName];
+        if (!room || room.gameOver) return;
         const player = room.players[socket.uniqueId];
 
-        if (room && room.currentPhase === 'NIGHT' && player.isWitch && player.alive) {
+        if (room.currentPhase === 'NIGHT' && player && player.isWitch && player.alive) {
             if (hasNightActionChosen(room, 'witchKill')) {
                 io.to(socket.id).emit('game message', 'คุณได้เลือกเป้าหมายการสังหารไปแล้ว.', 'red');
                 return;
@@ -2422,10 +2388,11 @@ io.on('connection', (socket) => {
         const roomName = socket.currentRoom;
         if (!roomName) return;
         const room = rooms[roomName];
+        if (!room || room.gameOver) return;
         const player = room.players[socket.uniqueId];
 
         // Validation
-        if (!room || !room.isAssigningBlackCat || !player || !player.isWitch) {
+        if (!room.isAssigningBlackCat || !player || !player.alive || !player.isWitch) {
             io.to(socket.id).emit('game message', 'คุณไม่สามารถทำการกระทำนี้ได้ในตอนนี้.', 'red');
             return;
         }
@@ -2538,9 +2505,10 @@ io.on('connection', (socket) => {
         const roomName = socket.currentRoom;
         if (!roomName) return;
         const room = rooms[roomName];
+        if (!room || room.gameOver) return;
         const player = room.players[socket.uniqueId];
 
-        if (room && room.playerForcedToRevealTryal === targetPlayerUniqueId && 
+        if (player && player.alive && room.playerForcedToRevealTryal === targetPlayerUniqueId &&
             room.playerForcedToRevealSelector === socket.uniqueId) {
             
             const targetPlayer = room.players[targetPlayerUniqueId];
@@ -2594,13 +2562,15 @@ io.on('connection', (socket) => {
         const roomName = socket.currentRoom;
         if (!roomName) return;
         const room = rooms[roomName];
+        if (!room || room.gameOver) return;
         const player = room.players[socket.uniqueId];
 
-        if (room && room.awaitingCurseSelection && 
+        if (player && player.alive && room.awaitingCurseSelection &&
             room.awaitingCurseSelection.selector === socket.uniqueId &&
             room.awaitingCurseSelection.target === targetPlayerUniqueId) {
             
             const targetPlayer = room.players[targetPlayerUniqueId];
+            if (!targetPlayer || !targetPlayer.alive) return;
             const blueCards = targetPlayer.inPlayCards.filter(c => c.color === 'Blue');
             
             if (targetPlayer && blueCards.length > cardIndex) {
@@ -2655,7 +2625,7 @@ io.on('connection', (socket) => {
         const roomName = socket.currentRoom;
         if (!roomName) return;
         const room = rooms[roomName];
-        if (!room.awaitingConspiracySelection) return;
+        if (!room || room.gameOver || !room.awaitingConspiracySelection) return;
         if (room.awaitingConspiracySelection.selector !== socket.uniqueId) return;
         const targetUniqueId = maybeCardIndex === undefined
             ? room.awaitingConspiracySelection.target
@@ -2666,11 +2636,13 @@ io.on('connection', (socket) => {
         if (room.awaitingConspiracySelection.target !== targetUniqueId) return;
         const player = room.players[socket.uniqueId];
         const bcHolder = room.players[targetUniqueId];
+        if (!player || !player.alive) return;
         // --- เช็คว่าผู้เล่นยังมี Black Cat จริง ---
-        if (!bcHolder || !bcHolder.inPlayCards.some(card => card.name === 'Black Cat')) {
+        if (!bcHolder || !bcHolder.alive || !bcHolder.inPlayCards.some(card => card.name === 'Black Cat')) {
             sendGameMessage(room.name, 'เครื่องเซ่นถูกย้ายหรือถูกลบออกไปแล้ว จึงไม่ต้องเปิดการ์ดชีวิต', 'grey');
             delete room.awaitingConspiracySelection;
             emitRoomState(room.name);
+            promptTryalCardSelectionToLeft(roomName);
             return;
         }
         if (!bcHolder || bcHolder.tryalCards.length <= cardIndex) return;
@@ -2689,6 +2661,8 @@ io.on('connection', (socket) => {
             handlePlayerDeath(room, bcHolder, { cause: 'revealed_witch' });
             emitRoomState(room.name);
             checkWinCondition(room);
+            delete room.awaitingConspiracySelection;
+            if (room.gameOver) return;
             // ดำเนิน flow เลือกการ์ดชีวิตซ้ายมือผู้เล่นต่อ
             promptTryalCardSelectionToLeft(roomName);
             // setNextTurn(room); // <--- ลบออก ไม่ต้องข้ามเทิร์นซ้ำ
@@ -2716,7 +2690,7 @@ io.on('connection', (socket) => {
         const roomName = socket.currentRoom;
         if (!roomName) return;
         const room = rooms[roomName];
-        if (!room) return;
+        if (!room || room.gameOver) return;
         // Only allow if Conspiracy is active
         if (!room.conspiracyTryalSelections) return;
         const alivePlayers = getAlivePlayers(room);
@@ -2810,6 +2784,8 @@ io.on('connection', (socket) => {
             });
             delete room.conspiracyTryalSelections;
             room.awaitingLeftTryalSelections = false;
+            checkWinCondition(room);
+            if (room.gameOver) return;
             // --- setNextTurn ต่อจากคนจั่ว ---
             if (room.conspiracyDrawer) {
                 setNextTurn(room, room.conspiracyDrawer, true);
@@ -2866,8 +2842,9 @@ io.on('connection', (socket) => {
         const roomName = socket.currentRoom;
         if (!roomName) return;
         const room = rooms[roomName];
+        if (!room || room.gameOver) return;
         const player = room.players[socket.uniqueId];
-        if (!room || !room.awaitingAlibiSelection) return;
+        if (!player || !player.alive || !room.awaitingAlibiSelection) return;
         const { selector, target, cardIndex } = room.awaitingAlibiSelection;
         if (selector !== socket.uniqueId) return;
         const targetPlayer = room.players[target];
@@ -2919,8 +2896,9 @@ io.on('connection', (socket) => {
         const roomName = socket.currentRoom;
         if (!roomName) return;
         const room = rooms[roomName];
+        if (!room || room.gameOver) return;
         const player = room.players[socket.uniqueId];
-        if (!room || !room.awaitingAlibiSelection) return;
+        if (!player || !player.alive || !room.awaitingAlibiSelection) return;
         const { selector, cardIndex } = room.awaitingAlibiSelection;
         if (selector !== socket.uniqueId) return;
         
@@ -2952,7 +2930,7 @@ io.on('connection', (socket) => {
         if (!roomName) return;
         
         const room = rooms[roomName];
-        if (!room || !room.players[socket.uniqueId]) return;
+        if (!room || room.gameOver || !room.players[socket.uniqueId]?.alive) return;
         
         const player = room.players[socket.uniqueId];
         if (fromIdx >= 0 && fromIdx < player.hand.length && 
