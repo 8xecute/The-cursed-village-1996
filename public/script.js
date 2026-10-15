@@ -3703,46 +3703,58 @@ function updateWitchChatTeamList() {
 }
 
 // --- Overlay interaction for music start ---
-document.addEventListener('DOMContentLoaded', () => {
+function setupMusicOverlay() {
     const overlay = document.getElementById('music-overlay');
     const enterBtn = document.getElementById('enter-village-btn');
-    // แสดง overlay เฉพาะหน้าแรก (ก่อน join/create lobby)
-    let hasEnteredVillage = false;
-    if (overlay) {
-        // Hide overlay permanently afterเข้า lobby ครั้งแรก
-        window.hideMusicOverlayIfNeeded = function(phase) {
-            if (phase && phase !== 'LOBBY') {
-                overlay.style.display = 'none';
-                hasEnteredVillage = true;
-            }
-        };
-    }
-    if (overlay && enterBtn) {
-        enterBtn.addEventListener('click', () => {
-            overlay.style.opacity = '0';
-            setTimeout(() => overlay.style.display = 'none', 500);
-            // บังคับเปิดเพลง lobby-music แค่ตอนนี้เท่านั้น (ก่อนเข้า lobby/game)
-            if (!isMusicPlaying) {
-                if (!backgroundMusic.src || !backgroundMusic.src.includes('lobby-music.mp3')) {
-                    backgroundMusic.src = 'audio/lobby-music.mp3';
-                }
-                backgroundMusic.play().then(()=>{
-                    isMusicPlaying = true;
-                    hasUserStartedMusic = true; // เซ็ต flag ว่า user เคยกดเริ่มเพลงเองแล้ว
-                    updateMusicUI();
-                }).catch(()=>{});
-            } else {
-                hasUserStartedMusic = true; // เซ็ต flag แม้จะเล่นอยู่แล้ว
-            }
-            hasEnteredVillage = true;
-        });
-    }
-    // ถ้า reload แล้วอยู่ใน lobby/game ไม่ต้องแสดง overlay
-    socket.on('room state update', (roomState) => {
-        if (window.hideMusicOverlayIfNeeded) {
-            window.hideMusicOverlayIfNeeded(roomState.currentPhase);
+    if (!overlay) return;
+
+    window.hideMusicOverlayIfNeeded = function(phase) {
+        if (phase && phase !== 'LOBBY') {
+            overlay.style.display = 'none';
         }
-    });
+    };
+
+    function closeOverlayAndStartMusic() {
+        overlay.style.opacity = '0';
+        overlay.style.pointerEvents = 'none';
+        setTimeout(() => {
+            overlay.style.display = 'none';
+        }, 300);
+
+        // บังคับเปิดเพลง lobby-music
+        try {
+            if (!backgroundMusic.src || !backgroundMusic.src.includes('lobby-music.mp3')) {
+                backgroundMusic.src = 'audio/lobby-music.mp3';
+            }
+            backgroundMusic.play().then(() => {
+                isMusicPlaying = true;
+                hasUserStartedMusic = true;
+                updateMusicUI();
+            }).catch(() => {
+                isMusicPlaying = false;
+                updateMusicUI();
+            });
+        } catch (e) {
+            console.error('Audio play error:', e);
+        }
+    }
+
+    if (enterBtn) {
+        enterBtn.onclick = closeOverlayAndStartMusic;
+    }
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupMusicOverlay);
+} else {
+    setupMusicOverlay();
+}
+
+// ถ้า reload แล้วอยู่ใน lobby/game ไม่ต้องแสดง overlay
+socket.on('room state update', (roomState) => {
+    if (window.hideMusicOverlayIfNeeded) {
+        window.hideMusicOverlayIfNeeded(roomState.currentPhase);
+    }
 });
 
 // --- Death Notification Modal ---
@@ -3839,15 +3851,7 @@ function showWitchPopup(fromName) {
     }
 }
 
-document.addEventListener('DOMContentLoaded', function() {
-  var btn = document.getElementById('enter-village-btn');
-  var modal = document.getElementById('music-overlay');
-  if (btn && modal) {
-    btn.onclick = function() {
-      modal.classList.add('hidden');
-    };
-  }
-});
+
 
 // Track if player has drawn a card this turn
 let hasDrawnCardThisTurn = false;
