@@ -298,12 +298,13 @@ if (roomFromUrl) {
     }
 }
 
-playerNameDisplay.textContent = myPlayerName || 'ผู้เล่นใหม่';
-nameInput.value = myPlayerName || '';
-nameInputContainer.style.display = 'flex'; // Keep editable on main page
 if (myPlayerName) {
+    playerNameDisplay.textContent = myPlayerName;
+    nameInput.value = myPlayerName;
+    nameInputContainer.style.display = 'none'; // Hide name input if already set
     socket.emit('set player name', myPlayerName); // Send name to server on load
 } else {
+    nameInputContainer.style.display = 'flex';
     nameInput.placeholder = 'กรอกชื่อของคุณ';
 }
 
@@ -336,7 +337,6 @@ socket.on('room joined', (roomName) => {
     currentRoomName = roomName;
     try { sessionStorage.setItem('currentRoomName', roomName); } catch (e) {}
     currentRoomDisplay.textContent = roomName || 'ไม่มี';
-    nameInputContainer.style.display = 'none'; // Lock name setting once inside a room
     roomManagementSection.style.display = 'none';
     roomLobbySection.style.display = 'block';
     gameSection.style.display = 'none'; // Ensure game section is hidden initially
@@ -614,13 +614,6 @@ socket.on('room state update', (roomState) => {
             confessSection.style.display = 'none';
         } else {
             confessSection.style.display = 'none';
-            // ปิด popup สารภาพบาปหากไม่ได้อยู่ในช่วง PRE_DAWN หรือทำแอ็กชันไปแล้ว
-            if (roomState.currentPhase !== 'PRE_DAWN' || (roomState.nightConfessors && roomState.nightConfessors.includes(myUniqueId))) {
-                const existing = document.getElementById('confess-popup');
-                if (existing) existing.remove();
-                const existingOverlay = document.getElementById('confess-overlay');
-                if (existingOverlay) existingOverlay.remove();
-            }
         }
 
         // Show/hide Witch action section for Black Cat assignment
@@ -850,9 +843,10 @@ socket.on('room left', () => {
     updatePlayersGrid(null, myUniqueId);
     updateWitchChatVisibility(false);
     confessSection.style.display = 'none';
-    // Show name input on main page
-    nameInputContainer.style.display = 'flex';
-    nameInput.value = myPlayerName || '';
+    // Show name input if not set
+    if (!myPlayerName) {
+        nameInputContainer.style.display = 'flex';
+    }
     socket.emit('request rooms list');
     addGameMessage('คุณออกจากห้องแล้ว.', 'orange');
 });
@@ -1247,10 +1241,9 @@ setNameButton.addEventListener('click', () => {
         myPlayerName = name;
         localStorage.setItem('playerName', myPlayerName);
         playerNameDisplay.textContent = myPlayerName;
-        nameInput.value = myPlayerName;
+        nameInputContainer.style.display = 'none';
         socket.emit('set player name', myPlayerName);
         socket.emit('request rooms list');
-        addGameMessage(`เปลี่ยนชื่อผู้เล่นเป็น "${myPlayerName}" เรียบร้อยแล้ว`, 'green', true);
 
         // Auto-join invited room if available
         const pendingRoom = (joinRoomNameInput && joinRoomNameInput.value.trim()) || roomFromUrl;
@@ -1517,16 +1510,18 @@ confessButton.addEventListener('click', () => {
             } else {
                 addGameMessage('หมายเลขการ์ดไม่ถูกต้อง.', 'red');
             }
+            confessPopupShownForThisPreDawn = false;
         } else if (currentRoomState && currentRoomState.currentPhase === 'DAY' && currentRoomState.playerForcedToRevealTryal === myUniqueId) {
             // For DAY forced reveal, prompt for card selection
             const cardIndex = prompt(`เลือกหมายเลขการ์ดชีวิตที่จะเปิดเผย (1-${myTryalCards.length}):`);
             const index = parseInt(cardIndex, 10) - 1; // Convert to 0-based index
             if (!isNaN(index) && index >= 0 && index < myTryalCards.length) {
                 socket.emit('reveal tryal card', index);
-            } else {
-                addGameMessage('หมายเลขการ์ดไม่ถูกต้อง.', 'red');
-            }
         } else {
+                addGameMessage('หมายเลขการ์ดไม่ถูกต้อง.', 'red');
+        }
+        confessPopupShownForThisPreDawn = false;
+    } else {
             // Legacy confession (should not be used anymore)
             const cardIndex = prompt(`เลือกหมายเลขการ์ดชีวิตที่จะเปิดเผย (1-${myTryalCards.length}):`);
             const index = parseInt(cardIndex, 10) - 1; // Convert to 0-based index
@@ -1549,6 +1544,7 @@ skipConfessButton.addEventListener('click', () => {
     }
     if (currentRoomName) {
         socket.emit('skip confession');
+        confessPopupShownForThisPreDawn = false;
     }
 });
 
@@ -3179,23 +3175,24 @@ function showSelectPlayerPopup(title, playerList, callback, cardObj = null, acti
     document.body.appendChild(modal);
 }
 
-// --- Room Management: Change Player Name (Handled exclusively from main page #name-input-container) ---
-if (roomSetNameButton && roomPlayerNameInput) {
-    roomSetNameButton.addEventListener('click', () => {
-        const newName = roomPlayerNameInput.value.trim();
-        if (!newName) {
-            addGameMessage('Please enter a valid name.', 'red', true);
-            return;
-        }
-        myPlayerName = newName;
-        localStorage.setItem('playerName', myPlayerName);
-        playerNameDisplay.textContent = myPlayerName;
-        nameInput.value = myPlayerName;
-        socket.emit('set player name', myPlayerName);
-        socket.emit('request rooms list');
-        addGameMessage('Name updated successfully!', 'green', true);
-    });
-}
+// --- Room Management: Change Player Name ---
+const roomPlayerNameInput = document.getElementById('room-player-name-input');
+const roomSetNameButton = document.getElementById('room-set-name-button');
+
+roomSetNameButton.addEventListener('click', () => {
+    const newName = roomPlayerNameInput.value.trim();
+    if (!newName) {
+        addGameMessage('Please enter a valid name.', 'red', true);
+        return;
+    }
+    myPlayerName = newName;
+    localStorage.setItem('playerName', myPlayerName);
+    playerNameDisplay.textContent = myPlayerName;
+    nameInput.value = myPlayerName;
+    socket.emit('set player name', myPlayerName);
+    socket.emit('request rooms list');
+    addGameMessage('Name updated successfully!', 'green', true);
+});
 
 // --- Card Name Localization ---
 function displayCardName(name) {

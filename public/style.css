@@ -1402,8 +1402,8 @@ html, body {
     letter-spacing: 0.05em;
   }
 
-  button:not(.btn-action):not(#draw-card-button):not(#play-card-button):not(#end-turn-button):not(.ready-btn):not(#room-set-name-button):not(#create-room-button):not(#join-room-button):not(#set-name-button):not(.active-room-join-btn):not(.top-nav-btn):not(.music-btn):not(#modal-witch-chat-send):not(#propose-night-action-btn),
-  input[type="text"]:not(#room-player-name-input):not(#new-room-name-input):not(#join-room-name-input):not(#name-input):not(#modal-witch-chat-input),
+  button:not(.btn-action):not(#draw-card-button):not(#play-card-button):not(#end-turn-button):not(.ready-btn):not(#room-set-name-button):not(#create-room-button):not(#join-room-button):not(#set-name-button):not(.active-room-join-btn):not(.top-nav-btn):not(.music-btn),
+  input[type="text"]:not(#room-player-name-input):not(#new-room-name-input):not(#join-room-name-input):not(#name-input),
   input[type="number"], select {
     width: 100%;
     margin: 4px 0;
@@ -3854,82 +3854,30 @@ button, .card, .tryal-card-btn, .mobile-tab-btn {
 }
 
 .modal-witch-chat-input-bar {
-  display: flex !important;
-  flex-direction: row !important;
-  align-items: center !important;
-  gap: 8px !important;
-  width: 100% !important;
-  box-sizing: border-box !important;
+  display: flex;
+  gap: 6px;
 }
 
-.modal-witch-chat-input-bar input,
-.modal-witch-chat-input-bar input#modal-witch-chat-input {
-  flex: 1 1 auto !important;
-  min-width: 0 !important;
-  width: 100% !important;
-  height: 38px !important;
-  margin: 0 !important;
-  background: rgba(0, 0, 0, 0.6) !important;
-  border: 1px solid #7f1d1d !important;
-  color: #fff !important;
-  border-radius: 6px !important;
-  padding: 6px 12px !important;
-  font-size: 0.88em !important;
-  box-sizing: border-box !important;
+.modal-witch-chat-input-bar input {
+  flex: 1;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid #7f1d1d;
+  color: #fff;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 0.88em;
 }
 
-.modal-witch-chat-input-bar input:focus,
-.modal-witch-chat-input-bar input#modal-witch-chat-input:focus {
+.modal-witch-chat-input-bar input:focus {
   outline: none;
-  border-color: #ef4444 !important;
-  box-shadow: 0 0 8px rgba(239, 68, 68, 0.4) !important;
+  border-color: #ef4444;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.4);
 }
 
-.modal-witch-chat-input-bar button,
-.modal-witch-chat-input-bar button#modal-witch-chat-send {
-  flex: 0 0 auto !important;
-  width: auto !important;
-  min-width: 54px !important;
-  max-width: 70px !important;
-  height: 38px !important;
-  margin: 0 !important;
-  padding: 0 16px !important;
-  background: linear-gradient(180deg, #dc2626 0%, #991b1b 100%) !important;
-  border: 1px solid #ef4444 !important;
-  color: #fff !important;
-  font-size: 0.9em !important;
-  font-weight: bold !important;
-  border-radius: 6px !important;
-  cursor: pointer !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4) !important;
-}
-
-.modal-witch-chat-input-bar button#modal-witch-chat-send:hover {
-  background: linear-gradient(180deg, #ef4444 0%, #b91c1c 100%) !important;
-}
-
-#propose-night-action-btn {
-  background: rgba(45, 15, 15, 0.9) !important;
-  border: 1.5px solid #ea580c !important;
-  color: #fed7aa !important;
-  font-size: 0.9em !important;
-  font-weight: 600 !important;
-  padding: 10px 16px !important;
-  border-radius: 8px !important;
-  width: 100% !important;
-  box-sizing: border-box !important;
-  cursor: pointer !important;
-  margin-bottom: 8px !important;
-  transition: all 0.2s ease !important;
-}
-
-#propose-night-action-btn:hover {
-  background: rgba(70, 20, 20, 0.95) !important;
-  border-color: #f97316 !important;
-  color: #fff !important;
+.modal-witch-chat-input-bar button {
+  padding: 6px 14px;
+  font-size: 0.88em;
+  border-radius: 6px;
 }
 
 /* ==========================================================================

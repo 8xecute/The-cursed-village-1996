@@ -560,98 +560,92 @@ function startPhaseTimer(roomName, duration) {
     }, 1000);
 }
 
-function endConfessionAndStartDay(roomName) {
-    const room = rooms[roomName];
-    if (!room || room.gameOver) return;
-
-    clearConfessionTimer(roomName);
-    clearInterval(room.phaseInterval);
-    clearTimeout(room.nightActionTimeout);
-
-    // 1. Resolve Night Kills (who was killed at night)
-    resolveNightActions(roomName);
-    if (room.gameOver) return;
-
-    // 2. Announce daybreak
-    sendGameMessage(room.name, 'เช้าแล้ว! ถึงเวลาตามล่าปอบ...', 'blue', true);
-
-    // 3. Reset state for new day
-    room.dayNumber++;
-    room.blackCatHolderAlreadyActedThisDay = false;
-    room.playersWhoActedAtNight = {};
-    room.nightConfessors = [];
-    room.nightCardDrawer = null;
-    room.confessionOrder = [];
-    room.currentConfessionIndex = 0;
-
-    // 4. Reshuffle discard into deck with 1 Night at bottom
-    prepareDeckForNewDay(room);
-
-    // 5. Transition to DAY phase and start turn cycle
-    room.currentPhase = 'DAY';
-    const dayDuration = room.phaseConfig['DAY'] || DEFAULT_PHASE_DURATIONS['DAY'];
-    startPhaseTimer(roomName, dayDuration);
-    emitRoomState(room.name);
-    setNextTurn(room);
-}
-
-function advanceConfessionOrEnd(roomName) {
-    const room = rooms[roomName];
-    if (!room || room.gameOver) return;
-
-    clearConfessionTimer(roomName);
-
-    if (room.confessionOrder && room.currentConfessionIndex < room.confessionOrder.length - 1) {
-        room.currentConfessionIndex++;
-        emitRoomState(room.name);
-        const nextConfessor = room.confessionOrder[room.currentConfessionIndex];
-        const nextPlayer = room.players[nextConfessor];
-        if (nextPlayer && nextPlayer.alive && nextPlayer.tryalCards.length > 0 && room.confessionTimerDuration > 0) {
-            sendGameMessage(room.name, `<b>${nextPlayer.name}</b> มีเวลา ${room.confessionTimerDuration} วินาทีในการสารภาพ (จะข้ามการสารภาพหากหมดเวลา).`, 'blue', true);
-            startConfessionTimer(roomName, nextConfessor);
-        } else {
-            // Player is dead or has no Tryal cards left, advance to next
-            advanceConfessionOrEnd(roomName);
-        }
-    } else {
-        // Everyone in confession order has completed!
-        endConfessionAndStartDay(roomName);
-    }
-}
-
 // forcedNextPhase allows a card or event to directly trigger a phase change
 function changePhase(roomName, forcedNextPhase = null) {
     const room = rooms[roomName];
     if (!room || room.gameOver) return;
     clearInterval(room.phaseInterval); // Stop current timer
     clearTimeout(room.nightActionTimeout); // Clear night action timeout if any
-    clearConfessionTimer(roomName);
+    let nextPhase = '';
+    let nextDuration = 0;
+    let transitionMessage = '';
+    const currentPhase = forcedNextPhase || room.currentPhase;
 
-    let nextPhase = forcedNextPhase;
-
-    if (!nextPhase) {
-        switch (room.currentPhase) {
-            case 'DAY':
+    switch (currentPhase) {
+        case 'LOBBY':
+            // Should transition to DAY when game starts, not through changePhase
+            return;
+        case 'DAY':
+            // Day ends, transition directly to Night (no voting)
+            sendGameMessage(room.name, 'คืนกำลังจะมาถึง...', 'blue', true);
                 nextPhase = 'NIGHT';
-                break;
+            // Removed data clearing - keep accusations, confessors, and turn state
+            break;
             case 'NIGHT':
-                nextPhase = (room.dayNumber === 0) ? 'DAY' : 'PRE_DAWN';
+                if (room.dayNumber === 0) {
+                    // First day - skip PRE_DAWN and go directly to DAY
+                    sendGameMessage(room.name, 'เช้าแล้ว! วันใหม่เริ่มต้นขึ้น.', 'blue', true);
+                    nextPhase = 'DAY';
+                    room.dayNumber++;
+                    room.blackCatHolderAlreadyActedThisDay = false;
+                    room.playersWhoActedAtNight = {};
+                    room.nightConfessors = [];
+                } else {
+                    // เข้าสู่ NIGHT จริง ๆ
+                    sendGameMessage(room.name, 'กลางคืนเริ่มต้นขึ้น! ปอบและหมอผีเตรียมตัว...', 'blue', true);
+                    nextPhase = 'NIGHT';
+                    // ไม่ต้อง set confessionOrder ที่นี่
+                }
                 break;
-            case 'PRE_DAWN':
-                nextPhase = 'DAY';
-                break;
-            default:
-                nextPhase = 'DAY';
-                break;
-        }
-    }
-
-    if (nextPhase === 'DAY') {
-        endConfessionAndStartDay(roomName);
-        return;
+        case 'PRE_DAWN':
+            // ตั้งค่าลำดับสารภาพ
+            room.confessionOrder = [];
+            const witchTarget = room.playersWhoActedAtNight['witchKill'];
+            if (room.nightCardDrawer && (!room.playersWhoActedAtNight['constableSave'] || room.nightCardDrawer !== room.playersWhoActedAtNight['constableSave'])) {
+                // ข้ามถ้ามี Asylum
+                const p = room.players[room.nightCardDrawer];
+                if (!p.inPlayCards.some(card => card.name === 'Asylum')) {
+                room.confessionOrder.push(room.nightCardDrawer);
+                }
+            }
+            const constableSaveTarget = room.playersWhoActedAtNight['constableSave'];
+            getAlivePlayers(room).forEach(p => {
+                if (
+                    p.uniqueId !== room.nightCardDrawer &&
+                    p.uniqueId !== constableSaveTarget &&
+                    !p.inPlayCards.some(card => card.name === 'Asylum')
+                ) {
+                    room.confessionOrder.push(p.uniqueId);
+                }
+            });
+            // witchTarget มีสิทธิ์สารภาพ (แต่ต้องอยู่ท้ายสุด)
+            if (witchTarget && !room.confessionOrder.includes(witchTarget)) {
+                const p = room.players[witchTarget];
+                if (!p.inPlayCards.some(card => card.name === 'Asylum')) {
+                room.confessionOrder.push(witchTarget);
+                }
+            }
+            room.currentConfessionIndex = 0;
+            // เริ่ม timer สารภาพคนแรก
+            if (room.confessionOrder.length > 0 && room.confessionTimerDuration > 0) {
+                const firstConfessor = room.confessionOrder[0];
+                const firstPlayer = room.players[firstConfessor];
+                if (firstPlayer && firstPlayer.alive && firstPlayer.tryalCards.length > 0) {
+                    sendGameMessage(room.name, `<b>${firstPlayer.name}</b> มีเวลา ${room.confessionTimerDuration} วินาทีในการสารภาพ (จะข้ามการสารภาพหากหมดเวลา).`, 'blue', true);
+                    startConfessionTimer(roomName, firstConfessor);
+                }
+            }
+            nextPhase = 'PRE_DAWN';
+            break;
+        case 'GAME_OVER':
+            return; // Game is over, no more phase changes
+        default:
+            console.warn(`Unknown phase: ${currentPhase}`);
+            return;
     }
 
     // A Curse selection is only valid during the turn in which it was played.
+    // Cancel it if a phase transition interrupts that turn.
     if (nextPhase !== 'DAY' && room.awaitingCurseSelection) {
         const selector = room.players[room.awaitingCurseSelection.selector];
         if (selector) {
@@ -660,115 +654,66 @@ function changePhase(roomName, forcedNextPhase = null) {
         delete room.awaitingCurseSelection;
     }
 
-    if (nextPhase === 'NIGHT') {
-        sendGameMessage(room.name, 'กลางคืนเริ่มต้นขึ้น! ปอบและหมอผีเตรียมตัว...', 'blue', true);
-        room.currentPhase = 'NIGHT';
-        const nextDuration = room.phaseConfig['NIGHT'] || DEFAULT_PHASE_DURATIONS['NIGHT'];
-        startPhaseTimer(roomName, nextDuration);
+    room.currentPhase = nextPhase;
+    nextDuration = room.phaseConfig[nextPhase] || DEFAULT_PHASE_DURATIONS[nextPhase];
+    startPhaseTimer(roomName, nextDuration);
+    emitRoomState(roomName);
 
+    // If transitioning to NIGHT, prompt witch and constable actions
+    if (nextPhase === 'NIGHT') {
         // ก่อนเข้า NIGHT: รีเซ็ตและอัปเดต isWitch/isConstable ตาม Tryal Cards ที่อยู่ในมือ
         Object.values(room.players).forEach(player => {
             player.isWitch = player.tryalCards.some(card => card.name === 'Witch');
             player.isConstable = player.tryalCards.some(card => card.name === 'Constable');
         });
         emitRoomState(roomName);
+        // --- เพิ่มเช็ค win condition ทันทีเมื่อเข้า NIGHT ---
         checkWinCondition(room);
-        if (room.gameOver) return;
-
+        if (room.gameOver) return; // ถ้าจบเกมแล้ว ไม่ต้องดำเนินต่อ
         const constables = getAlivePlayers(room).filter(p => p.isConstable);
         const witches = getAlivePlayers(room).filter(p => p.isWitch);
-
-        if (witches.length > 0) {
-            sendGameMessage(room.name, 'ปอบ, เตรียมตัวเลือกเป้าหมายที่จะสังหาร.', 'red', true);
-            witches.forEach(witch => {
+        
+        // PATCH: ปิด log Night phase - Checking roles
+        // console.log('Night phase - Checking roles:');
+        // console.log('Constables:', constables.map(p => ({ name: p.name, isConstable: p.isConstable })));
+        // console.log('Witches:', witches.map(p => ({ name: p.name, isWitch: p.isWitch })));
+        
+            if (witches.length > 0) {
+            // ปอบเลือกเป้าหมาย
+                sendGameMessage(room.name, 'ปอบ, เตรียมตัวเลือกเป้าหมายที่จะสังหาร.', 'red', true);
+                witches.forEach(witch => {
                 io.to(witch.id).emit('prompt witch kill');
             });
+            // ไม่ prompt constable ที่นี่ ให้รอปอบเลือกเสร็จ
         } else if (constables.length > 0) {
-            sendGameMessage(room.name, 'หมอผี, เตรียมตัวใช้ปัดเป่าเพื่อปกป้องผู้เล่น.', 'blue', true);
+            // ไม่มีปอบ ให้ prompt constable ทันที
+                        sendGameMessage(room.name, 'หมอผี, เตรียมตัวใช้ปัดเป่าเพื่อปกป้องผู้เล่น.', 'blue', true);
             constables.forEach(constable => {
                 io.to(constable.id).emit('prompt constable action');
             });
-        } else {
+                    } else {
+            // ไม่มีปอบ ไม่มีหมอผี ข้ามไป PRE_DAWN
             changePhase(roomName, 'PRE_DAWN');
         }
-        return;
+    } else if (nextPhase === 'DAY') {
+        prepareDeckForNewDay(room);
+        setNextTurn(room); // Start the turn cycle for the day phase
     }
 
-    if (nextPhase === 'PRE_DAWN') {
-        sendGameMessage(room.name, 'ช่วงเวลากลางคืนจบลง เข้าสู่ช่วงเวลาสารภาพบาป...', 'blue', true);
-
-        // ประกาศผู้ได้รับการปกป้องก่อนเริ่มสารภาพ
-        if (room.playersWhoActedAtNight && room.playersWhoActedAtNight['constableSave']) {
-            const savedPlayer = room.players[room.playersWhoActedAtNight['constableSave']];
-            if (savedPlayer && savedPlayer.alive) {
-                sendGameMessage(room.name, `<b>${savedPlayer.name}</b> ได้รับการปกป้องจากหมอผี!`, 'green', true);
-            }
+    // --- ใน changePhase (หลังหมดเวลา NIGHT ก่อน changePhase(roomName, 'PRE_DAWN')) ---
+    if (room.playersWhoActedAtNight && room.playersWhoActedAtNight['constableSave']) {
+        const savedPlayer = room.players[room.playersWhoActedAtNight['constableSave']];
+        if (savedPlayer && savedPlayer.alive) {
+            sendGameMessage(room.name, `<b>${savedPlayer.name}</b> ได้รับการปกป้องจากหมอผี!`, 'green', true);
         }
-        getAlivePlayers(room).forEach(p => {
-            if (p.inPlayCards.some(card => card.name === 'Asylum')) {
-                sendGameMessage(room.name, `<b>${p.name}</b> ได้รับการปกป้องจาก Asylum!`, 'green', true);
-            }
-        });
-
-        // ตั้งค่าลำดับสารภาพ
-        room.confessionOrder = [];
-        const witchTarget = room.playersWhoActedAtNight['witchKill'];
-        const constableSaveTarget = room.playersWhoActedAtNight['constableSave'];
-
-        // 1. Night card drawer confesses first (if alive and not saved by Constable or Asylum)
-        if (room.nightCardDrawer && room.nightCardDrawer !== constableSaveTarget) {
-            const p = room.players[room.nightCardDrawer];
-            if (p && p.alive && !p.inPlayCards.some(card => card.name === 'Asylum')) {
-                room.confessionOrder.push(room.nightCardDrawer);
-            }
-        }
-
-        // 2. Other alive players (excluding nightCardDrawer, constableSaveTarget, witchTarget, and Asylum)
-        getAlivePlayers(room).forEach(p => {
-            if (
-                p.uniqueId !== room.nightCardDrawer &&
-                p.uniqueId !== constableSaveTarget &&
-                p.uniqueId !== witchTarget &&
-                !p.inPlayCards.some(card => card.name === 'Asylum')
-            ) {
-                if (!room.confessionOrder.includes(p.uniqueId)) {
-                    room.confessionOrder.push(p.uniqueId);
-                }
-            }
-        });
-
-        // 3. Witch target confesses last (if alive and not saved by Constable or Asylum)
-        if (witchTarget && witchTarget !== constableSaveTarget) {
-            const p = room.players[witchTarget];
-            if (p && p.alive && !p.inPlayCards.some(card => card.name === 'Asylum')) {
-                if (!room.confessionOrder.includes(witchTarget)) {
-                    room.confessionOrder.push(witchTarget);
-                }
-            }
-        }
-
-        room.currentConfessionIndex = 0;
-
-        if (room.confessionOrder.length === 0) {
-            // ไม่มีใครต้องสารภาพ เข้าสู่กลางวันทันที
-            endConfessionAndStartDay(roomName);
-            return;
-        }
-
-        room.currentPhase = 'PRE_DAWN';
-        const nextDuration = room.phaseConfig['PRE_DAWN'] || DEFAULT_PHASE_DURATIONS['PRE_DAWN'];
-        startPhaseTimer(roomName, nextDuration);
-        emitRoomState(roomName);
-
-        // เริ่ม timer สารภาพคนแรก
-        const firstConfessor = room.confessionOrder[0];
-        const firstPlayer = room.players[firstConfessor];
-        if (firstPlayer && firstPlayer.alive && firstPlayer.tryalCards.length > 0 && room.confessionTimerDuration > 0) {
-            sendGameMessage(room.name, `<b>${firstPlayer.name}</b> มีเวลา ${room.confessionTimerDuration} วินาทีในการสารภาพ (จะข้ามการสารภาพหากหมดเวลา).`, 'blue', true);
-            startConfessionTimer(roomName, firstConfessor);
-        }
-        return;
     }
+    getAlivePlayers(room).forEach(p => {
+        if (p.inPlayCards.some(card => card.name === 'Asylum')) {
+            sendGameMessage(room.name, `<b>${p.name}</b> ได้รับการปกป้องจาก Asylum!`, 'green', true);
+        }
+    });
+    // ...
+    // changePhase(roomName, 'PRE_DAWN');
 }
 
 function startGame(roomName) {
@@ -1631,8 +1576,34 @@ function confessTryalCard(roomName, playerUniqueId, cardIndex) {
     }
     if (room.gameOver) return;
 
-    // Advance to next confessor or start DAY
-    advanceConfessionOrEnd(roomName);
+    // Advance to next confessor if any
+    if (room.confessionOrder && room.currentConfessionIndex < room.confessionOrder.length - 1) {
+        room.currentConfessionIndex++;
+        emitRoomState(room.name);
+        // Start confession timer for the next confessor
+        const nextConfessor = room.confessionOrder[room.currentConfessionIndex];
+        const nextPlayer = room.players[nextConfessor];
+        if (nextPlayer && nextPlayer.alive && nextPlayer.tryalCards.length > 0 && room.confessionTimerDuration > 0) {
+            sendGameMessage(room.name, `<b>${nextPlayer.name}</b> มีเวลา ${room.confessionTimerDuration} วินาทีในการสารภาพ (จะข้ามการสารภาพหากหมดเวลา).`, 'blue', true);
+            startConfessionTimer(roomName, nextConfessor);
+        }
+    } else {
+        // สารภาพครบแล้ว เปลี่ยนเป็น DAY
+        resolveNightActions(roomName);
+        if (room.gameOver) return;
+        // reset state for new day
+        room.dayNumber++;
+        room.blackCatHolderAlreadyActedThisDay = false;
+        room.playersWhoActedAtNight = {};
+        room.nightConfessors = [];
+        room.nightCardDrawer = null;
+        room.confessionOrder = [];
+        room.currentConfessionIndex = 0;
+        prepareDeckForNewDay(room);
+        room.currentPhase = 'DAY';
+        emitRoomState(room.name);
+        setNextTurn(room);
+    }
 }
 
 function confessDuringNight(roomName, playerUniqueId, cardIndex) {
@@ -1712,13 +1683,60 @@ function confessDuringNight(roomName, playerUniqueId, cardIndex) {
     }
     if (room.gameOver) return;
 
-    // Advance to next confessor or start DAY
-    advanceConfessionOrEnd(roomName);
+    // Advance to next confessor if any
+    if (room.confessionOrder && room.currentConfessionIndex < room.confessionOrder.length - 1) {
+        room.currentConfessionIndex++;
+        emitRoomState(room.name);
+        // Start confession timer for the next confessor
+        const nextConfessor = room.confessionOrder[room.currentConfessionIndex];
+        const nextPlayer = room.players[nextConfessor];
+        if (nextPlayer && nextPlayer.alive && nextPlayer.tryalCards.length > 0 && room.confessionTimerDuration > 0) {
+            sendGameMessage(room.name, `<b>${nextPlayer.name}</b> มีเวลา ${room.confessionTimerDuration} วินาทีในการสารภาพ (จะข้ามการสารภาพหากหมดเวลา).`, 'blue', true);
+            startConfessionTimer(roomName, nextConfessor);
+        }
+    } else {
+        // สารภาพครบแล้ว เปลี่ยนเป็น DAY
+        resolveNightActions(roomName);
+        if (room.gameOver) return;
+        // reset state for new day
+        // --- SHUFFLE DISCARD INTO DECK IMMEDIATELY ---
+        if (room.discardPile && room.discardPile.length > 0) {
+            room.gameDeck = room.gameDeck || [];
+            room.gameDeck = room.gameDeck.concat(room.discardPile);
+            room.discardPile = [];
+            sendDeckInfo(roomName); // <--- เพิ่มบรรทัดนี้หลัง reshuffle
+        }
+        if (room.gameDeck && room.gameDeck.length > 0) {
+            // Remove all Night cards except one
+            const nightCards = room.gameDeck.filter(card => card.name === 'Night');
+            const otherCards = room.gameDeck.filter(card => card.name !== 'Night');
+            const shuffled = shuffleArray(otherCards);
+            // Place only one Night card at the LAST index (bottom of the deck)
+            const nightCard = nightCards.length > 0 ? [nightCards[0]] : [];
+            room.gameDeck = shuffled;
+            if (nightCard.length > 0) {
+                room.gameDeck.push(nightCard[0]);
+            }
+            sendDeckInfo(roomName); // <--- เพิ่มบรรทัดนี้หลังจัดเรียง deck ใหม่
+        }
+        room.dayNumber++;
+        room.blackCatHolderAlreadyActedThisDay = false;
+        room.playersWhoActedAtNight = {};
+        room.nightConfessors = [];
+        room.nightCardDrawer = null;
+        room.confessionOrder = [];
+        room.currentConfessionIndex = 0;
+        room.currentPhase = 'DAY';
+        emitRoomState(room.name);
+        setNextTurn(room);
+    }
 }
 
 function resolveNightActions(roomName) {
     const room = rooms[roomName];
     if (!room || room.gameOver) return;
+
+    sendGameMessage(room.name, 'ช่วงเวลากลางคืนจบลงถึงช่วงเวลาสารภาพ...', 'blue', true);
 
     // Debug log
     // console.log('--- [DEBUG] resolveNightActions ---');
@@ -2549,14 +2567,58 @@ io.on('connection', (socket) => {
             if (!room.nightConfessors) {
                 room.nightConfessors = [];
             }
-            if (!room.nightConfessors.includes(player.uniqueId)) {
+            // ถ้าเป็น witchTarget ห้าม push เข้า nightConfessors
+            const witchTarget = room.playersWhoActedAtNight['witchKill'];
+            if (player.uniqueId !== witchTarget) {
                 room.nightConfessors.push(player.uniqueId);
             }
             sendGameMessage(room.name, `<b>${player.name}</b> เลือกที่จะข้ามการสารภาพบาป.`, 'orange', true);
 
-            // Advance to next confessor or start DAY
-            advanceConfessionOrEnd(roomName);
-        });
+            // Advance to next confessor if any
+            if (room.confessionOrder && room.currentConfessionIndex < room.confessionOrder.length - 1) {
+                room.currentConfessionIndex++;
+                emitRoomState(room.name);
+                // Start confession timer for the next confessor
+                const nextConfessor = room.confessionOrder[room.currentConfessionIndex];
+                const nextPlayer = room.players[nextConfessor];
+                if (nextPlayer && nextPlayer.alive && nextPlayer.tryalCards.length > 0 && room.confessionTimerDuration > 0) {
+                    sendGameMessage(room.name, `<b>${nextPlayer.name}</b> มีเวลา ${room.confessionTimerDuration} วินาทีในการสารภาพ (จะข้ามการสารภาพหากหมดเวลา).`, 'blue', true);
+                    startConfessionTimer(roomName, nextConfessor);
+                }
+            } else {
+                // สารภาพครบแล้ว resolveNightActions และเปลี่ยนเป็น DAY
+                resolveNightActions(roomName);
+                if (room.gameOver) return;
+                // ประกาศการตายและเปลี่ยนเฟสเป็น DAY
+                sendGameMessage(room.name, 'เช้าแล้ว! ถึงเวลาเวลาตามล่าบอป...', 'blue', true);
+                if (room.killedPlayer) {
+                    sendGameMessage(room.name, `${room.killedPlayer.name} ถูกสังหารในตอนกลางคืน!`, 'red', true);
+                    handlePlayerDeath(room, room.killedPlayer, {
+                        byPlayerName: room.lastNightKillerName || null,
+                        cause: 'night_kill',
+                    });
+                    room.killedPlayer = null;
+                }
+                if (room.killedPlayerMatchmaker) {
+                    sendGameMessage(room.name, `${room.killedPlayerMatchmaker.name} ตายพร้อมกับผู้เล่นที่ถูกกำจัด เนื่องจาก Matchmaker!`, 'red', true);
+                    handlePlayerDeath(room, room.killedPlayerMatchmaker, {
+                        cause: 'matchmaker_link',
+                    });
+                    room.killedPlayerMatchmaker = null;
+                }
+                // reset state for new day
+                room.dayNumber++;
+                room.blackCatHolderAlreadyActedThisDay = false;
+                room.playersWhoActedAtNight = {};
+                room.nightConfessors = [];
+                room.nightCardDrawer = null;
+                room.confessionOrder = [];
+                room.currentConfessionIndex = 0;
+                room.currentPhase = 'DAY';
+                emitRoomState(room.name);
+                setNextTurn(room);
+        }
+    });
 
     socket.on('constable action', (targetUniqueId) => {
         const roomName = socket.currentRoom;
@@ -3311,11 +3373,34 @@ function startConfessionTimer(roomName, playerUniqueId) {
             sendGameMessage(room.name, `<b>${playerName}</b> หมดเวลาการสารภาพ (ข้ามให้อัตโนมัติ).`, 'orange', true);
             
             if (!room.nightConfessors) room.nightConfessors = [];
-            if (!room.nightConfessors.includes(playerUniqueId)) {
+            const witchTarget = room.playersWhoActedAtNight['witchKill'];
+            if (playerUniqueId !== witchTarget) {
                 room.nightConfessors.push(playerUniqueId);
             }
 
-            advanceConfessionOrEnd(roomName);
+            if (room.confessionOrder && room.currentConfessionIndex < room.confessionOrder.length - 1) {
+                room.currentConfessionIndex++;
+                emitRoomState(room.name);
+                const nextConfessor = room.confessionOrder[room.currentConfessionIndex];
+                const nextPlayer = room.players[nextConfessor];
+                if (nextPlayer && nextPlayer.alive && nextPlayer.tryalCards.length > 0 && room.confessionTimerDuration > 0) {
+                    sendGameMessage(room.name, `<b>${nextPlayer.name}</b> มีเวลา ${room.confessionTimerDuration} วินาทีในการสารภาพ (จะข้ามการสารภาพหากหมดเวลา).`, 'blue', true);
+                    startConfessionTimer(roomName, nextConfessor);
+                }
+            } else {
+                resolveNightActions(roomName);
+                if (room.gameOver) return;
+                sendGameMessage(room.name, 'เช้าแล้ว! ถึงเวลาตามล่าปอบ...', 'blue', true);
+                if (room.killedPlayer) {
+                    sendGameMessage(room.name, `${room.killedPlayer.name} ถูกสังหารในตอนกลางคืน!`, 'red', true);
+                    handlePlayerDeath(room, room.killedPlayer, {
+                        byPlayerName: room.lastNightKillerName || null,
+                        cause: 'night_kill',
+                    });
+                    room.killedPlayer = null;
+                }
+                changePhase(roomName, 'DAY');
+            }
         }
     }, duration);
 }
