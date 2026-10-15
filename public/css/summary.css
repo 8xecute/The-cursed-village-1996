@@ -1,0 +1,215 @@
+/* --- End Game Victory & MVP Modal --- */
+.game-over-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 2500;
+  background: rgba(8, 7, 7, 0.85);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.game-over-modal-content {
+  background: radial-gradient(circle at top, #2b1f1a 0%, #161211 60%, #0d0a09 100%);
+  color: #e0d7cd;
+  width: 100%;
+  max-width: 780px;
+  max-height: 90vh;
+  overflow-y: auto;
+  border-radius: 16px;
+  border: 2px solid #8d6e63;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.8), 0 0 24px rgba(183, 28, 28, 0.3);
+  padding: 24px 20px;
+  box-sizing: border-box;
+  animation: victoryModalFadeIn 0.35s ease-out;
+}
+
+@keyframes victoryModalFadeIn {
+  from { opacity: 0; transform: scale(0.94) translateY(12px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.victory-header {
+  text-align: center;
+  margin-bottom: 22px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(141, 110, 99, 0.35);
+}
+
+.victory-badge {
+  display: inline-block;
+  font-size: 0.9em;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  background: rgba(255, 179, 0, 0.15);
+  color: #ffca28;
+  border: 1px solid rgba(255, 179, 0, 0.4);
+  padding: 4px 14px;
+  border-radius: 20px;
+  margin-bottom: 8px;
+}
+
+.victory-title {
+  font-family: 'Creepster', 'Merriweather', 'Noto Serif Thai', serif;
+  font-size: 2.2em;
+  margin: 6px 0;
+  letter-spacing: 1px;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.7);
+}
+.victory-title.townsfolk-win {
+  color: #81c784;
+  text-shadow: 0 0 16px rgba(76, 175, 80, 0.45);
+}
+.victory-title.witch-win {
+  color: #e57373;
+  text-shadow: 0 0 16px rgba(229, 115, 115, 0.5);
+}
+
+.victory-desc {
+  color: #d7ccc8;
+  font-size: 1.05em;
+  margin: 6px 0 0;
+  line-height: 1.5;
+}
+
+.roles-reveal-section {
+  margin-bottom: 22px;
+}
+
+.section-title {
+  font-size: 1.12em;
+  color: #ffb74d;
+  margin: 0 0 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.roles-table-wrapper {
+  overflow-x: auto;
+  border: 1px solid rgba(141, 110, 99, 0.35);
+  border-radius: 8px;
+  background: rgba(22, 18, 17, 0.6);
+}
+
+.roles-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92em;
+}
+
+.roles-table th, .roles-table td {
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid rgba(141, 110, 99, 0.2);
+}
+
+.roles-table th {
+  background: rgba(43, 31, 26, 0.85);
+  color: #ffb74d;
+  font-weight: 600;
+}
+
+.role-tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 0.88em;
+  font-weight: bold;
+}
+.role-tag.witch {
+  background: rgba(211, 47, 47, 0.25);
+  color: #ef5350;
+  border: 1px solid rgba(211, 47, 47, 0.5);
+}
+.role-tag.town {
+  background: rgba(56, 142, 60, 0.25);
+  color: #81c784;
+  border: 1px solid rgba(56, 142, 60, 0.5);
+}
+
+.tryal-pill-container {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.tryal-pill {
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.78em;
+  font-weight: 600;
+}
+.tryal-pill.witch {
+  background: #c62828;
+  color: #fff;
+}
+.tryal-pill.not-witch {
+  background: #37474f;
+  color: #eceff1;
+}
+.tryal-pill.constable {
+  background: #1565c0;
+  color: #fff;
+}
+
+.game-over-actions {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 14px;
+  margin-top: 20px;
+  flex-wrap: wrap;
+}
+
+.rematch-btn {
+  background: linear-gradient(135deg, #ff8f00 0%, #e65100 100%);
+  color: #fff;
+  border: 1px solid #ffa726;
+  font-weight: bold;
+  font-size: 1.05em;
+  padding: 10px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(230, 81, 0, 0.4);
+  transition: all 0.18s ease;
+}
+.rematch-btn:hover {
+  background: linear-gradient(135deg, #ffa000 0%, #f57c00 100%);
+  transform: translateY(-1px);
+}
+
+.close-victory-btn {
+  background: rgba(255, 255, 255, 0.08);
+  color: #d7ccc8;
+  border: 1px solid rgba(215, 204, 200, 0.3);
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-size: 0.95em;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.close-victory-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+
+@media (max-width: 600px) {
+  .game-over-modal-content {
+    padding: 18px 14px;
+    max-height: 92vh;
+  }
+  .victory-title {
+    font-size: 1.7em;
+  }
+  .roles-table th, .roles-table td {
+    padding: 8px 6px;
+    font-size: 0.85em;
+  }
+}
+

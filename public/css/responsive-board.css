@@ -1,0 +1,380 @@
+@media (max-width: 1024px) {
+  body {
+    padding: 10px;
+  }
+
+  .container {
+    padding: 8px;
+    border-radius: 8px;
+  }
+
+  .game-layout {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  #sidebar-left, #sidebar-right, .sidebar, .main-game-content {
+    min-width: 0;
+    max-width: 100%;
+    width: 100%;
+    flex: 1 1 auto;
+    position: static;
+    max-height: none;
+  }
+
+  #player-hand, #tryal-cards-display, #game-messages {
+    max-height: none;
+  }
+}
+
+@media (max-width: 600px) {
+  h1 {
+    font-size: 1.8em;
+    letter-spacing: 0.05em;
+  }
+
+  button:not(.btn-action):not(#draw-card-button):not(#play-card-button):not(#end-turn-button):not(.ready-btn):not(#create-room-button):not(#join-room-button):not(#set-name-button):not(#modal-witch-chat-send):not(.active-room-join-btn):not(.top-nav-btn):not(.music-btn),
+  input[type="text"]:not(#new-room-name-input):not(#join-room-name-input):not(#name-input):not(#modal-witch-chat-input),
+  input[type="number"], select {
+    width: 100%;
+    margin: 4px 0;
+  }
+
+  .hand-action-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .section {
+    padding: 12px 10px;
+    margin-bottom: 8px;
+    border-radius: 10px;
+    background-color: rgba(30, 23, 19, 0.94);
+    border: 1px solid #443224;
+  }
+
+  .section h2 {
+    font-size: 1.25em;
+    margin-bottom: 8px;
+    padding-bottom: 4px;
+    color: #ff9800;
+    border-bottom: 1px solid rgba(255, 152, 0, 0.4);
+  }
+
+  #game-state-bar {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    font-size: 0.9em;
+  }
+
+  #player-list .player-item,
+  #players-board-list .player-board-card {
+    font-size: 0.92em;
+  }
+
+  #game-messages {
+    max-height: 220px !important;
+    min-height: 180px;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+@media (max-width: 1024px) {
+  #game-messages {
+    max-height: 260px;
+    overflow-y: auto;
+  }
+}
+
+.hand-action-buttons {
+  position: sticky;
+  bottom: 0;
+  background: rgba(35, 35, 35, 0.92);
+  backdrop-filter: blur(3px);
+  padding: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  z-index: 30;
+}
+
+.select-player-popup, #select-player-popup {
+  background: #232323 !important;
+  color: #686868;
+} 
+
+.select-player-modal-content {
+  width: min(92vw, 420px) !important;
+  max-width: 420px !important;
+  padding: 22px 18px !important;
+  border-radius: 16px !important;
+  box-sizing: border-box !important;
+}
+
+.select-player-modal-content h3 {
+  color: var(--target-accent) !important;
+  font-size: 1.2rem !important;
+  line-height: 1.4;
+}
+
+.select-player-modal .player-select-card {
+  min-height: 58px;
+  border-radius: 10px !important;
+  text-align: left;
+  box-sizing: border-box;
+}
+
+.select-player-modal .player-select-card:hover {
+  border-color: var(--target-accent) !important;
+  filter: brightness(1.15);
+}
+
+.select-player-modal .player-select-card.selected {
+  border: 2px solid var(--target-accent) !important;
+  background: linear-gradient(135deg, rgba(var(--target-accent-rgb), .3), #28231f) !important;
+  box-shadow: 0 0 0 2px rgba(var(--target-accent-rgb), .16), 0 5px 18px rgba(0, 0, 0, .4) !important;
+}
+
+.select-player-modal .target-confirm-btn,
+.select-player-modal .target-cancel-btn {
+  min-height: 42px;
+  padding: 9px 18px !important;
+  border-radius: 8px !important;
+  font-weight: 700;
+}
+
+.select-player-modal .target-confirm-btn:disabled {
+  background: #444 !important;
+  color: #aaa !important;
+  box-shadow: none !important;
+  cursor: not-allowed !important;
+}
+
+.select-player-modal .target-cancel-btn {
+  background: #393532 !important;
+  color: #e7ddd0 !important;
+  border: 1px solid #6b6259 !important;
+}
+
+.select-player-popup button, #select-player-popup button {
+  background: #ffe066 !important;
+  color: #222 !important;
+  border-radius: 6px !important;
+  font-weight: bold;
+  border: none;
+  box-shadow: 0 0 8px 1px #ffe06655;
+  transition: background 0.18s;
+}
+.select-player-popup button:hover, #select-player-popup button:hover {
+  background: #ffe799 !important;
+} 
+
+/* Responsive card sizing */
+@media (max-width: 1200px) {
+  .card {
+    min-width: 55px;
+    min-height: 82px;
+    max-width: 75px;
+    max-height: 112px;
+    padding: 5px;
+    margin: 2px;
+  }
+  
+  #player-hand {
+    gap: 6px;
+    padding: 10px;
+  }
+}
+
+@media (max-width: 900px) {
+  .card {
+    min-width: 50px;
+    min-height: 75px;
+    max-width: 70px;
+    max-height: 105px;
+    padding: 4px;
+    margin: 2px;
+  }
+  
+  #player-hand {
+    gap: 5px;
+    padding: 8px;
+  }
+}
+
+@media (max-width: 600px) {
+  .card {
+    min-width: 45px;
+    min-height: 67px;
+    max-width: 65px;
+    max-height: 97px;
+    padding: 3px;
+    margin: 1px;
+  }
+  
+  #player-hand {
+    gap: 4px;
+    padding: 6px;
+    min-height: 90px;
+    max-height: 140px;
+  }
+}
+
+@media (max-width: 400px) {
+  .card {
+    min-width: 40px;
+    min-height: 60px;
+    max-width: 60px;
+    max-height: 90px;
+    padding: 2px;
+    margin: 1px;
+  }
+  
+  #player-hand {
+    gap: 3px;
+    padding: 4px;
+    min-height: 80px;
+    max-height: 120px;
+  }
+} 
+
+/* Card theme colors for player board */
+.card-theme.card-red {
+  background: linear-gradient(135deg, #b71c1c 70%, #ff1744 100%);
+  color: #fff;
+  border: 1.25px solid #ff5252;
+  box-shadow: 0 0 4px #ff174488;
+}
+.card-theme.card-green {
+  background: linear-gradient(135deg, #388e3c 70%, #43a047 100%);
+  color: #fff;
+  border: 1.25px solid #66bb6a;
+  box-shadow: 0 0 4px #43a04788;
+}
+.card-theme.card-blue {
+  background: linear-gradient(135deg, #1565c0 70%, #42a5f5 100%);
+  color: #fff;
+  border: 1.25px solid #90caf9;
+  box-shadow: 0 0 4px #42a5f588;
+}
+.card-theme.card-black {
+  background: linear-gradient(135deg, #222 70%, #444 100%);
+  color: #fff;
+  border: 1.25px solid #888;
+  box-shadow: 0 0 4px #2228;
+} 
+
+.player-board-card.current-turn {
+  background: #181818;
+  color: #ffe066 !important;
+  border: 2.5px solid #ffe066;
+  box-shadow: 0 0 8px 1px #ffe06655;
+  position: relative;
+}
+.player-board-card.current-turn .player-board-header {
+  color: #ffe066;
+}
+.player-board-card.current-turn .effect-label, .player-board-card.current-turn .effect-card {
+  background: #232323;
+  color: #ffe066 !important;
+}
+@media (max-width: 600px) {
+  .player-board-card.current-turn {
+    background: #222;
+    border-width: 2px;
+    box-shadow: 0 0 4px 1px #ffe06699;
+  }
+} 
+
+#name-section, #name-section h2, #name-section p, #name-section span, #leave-room-button {
+  font-size: 0.97em;
+  vertical-align: baseline;
+}
+#name-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  box-sizing: border-box;
+}
+#leave-room-button {
+  margin-left: 18px;
+  height: 2.2em;
+  padding: 0 18px;
+  font-size: 1.08em;
+  vertical-align: baseline;
+} 
+
+/* Effect label color overrides for specific cards */
+.effect-label[data-effect="Stocks"] {
+  background: #b71c1c;
+  color: #fff !important;
+}
+.effect-label[data-effect="Black Cat"] {
+  background: #b71c1c;
+  color: #fff !important;
+}
+.effect-label[data-effect="Matchmaker"] {
+  background: #b71c1c;
+  color: #fff !important;
+}
+.effect-label[data-effect="Asylum"] {
+  background: #1976d2;
+  color: #fff !important;
+}
+.effect-label[data-effect="Piety"] {
+  background: #1976d2;
+  color: #fff !important;
+} 
+
+.effect-card[data-effect="เครื่องเซ่น"],
+.effect-card[data-effect="พันธนาการ"],
+.effect-card[data-effect="ผูกวิญญาณ"] {
+  background: #b71c1c !important;
+  color: #fff !important;
+  border-color: #b71c1c !important;
+} 
+
+/* Custom tooltip style for all tooltips */
+.custom-tooltip {
+  position: absolute;
+  z-index: 9999;
+  background: rgba(20, 20, 20, 0.98);
+  color: #fff;
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-size: 1em;
+  box-shadow: 0 2px 8px #000a;
+  pointer-events: none;
+  max-width: 320px;
+  word-break: break-word;
+  white-space: pre-line;
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+.custom-tooltip.show {
+  opacity: 1;
+} 
+
+.game-title {
+  font-family: 'Creepster', 'Merriweather', 'Noto Serif Thai', serif;
+  color: #ff3c00;
+  text-align: center;
+  font-size: 2.7em; /* ลดลง 10% จาก 3em */
+  margin-top: 18px; /* ขยับขึ้นบน */
+  margin-bottom: 12px;
+  letter-spacing: 2px;
+  font-weight: bold;
+  text-shadow: 2px 2px 8px #000a;
+} 
+
+#host-controls-game {
+    display: none !important;
+} 
+
+#host-controls-lobby {
+    display: none !important;
+} 
+

@@ -13,7 +13,19 @@ const requiredFiles = [
   "src/gameLogic.js",
 ];
 
-const jsFilesToCheck = ["server.js", "public/script.js", "src/gameLogic.js"];
+function collectJavaScript(directory) {
+  return fs.readdirSync(path.join(projectRoot, directory), { withFileTypes: true }).flatMap(entry => {
+    const relative = path.join(directory, entry.name);
+    return entry.isDirectory()
+      ? collectJavaScript(relative)
+      : entry.name.endsWith(".js") ? [relative] : [];
+  });
+}
+
+const jsFilesToCheck = ["server.js", "public/script.js", "src/gameLogic.js",
+  ...collectJavaScript("src/server"), ...collectJavaScript("src/shared"),
+  ...collectJavaScript("src/bots"), ...collectJavaScript("src/client"),
+  ...collectJavaScript("public/js")];
 
 let hasError = false;
 
@@ -42,8 +54,11 @@ for (const relPath of jsFilesToCheck) {
     continue;
   }
 
-  const result = spawnSync(process.execPath, ["--check", absolutePath], {
+  const isModule = relPath === "public/script.js" || /^(public[\\/]js|src[\\/]client)[\\/]/.test(relPath);
+  const result = spawnSync(process.execPath, isModule
+    ? ["--input-type=module", "--check"] : ["--check", absolutePath], {
     encoding: "utf8",
+    ...(isModule ? { input: fs.readFileSync(absolutePath, "utf8") } : {}),
   });
 
   if (result.status === 0) {

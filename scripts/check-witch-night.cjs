@@ -1,26 +1,11 @@
 // Integration check: real Socket.IO clients against an isolated ephemeral server.
 const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const path = require('node:path');
-const vm = require('node:vm');
-const { createRequire } = require('node:module');
 const { once } = require('node:events');
 const { io: clientIO } = require('socket.io-client');
+const { createGameServer } = require('../src/server/createServer');
 
-const root = path.resolve(__dirname, '..');
-const serverPath = path.join(root, 'server.js');
-const intervals = new Set();
-const sandbox = {
-    require: createRequire(serverPath),
-    console: { ...console, log() {} },
-    process: { env: { ...process.env, PORT: '0', NODE_ENV: 'test' } },
-    setTimeout, clearTimeout,
-    setInterval(callback, delay) { const timer = setInterval(callback, delay); intervals.add(timer); return timer; },
-    clearInterval, Buffer,
-};
-vm.runInNewContext(fs.readFileSync(serverPath, 'utf8') +
-    '\nglobalThis.testGame = { server, io, rooms, emitRoomState, changePhase };', sandbox, { filename: serverPath });
-const game = sandbox.testGame;
+const game = createGameServer();
+game.server.listen(0, '127.0.0.1');
 const clients = [];
 const roomName = 'witch-marks-integration';
 
@@ -161,14 +146,12 @@ async function main() {
     console.log('PASS: private shared marks, no premature kill, confirmation validation, protected targets, reconnect, concurrent confirmation, nightly reset and dead-player guards.');
 }
 
-main().catch(error => { console.error(error); process.exitCode = 1; }).finally(() => {
+main().catch(error => { console.error(error); process.exitCode = 1; }).finally(async () => {
     for (const room of Object.values(game.rooms)) {
         for (const player of Object.values(room.players)) clearTimeout(player.disconnectTimeout);
         clearInterval(room.phaseInterval); clearTimeout(room.confessionTimer); clearTimeout(room.nightActionTimeout);
         room.players = {}; room.spectators = {};
     }
     clients.forEach(socket => socket.disconnect());
-    intervals.forEach(clearInterval);
-    game.io.close();
-    game.server.close();
+    await game.close();
 });

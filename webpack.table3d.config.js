@@ -1,7 +1,7 @@
 const path = require('path');
 
 module.exports = {
-    entry: './src/table3d.js',
+    entry: './src/client/table3d.js',
     module: { rules: [{ test: /table3d\.js$/, type: 'javascript/auto' }] },
     output: {
         path: path.resolve(__dirname, 'public'),

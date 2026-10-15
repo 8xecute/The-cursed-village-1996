@@ -17,6 +17,10 @@ module.exports = {
   module: {
     rules: [
       {
+        test: /public[\\/]((js[\\/].*)|script)\.js$/,
+        type: 'javascript/auto'
+      },
+      {
         test: /\.css$/,
         use: [MiniCssExtractPlugin.loader, 'css-loader']
       },
@@ -100,4 +104,4 @@ module.exports = {
       config: [__filename]
     }
   }
-}; 
+};
