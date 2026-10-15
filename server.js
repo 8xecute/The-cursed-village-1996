@@ -207,11 +207,10 @@ function emitRoomState(roomName) {
     const room = rooms[roomName];
     if (!room) return;
 
-    // Remember teammates met during a completed night, even after cards move.
-    if (room.currentPhase === 'DAY' && ['NIGHT', 'PRE_DAWN'].includes(room.lastWitchKnowledgePhase)) {
+    // Meet the entire team on entering night; knowledge persists after cards move.
+    if (room.currentPhase === 'NIGHT') {
         rememberWitchTeammates(room);
     }
-    room.lastWitchKnowledgePhase = room.currentPhase;
 
     const buildPlayersStateFor = (viewer) => {
       const playersState = {};
@@ -826,9 +825,6 @@ function startGame(roomName) {
             }
         }
     });
-
-    rememberWitchTeammates(room);
-    room.lastWitchKnowledgePhase = room.currentPhase;
 
     // --- New Card Dealing Logic ---
 
@@ -3281,6 +3277,8 @@ io.on('connection', (socket) => {
                     if (card.name === 'Witch') {
                         player.isWitch = true;
                         player.hasBeenWitch = true;
+                        if (!(player.knownWitchTeammates instanceof Set)) player.knownWitchTeammates = new Set();
+                        player.knownWitchTeammates.add(leftPlayer.uniqueId);
                         if (!room.infectionLog) room.infectionLog = [];
                         room.infectionLog.push({
                             from: leftPlayer.name,
