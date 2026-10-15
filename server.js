@@ -207,12 +207,19 @@ function emitRoomState(roomName) {
     const room = rooms[roomName];
     if (!room) return;
 
+    // Remember teammates met during a completed night, even after cards move.
+    if (room.currentPhase === 'DAY' && ['NIGHT', 'PRE_DAWN'].includes(room.lastWitchKnowledgePhase)) {
+        rememberWitchTeammates(room);
+    }
+    room.lastWitchKnowledgePhase = room.currentPhase;
+
     const buildPlayersStateFor = (viewer) => {
       const playersState = {};
       for (const uniqueId in room.players) {
         const player = room.players[uniqueId];
         const isSelf = !viewer?.isSpectator && viewer?.uniqueId === uniqueId;
-        const viewerKnowsWitchTeam = !!(room.gameOver || (isSelf && !viewer?.isSpectator) || (!viewer?.isSpectator && viewer?.hasBeenWitch));
+        const viewerKnowsWitchTeam = !!(room.gameOver || (isSelf && !viewer?.isSpectator) ||
+            (!viewer?.isSpectator && viewer?.hasBeenWitch && viewer.knownWitchTeammates?.has(uniqueId)));
         const revealedIndexes = new Set(player.revealedTryalCardIndexes || []);
         playersState[uniqueId] = {
             id: player.id, // socket id
@@ -316,6 +323,14 @@ function emitRoomState(roomName) {
 
 function getAlivePlayers(room) {
     return Object.values(room.players || {}).filter(p => p && p.alive);
+}
+
+function rememberWitchTeammates(room) {
+    const teammates = Object.values(room.players || {}).filter(player => player.hasBeenWitch);
+    teammates.forEach(viewer => {
+        if (!(viewer.knownWitchTeammates instanceof Set)) viewer.knownWitchTeammates = new Set();
+        teammates.forEach(teammate => viewer.knownWitchTeammates.add(teammate.uniqueId));
+    });
 }
 
 function hasNightActionChosen(room, key) {
@@ -779,6 +794,7 @@ function startGame(roomName) {
         player.isWitch = false; // Reset role
         player.isConstable = false; // Reset role
         player.hasBeenWitch = false; // Reset has been witch status for new game
+        player.knownWitchTeammates = new Set();
         player.isSilenced = false; // Reset status
         player.inPlayCards = []; // Clear permanent cards from previous game
         player.hand = []; // Clear hand from previous game
@@ -802,6 +818,9 @@ function startGame(roomName) {
             }
         }
     });
+
+    rememberWitchTeammates(room);
+    room.lastWitchKnowledgePhase = room.currentPhase;
 
     // --- New Card Dealing Logic ---
 
@@ -2149,9 +2168,6 @@ io.on('connection', (socket) => {
         if (existingRoom) {
             const player = existingRoom.players[uniqueId];
             if (player) {
-                if (playerName && playerName.trim()) {
-                    player.name = playerName.trim();
-                }
                 handlePlayerReconnection(socket, existingRoom, player);
                 broadcastActiveRooms();
                 return;
@@ -2186,7 +2202,7 @@ io.on('connection', (socket) => {
         // Check if this uniqueId already exists with a different name in an active room
         for (const roomName in rooms) {
             if (rooms[roomName].players[socket.uniqueId] && rooms[roomName].players[socket.uniqueId].name !== playerName) {
-                io.to(socket.id).emit('game message', 'ชื่อผู้ใช้นี้ถูกใช้แล้วในห้องที่คุณกำลังเข้าร่วม.', 'red');
+                io.to(socket.id).emit('game message', 'ไม่สามารถเปลี่ยนชื่อขณะอยู่ในห้องได้.', 'red');
                 return;
             }
         }
@@ -2286,9 +2302,6 @@ io.on('connection', (socket) => {
         // Reconnecting with existing uniqueId
         if (room.players[socket.uniqueId]) {
             const player = room.players[socket.uniqueId];
-            if (playerName && playerName.trim()) {
-                player.name = playerName.trim();
-            }
             handlePlayerReconnection(socket, room, player);
             broadcastActiveRooms();
             return;
@@ -2511,6 +2524,7 @@ io.on('connection', (socket) => {
             p.isWitch = false;
             p.isConstable = false;
             p.hasBeenWitch = false;
+            p.knownWitchTeammates = new Set();
             p.revealedTryalCardIndexes = new Set();
             p.isReady = !!p.isBot;
             p.accusationsGiven = 0;

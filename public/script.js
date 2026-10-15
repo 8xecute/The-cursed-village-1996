@@ -7,6 +7,26 @@ function uuidv4() {
 
 const socket = io();
 
+// View preferences are local to this device and never change game state.
+const gameViewToggle = document.getElementById('game-view-toggle');
+const gameViewDescription = document.getElementById('game-view-description');
+function setGameViewMode(mode) {
+    const use3D = mode === '3d';
+    document.body.classList.toggle('game-view-3d', use3D);
+    gameViewToggle?.setAttribute('aria-checked', String(use3D));
+    if (gameViewDescription) gameViewDescription.textContent = use3D ? 'มุมมองกระดาน 3D' : 'มุมมอง 2D';
+}
+let savedGameViewMode = '2d';
+try {
+    savedGameViewMode = localStorage.getItem('villageGameView') || '2d';
+} catch (_) { /* Use the default when storage is unavailable. */ }
+setGameViewMode(savedGameViewMode);
+gameViewToggle?.addEventListener('click', () => {
+    const mode = document.body.classList.contains('game-view-3d') ? '2d' : '3d';
+    setGameViewMode(mode);
+    try { localStorage.setItem('villageGameView', mode); } catch (_) { /* The toggle still works without storage. */ }
+});
+
 // --- Background Music Controls ---
 const backgroundMusic = document.getElementById('background-music');
 const musicVolumeSlider = document.getElementById('music-volume-slider');
@@ -366,6 +386,14 @@ socket.on('room joined', (roomName) => {
 socket.on('room state update', (roomState) => {
     console.log('Room state updated:', roomState);
     currentRoomState = roomState; // Store room state for night actions
+    if (nameInputContainer) nameInputContainer.style.display = 'none';
+    const registeredName = roomState.players?.[myUniqueId]?.name;
+    if (registeredName) {
+        myPlayerName = registeredName;
+        playerNameDisplay.textContent = registeredName;
+        nameInput.value = registeredName;
+        localStorage.setItem('playerName', registeredName);
+    }
     updateTryalCardDisplay(); // Always update tryal card display on room state update
     
     // Change background music based on game phase
@@ -378,7 +406,7 @@ socket.on('room state update', (roomState) => {
     lobbyMaxPlayers.textContent = roomState.maxPlayers;
     playerListDiv.innerHTML = '';
     let isHost = false;
-    let myPlayer = null;
+    let myPlayer = roomState.players?.[myUniqueId] || null;
     const viewerIsHost = !!roomState.players?.[myUniqueId]?.isHost;
     const playersInOrder = Object.values(roomState.players).sort((a, b) => a.name.localeCompare(b.name));
 
@@ -1228,9 +1256,20 @@ socket.on('forced reveal notice', ({ byPlayerName, reason, points }) => {
 // --- Black Cat Tryal Card Selection Popup (สำหรับ พิธีเซ่นไหว้) ---
 let blackCatTryalSelection = null;
 
+function wirePopupCollapseControl(toggle, popup, overlay) {
+    toggle.onclick = () => {
+        const isCollapsed = popup.classList.toggle('is-collapsed');
+        overlay.classList.toggle('is-collapsed', isCollapsed);
+        toggle.textContent = isCollapsed ? 'ขยาย' : 'ย่อ';
+        toggle.setAttribute('aria-expanded', String(!isCollapsed));
+        toggle.setAttribute('aria-label', isCollapsed ? 'ขยายหน้าต่าง' : 'ย่อหน้าต่าง');
+    };
+}
+
 function addTryalPopupCollapseControl(popup, overlay, title) {
     const header = document.createElement('div');
-    header.className = 'popup-collapse-header';
+    header.className = 'popup-collapse-header night-action-title-row';
+    title.classList.add('night-action-title');
     popup.insertBefore(header, title);
     header.appendChild(title);
 
@@ -1247,13 +1286,7 @@ function addTryalPopupCollapseControl(popup, overlay, title) {
     while (header.nextSibling) content.appendChild(header.nextSibling);
     popup.appendChild(content);
 
-    toggle.onclick = () => {
-        const isCollapsed = popup.classList.toggle('is-collapsed');
-        overlay.classList.toggle('is-collapsed', isCollapsed);
-        toggle.textContent = isCollapsed ? 'ขยาย' : 'ย่อ';
-        toggle.setAttribute('aria-expanded', String(!isCollapsed));
-        toggle.setAttribute('aria-label', isCollapsed ? 'ขยายหน้าต่าง' : 'ย่อหน้าต่าง');
-    };
+    wirePopupCollapseControl(toggle, popup, overlay);
 }
 
 function showBlackCatTryalSelection(blackCatHolder, tryalCount, fromConspiracyDraw = false) {
@@ -1311,6 +1344,11 @@ cardTargetSelect.addEventListener('change', () => {
 });
 
 setNameButton.addEventListener('click', () => {
+    if (currentRoomName) {
+        nameInputContainer.style.display = 'none';
+        addGameMessage('เปลี่ยนชื่อได้ก่อนเข้าห้องเท่านั้น', 'orange');
+        return;
+    }
     const name = nameInput.value.trim();
     if (name) {
         myPlayerName = name;
@@ -2313,6 +2351,7 @@ function updatePlayersBoardGrid(roomState, myUniqueId) {
     // --- เรียงลำดับผู้เล่นตามลำดับเดิม ---
     const allPlayers = Object.values(roomState.players);
     let playersInOrder = allPlayers;
+    const knowsWitchTeam = !!roomState.players[myUniqueId]?.hasBeenWitch;
     playersInOrder.forEach(player => {
         const card = document.createElement('div');
         card.className = 'player-board-card' + (!player.alive ? ' dead' : '') + (roomState.currentTurnPlayerUniqueId === player.uniqueId ? ' current-turn' : '');
@@ -2322,6 +2361,7 @@ function updatePlayersBoardGrid(roomState, myUniqueId) {
             header += `<span style="color:#ffd700;font-size:1.2em;margin-right:6px;vertical-align:middle;">🔥</span>`;
         }
         header += `${player.name}`;
+        if (knowsWitchTeam && player.hasBeenWitch) header += ' <span style="color:#ff1744;font-weight:bold;">(ทีมปอบ)</span>';
         if (player.isHost) header += ' <span style="color:#ff4500;">(Host)</span>';
         if (player.isBlackCatHolder) header += ' <span style="color:#ffd700;">(เครื่องเซ่น)</span>';
         if (!player.alive) header += ' <span class="player-dead-badge">💀 เสียชีวิตแล้ว</span>';
@@ -2622,13 +2662,7 @@ function createNightActionPopup(actionType, timer) {
     `;
 
     const collapseButton = popup.querySelector('.popup-collapse-toggle');
-    collapseButton.onclick = () => {
-        const isCollapsed = popup.classList.toggle('is-collapsed');
-        overlay.classList.toggle('is-collapsed', isCollapsed);
-        collapseButton.textContent = isCollapsed ? 'ขยาย' : 'ย่อ';
-        collapseButton.setAttribute('aria-expanded', String(!isCollapsed));
-        collapseButton.setAttribute('aria-label', isCollapsed ? 'ขยายหน้าต่าง' : 'ย่อหน้าต่าง');
-    };
+    wirePopupCollapseControl(collapseButton, popup, overlay);
     
     document.body.appendChild(overlay);
     document.body.appendChild(popup);
