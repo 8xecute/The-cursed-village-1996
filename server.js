@@ -666,9 +666,6 @@ function changePhase(roomName, forcedNextPhase = null) {
         const nextDuration = room.phaseConfig['NIGHT'] || DEFAULT_PHASE_DURATIONS['NIGHT'];
         startPhaseTimer(roomName, nextDuration);
 
-        // รีเซ็ตกองการ์ดและกองทิ้ง (รวม discard เข้า deck พร้อม Night 1 ใบไว้ล่างสุด) เบื้องหลังในเฟสกลางคืนทันที
-        prepareDeckForNewDay(room);
-
         // ก่อนเข้า NIGHT: รีเซ็ตและอัปเดต isWitch/isConstable ตาม Tryal Cards ที่อยู่ในมือ
         Object.values(room.players).forEach(player => {
             player.isWitch = player.tryalCards.some(card => card.name === 'Witch');

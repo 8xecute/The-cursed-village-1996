@@ -368,14 +368,6 @@ socket.on('room state update', (roomState) => {
     if (roomState.currentPhase) {
         changePhaseMusic(roomState.currentPhase);
     }
-    // Update deck and discard pile counts if provided
-    if (typeof roomState.deckCount === 'number' && deckCountDisplay) {
-        deckCountDisplay.textContent = roomState.deckCount;
-    }
-    if (typeof roomState.discardPileCount === 'number' && discardPileCountDisplay) {
-        discardPileCountDisplay.textContent = roomState.discardPileCount;
-    }
-
     // Update lobby/game UI based on roomState
     lobbyRoomName.textContent = roomState.name;
     lobbyPlayerCount.textContent = roomState.playerCount;
@@ -2032,9 +2024,18 @@ function updateTryalCardDisplay() {
             tryalCardsList.appendChild(cardDiv);
         });
     }
-    if (myRevealedTryalCards) {
+    if (myRevealedTryalCardIndexes && myRevealedTryalCardIndexes.length > 0) {
+        const revealedNames = myRevealedTryalCardIndexes
+            .map((item) => {
+                if (typeof item === 'number') return myTryalCards[item]?.name;
+                if (typeof item === 'string') return item;
+                return null;
+            })
+            .filter(Boolean)
+            .map((name) => displayCardName(name));
+        myRevealedTryalCards.textContent = `Revealed: ${revealedNames.join(', ')}`;
+    } else {
         myRevealedTryalCards.textContent = '';
-        myRevealedTryalCards.style.display = 'none';
     }
     // Use hasBeenWitch for team display and update witch chat
     const myPlayer = currentRoomState && currentRoomState.players && currentRoomState.players[myUniqueId];
@@ -3300,13 +3301,13 @@ function showGameOverModal(data) {
         let cardsHtml = '';
 
         // Card 1: Top Accuser
-        const topAccuser = mvp.mostAccusationsGiven || mvp.mostAccuser;
+        const topAccuser = mvp.mostAccuser;
         cardsHtml += `
             <div class="mvp-card">
                 <div class="mvp-icon">🗣️</div>
                 <div class="mvp-award-name">ยอดนักกล่าวหา</div>
-                <div class="mvp-player-name">${topAccuser && topAccuser.count > 0 ? topAccuser.name : '-'}</div>
-                <div class="mvp-detail">${topAccuser && topAccuser.count > 0 ? `ลงข้อกล่าวหา +${topAccuser.count} แต้ม` : 'ไม่มีการกล่าวหา'}</div>
+                <div class="mvp-player-name">${topAccuser ? topAccuser.name : '-'}</div>
+                <div class="mvp-detail">${topAccuser ? `ลงข้อกล่าวหา +${topAccuser.count} แต้ม` : 'ไม่มีการกล่าวหา'}</div>
             </div>
         `;
 
@@ -3316,22 +3317,19 @@ function showGameOverModal(data) {
             <div class="mvp-card">
                 <div class="mvp-icon">🎯</div>
                 <div class="mvp-award-name">เป้าหมายยอดฮิต</div>
-                <div class="mvp-player-name">${mostAccused && mostAccused.count > 0 ? mostAccused.name : '-'}</div>
-                <div class="mvp-detail">${mostAccused && mostAccused.count > 0 ? `โดนกล่าวหา ${mostAccused.count} แต้ม` : 'ไม่มีผู้ถูกเพ่งเล็ง'}</div>
+                <div class="mvp-player-name">${mostAccused ? mostAccused.name : '-'}</div>
+                <div class="mvp-detail">${mostAccused ? `โดนกล่าวหา ${mostAccused.count} แต้ม` : 'ไม่มีผู้ถูกเพ่งเล็ง'}</div>
             </div>
         `;
 
         // Card 3: First Victim
-        const firstVictimData = mvp.firstVictim;
-        const firstVictimName = typeof firstVictimData === 'object' && firstVictimData !== null
-            ? (firstVictimData.name || null)
-            : (typeof firstVictimData === 'string' && firstVictimData !== 'undefined' ? firstVictimData : null);
+        const firstVictim = mvp.firstVictim;
         cardsHtml += `
             <div class="mvp-card">
                 <div class="mvp-icon">🕯️</div>
                 <div class="mvp-award-name">สังเวยคนแรก</div>
-                <div class="mvp-player-name">${firstVictimName ? firstVictimName : '-'}</div>
-                <div class="mvp-detail">${firstVictimName ? 'เหยื่อเคราะห์ร้ายรายแรก' : 'ไม่มีใครตาย'}</div>
+                <div class="mvp-player-name">${firstVictim ? firstVictim.name : '-'}</div>
+                <div class="mvp-detail">${firstVictim ? 'เหยื่อเคราะห์ร้ายรายแรก' : 'ไม่มีใครตาย'}</div>
             </div>
         `;
 
@@ -3703,58 +3701,46 @@ function updateWitchChatTeamList() {
 }
 
 // --- Overlay interaction for music start ---
-function setupMusicOverlay() {
+document.addEventListener('DOMContentLoaded', () => {
     const overlay = document.getElementById('music-overlay');
     const enterBtn = document.getElementById('enter-village-btn');
-    if (!overlay) return;
-
-    window.hideMusicOverlayIfNeeded = function(phase) {
-        if (phase && phase !== 'LOBBY') {
-            overlay.style.display = 'none';
-        }
-    };
-
-    function closeOverlayAndStartMusic() {
-        overlay.style.opacity = '0';
-        overlay.style.pointerEvents = 'none';
-        setTimeout(() => {
-            overlay.style.display = 'none';
-        }, 300);
-
-        // บังคับเปิดเพลง lobby-music
-        try {
-            if (!backgroundMusic.src || !backgroundMusic.src.includes('lobby-music.mp3')) {
-                backgroundMusic.src = 'audio/lobby-music.mp3';
+    // แสดง overlay เฉพาะหน้าแรก (ก่อน join/create lobby)
+    let hasEnteredVillage = false;
+    if (overlay) {
+        // Hide overlay permanently afterเข้า lobby ครั้งแรก
+        window.hideMusicOverlayIfNeeded = function(phase) {
+            if (phase && phase !== 'LOBBY') {
+                overlay.style.display = 'none';
+                hasEnteredVillage = true;
             }
-            backgroundMusic.play().then(() => {
-                isMusicPlaying = true;
-                hasUserStartedMusic = true;
-                updateMusicUI();
-            }).catch(() => {
-                isMusicPlaying = false;
-                updateMusicUI();
-            });
-        } catch (e) {
-            console.error('Audio play error:', e);
+        };
+    }
+    if (overlay && enterBtn) {
+        enterBtn.addEventListener('click', () => {
+            overlay.style.opacity = '0';
+            setTimeout(() => overlay.style.display = 'none', 500);
+            // บังคับเปิดเพลง lobby-music แค่ตอนนี้เท่านั้น (ก่อนเข้า lobby/game)
+            if (!isMusicPlaying) {
+                if (!backgroundMusic.src || !backgroundMusic.src.includes('lobby-music.mp3')) {
+                    backgroundMusic.src = 'audio/lobby-music.mp3';
+                }
+                backgroundMusic.play().then(()=>{
+                    isMusicPlaying = true;
+                    hasUserStartedMusic = true; // เซ็ต flag ว่า user เคยกดเริ่มเพลงเองแล้ว
+                    updateMusicUI();
+                }).catch(()=>{});
+            } else {
+                hasUserStartedMusic = true; // เซ็ต flag แม้จะเล่นอยู่แล้ว
+            }
+            hasEnteredVillage = true;
+        });
+    }
+    // ถ้า reload แล้วอยู่ใน lobby/game ไม่ต้องแสดง overlay
+    socket.on('room state update', (roomState) => {
+        if (window.hideMusicOverlayIfNeeded) {
+            window.hideMusicOverlayIfNeeded(roomState.currentPhase);
         }
-    }
-
-    if (enterBtn) {
-        enterBtn.onclick = closeOverlayAndStartMusic;
-    }
-}
-
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', setupMusicOverlay);
-} else {
-    setupMusicOverlay();
-}
-
-// ถ้า reload แล้วอยู่ใน lobby/game ไม่ต้องแสดง overlay
-socket.on('room state update', (roomState) => {
-    if (window.hideMusicOverlayIfNeeded) {
-        window.hideMusicOverlayIfNeeded(roomState.currentPhase);
-    }
+    });
 });
 
 // --- Death Notification Modal ---
@@ -3851,7 +3837,15 @@ function showWitchPopup(fromName) {
     }
 }
 
-
+document.addEventListener('DOMContentLoaded', function() {
+  var btn = document.getElementById('enter-village-btn');
+  var modal = document.getElementById('music-overlay');
+  if (btn && modal) {
+    btn.onclick = function() {
+      modal.classList.add('hidden');
+    };
+  }
+});
 
 // Track if player has drawn a card this turn
 let hasDrawnCardThisTurn = false;
