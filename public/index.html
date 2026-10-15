@@ -98,46 +98,53 @@
         gap: 12px;
         z-index: 1000;
       }
-      @media (max-width: 600px) {
+      @media (max-width: 768px) {
         .music-controls {
           position: static !important;
-          width: 100vw;
+          width: 100% !important;
+          max-width: 100% !important;
           justify-content: center;
-          margin-top: 8px;
-          margin-bottom: 8px;
+          margin-top: 6px;
+          margin-bottom: 6px;
           gap: 8px;
+          box-sizing: border-box;
         }
         .music-btn {
           position: static !important;
-          width: 35px !important;
-          height: 35px !important;
+          width: 36px !important;
+          height: 36px !important;
           font-size: 16px !important;
         }
         .music-slider {
-          width: 70px;
+          width: 75px;
         }
         .top-buttons {
           position: static !important;
-          width: 100vw;
+          width: 100% !important;
+          max-width: 100% !important;
           justify-content: center;
-          margin-top: 8px;
+          margin-top: 6px;
           margin-bottom: 8px;
-          gap: 8px;
+          gap: 6px;
+          flex-wrap: wrap;
+          box-sizing: border-box;
         }
-        #show-cards-btn, #show-rules-btn {
+        #show-story-btn, #show-cards-btn, #show-rules-btn {
           position: static !important;
           width: auto !important;
           margin: 0 !important;
           top: unset !important;
           right: unset !important;
-          font-size: 1em !important;
-          padding: 7px 10px !important;
+          font-size: 0.9em !important;
+          padding: 6px 12px !important;
           border-radius: 6px !important;
           z-index: 1000;
+          white-space: nowrap;
         }
         .game-title {
-          margin-top: 16px !important;
-          margin-bottom: 0 !important;
+          margin-top: 8px !important;
+          margin-bottom: 4px !important;
+          font-size: 1.9em !important;
           text-align: center;
         }
       }
@@ -146,7 +153,7 @@
     <!-- Interactive Overlay for Music Start -->
     <div id="music-overlay" class="music-overlay">
       <div class="music-overlay-content" style="background: #181818; color: #fff; border-radius: 16px; max-width: 700px; width:95vw; margin:auto; box-shadow: 0 8px 32px rgba(0,0,0,0.5); padding:0 0 32px 0; display:flex; flex-direction:column; align-items:center;">
-        <img src="Background/story.png" alt="เนื้อเรื่องหมู่บ้านต้องสาป" style="width:100%; max-height:400px; object-fit:cover; border-radius: 16px 16px 0 0; display:block;">
+        <img src="Background/story.jpg" alt="เนื้อเรื่องหมู่บ้านต้องสาป" style="width:100%; max-height:400px; object-fit:cover; border-radius: 16px 16px 0 0; display:block;">
         <div style="padding: 28px 24px 0 24px; width:100%; box-sizing:border-box;">
           <h2 style="margin-top:0; color:#ff9800; font-family:'Creepster','Noto Serif Thai',serif; text-align:center;">หมู่บ้านต้องสาป 1996</h2>
           <p style="font-size:1.1em; color:#ffe0b2; line-height:1.7; text-align:center;">
@@ -242,127 +249,161 @@
     </style>
 
     <!-- Background Music Audio Element -->
-    <audio id="background-music" loop>
-        <source src="audio/background-music.mp3" type="audio/mpeg">
-        <source src="audio/background-music.ogg" type="audio/ogg">
-        Your browser does not support the audio element.
-    </audio>
+    <audio id="background-music" loop preload="none"></audio>
 
-    <div class="container game-layout">
-        <div class="sidebar" id="sidebar-left">
-            <div id="players-board-section" class="section" style="display: none;">
-                <h3>ผู้เล่นทั้งหมดในหมู่บ้าน</h3>
-                <div id="players-board-list">
-                    <!-- Player cards will be populated here -->
-                </div>
-            </div>
-        </div>
+    <div class="container">
         <div class="main-game-content">
-        <div id="name-section" class="section">
-            <h2>ข้อมูลผู้เล่น</h2>
-            <div id="name-input-container">
-                <input type="text" id="name-input" placeholder="กรอกชื่อของคุณ">
-                <button id="set-name-button">ตั้งชื่อ</button>
+            <div id="name-section" class="section">
+                <h2>ข้อมูลผู้เล่น</h2>
+                <div id="name-input-container" class="room-input-group">
+                    <input type="text" id="name-input" placeholder="กรอกชื่อของคุณ">
+                    <button id="set-name-button">ตั้งชื่อ</button>
+                </div>
+                <p>ชื่อของคุณ: <span id="player-name-display">ผู้เล่นใหม่</span></p>
+                <p id="player-uuid-row">uuid: <span id="player-unique-id-display"></span></p>
+                <p>ห้องปัจจุบัน: <span id="current-room-display">ไม่มี</span> 
+                    <button id="copy-room-link-header-btn" style="display: none; background: #2e7d32; color: #fff; border: 1px solid #4caf50; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 0.85em; margin-left: 8px;">🔗 คัดลอกลิงก์ห้อง</button>
+                    <button id="leave-room-button" style="display: none;">ออกจากห้อง</button>
+                </p>
             </div>
-            <p>ชื่อของคุณ: <span id="player-name-display">ผู้เล่นใหม่</span></p>
-            <p>uuid: <span id="player-unique-id-display"></span></p>
-            <p>ห้องปัจจุบัน: <span id="current-room-display">ไม่มี</span> <button id="leave-room-button" style="display: none;">ออกจากห้อง</button></p>
-        </div>
 
-        <div id="room-management-section" class="section">
-            <h2>จัดการห้อง</h2>
-            <div style="margin-bottom: 10px;">
-                <input type="text" id="room-player-name-input" placeholder="เปลี่ยนชื่อของคุณ">
-                <button id="room-set-name-button">ตั้งชื่อ</button>
-            </div>
-            <div>
-                <input type="text" id="new-room-name-input" placeholder="ชื่อห้องใหม่">
-                <button id="create-room-button">สร้างห้อง</button>
-            </div>
-            <div>
-                <input type="text" id="join-room-name-input" placeholder="เข้าร่วมห้อง">
-                <button id="join-room-button">เข้าร่วม</button>
-            </div>
-            <div class="active-rooms-panel">
-                <h3>ห้องที่เปิดอยู่</h3>
-                <div id="active-rooms-list" class="active-rooms-list">
-                    <div class="room-list-empty">กำลังโหลดห้อง...</div>
+            <div id="room-management-section" class="section">
+                <div id="invited-room-banner" style="display: none; background: #263238; border: 1px solid #ff9800; border-radius: 8px; padding: 12px 16px; margin-bottom: 15px; color: #fff;">
+                    <span style="color: #ff9800; font-weight: bold; font-size: 1.05em;">📩 คุณได้รับคำชวนเข้าร่วมห้อง:</span> 
+                    <span id="invited-room-name" style="font-weight: bold; font-size: 1.1em; color: #4fc3f7; margin-left: 6px;"></span>
+                    <p style="margin: 6px 0 0 0; font-size: 0.9em; color: #cfd8dc;">กรุณาตั้งชื่อของคุณ หรือกดปุ่ม "เข้าร่วม" ด้านล่างเพื่อเข้าเล่นทันที</p>
+                </div>
+                <h2>จัดการห้อง</h2>
+                <div class="room-input-group" style="margin-bottom: 10px;">
+                    <input type="text" id="room-player-name-input" placeholder="เปลี่ยนชื่อของคุณ">
+                    <button id="room-set-name-button">ตั้งชื่อ</button>
+                </div>
+                <div class="room-input-group" style="margin-bottom: 10px;">
+                    <input type="text" id="new-room-name-input" placeholder="ชื่อห้องใหม่">
+                    <button id="create-room-button">สร้างห้อง</button>
+                </div>
+                <div class="room-input-group">
+                    <input type="text" id="join-room-name-input" placeholder="เข้าร่วมห้อง">
+                    <button id="join-room-button">เข้าร่วม</button>
+                </div>
+                <div class="active-rooms-panel">
+                    <h3>ห้องที่เปิดอยู่</h3>
+                    <div id="active-rooms-list" class="active-rooms-list">
+                        <div class="room-list-empty">กำลังโหลดห้อง...</div>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <div id="room-lobby-section" class="section" style="display: none;">
-            <h2>ล็อบบี้: <span id="lobby-room-name"></span></h2>
-            <p>ผู้เล่น: <span id="lobby-player-count"></span>/<span id="lobby-max-players"></span></p>
-            <h3>รายชื่อผู้เล่นในห้อง:</h3>
-            <div id="player-list">
+            <div id="room-lobby-section" class="section" style="display: none;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;">
+                    <h2 style="margin: 0;">ล็อบบี้: <span id="lobby-room-name"></span></h2>
+                    <button id="share-room-link-btn" style="background: #2e7d32; color: #fff; border: 1px solid #4caf50; padding: 8px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.95em; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.3);">
+                        🔗 คัดลอกลิงก์ชวนเพื่อน
+                    </button>
                 </div>
-            <button id="start-game-button">เริ่มเกม</button>
-            <p style="color:#ff9800; font-size:1em; margin-top:8px;">* ต้องมีผู้เล่นอย่างน้อย 4 คนจึงจะเริ่มเกมได้</p>
-             <div class="host-controls" id="host-controls-lobby" style="display: none;">.
-                 <h3>ควบคุมโฮสต์ (ล็อบบี้)</h3>
-                 <button id="force-next-phase-button">ข้ามไปเฟสถัดไป</button>
-             </div>
-        </div>
+                <div id="share-link-toast" style="display: none; background: rgba(46, 125, 50, 0.95); color: #fff; padding: 8px 14px; border-radius: 6px; font-size: 0.95em; margin-bottom: 12px; text-align: center; border: 1px solid #81c784;">
+                    คัดลอกลิงก์ห้องเรียบร้อยแล้ว ส่งให้เพื่อนได้เลย!
+                </div>
+                <p>ผู้เล่น: <span id="lobby-player-count"></span>/<span id="lobby-max-players"></span></p>
+                <h3>รายชื่อผู้เล่นในห้อง:</h3>
+                <div id="player-list"></div>
+                <button id="start-game-button">เริ่มเกม</button>
+                <p style="color:#ff9800; font-size:1em; margin-top:8px;">* ต้องมีผู้เล่นอย่างน้อย 4 คนจึงจะเริ่มเกมได้</p>
+                <div class="host-controls" id="host-controls-lobby" style="display: none;">
+                    <h3>ควบคุมโฮสต์ (ล็อบบี้)</h3>
+                    <button id="force-next-phase-button">ข้ามไปเฟสถัดไป</button>
+                </div>
+            </div>
 
-        <div id="game-section" class="section" style="display: none;">
+            <div id="game-section" class="section" style="display: none;">
+                <div id="game-state-bar" class="game-state-bar">
+                    <span>ช่วงเวลา: <span id="current-phase-display"></span></span>
+                    <span>วันที่: <span id="day-number-display"></span></span>
+                    <span>เทิร์นของ: <span id="current-turn-player-display"></span></span>
+                    <span>กองการ์ด: <span id="deck-count-display">0</span></span>
+                    <span>กองทิ้ง: <span id="discard-pile-count-display">0</span></span>
+                </div>
+                <div id="waiting-status-banner" class="waiting-status-banner" style="display:none;"></div>
+
+                <!-- Mobile Game Tabs (visible only on <= 768px) -->
+                <div id="mobile-game-tabs" class="mobile-game-tabs">
+                    <button type="button" class="mobile-tab-btn active" data-tab="hand" id="mobile-tab-hand-btn">
+                        <span class="tab-icon">🎴</span>
+                        <span class="tab-text">การ์ดของฉัน</span>
+                        <span id="tab-turn-badge" class="tab-badge" style="display:none;">ตาคุณ!</span>
+                    </button>
+                    <button type="button" class="mobile-tab-btn" data-tab="players" id="mobile-tab-players-btn">
+                        <span class="tab-icon">👥</span>
+                        <span class="tab-text">ชาวบ้าน</span>
+                        <span id="tab-player-count-badge" class="tab-count-badge"></span>
+                    </button>
+                    <button type="button" class="mobile-tab-btn" data-tab="chat" id="mobile-tab-chat-btn">
+                        <span class="tab-icon">💬</span>
+                        <span class="tab-text">ข้อความ</span>
+                        <span id="tab-chat-badge" class="tab-dot" style="display:none;"></span>
+                    </button>
+                </div>
+
                 <div class="game-layout">
-                    <div class="main-game-content">
-                        <div id="game-state-bar" class="game-state-bar">
-                            <span>ช่วงเวลา: <span id="current-phase-display"></span></span>
-                            <span>วันที่: <span id="day-number-display"></span></span>
-                            <span>เทิร์นของ: <span id="current-turn-player-display"></span></span>
-                            <span>กองการ์ด: <span id="deck-count-display">0</span></span>
-                            <span>กองทิ้ง: <span id="discard-pile-count-display">0</span></span>
+                    <!-- Left Sidebar: Village Board (12 Players) -->
+                    <div class="sidebar" id="sidebar-left">
+                        <div id="players-board-section" class="section" style="display: none;">
+                            <h3>ผู้เล่นทั้งหมดในหมู่บ้าน</h3>
+                            <div id="players-board-list">
+                                <!-- Player cards will be populated here -->
+                            </div>
                         </div>
-                        <div id="waiting-status-banner" class="waiting-status-banner" style="display:none;"></div>
-            <h3 style="color: #ff7f50;">การ์ดเล่นในมือ (<span id="hand-card-count">0</span> cards)</h3>
-                            <div id="player-hand"></div>
+                    </div>
+
+                    <!-- Center: Main Game Content (Hand, Action Buttons, Tryal Cards) -->
+                    <div class="main-game-content" id="game-main-content">
+                        <h3 style="color: #ff7f50;">การ์ดเล่นในมือ (<span id="hand-card-count">0</span> cards)</h3>
+                        <div id="player-hand"></div>
                         <div class="hand-action-buttons" style="margin-top: 8px;">
-                                <button id="draw-card-button">จั่วการ์ด 2 ใบ</button>
-                                <button id="play-card-button">เล่นการ์ดที่เลือก</button>
-                                <select id="card-target-select" style="display: none; margin-left: 8px;">
-                                    <option value="">Select Target</option>
-                                </select>
-                                <select id="card-second-target-select" style="display: none; margin-left: 8px;">
-                                    <option value="">Select Second Target</option>
-                                </select>
-                                <button id="end-turn-button" style="background-color: #dc3545; color: white; font-weight: bold; margin-left: 12px;">จบเทิร์น</button>
-                </div>
-            <div style="display: flex; align-items: center; justify-content: space-between;">
-              <h3 style="color: #ff7f50; margin-bottom: 0;">การ์ดชีวิต (<span id="tryal-card-count">0</span> ใบ)</h3>
-              <span id="my-role-display-container"><span style="font-size: 1em; margin-left: 12px;">คุณเป็น: </span><span id="my-role-display">ยังไม่ได้รับบทบาท</span></span>
-            </div>
-            <div id="tryal-cards-display">
-                <p id="my-revealed-tryal-cards"></p>
-                <p id="my-secret-tryal-cards-count"></p>
-                <ul id="my-tryal-cards-list"></ul>
-            </div>
+                            <button id="draw-card-button">จั่วการ์ด 2 ใบ</button>
+                            <button id="play-card-button">เล่นการ์ดที่เลือก</button>
+                            <select id="card-target-select" style="display: none; margin-left: 8px;">
+                                <option value="">Select Target</option>
+                            </select>
+                            <select id="card-second-target-select" style="display: none; margin-left: 8px;">
+                                <option value="">Select Second Target</option>
+                            </select>
+                            <button id="end-turn-button" style="background-color: #dc3545; color: white; font-weight: bold; margin-left: 12px;">จบเทิร์น</button>
+                        </div>
+
+                        <div style="display: flex; align-items: center; justify-content: space-between;">
+                            <h3 style="color: #ff7f50; margin-bottom: 0;">การ์ดชีวิต (<span id="tryal-card-count">0</span> ใบ)</h3>
+                            <span id="my-role-display-container"><span style="font-size: 1em; margin-left: 12px;">คุณเป็น: </span><span id="my-role-display">ยังไม่ได้รับบทบาท</span></span>
+                        </div>
+                        <div id="tryal-cards-display">
+                            <p id="my-revealed-tryal-cards"></p>
+                            <p id="my-secret-tryal-cards-count"></p>
+                            <ul id="my-tryal-cards-list"></ul>
+                        </div>
 
                         <div id="turn-controls" class="section" style="display: none;">
                             <h3 style="color: #ff7f50;">Turn Controls</h3>
-                            <button id="end-turn-button" style="background-color: #dc3545; color: white; padding: 15px 30px; font-size: 1.2em; font-weight: bold;">End Turn</button>
-            </div>
+                            <button id="end-turn-button-alt" style="background-color: #dc3545; color: white; padding: 15px 30px; font-size: 1.2em; font-weight: bold;">End Turn</button>
+                        </div>
 
-            <div id="confess-section" style="display: none;">
+                        <div id="confess-section" style="display: none;">
                             <h3>Confess! (<span id="confess-timer-display"></span>s left - Auto-skip if time expires)</h3>
-                <button id="confess-button">Confess (Reveal Tryal Card)</button>
+                            <button id="confess-button">Confess (Reveal Tryal Card)</button>
                             <button id="skip-confess-button" style="background-color: #666; margin-left: 10px;">Skip Confession</button>
-            </div>
+                        </div>
 
-            <div class="host-controls" id="host-controls-game" style="display: none;">
-                <h3>ควบคุมเฟส (โฮสต์)</h3>
-                <button id="force-next-phase-game-button">บังคับเปลี่ยนเฟส</button>
-        </div>
+                        <div class="host-controls" id="host-controls-game" style="display: none;">
+                            <h3>ควบคุมเฟส (โฮสต์)</h3>
+                            <button id="force-next-phase-game-button">บังคับเปลี่ยนเฟส</button>
+                        </div>
 
-        <div id="witch-action-section" class="section" style="display: none;">
-            
-            <div id="assign-black-cat-action" style="display: none;">
-                <p>เลือกผู้เล่นที่จะรับการ์ดเครื่องเซ่น:</p>
-                <select id="black-cat-target-select"></select>
-                <button id="confirm-black-cat-button">Confirm</button>
-            </div>
-        </div>
+                        <div id="witch-action-section" class="section" style="display: none;">
+                            <div id="assign-black-cat-action" style="display: none;">
+                                <p>เลือกผู้เล่นที่จะรับการ์ดเครื่องเซ่น:</p>
+                                <select id="black-cat-target-select"></select>
+                                <button id="confirm-black-cat-button">Confirm</button>
+                            </div>
+                        </div>
 
                         <div id="night-action-section" class="section night-action-section" style="display: none;">
                             <h3 id="night-action-title">Night Action</h3>
@@ -373,25 +414,27 @@
                         </div>
                     </div>
 
+                    <!-- Right Sidebar: Messages & Witch Chat -->
                     <div class="sidebar" id="sidebar-right">
-        <div id="game-messages" class="section">
-            <h2>ข้อความเกม</h2>
-                    </div>
-                    
-                    <div id="witch-chat-section" class="section" style="display: none;">
-                        <h2>🧙‍♀️ ชุนชนชาวปอบ</h2>
-                        <div id="witch-team-list"></div>
-                        <div id="witch-chat-messages" class="chat-messages">
-                            <!-- Witch chat messages will appear here -->
+                        <div id="game-messages" class="section">
+                            <h2>ข้อความเกม</h2>
                         </div>
-                        <div class="chat-input-container">
-                            <input type="text" id="witch-chat-input" placeholder="พิมพ์ข้อความที่จะส่งไปยังทีมปอบ..." maxlength="200">
-                            <button id="witch-chat-send">Send</button>
+                        
+                        <div id="witch-chat-section" class="section" style="display: none;">
+                            <h2>🧙‍♀️ ชุนชนชาวปอบ</h2>
+                            <div id="witch-team-list"></div>
+                            <div id="witch-chat-messages" class="chat-messages">
+                                <!-- Witch chat messages will appear here -->
+                            </div>
+                            <div class="chat-input-container">
+                                <input type="text" id="witch-chat-input" placeholder="พิมพ์ข้อความที่จะส่งไปยังทีมปอบ..." maxlength="200">
+                                <button id="witch-chat-send">Send</button>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-            </div>
+        </div>
     </div>
 
     <!-- This element will be used to show card descriptions on hover -->
@@ -867,7 +910,7 @@
     <div id="story-modal" class="modal" style="display:none; position: fixed; z-index: 2100; left: 0; top: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); align-items: center; justify-content: center;">
       <div class="modal-content" style="background: #181818; color: #fff; margin: auto; padding: 0 0 32px 0; border-radius: 16px; width: 95%; max-width: 700px; position: relative; max-height: 90vh; overflow-y: auto; box-shadow: 0 8px 32px rgba(0,0,0,0.5);">
         <span id="close-story-modal" class="close" style="position: absolute; right: 18px; top: 12px; color: #fff; font-size: 2em; cursor: pointer; z-index:2;">&times;</span>
-        <img src="Background/story.png" alt="เนื้อเรื่องหมู่บ้านต้องสาป" style="width:100%; max-height:400px; object-fit:cover; border-radius: 16px 16px 0 0; display:block;">
+        <img src="Background/story.jpg" alt="เนื้อเรื่องหมู่บ้านต้องสาป" style="width:100%; max-height:400px; object-fit:cover; border-radius: 16px 16px 0 0; display:block;">
         <div style="padding: 28px 24px 0 24px;">
           <h2 style="margin-top:0; color:#ff9800; font-family:'Creepster','Noto Serif Thai',serif;">หมู่บ้านต้องสาป 1996</h2>
           <p style="font-size:1.1em; color:#ffe0b2; line-height:1.7;">

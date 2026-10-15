@@ -1,15 +1,33 @@
 // File: server.js
 const express = require('express');
+const compression = require('compression');
 const http = require('http');
 const { Server } = require('socket.io');
 const { v4: uuidv4 } = require('uuid'); // For unique player IDs (Ensure you 'npm install uuid')
 const { getGameCardsForPlayerCount } = require('./src/gameLogic');
 
 const app = express();
-const server = http.createServer(app);
-const io = new Server(server);
+app.use(compression()); // Enable Gzip compression to speed up load time
 
-app.use(express.static('public')); // Serve static files from the 'public' directory
+const server = http.createServer(app);
+const io = new Server(server, {
+    pingTimeout: 30000,
+    pingInterval: 25000,
+});
+
+// Serve static files with proper browser cache headers
+app.use(express.static('public', {
+    maxAge: '1h',
+    setHeaders: (res, filePath) => {
+        if (filePath.endsWith('.html')) {
+            res.setHeader('Cache-Control', 'no-cache');
+        } else if (filePath.match(/\.(png|jpg|jpeg|gif|svg|mp3|ogg|wav)$/)) {
+            res.setHeader('Cache-Control', 'public, max-age=604800, immutable');
+        } else if (filePath.match(/\.(css|js)$/)) {
+            res.setHeader('Cache-Control', 'public, max-age=86400');
+        }
+    }
+}));
 
 const PORT = process.env.PORT || 3000;
 
@@ -18,6 +36,8 @@ const rooms = {}; // Stores all active rooms and their game states
 
 const PLAYER_LIMIT = 12; // Max players per room (keep at 12)
 const MIN_PLAYERS_TO_START = 4; // Minimum players required to start a game
+const RECONNECT_TIMEOUT = 120 * 1000; // 2 minutes (120 seconds) timeout for reconnection
+
 
 // Base phase durations in milliseconds - ALL SET TO 0 FOR MANUAL PHASE ADVANCE by Host
 const DEFAULT_PHASE_DURATIONS = {
@@ -2512,21 +2532,21 @@ io.on('connection', (socket) => {
                 room.players[playerUniqueId].connected = false;
                 room.players[playerUniqueId].lastDisconnectTime = Date.now();
                 
-                sendGameMessage(room.name, `${playerName} ได้ตัดการเชื่อมต่อ.`, 'orange');
+                sendGameMessage(room.name, `${playerName} ขาดการเชื่อมต่อ. (ระบบจะรอเชื่อมต่อใหม่ 2 นาที)`, 'orange');
                 
                 // Set a timeout to remove the player if they don't reconnect
                 setTimeout(() => {
                     if (room.players[playerUniqueId] && !room.players[playerUniqueId].connected) {
                         // Player hasn't reconnected, remove them
                         delete room.players[playerUniqueId];
-                        sendGameMessage(room.name, `${playerName} ออกจากเกมแล้ว.`, 'red');
+                        sendGameMessage(room.name, `${playerName} ออกจากเกมแล้วเนื่องจากขาดการเชื่อมต่อนานเกิน 2 นาที.`, 'red');
                         handlePlayerDisconnection(room, playerUniqueId, playerName, true);
                         if (Object.keys(room.players).length === 0) {
                             delete rooms[roomName];
                         }
                         broadcastActiveRooms();
                     }
-                }, 30000); // 30 seconds timeout for reconnection
+                }, RECONNECT_TIMEOUT); // 2 minutes timeout for reconnection
             }
         }
     });
@@ -3148,8 +3168,8 @@ function updateBlackCatHolder(room) {
 }
 
 // --- Room Cleanup ---
-const ROOM_CLEANUP_INTERVAL = 30 * 1000; // Check every 1 minute
-const ROOM_EMPTY_TIMEOUT = 60 * 1000; // 1 minutes
+const ROOM_CLEANUP_INTERVAL = 30 * 1000; // Check every 30 seconds
+const ROOM_EMPTY_TIMEOUT = 5 * 60 * 1000; // 5 minutes before deleting empty rooms (allows reconnects)
 const roomLastActive = {};
 
 setInterval(() => {

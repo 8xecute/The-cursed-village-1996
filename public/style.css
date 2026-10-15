@@ -20,7 +20,7 @@ body {
     align-items: center;
     min-height: 100vh;
     font-size: 0.97em;
-    background: #181818 url('Background/background.png') no-repeat center center fixed;
+    background: #181818 url('Background/background.jpg') no-repeat center center fixed;
     background-size: cover;
     background-attachment: fixed;
     background-repeat: no-repeat;
@@ -1365,12 +1365,12 @@ html, body {
   z-index: 30;
 }
 
-.select-player-popup, #select-player-popup, #accused-tryal-select-popup, #blackcat-tryal-select-popup {
+.select-player-popup, #select-player-popup {
   background: #232323 !important;
   color: #686868;
 } 
 
-.select-player-popup button, #select-player-popup button, #accused-tryal-select-popup button, #blackcat-tryal-select-popup button {
+.select-player-popup button, #select-player-popup button {
   background: #ffe066 !important;
   color: #222 !important;
   border-radius: 6px !important;
@@ -1379,7 +1379,7 @@ html, body {
   box-shadow: 0 0 8px 1px #ffe06655;
   transition: background 0.18s;
 }
-.select-player-popup button:hover, #select-player-popup button:hover, #accused-tryal-select-popup button:hover, #blackcat-tryal-select-popup button:hover {
+.select-player-popup button:hover, #select-player-popup button:hover {
   background: #ffe799 !important;
 } 
 
@@ -1588,36 +1588,184 @@ html, body {
     display: none !important;
 } 
 
-#select-left-tryal-popup button {
-  background: linear-gradient(135deg, #3a6351 0%, #5c946e 100%) !important;
-  color: #fff !important;
-  border: 2.5px solid #b2b2b2 !important;
-  border-radius: 10px;
-  width: 80px;
-  height: 120px;
-  font-size: 1.1em;
-  cursor: pointer;
-  margin: 0 6px;
-  box-shadow: 0 4px 16px #2228;
-  transition: background 0.18s, box-shadow 0.18s;
-}
-#select-left-tryal-popup button:hover {
-  background: linear-gradient(135deg, #49796b 0%, #7bb992 100%) !important;
-  box-shadow: 0 6px 24px #49796b55;
-}
-#select-left-tryal-popup {
-  background: rgba(40, 50, 50, 0.97) !important;
-  border: 1.5px solid #5c946e !important;
+/* ========================================================
+   Cursed Village 1996 - Tryal Card Selection & Reveal Theme
+   ======================================================== */
+
+/* Unified Popup Container for Life Card Selection */
+.tryal-selection-popup,
+#accused-tryal-select-popup,
+#blackcat-tryal-select-popup,
+#select-blackcat-tryal-popup,
+#select-left-tryal-popup,
+#confess-popup,
+#forced-reveal-notice-popup {
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  background: radial-gradient(circle at 50% 25%, #2a1f18 0%, #15110e 100%) !important;
+  border: 2px solid #b38842 !important;
   border-radius: 16px !important;
-  box-shadow: 0 4px 32px #222a;
-} 
+  box-shadow: 0 16px 50px rgba(0, 0, 0, 0.95), 0 0 30px rgba(179, 136, 66, 0.3) !important;
+  padding: 24px 20px !important;
+  z-index: 9999 !important;
+  text-align: center !important;
+  color: #f5e6cb !important;
+  max-width: 92vw !important;
+  box-sizing: border-box !important;
+}
+
+/* Forced Reveal Notice Special Crimson Border */
+#forced-reveal-notice-popup {
+  background: radial-gradient(circle at 50% 25%, #341212 0%, #180909 100%) !important;
+  border: 2px solid #d32f2f !important;
+  box-shadow: 0 16px 50px rgba(0, 0, 0, 0.95), 0 0 30px rgba(211, 47, 47, 0.4) !important;
+}
+
+/* Popup Titles */
+.tryal-selection-popup h3,
+.tryal-selection-popup .popup-title,
+#accused-tryal-select-popup h3,
+#accused-tryal-select-popup > div:first-child,
+#blackcat-tryal-select-popup h3,
+#select-blackcat-tryal-popup h3,
+#select-left-tryal-popup h3,
+#confess-popup h3 {
+  font-family: 'Creepster', 'Noto Serif Thai', serif !important;
+  color: #ffb74d !important;
+  font-size: 1.35em !important;
+  font-weight: bold !important;
+  margin-top: 0 !important;
+  margin-bottom: 16px !important;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9), 0 0 14px rgba(255, 183, 77, 0.45) !important;
+  letter-spacing: 0.03em !important;
+}
+
+#forced-reveal-notice-popup div:first-child {
+  font-family: 'Creepster', 'Noto Serif Thai', serif !important;
+  color: #ff8a80 !important;
+  font-size: 1.35em !important;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9), 0 0 14px rgba(255, 82, 82, 0.5) !important;
+}
+
+/* Cards Container inside Tryal Popups */
+.tryal-selection-popup .cards-container,
+#accused-tryal-select-popup > div:nth-child(2),
+#blackcat-tryal-select-popup > div:nth-child(2),
+#select-blackcat-tryal-popup > div:nth-child(2),
+#select-left-tryal-popup > div:nth-child(2),
+#confess-popup > div:nth-child(2) {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: wrap !important;
+  justify-content: center !important;
+  align-items: center !important;
+  gap: 12px !important;
+  margin: 16px 0 !important;
+  max-width: 90vw !important;
+}
+
+/* Face-Down Life Card Buttons (Theme: Antique Cursed Salem Card Back) */
+.tryal-card-btn,
+#accused-tryal-select-popup button:not(.action-btn),
+#blackcat-tryal-select-popup button:not(.action-btn),
+#select-blackcat-tryal-popup button:not(.action-btn),
+#select-left-tryal-popup button:not(.action-btn),
+#confess-popup button:not(.action-btn):not(#skip-confess-button) {
+  position: relative !important;
+  width: 90px !important;
+  height: 135px !important;
+  min-width: 80px !important;
+  max-width: 100px !important;
+  background: linear-gradient(145deg, #382415 0%, #1e130a 100%) !important;
+  color: #f5e6cb !important;
+  border: 2px solid #c8963e !important;
+  border-radius: 10px !important;
+  font-family: 'Noto Serif Thai', serif !important;
+  font-size: 1.05em !important;
+  font-weight: bold !important;
+  cursor: pointer !important;
+  box-shadow: inset 0 0 14px rgba(0, 0, 0, 0.85), 0 6px 18px rgba(0, 0, 0, 0.7) !important;
+  outline: 1px dashed rgba(200, 150, 62, 0.45) !important;
+  outline-offset: -5px !important;
+  transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.2s, border-color 0.2s !important;
+  display: inline-flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  align-items: center !important;
+  margin: 6px !important;
+}
+
+.tryal-card-btn:hover,
+#accused-tryal-select-popup button:not(.action-btn):hover,
+#blackcat-tryal-select-popup button:not(.action-btn):hover,
+#select-blackcat-tryal-popup button:not(.action-btn):hover,
+#select-left-tryal-popup button:not(.action-btn):hover,
+#confess-popup button:not(.action-btn):not(#skip-confess-button):hover {
+  transform: translateY(-6px) scale(1.06) !important;
+  background: linear-gradient(145deg, #4d331e 0%, #291a0f 100%) !important;
+  border-color: #ffd54f !important;
+  color: #ffffff !important;
+  box-shadow: 0 10px 25px rgba(255, 167, 38, 0.5), inset 0 0 10px rgba(255, 213, 79, 0.3) !important;
+  outline-color: rgba(255, 213, 79, 0.8) !important;
+}
+
+/* Action Buttons inside Popups (e.g. ข้ามการสารภาพ, รับทราบ) */
+.tryal-popup-action-btn,
+#confess-popup button#skip-confess-button,
+#forced-reveal-notice-popup button {
+  display: inline-block !important;
+  width: auto !important;
+  min-width: 120px !important;
+  height: auto !important;
+  padding: 10px 22px !important;
+  margin-top: 14px !important;
+  background: #3e2723 !important;
+  color: #ffe0b2 !important;
+  border: 1.5px solid #8d6e63 !important;
+  border-radius: 8px !important;
+  font-family: 'Noto Serif Thai', sans-serif !important;
+  font-size: 0.95em !important;
+  font-weight: bold !important;
+  cursor: pointer !important;
+  transition: all 0.2s !important;
+  outline: none !important;
+}
+
+.tryal-popup-action-btn:hover,
+#confess-popup button#skip-confess-button:hover,
+#forced-reveal-notice-popup button:hover {
+  background: #4e342e !important;
+  color: #ffffff !important;
+  border-color: #ffb74d !important;
+  box-shadow: 0 0 12px rgba(255, 183, 77, 0.4) !important;
+}
 
 .hidden {
   display: none !important;
 } 
 
 @media (max-width: 600px) {
-  #accused-tryal-select-popup, #blackcat-tryal-select-popup, .select-player-popup, #select-player-popup, #must-play-night-popup, #card-description-popup, #night-action-popup, #assign-blackcat-popup, #select-left-tryal-popup {
+  #accused-tryal-select-popup, #blackcat-tryal-select-popup, #select-blackcat-tryal-popup, #select-left-tryal-popup, #confess-popup, #forced-reveal-notice-popup {
+    width: 95vw !important;
+    max-width: 98vw !important;
+    padding: 16px 8px !important;
+  }
+  .tryal-card-btn,
+  #accused-tryal-select-popup button:not(.action-btn),
+  #blackcat-tryal-select-popup button:not(.action-btn),
+  #select-blackcat-tryal-popup button:not(.action-btn),
+  #select-left-tryal-popup button:not(.action-btn),
+  #confess-popup button:not(.action-btn):not(#skip-confess-button) {
+    width: 62px !important;
+    height: 94px !important;
+    min-width: 58px !important;
+    max-width: 68px !important;
+    font-size: 0.82em !important;
+    margin: 3px !important;
+  }
+  .select-player-popup, #select-player-popup, #must-play-night-popup, #card-description-popup, #night-action-popup, #assign-blackcat-popup {
     width: 95vw !important;
     min-width: unset !important;
     max-width: 98vw !important;
@@ -1629,7 +1777,7 @@ html, body {
     border-radius: 12px !important;
     box-sizing: border-box !important;
   }
-  #accused-tryal-select-popup button, #blackcat-tryal-select-popup button, .select-player-popup button, #select-player-popup button, #must-play-night-popup button, #night-action-popup button, #assign-blackcat-popup button, #select-left-tryal-popup button {
+  .select-player-popup button, #select-player-popup button, #must-play-night-popup button, #night-action-popup button, #assign-blackcat-popup button {
     width: 80vw !important;
     max-width: 90vw !important;
     min-width: 60vw !important;
@@ -1681,9 +1829,71 @@ html, body {
   }
 }
 
-/* Mobile usability fixes. Keep these overrides last so they win over older
-   responsive rules above. */
-@media (max-width: 600px) {
+/* Room Input Group for mobile and desktop */
+.room-input-group {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.room-input-group input[type="text"] {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 44px;
+  margin: 0 !important;
+  font-size: 16px;
+  box-sizing: border-box;
+}
+
+.room-input-group button {
+  flex: 0 0 auto;
+  min-height: 44px;
+  margin: 0 !important;
+  padding: 0 16px;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+
+/* Lobby player list */
+#player-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 8px;
+  background-color: #242424;
+  border: 1px solid #444;
+  border-radius: 8px;
+  padding: 10px;
+  max-height: 240px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+#my-tryal-cards-list {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  gap: 8px;
+  padding: 8px 2px;
+  list-style: none;
+  margin: 0;
+}
+
+/* Mobile Game Navigation Tab Bar */
+.mobile-game-tabs {
+  display: none;
+}
+
+/* Touch delays and highlights */
+button, .card, .tryal-card-btn, .mobile-tab-btn {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Mobile usability fixes across all pages */
+@media (max-width: 768px) {
   .container,
   .game-layout,
   .main-game-content,
@@ -1693,41 +1903,261 @@ html, body {
     width: 100%;
   }
 
-  #name-section {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 8px;
+  /* Compact in-game header */
+  body.in-game #name-section {
+    padding: 6px 10px;
+    margin-bottom: 6px;
+    font-size: 0.88em;
+  }
+  body.in-game #name-section h2,
+  body.in-game #name-input-container,
+  body.in-game #player-uuid-row {
+    display: none !important;
+  }
+  body.in-game .game-title {
+    font-size: 1.5em;
+    margin: 4px 0 6px 0;
   }
 
-  #name-section h2,
-  #name-section p {
-    margin: 0;
+  /* Lobby Grid on Mobile */
+  #player-list {
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 6px;
+    padding: 8px;
+    max-height: 200px;
   }
 
-  #name-input-container {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: center;
-    gap: 8px;
-    min-width: 0;
+  .player-item {
+    font-size: 0.88em;
+    padding: 6px 8px;
   }
 
-  #name-input-container input[type="text"] {
-    min-width: 0;
+  #start-game-button {
+    min-height: 48px;
+    font-size: 1.1em;
+    font-weight: bold;
+    border-radius: 8px;
     width: 100%;
-    margin: 0;
   }
 
-  #name-input-container #set-name-button {
-    width: auto;
+  .active-room-join-btn {
+    width: auto !important;
+    min-width: 76px;
+    min-height: 40px;
+    padding: 8px 12px;
+    margin: 0 !important;
+  }
+
+  /* Mobile Game Tabs */
+  .mobile-game-tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 10px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(26, 26, 26, 0.95);
+    backdrop-filter: blur(8px);
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  }
+
+  .mobile-tab-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 10px 4px;
+    background: #2a2a2a;
+    border: 1.5px solid #444;
+    border-radius: 8px;
+    color: #ccc;
+    font-size: 0.88em;
+    font-weight: 600;
+    cursor: pointer;
+    min-height: 44px;
+    position: relative;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+    white-space: nowrap;
+  }
+
+  .mobile-tab-btn:hover {
+    background: #333;
+    color: #fff;
+  }
+
+  .mobile-tab-btn.active {
+    background: linear-gradient(135deg, #3a2512 0%, #20150b 100%);
+    border-color: #ff9800;
+    color: #ffb74d;
+    box-shadow: 0 0 10px rgba(255, 152, 0, 0.35);
+  }
+
+  .tab-badge {
+    background: #e53935;
+    color: #fff;
+    font-size: 0.7em;
+    padding: 2px 6px;
+    border-radius: 8px;
+    font-weight: bold;
+    animation: pulseBadge 1.5s infinite;
+  }
+
+  .tab-count-badge {
+    color: #90caf9;
+    font-size: 0.85em;
+    margin-left: 2px;
+  }
+
+  .tab-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #ff5722;
+    box-shadow: 0 0 6px #ff5722;
+    display: inline-block;
+  }
+
+  @keyframes pulseBadge {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.1); opacity: 0.85; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  /* Toggle mobile in-game views via data-mobile-game-tab */
+  #game-section .game-layout {
+    flex-direction: column;
+    gap: 0;
+  }
+
+  /* Default or Hand Tab */
+  #sidebar-left,
+  #sidebar-right {
+    display: none !important;
+  }
+  #game-main-content {
+    display: flex !important;
+  }
+
+  /* Players Tab */
+  body[data-mobile-game-tab="players"] #sidebar-left {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    position: static !important;
+    max-height: none !important;
+  }
+  body[data-mobile-game-tab="players"] #game-main-content {
+    display: none !important;
+  }
+  body[data-mobile-game-tab="players"] #sidebar-right {
+    display: none !important;
+  }
+
+  /* Chat Tab */
+  body[data-mobile-game-tab="chat"] #sidebar-right {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    position: static !important;
+    max-height: none !important;
+  }
+  body[data-mobile-game-tab="chat"] #game-main-content {
+    display: none !important;
+  }
+  body[data-mobile-game-tab="chat"] #sidebar-left {
+    display: none !important;
+  }
+
+  /* 12-Player Board List on Mobile */
+  #players-board-list {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+    max-height: 72vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 2px;
+  }
+
+  .player-board-card {
+    padding: 8px 10px;
+    border-radius: 8px;
+    font-size: 0.9em;
+    margin-bottom: 0;
+  }
+
+  /* State Bar on Mobile */
+  #game-state-bar {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 5px;
+    padding: 6px 4px;
+    font-size: 0.84em;
+    text-align: center;
+  }
+
+  #game-state-bar > span {
+    background: rgba(0, 0, 0, 0.35);
+    padding: 4px;
+    border-radius: 5px;
+    border: 1px solid #444;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Hand cards scrollable on mobile */
+  #player-hand {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    gap: 8px;
+    padding: 8px;
+    min-height: 120px;
+    max-height: 150px;
+    border-radius: 8px;
+    background: #262626;
+  }
+
+  #player-hand .card {
+    flex: 0 0 auto;
+    width: 72px;
     min-width: 72px;
-    margin: 0;
+    height: 105px;
+    min-height: 105px;
+    padding: 6px 4px;
+    border-radius: 8px;
+    font-size: 0.82em;
+    touch-action: manipulation;
   }
 
+  #player-hand .card.selected {
+    transform: translateY(-8px) scale(1.05);
+    border-color: #ffd54f !important;
+    box-shadow: 0 0 12px rgba(255, 213, 79, 0.7) !important;
+  }
+
+  /* Action Buttons sticky at bottom */
   .hand-action-buttons {
+    position: sticky;
+    bottom: 0;
+    background: rgba(28, 28, 28, 0.95);
+    backdrop-filter: blur(8px);
+    border-top: 1.5px solid rgba(255, 255, 255, 0.15);
+    border-radius: 10px 10px 0 0;
+    padding: 8px;
+    margin-top: 8px;
+    display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    align-items: stretch;
+    gap: 8px;
+    z-index: 40;
+    box-sizing: border-box;
   }
 
   .hand-action-buttons button,
@@ -1736,25 +2166,89 @@ html, body {
     box-sizing: border-box;
     width: 100%;
     min-width: 0;
-    min-height: 44px;
-    height: auto;
-    margin: 0;
-    padding: 10px 8px;
-    font-size: 0.9em;
+    min-height: 46px;
+    margin: 0 !important;
+    padding: 8px 10px;
+    font-size: 0.92em;
+    font-weight: bold;
+    border-radius: 8px;
     white-space: normal;
-    overflow-wrap: anywhere;
   }
 
   .hand-action-buttons #card-target-select,
-  .hand-action-buttons #card-second-target-select,
+  .hand-action-buttons #card-second-target-select {
+    grid-column: 1 / -1;
+    font-size: 16px;
+    background-color: #383838;
+    color: #fff;
+    border: 1.5px solid #ff9800;
+  }
+
   .hand-action-buttons #end-turn-button {
     grid-column: 1 / -1;
+    min-height: 48px;
+    font-size: 1.05em;
+    box-shadow: 0 2px 10px rgba(220, 53, 69, 0.4);
+  }
+
+  /* Tryal cards in hand */
+  .tryal-card-in-hand {
+    width: 75px !important;
+    height: 105px !important;
+    font-size: 0.85em !important;
+    flex-shrink: 0;
+  }
+
+  /* Modals & Popups on Mobile */
+  .modal-content,
+  #game-rules-modal .modal-content,
+  #card-explain-modal .modal-content,
+  #story-modal .modal-content {
+    width: 94vw !important;
+    max-width: 95vw !important;
+    max-height: 85vh !important;
+    padding: 18px 14px !important;
+    margin: auto !important;
+    border-radius: 12px !important;
+    box-sizing: border-box !important;
+  }
+
+  #night-action-popup,
+  #assign-blackcat-popup,
+  #must-play-night-popup,
+  .select-player-modal > div {
+    min-width: 0 !important;
+    width: 92vw !important;
+    max-width: 94vw !important;
+    max-height: 85vh !important;
+    padding: 18px 12px !important;
+    box-sizing: border-box !important;
+    overflow-y: auto !important;
+  }
+
+  #night-action-players-list {
+    max-height: 45vh !important;
   }
 
   input[type="text"],
   input[type="number"],
   select {
     font-size: 16px;
+  }
+}
+
+@media (min-width: 480px) and (max-width: 768px) {
+  #players-board-list {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 420px) {
+  #game-state-bar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  #game-state-bar > span:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
   }
 }
 

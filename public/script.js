@@ -150,6 +150,11 @@ const playerListDiv = document.getElementById('player-list');
 const startGameButton = document.getElementById('start-game-button');
 const hostControlsLobby = document.getElementById('host-controls-lobby');
 const forceNextPhaseButton = document.getElementById('force-next-phase-button');
+const shareRoomLinkBtn = document.getElementById('share-room-link-btn');
+const copyRoomLinkHeaderBtn = document.getElementById('copy-room-link-header-btn');
+const shareLinkToast = document.getElementById('share-link-toast');
+const invitedRoomBanner = document.getElementById('invited-room-banner');
+const invitedRoomName = document.getElementById('invited-room-name');
 
 
 const gameSection = document.getElementById('game-section');
@@ -192,6 +197,39 @@ const witchActionSection = document.getElementById('witch-action-section');
 const assignBlackCatAction = document.getElementById('assign-black-cat-action');
 const blackCatTargetSelect = document.getElementById('black-cat-target-select');
 const confirmBlackCatButton = document.getElementById('confirm-black-cat-button');
+
+// Mobile Game View Tabs
+const mobileGameTabs = document.getElementById('mobile-game-tabs');
+const mobileTabHandBtn = document.getElementById('mobile-tab-hand-btn');
+const mobileTabPlayersBtn = document.getElementById('mobile-tab-players-btn');
+const mobileTabChatBtn = document.getElementById('mobile-tab-chat-btn');
+const tabTurnBadge = document.getElementById('tab-turn-badge');
+const tabPlayerCountBadge = document.getElementById('tab-player-count-badge');
+const tabChatBadge = document.getElementById('tab-chat-badge');
+let currentMobileGameTab = 'hand';
+
+function switchMobileGameTab(tabName) {
+    currentMobileGameTab = tabName;
+    document.body.setAttribute('data-mobile-game-tab', tabName);
+    
+    if (mobileTabHandBtn) mobileTabHandBtn.classList.toggle('active', tabName === 'hand');
+    if (mobileTabPlayersBtn) mobileTabPlayersBtn.classList.toggle('active', tabName === 'players');
+    if (mobileTabChatBtn) mobileTabChatBtn.classList.toggle('active', tabName === 'chat');
+
+    if (tabName === 'chat' && tabChatBadge) {
+        tabChatBadge.style.display = 'none';
+    }
+}
+
+if (mobileTabHandBtn) {
+    mobileTabHandBtn.addEventListener('click', () => switchMobileGameTab('hand'));
+}
+if (mobileTabPlayersBtn) {
+    mobileTabPlayersBtn.addEventListener('click', () => switchMobileGameTab('players'));
+}
+if (mobileTabChatBtn) {
+    mobileTabChatBtn.addEventListener('click', () => switchMobileGameTab('chat'));
+}
 
 // --- Game State Variables (Client-side) ---
 let myUniqueId = localStorage.getItem('uniqueId');
@@ -238,6 +276,20 @@ playerUniqueIdDisplay.textContent = myUniqueId;
 musicVolumeSlider.value = 50;
 setMusicVolume(0.5);
 
+// Check for room invitation in URL (?room=...)
+const urlParams = new URLSearchParams(window.location.search);
+const roomFromUrl = urlParams.get('room') ? urlParams.get('room').trim() : null;
+
+if (roomFromUrl) {
+    if (joinRoomNameInput) {
+        joinRoomNameInput.value = roomFromUrl;
+    }
+    if (invitedRoomBanner && invitedRoomName) {
+        invitedRoomName.textContent = roomFromUrl;
+        invitedRoomBanner.style.display = 'block';
+    }
+}
+
 if (myPlayerName) {
     playerNameDisplay.textContent = myPlayerName;
     nameInput.value = myPlayerName;
@@ -259,6 +311,9 @@ socket.on('connect', () => {
     // If player was in a room before disconnecting, try to rejoin
     if (currentRoomName) {
         socket.emit('join existing room', currentRoomName);
+    } else if (roomFromUrl && myPlayerName) {
+        // Automatically join room from invite URL if player already has a name
+        socket.emit('join room', roomFromUrl, myPlayerName);
     } else {
         // Otherwise, request active rooms to display in lobby
         socket.emit('request rooms list');
@@ -277,6 +332,20 @@ socket.on('room joined', (roomName) => {
     roomLobbySection.style.display = 'block';
     gameSection.style.display = 'none'; // Ensure game section is hidden initially
     leaveRoomButton.style.display = 'block';
+    if (copyRoomLinkHeaderBtn) copyRoomLinkHeaderBtn.style.display = 'inline-block';
+    if (invitedRoomBanner) invitedRoomBanner.style.display = 'none';
+
+    // Update browser URL query parameter with room name
+    try {
+        const currentUrl = new URL(window.location.href);
+        if (currentUrl.searchParams.get('room') !== roomName) {
+            currentUrl.searchParams.set('room', roomName);
+            window.history.replaceState({}, '', currentUrl);
+        }
+    } catch (e) {
+        console.error('Failed to update URL:', e);
+    }
+
     // ไม่ต้องสั่งเปิดเพลงหรือเปลี่ยน src ที่นี่อีก ปล่อยให้ระบบเพลงจัดการเองตามเฟส
     localStorage.removeItem('witchPopupAcknowledged'); // <-- Reset flag for new game
 });
@@ -362,6 +431,7 @@ socket.on('room state update', (roomState) => {
 
     // Game state updates
     if (roomState.gameStarted) {
+        document.body.classList.add('in-game');
         roomLobbySection.style.display = 'none';
 
         // If phase is not NIGHT, ensure night action UI is hidden/reset
@@ -389,6 +459,18 @@ socket.on('room state update', (roomState) => {
             hasPlayedCardsThisTurn = false; // Reset when turn changes
         }
         updateTurnUI();
+
+        // Update mobile tabs badges & auto-switch
+        if (tabTurnBadge) {
+            tabTurnBadge.style.display = isMyTurn ? 'inline-block' : 'none';
+        }
+        if (tabPlayerCountBadge && roomState.players) {
+            const count = Object.keys(roomState.players).length;
+            tabPlayerCountBadge.textContent = `(${count})`;
+        }
+        if (isMyTurn && window.innerWidth <= 768 && currentMobileGameTab !== 'hand') {
+            switchMobileGameTab('hand');
+        }
 
         // Show waiting status for global card selection flow
         if (waitingStatusBanner) {
@@ -531,6 +613,7 @@ socket.on('room state update', (roomState) => {
             updatePlayersBoardGrid(roomState, myUniqueId);
         } else {
             // ซ่อน section ถ้าเกมยังไม่เริ่ม
+            document.body.classList.remove('in-game');
             const section = document.getElementById('players-board-section');
             if (section) section.style.display = 'none';
         }
@@ -673,10 +756,22 @@ socket.on('room left', () => {
     const nightPlayersList = document.getElementById('night-players-list');
     if (nightPlayersList) nightPlayersList.innerHTML = '';
     // Hide all game/lobby sections except room management
+    document.body.classList.remove('in-game');
+    switchMobileGameTab('hand');
+    if (tabTurnBadge) tabTurnBadge.style.display = 'none';
+    if (tabChatBadge) tabChatBadge.style.display = 'none';
     roomManagementSection.style.display = 'block';
     roomLobbySection.style.display = 'none';
     gameSection.style.display = 'none';
     leaveRoomButton.style.display = 'none';
+    if (copyRoomLinkHeaderBtn) copyRoomLinkHeaderBtn.style.display = 'none';
+    try {
+        const currentUrl = new URL(window.location.href);
+        currentUrl.searchParams.delete('room');
+        window.history.replaceState({}, '', currentUrl);
+    } catch (e) {
+        console.error('Failed to clear URL param:', e);
+    }
     // Reset game state variables
     currentRoomName = null;
     currentRoomState = null;
@@ -852,6 +947,9 @@ function addWitchChatMessage(senderName, message, timestamp) {
     }
     witchChatMessages.appendChild(msgDiv);
     witchChatMessages.scrollTop = witchChatMessages.scrollHeight;
+    if (currentMobileGameTab !== 'chat' && tabChatBadge) {
+        tabChatBadge.style.display = 'inline-block';
+    }
 }
 
 function formatTime(ts) {
@@ -908,64 +1006,49 @@ function showAccusedTryalSelection(accusedUniqueId, tryalCount) {
     // Remove any existing popups to prevent overlapping
     const existing = document.getElementById('accused-tryal-select-popup');
     if (existing) existing.remove();
-    
+    const existingOverlay = document.getElementById('accused-tryal-select-overlay');
+    if (existingOverlay) existingOverlay.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'accused-tryal-select-overlay';
+    overlay.style.position = 'fixed';
+    overlay.style.top = '0';
+    overlay.style.left = '0';
+    overlay.style.width = '100vw';
+    overlay.style.height = '100vh';
+    overlay.style.background = 'rgba(0, 0, 0, 0.8)';
+    overlay.style.backdropFilter = 'blur(3px)';
+    overlay.style.zIndex = '9998';
+    document.body.appendChild(overlay);
+
     const container = document.createElement('div');
     container.id = 'accused-tryal-select-popup';
-    container.style.position = 'fixed';
-    container.style.top = '50%';
-    container.style.left = '50%';
-    container.style.transform = 'translate(-50%, -50%)';
-    container.style.background = '#222';
-    container.style.borderRadius = '12px';
-    container.style.boxShadow = '0 0 30px #000a';
-    container.style.padding = '28px 24px';
-    container.style.zIndex = '9999';
-    container.style.textAlign = 'center';
-    
-    const title = document.createElement('div');
-    title.textContent = 'เลือก การ์ดชีวิต ของผู้ถูกกล่าวหาเพื่อเปิดเผย';
-    title.style.color = '#ffe799';
-    title.style.fontWeight = 'bold';
-    title.style.fontSize = '1.18em';
-    title.style.marginBottom = '18px';
+    container.className = 'tryal-selection-popup';
+
+    const title = document.createElement('h3');
+    title.textContent = '⚖️ เลือกการ์ดชีวิตของผู้ถูกกล่าวหาเพื่อเปิดเผย';
     container.appendChild(title);
 
+    const subtitle = document.createElement('p');
+    subtitle.textContent = 'เลือกการ์ดชีวิต 1 ใบเพื่อทำการเปิดโปงความจริงต่อหน้าชาวบ้าน';
+    subtitle.style = 'color: #d7ccc8; font-size: 0.95em; margin-top: -6px; margin-bottom: 16px;';
+    container.appendChild(subtitle);
+
     const cardsDiv = document.createElement('div');
-    cardsDiv.style.display = 'flex';
-    cardsDiv.style.flexWrap = 'wrap'; // ให้ wrap ลงมา
-    cardsDiv.style.justifyContent = 'center';
-    cardsDiv.style.gap = window.innerWidth <= 600 ? '4px' : '18px';
-    cardsDiv.style.margin = '12px 0';
-    cardsDiv.style.overflowX = 'hidden';
-    cardsDiv.style.maxWidth = '98vw';
-    cardsDiv.style.paddingBottom = '8px';
-    // Responsive card size
-    const isMobile = window.innerWidth <= 600;
+    cardsDiv.className = 'cards-container';
+
     for (let i = 0; i < tryalCount; i++) {
         const cardBtn = document.createElement('button');
-        cardBtn.textContent = `การ์ด ${i+1}`;
-        cardBtn.style.width = isMobile ? '42px' : '100px';
-        cardBtn.style.height = isMobile ? '58px' : '140px';
-        cardBtn.style.fontSize = isMobile ? '0.82em' : '1.15em';
-        cardBtn.style.fontWeight = 'bold';
-        cardBtn.style.background = 'linear-gradient(135deg, #7b5e3b 0%, #a97c50 100%)';
-        cardBtn.style.color = '#fff8e1';
-        cardBtn.style.borderRadius = '12px';
-        cardBtn.style.boxShadow = '0 4px 18px #a97c5088';
-        cardBtn.style.cursor = 'pointer';
-        cardBtn.style.margin = isMobile ? '0 2px' : '0 8px';
-        cardBtn.style.opacity = '0.95';
-        cardBtn.style.transition = 'transform 0.18s, box-shadow 0.18s';
-        cardBtn.onmouseover = () => { cardBtn.style.transform = 'scale(1.08)'; cardBtn.style.boxShadow = '0 8px 28px #a97c50cc'; };
-        cardBtn.onmouseout = () => { cardBtn.style.transform = ''; cardBtn.style.boxShadow = '0 4px 18px #a97c5088'; };
+        cardBtn.className = 'tryal-card-btn';
+        cardBtn.innerHTML = `<span style="font-size:1.4em;margin-bottom:6px;">🎴</span><span>ใบที่ ${i+1}</span>`;
         cardBtn.onclick = () => {
             socket.emit('select tryal card for confession', accusedUniqueId, i);
-            document.body.removeChild(container);
+            if (document.body.contains(container)) container.remove();
+            if (document.body.contains(overlay)) overlay.remove();
         };
         cardsDiv.appendChild(cardBtn);
     }
     container.appendChild(cardsDiv);
-    // ไม่มีปุ่มยกเลิก
     document.body.appendChild(container);
 }
 
@@ -983,28 +1066,42 @@ socket.on('prompt select accused tryal', ({ accusedUniqueId, tryalCount }) => {
 socket.on('forced reveal notice', ({ byPlayerName, reason, points }) => {
     const old = document.getElementById('forced-reveal-notice-popup');
     if (old) old.remove();
+    const oldOverlay = document.getElementById('forced-reveal-notice-overlay');
+    if (oldOverlay) oldOverlay.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'forced-reveal-notice-overlay';
+    overlay.style.position = 'fixed';
+    overlay.style.top = '0';
+    overlay.style.left = '0';
+    overlay.style.width = '100vw';
+    overlay.style.height = '100vh';
+    overlay.style.background = 'rgba(0, 0, 0, 0.8)';
+    overlay.style.backdropFilter = 'blur(3px)';
+    overlay.style.zIndex = '9998';
+    document.body.appendChild(overlay);
+
     const popup = document.createElement('div');
     popup.id = 'forced-reveal-notice-popup';
-    popup.style.position = 'fixed';
-    popup.style.top = '50%';
-    popup.style.left = '50%';
-    popup.style.transform = 'translate(-50%, -50%)';
-    popup.style.background = '#2b1d1d';
-    popup.style.border = '2px solid #ff5252';
-    popup.style.borderRadius = '12px';
-    popup.style.padding = '20px 18px';
-    popup.style.zIndex = '10000';
-    popup.style.maxWidth = '90vw';
-    popup.style.textAlign = 'center';
-    popup.style.color = '#ffeaea';
+    popup.className = 'tryal-selection-popup';
+
     const detail = reason === 'witness_card'
-        ? 'คุณถูกใช้การ์ดพยานและกำลังจะถูกเปิดการ์ดชีวิต'
-        : `คุณมีข้อกล่าวหาสะสม ${points || 0} แต้มและกำลังจะถูกเปิดการ์ดชีวิต`;
-    popup.innerHTML = `<div style="font-size:1.08em;font-weight:bold;margin-bottom:10px;">คุณกำลังถูกบังคับเปิดการ์ดชีวิต</div><div style="margin-bottom:14px;">ผู้ที่ทำให้เกิดเหตุการณ์: <b>${byPlayerName || 'ไม่ทราบชื่อ'}</b></div><div style="margin-bottom:16px;">${detail}</div>`;
+        ? 'คุณถูกใช้การ์ดพยาน และกำลังจะถูกเปิดการ์ดชีวิต!'
+        : `คุณมีข้อกล่าวหาสะสมครบ ${points || 0} แต้ม และกำลังจะถูกเปิดการ์ดชีวิต!`;
+
+    popup.innerHTML = `
+        <div style="font-family:'Creepster','Noto Serif Thai',serif;font-size:1.4em;font-weight:bold;margin-bottom:12px;color:#ff8a80;text-shadow:0 0 12px rgba(255,82,82,0.5);">⚠️ คุณกำลังถูกบังคับเปิดการ์ดชีวิต!</div>
+        <div style="margin-bottom:10px;color:#ffccbc;">ผู้ที่ทำให้เกิดเหตุการณ์: <b style="color:#fff;">${byPlayerName || 'ไม่ทราบชื่อ'}</b></div>
+        <div style="margin-bottom:16px;color:#cfd8dc;font-size:1em;">${detail}</div>
+    `;
+
     const okBtn = document.createElement('button');
+    okBtn.className = 'tryal-popup-action-btn action-btn';
     okBtn.textContent = 'รับทราบ';
-    okBtn.style.padding = '8px 18px';
-    okBtn.onclick = () => popup.remove();
+    okBtn.onclick = () => {
+        if (document.body.contains(popup)) popup.remove();
+        if (document.body.contains(overlay)) overlay.remove();
+    };
     popup.appendChild(okBtn);
     document.body.appendChild(popup);
 });
@@ -1016,66 +1113,48 @@ function showBlackCatTryalSelection(blackCatHolder, tryalCount, fromConspiracyDr
     // Remove any existing popups to prevent overlapping
     const old = document.getElementById('blackcat-tryal-select-popup');
     if (old) old.remove();
-    
     const existing = document.getElementById('select-blackcat-tryal-popup');
     if (existing) existing.remove();
-    
+    const oldOverlay = document.getElementById('blackcat-tryal-overlay');
+    if (oldOverlay) oldOverlay.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'blackcat-tryal-overlay';
+    overlay.style.position = 'fixed';
+    overlay.style.top = '0';
+    overlay.style.left = '0';
+    overlay.style.width = '100vw';
+    overlay.style.height = '100vh';
+    overlay.style.background = 'rgba(0, 0, 0, 0.8)';
+    overlay.style.backdropFilter = 'blur(3px)';
+    overlay.style.zIndex = '9998';
+    document.body.appendChild(overlay);
+
     const container = document.createElement('div');
     container.id = 'blackcat-tryal-select-popup';
-    container.style.position = 'flex';
-    container.style.top = '50%';
-    container.style.left = '50%';
-    container.style.transform = 'translate(-50%, -50%)';
-    container.style.background = '#222';
-    container.style.padding = '30px';
-    container.style.borderRadius = '10px';
-    container.style.zIndex = 9999;
-    container.style.boxShadow = '0 0 20px #000';
-    container.style.textAlign = 'center';
+    container.className = 'tryal-selection-popup';
 
     const title = document.createElement('h3');
     title.textContent = fromConspiracyDraw
-        ? 'คุณจั่วได้การ์ดพิธีเซ่นไหว้: ต้องเปิดการ์ดชีวิตของผู้เล่นที่ถือเครื่องเซ่น'
-        : 'เลือก การ์ดชีวิต ของผู้ถือ การ์ดเครื่องเซ่น เพื่อเปิดเผย';
-    title.style.color = '#ffd700';
+        ? '🕯️ การ์ดพิธีเซ่นไหว้: ต้องเปิดการ์ดชีวิตของผู้ถือเครื่องเซ่น'
+        : '🐱 เลือกการ์ดชีวิตของผู้ถือการ์ดเครื่องเซ่นเพื่อเปิดเผย';
     container.appendChild(title);
 
     const cardsDiv = document.createElement('div');
-    cardsDiv.style.display = 'flex';
-    cardsDiv.style.flexWrap = 'wrap'; // ให้ wrap ลงมา
-    cardsDiv.style.justifyContent = 'center';
-    cardsDiv.style.gap = window.innerWidth <= 600 ? '4px' : '18px';
-    cardsDiv.style.margin = '12px 0';
-    cardsDiv.style.overflowX = 'hidden';
-    cardsDiv.style.maxWidth = '98vw';
-    cardsDiv.style.paddingBottom = '8px';
-    // Responsive card size
-    const isMobile = window.innerWidth <= 600;
+    cardsDiv.className = 'cards-container';
+
     for (let i = 0; i < tryalCount; i++) {
         const cardBtn = document.createElement('button');
-        cardBtn.textContent = `การ์ด ${i+1}`;
-        cardBtn.style.width = isMobile ? '42px' : '100px';
-        cardBtn.style.height = isMobile ? '58px' : '140px';
-        cardBtn.style.fontSize = isMobile ? '0.82em' : '1.15em';
-        cardBtn.style.fontWeight = 'bold';
-        cardBtn.style.background = 'linear-gradient(135deg, #7b5e3b 0%, #a97c50 100%)';
-        cardBtn.style.color = '#fff8e1';
-        cardBtn.style.borderRadius = '12px';
-        cardBtn.style.boxShadow = '0 4px 18px #a97c5088';
-        cardBtn.style.cursor = 'pointer';
-        cardBtn.style.margin = isMobile ? '0 2px' : '0 8px';
-        cardBtn.style.opacity = '0.95';
-        cardBtn.style.transition = 'transform 0.18s, box-shadow 0.18s';
-        cardBtn.onmouseover = () => { cardBtn.style.transform = 'scale(1.08)'; cardBtn.style.boxShadow = '0 8px 28px #a97c50cc'; };
-        cardBtn.onmouseout = () => { cardBtn.style.transform = ''; cardBtn.style.boxShadow = '0 4px 18px #a97c5088'; };
+        cardBtn.className = 'tryal-card-btn';
+        cardBtn.innerHTML = `<span style="font-size:1.4em;margin-bottom:6px;">🎴</span><span>ใบที่ ${i+1}</span>`;
         cardBtn.onclick = () => {
-            socket.emit('select blackcat tryal', i);
-            document.body.removeChild(container);
+            socket.emit('select blackcat tryal', blackCatHolder, i);
+            if (document.body.contains(container)) container.remove();
+            if (document.body.contains(overlay)) overlay.remove();
         };
         cardsDiv.appendChild(cardBtn);
     }
     container.appendChild(cardsDiv);
-    // (No cancel button)
     document.body.appendChild(container);
 }
 
@@ -1100,8 +1179,66 @@ setNameButton.addEventListener('click', () => {
         nameInputContainer.style.display = 'none';
         socket.emit('set player name', myPlayerName);
         socket.emit('request rooms list');
+
+        // Auto-join invited room if available
+        const pendingRoom = (joinRoomNameInput && joinRoomNameInput.value.trim()) || roomFromUrl;
+        if (pendingRoom) {
+            socket.emit('join room', pendingRoom, myPlayerName);
+        }
     }
 });
+
+// --- Copy & Share Room Link Functionality ---
+function copyRoomShareLink() {
+    const roomName = currentRoomName || (joinRoomNameInput ? joinRoomNameInput.value.trim() : '') || roomFromUrl;
+    if (!roomName) {
+        addGameMessage('ยังไม่ได้อยู่ในห้อง ไม่สามารถคัดลอกลิงก์ได้', 'red', true);
+        return;
+    }
+    const shareUrl = `${window.location.origin}${window.location.pathname}?room=${encodeURIComponent(roomName)}`;
+
+    const onCopied = () => {
+        if (shareLinkToast) {
+            shareLinkToast.style.display = 'block';
+            setTimeout(() => {
+                shareLinkToast.style.display = 'none';
+            }, 3000);
+        }
+        addGameMessage(`คัดลอกลิงก์ห้อง "${roomName}" แล้ว: ${shareUrl}`, 'green', true);
+    };
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(shareUrl).then(onCopied).catch(() => {
+            fallbackCopy(shareUrl, onCopied);
+        });
+    } else {
+        fallbackCopy(shareUrl, onCopied);
+    }
+}
+
+function fallbackCopy(text, onSuccess) {
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-999999px';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    try {
+        document.execCommand('copy');
+        if (onSuccess) onSuccess();
+    } catch (e) {
+        prompt('คัดลอกลิงก์ด้านล่างเพื่อชวนเพื่อนเข้าห้อง:', text);
+    }
+    document.body.removeChild(textArea);
+}
+
+if (shareRoomLinkBtn) {
+    shareRoomLinkBtn.addEventListener('click', copyRoomShareLink);
+}
+if (copyRoomLinkHeaderBtn) {
+    copyRoomLinkHeaderBtn.addEventListener('click', copyRoomShareLink);
+}
 
 createRoomButton.addEventListener('click', () => {
     const roomName = newRoomNameInput.value.trim();
@@ -1329,6 +1466,9 @@ function addGameMessage(message, color, bold = false) {
     const gameMessages = document.getElementById('game-messages');
     if (gameMessages) gameMessages.appendChild(messageDiv);
     gameMessages.scrollTop = gameMessages.scrollHeight;
+    if (currentMobileGameTab !== 'chat' && tabChatBadge) {
+        tabChatBadge.style.display = 'inline-block';
+    }
 }
 
 function clearCardSelection() {
@@ -2314,33 +2454,47 @@ function showConfessPopup(tryalCards) {
     // Remove any existing popups to prevent overlapping
     const existing = document.getElementById('confess-popup');
     if (existing) existing.remove();
+    const existingOverlay = document.getElementById('confess-overlay');
+    if (existingOverlay) existingOverlay.remove();
     
     if (!tryalCards || tryalCards.length === 0) return; // ไม่เด้ง popup ถ้าไม่มีไพ่
+
+    const overlay = document.createElement('div');
+    overlay.id = 'confess-overlay';
+    overlay.style.position = 'fixed';
+    overlay.style.top = '0';
+    overlay.style.left = '0';
+    overlay.style.width = '100vw';
+    overlay.style.height = '100vh';
+    overlay.style.background = 'rgba(0, 0, 0, 0.8)';
+    overlay.style.backdropFilter = 'blur(3px)';
+    overlay.style.zIndex = '9998';
+    document.body.appendChild(overlay);
+
     const popup = document.createElement('div');
     popup.id = 'confess-popup';
-    popup.style = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#222;padding:30px;border-radius:10px;z-index:9999;text-align:center;box-shadow:0 0 20px #000;';
+    popup.className = 'tryal-selection-popup';
 
     const title = document.createElement('h3');
-    title.textContent = 'เลือก การ์ดชีวิต เพื่อสารภาพ';
-    title.style.color = '#ffd700';
+    title.textContent = '🕯️ สารภาพบาป: เลือกการ์ดชีวิตของคุณ';
     popup.appendChild(title);
 
+    const subtitle = document.createElement('p');
+    subtitle.textContent = 'เลือกการ์ดชีวิต 1 ใบเพื่อเปิดเผยต่อหน้าทุกคน หรือเลือกข้ามการสารภาพ';
+    subtitle.style = 'color: #d7ccc8; font-size: 0.95em; margin-top: -6px; margin-bottom: 16px;';
+    popup.appendChild(subtitle);
+
     const cardsDiv = document.createElement('div');
-    cardsDiv.style.display = 'flex';
-    cardsDiv.style.flexWrap = 'wrap';
-    cardsDiv.style.gap = '10px';
-    cardsDiv.style.justifyContent = 'center';
-    cardsDiv.style.margin = '20px 0';
+    cardsDiv.className = 'cards-container';
 
     tryalCards.forEach((card, i) => {
         const btn = document.createElement('button');
-        btn.textContent = `การ์ด ${i+1}`;
-        btn.style = 'width:100px;height:140px;font-size:1.15em;font-weight:bold;background:linear-gradient(135deg, #7b5e3b 0%, #a97c50 100%);color:#fff8e1;border:2.5px solid #b2b2b2;border-radius:12px;cursor:pointer;box-shadow:0 4px 16px #2228;margin:0 8px;opacity:0.95;transition:background 0.18s,box-shadow 0.18s;';
-        btn.onmouseover = () => { btn.style.background = 'linear-gradient(135deg, #a97c50 0%, #7b5e3b 100%)'; btn.style.boxShadow = '0 8px 28px #a97c50cc'; };
-        btn.onmouseout = () => { btn.style.background = 'linear-gradient(135deg, #7b5e3b 0%, #a97c50 100%)'; btn.style.boxShadow = '0 4px 16px #2228'; };
+        btn.className = 'tryal-card-btn';
+        btn.innerHTML = `<span style="font-size:1.4em;margin-bottom:6px;">🎴</span><span>ใบที่ ${i+1}</span>`;
         btn.onclick = () => {
             socket.emit('confess tryal card', i);
-            document.body.removeChild(popup);
+            if (document.body.contains(popup)) popup.remove();
+            if (document.body.contains(overlay)) overlay.remove();
         };
         cardsDiv.appendChild(btn);
     });
@@ -2348,11 +2502,13 @@ function showConfessPopup(tryalCards) {
 
     // Skip button
     const skipBtn = document.createElement('button');
+    skipBtn.id = 'skip-confess-button';
+    skipBtn.className = 'tryal-popup-action-btn action-btn';
     skipBtn.textContent = 'ข้ามการสารภาพ';
-    skipBtn.style = 'margin-top:10px;background:#444;color:#fff;border:1px solid #888;border-radius:5px;padding:8px 18px;cursor:pointer;';
     skipBtn.onclick = () => {
         socket.emit('skip confession');
-        if (document.body.contains(popup)) document.body.removeChild(popup);
+        if (document.body.contains(popup)) popup.remove();
+        if (document.body.contains(overlay)) overlay.remove();
     };
     popup.appendChild(skipBtn);
 
@@ -2482,62 +2638,53 @@ socket.on('prompt select left tryal', ({ leftPlayerUniqueId, leftPlayerName, lef
     // สร้าง background overlay
     const overlay = document.createElement('div');
     overlay.id = 'select-left-tryal-overlay';
-    overlay.style = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.8);z-index:9998;';
+    overlay.style.position = 'fixed';
+    overlay.style.top = '0';
+    overlay.style.left = '0';
+    overlay.style.width = '100vw';
+    overlay.style.height = '100vh';
+    overlay.style.background = 'rgba(0, 0, 0, 0.8)';
+    overlay.style.backdropFilter = 'blur(3px)';
+    overlay.style.zIndex = '9998';
     document.body.appendChild(overlay);
-    
+
     const popup = document.createElement('div');
     popup.id = 'select-left-tryal-popup';
-    popup.style = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#222;padding:30px;border-radius:10px;z-index:9999;text-align:center;box-shadow:0 0 20px #000;';
+    popup.className = 'tryal-selection-popup';
 
     const title = document.createElement('h3');
-    title.textContent = `เลือก การ์ดชีวิต จากผู้เล่นซ้ายมือ: ${leftPlayerName} และรอผู้เล่นอื่นเพื่อดำเนินการต่อ`;
-    title.style.color = '#ffd700';
+    title.textContent = '🔮 พิธีเซ่นไหว้: สุ่มหยิบการ์ดชีวิต';
     popup.appendChild(title);
+
+    const subtitle = document.createElement('p');
+    subtitle.innerHTML = `หยิบการ์ดชีวิตจากผู้เล่นทางซ้ายมือ: <b style="color:#ffb74d;">${leftPlayerName}</b>`;
+    subtitle.style = 'color: #d7ccc8; font-size: 0.95em; margin-top: -6px; margin-bottom: 16px;';
+    popup.appendChild(subtitle);
 
     if (leftPlayerTryalCount === 0) {
         const msg = document.createElement('div');
-        msg.textContent = 'ผู้เล่นซ้ายมือไม่มีไพ่ ชีวิต ให้เลือก';
-        msg.style.color = '#fff';
+        msg.textContent = 'ผู้เล่นซ้ายมือไม่มีการ์ดชีวิตให้หยิบ';
+        msg.style.color = '#cfd8dc';
         popup.appendChild(msg);
         document.body.appendChild(popup);
         setTimeout(() => {
-            if (document.body.contains(popup)) document.body.removeChild(popup);
-            if (document.body.contains(overlay)) document.body.removeChild(overlay);
+            if (document.body.contains(popup)) popup.remove();
+            if (document.body.contains(overlay)) overlay.remove();
         }, 2000);
         return;
     }
 
     const cardsDiv = document.createElement('div');
-    cardsDiv.style.display = 'flex';
-    cardsDiv.style.flexWrap = 'wrap'; // ให้ wrap ลงมา
-    cardsDiv.style.justifyContent = 'center';
-    cardsDiv.style.gap = window.innerWidth <= 600 ? '4px' : '10px';
-    cardsDiv.style.margin = '12px 0';
-    cardsDiv.style.overflowX = 'hidden';
-    cardsDiv.style.maxWidth = '98vw';
-    cardsDiv.style.paddingBottom = '8px';
-    const isMobile = window.innerWidth <= 600;
+    cardsDiv.className = 'cards-container';
+
     for (let i = 0; i < leftPlayerTryalCount; i++) {
         const btn = document.createElement('button');
-        btn.textContent = `การ์ด ${i + 1}`;
-        btn.style =
-          `width:${isMobile ? '42px' : '80px'};`+
-          `height:${isMobile ? '58px' : '120px'};`+
-          `font-size:${isMobile ? '0.82em' : '1.1em'};`+
-          'background:linear-gradient(135deg, #7b5e3b 0%, #a97c50 100%);'+
-          'color:#fff8e1;border:2px solid #a97c50;border-radius:8px;cursor:pointer;font-weight:bold;box-shadow:0 4px 18px #a97c5088;transition:transform 0.18s, box-shadow 0.18s;';
-        btn.onmouseover = () => { 
-            btn.style.transform = 'scale(1.08)'; 
-            btn.style.boxShadow = '0 8px 28px #a97c50cc'; 
-        };
-        btn.onmouseout = () => { 
-            btn.style.transform = ''; 
-            btn.style.boxShadow = '0 4px 18px #a97c5088'; 
-        };
+        btn.className = 'tryal-card-btn';
+        btn.innerHTML = `<span style="font-size:1.4em;margin-bottom:6px;">🎴</span><span>ใบที่ ${i + 1}</span>`;
         btn.onclick = () => {
             socket.emit('select left tryal', i);
-            if (document.body.contains(popup)) document.body.removeChild(popup);
-            if (document.body.contains(overlay)) document.body.removeChild(overlay);
+            if (document.body.contains(popup)) popup.remove();
+            if (document.body.contains(overlay)) overlay.remove();
             setTimeout(() => { updateTryalCardDisplay(); }, 300);
         };
         cardsDiv.appendChild(btn);
@@ -3388,58 +3535,54 @@ socket.on('card played successfully', () => {
     updateTurnUI();
 });
 
-// --- พิธีเซ่นไหว้: เลือกไพ่ ชีวิต ของผู้เล่นซ้ายมือ ---
+// --- พิธีเซ่นไหว้: เลือกการ์ดชีวิตของผู้ถือเครื่องเซ่น ---
 socket.on('prompt select blackcat tryal', ({ blackCatHolder, tryalCount, blackCatHolderName, fromConspiracyDraw = false }) => {
     // Remove existing popup if any
     const existing = document.getElementById('select-blackcat-tryal-popup');
     if (existing) existing.remove();
-    
-    // Remove any old popup that might be behind
     const oldPopup = document.getElementById('blackcat-tryal-select-popup');
     if (oldPopup) oldPopup.remove();
-    
+    const existingOverlay = document.getElementById('select-blackcat-overlay');
+    if (existingOverlay) existingOverlay.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'select-blackcat-overlay';
+    overlay.style.position = 'fixed';
+    overlay.style.top = '0';
+    overlay.style.left = '0';
+    overlay.style.width = '100vw';
+    overlay.style.height = '100vh';
+    overlay.style.background = 'rgba(0, 0, 0, 0.8)';
+    overlay.style.backdropFilter = 'blur(3px)';
+    overlay.style.zIndex = '9998';
+    document.body.appendChild(overlay);
+
     const popup = document.createElement('div');
     popup.id = 'select-blackcat-tryal-popup';
-    popup.style = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#222;padding:30px;border-radius:10px;z-index:9999;text-align:center;box-shadow:0 0 20px #000;';
+    popup.className = 'tryal-selection-popup';
 
     const title = document.createElement('h3');
     title.textContent = fromConspiracyDraw
-        ? 'คุณจั่วได้การ์ดพิธีเซ่นไหว้: ต้องเปิดการ์ดชีวิตของผู้ถือเครื่องเซ่น'
-        : 'เลือก การ์ดชีวิต ของผู้ถือเครื่องเซ่นเพื่อเปิดเผย';
-    title.style.color = '#ffd700';
+        ? '🕯️ การ์ดพิธีเซ่นไหว้: ต้องเปิดการ์ดชีวิตของผู้ถือเครื่องเซ่น'
+        : '🐱 เลือกการ์ดชีวิตของผู้ถือเครื่องเซ่นเพื่อเปิดเผย';
     popup.appendChild(title);
 
+    const subtitle = document.createElement('p');
+    subtitle.innerHTML = `ผู้ถือการ์ดเครื่องเซ่นในปัจจุบัน: <b style="color:#ffb74d;">${blackCatHolderName || 'ไม่ทราบชื่อ'}</b>`;
+    subtitle.style = 'color: #d7ccc8; font-size: 0.95em; margin-top: -6px; margin-bottom: 16px;';
+    popup.appendChild(subtitle);
+
     const cardsDiv = document.createElement('div');
-    cardsDiv.style.display = 'flex';
-    cardsDiv.style.flexWrap = 'wrap'; // ให้ wrap ลงมา
-    cardsDiv.style.justifyContent = 'center';
-    cardsDiv.style.gap = window.innerWidth <= 600 ? '4px' : '10px';
-    cardsDiv.style.margin = '12px 0';
-    cardsDiv.style.overflowX = 'hidden';
-    cardsDiv.style.maxWidth = '98vw';
-    cardsDiv.style.paddingBottom = '8px';
-    // Responsive card size
-    const isMobile = window.innerWidth <= 600;
+    cardsDiv.className = 'cards-container';
+
     for (let i = 0; i < tryalCount; i++) {
         const cardBtn = document.createElement('button');
-        cardBtn.textContent = `การ์ด ${i + 1}`;
-        cardBtn.style.width = isMobile ? '42px' : '100px';
-        cardBtn.style.height = isMobile ? '58px' : '140px';
-        cardBtn.style.fontSize = isMobile ? '0.82em' : '1.15em';
-        cardBtn.style.fontWeight = 'bold';
-        cardBtn.style.background = 'linear-gradient(135deg, #7b5e3b 0%, #a97c50 100%)';
-        cardBtn.style.color = '#fff8e1';
-        cardBtn.style.borderRadius = '12px';
-        cardBtn.style.boxShadow = '0 4px 18px #a97c5088';
-        cardBtn.style.cursor = 'pointer';
-        cardBtn.style.margin = isMobile ? '0 2px' : '0 8px';
-        cardBtn.style.opacity = '0.95';
-        cardBtn.style.transition = 'transform 0.18s, box-shadow 0.18s';
-        cardBtn.onmouseover = () => { cardBtn.style.transform = 'scale(1.08)'; cardBtn.style.boxShadow = '0 8px 28px #a97c50cc'; };
-        cardBtn.onmouseout = () => { cardBtn.style.transform = ''; cardBtn.style.boxShadow = '0 4px 18px #a97c5088'; };
+        cardBtn.className = 'tryal-card-btn';
+        cardBtn.innerHTML = `<span style="font-size:1.4em;margin-bottom:6px;">🎴</span><span>ใบที่ ${i + 1}</span>`;
         cardBtn.onclick = () => {
             socket.emit('select blackcat tryal', blackCatHolder, i);
-            if (document.body.contains(popup)) document.body.removeChild(popup);
+            if (document.body.contains(popup)) popup.remove();
+            if (document.body.contains(overlay)) overlay.remove();
         };
         cardsDiv.appendChild(cardBtn);
     }
