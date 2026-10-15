@@ -611,9 +611,12 @@ socket.on('room state update', (roomState) => {
         }
 
         // Show/hide Witch action section for Black Cat assignment
-        if (roomState.isAssigningBlackCat && myPlayer && myPlayer.isWitch) {
+        if (roomState.isAssigningBlackCat && myPlayer && (myPlayer.isWitch || myPlayer.hasBeenWitch)) {
             witchActionSection.style.display = 'block';
-            // Specific actions inside will be shown by their respective prompts
+            if (!document.getElementById('assign-blackcat-popup')) {
+                const aliveList = Object.values(roomState.players || {}).filter(p => p.alive);
+                showAssignBlackCatPopup(aliveList);
+            }
         } else {
             witchActionSection.style.display = 'none';
         }
@@ -2310,60 +2313,87 @@ socket.on('must play night card', () => {
     }
 });
 
-socket.on('popup assign black cat', (potentialTargets) => {
-    // Popup UI เด่นๆ
-    if (document.getElementById('assign-blackcat-popup')) return;
+function showAssignBlackCatPopup(potentialTargets) {
+    if (!potentialTargets || potentialTargets.length === 0) return;
+    const old = document.getElementById('assign-blackcat-popup');
+    if (old) old.remove();
+    const oldOverlay = document.getElementById('assign-blackcat-overlay');
+    if (oldOverlay) oldOverlay.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'assign-blackcat-overlay';
+    overlay.className = 'tryal-modal-overlay';
+    overlay.style.position = 'fixed';
+    overlay.style.inset = '0';
+    overlay.style.zIndex = '9998';
+    overlay.style.background = 'rgba(10, 8, 8, 0.85)';
+    overlay.style.backdropFilter = 'blur(6px)';
+    overlay.style.display = 'flex';
+    overlay.style.alignItems = 'center';
+    overlay.style.justifyContent = 'center';
+    overlay.style.padding = '16px';
+    overlay.style.boxSizing = 'border-box';
+
     const container = document.createElement('div');
     container.id = 'assign-blackcat-popup';
-    container.style.position = 'fixed';
-    container.style.top = '50%';
-    container.style.left = '50%';
-    container.style.transform = 'translate(-50%, -50%)';
-    container.style.background = 'linear-gradient(135deg, #1a1a1a, #2a2a2a)';
-    container.style.padding = '40px';
-    container.style.borderRadius = '15px';
-    container.style.zIndex = 9999;
-    container.style.boxShadow = '0 0 30px rgba(255, 215, 0, 0.5)';
+    container.style.background = 'radial-gradient(circle at top, #2b1f1a 0%, #171210 60%, #0d0a09 100%)';
+    container.style.border = '2px solid #8d6e63';
+    container.style.borderRadius = '16px';
+    container.style.padding = '24px 20px';
+    container.style.maxWidth = '420px';
+    container.style.width = '100%';
+    container.style.boxShadow = '0 16px 40px rgba(0,0,0,0.85), 0 0 24px rgba(183,28,28,0.3)';
     container.style.textAlign = 'center';
-    container.style.border = '3px solid #ffd700';
-    container.style.minWidth = '400px';
-    container.style.animation = 'pulse 2s infinite';
-    
-    // Add CSS animation
-    const style = document.createElement('style');
-    style.textContent = `
-        @keyframes pulse {
-            0% { box-shadow: 0 0 30px rgba(255, 215, 0, 0.5); }
-            50% { box-shadow: 0 0 50px rgba(255, 215, 0, 0.8); }
-            100% { box-shadow: 0 0 30px rgba(255, 215, 0, 0.5); }
-        }
-    `;
-    document.head.appendChild(style);
-    
-    const title = document.createElement('h2');
-    title.textContent = '🎭 ปอบเลือกผู้รับการ์ดเครื่องเซ่น 🎭';
-    title.style.color = '#ffd700';
+    container.style.boxSizing = 'border-box';
+    container.style.color = '#e0d7cd';
+
+    const title = document.createElement('h3');
+    title.innerHTML = '🕯️ ปอบเลือกผู้รับการ์ดเครื่องเซ่น';
+    title.style.fontFamily = "'Creepster', 'Noto Serif Thai', serif";
+    title.style.color = '#ffb74d';
     title.style.fontSize = '1.5em';
-    title.style.marginBottom = '20px';
-    title.style.textShadow = '2px 2px 4px rgba(0,0,0,0.8)';
+    title.style.margin = '0 0 8px 0';
+    title.style.textShadow = '0 2px 10px rgba(0,0,0,0.8)';
     container.appendChild(title);
-    
+
+    // Witch team members info
+    if (currentRoomState && currentRoomState.players) {
+        const witchTeam = Object.values(currentRoomState.players).filter(p => p.hasBeenWitch || p.isWitch);
+        if (witchTeam.length > 0) {
+            const witchList = document.createElement('div');
+            witchList.style.background = 'rgba(183, 28, 28, 0.2)';
+            witchList.style.border = '1px solid rgba(229, 115, 115, 0.4)';
+            witchList.style.color = '#ffcdd2';
+            witchList.style.padding = '6px 12px';
+            witchList.style.borderRadius = '8px';
+            witchList.style.marginBottom = '14px';
+            witchList.style.fontSize = '0.9em';
+            witchList.style.fontWeight = '600';
+            witchList.innerHTML = '👥 สมาชิกทีมปอบ: <span style="color:#fff;">' + witchTeam.map(p => p.name).join(', ') + '</span>';
+            container.appendChild(witchList);
+        }
+    }
+
     const subtitle = document.createElement('p');
-    subtitle.textContent = 'เลือกผู้เล่นที่จะได้รับการ์ดเครื่องเซ่น:';
-    subtitle.style.color = '#fff';
-    subtitle.style.marginBottom = '15px';
+    subtitle.textContent = 'เลือกผู้เล่นที่จะเริ่มต้นเกมด้วยการ์ดเครื่องเซ่น:';
+    subtitle.style.color = '#d7ccc8';
+    subtitle.style.fontSize = '0.95em';
+    subtitle.style.margin = '0 0 14px 0';
     container.appendChild(subtitle);
-    
+
     const select = document.createElement('select');
     select.style.width = '100%';
-    select.style.padding = '12px';
-    select.style.fontSize = '1.1em';
+    select.style.padding = '12px 14px';
+    select.style.fontSize = '1em';
     select.style.borderRadius = '8px';
-    select.style.border = '2px solid #ffd700';
-    select.style.background = '#333';
+    select.style.border = '1.5px solid #8d6e63';
+    select.style.background = '#251e1c';
     select.style.color = '#fff';
-    select.style.marginBottom = '20px';
-    select.innerHTML = '<option value="">-- เลือกผู้เล่น --</option>';
+    select.style.marginBottom = '18px';
+    select.style.outline = 'none';
+    select.style.boxSizing = 'border-box';
+    select.innerHTML = '<option value="">-- แตะเพื่อเลือกผู้เล่น --</option>';
+
     potentialTargets.forEach(target => {
         const option = document.createElement('option');
         option.value = target.uniqueId;
@@ -2371,52 +2401,38 @@ socket.on('popup assign black cat', (potentialTargets) => {
         select.appendChild(option);
     });
     container.appendChild(select);
-    
+
     const btn = document.createElement('button');
-    btn.textContent = '✅ ยืนยันการเลือก';
-    btn.style.padding = '15px 30px';
-    btn.style.fontSize = '1.2em';
+    btn.innerHTML = '✅ ยืนยันการมอบการ์ดเครื่องเซ่น';
+    btn.style.width = '100%';
+    btn.style.padding = '12px 20px';
+    btn.style.fontSize = '1.05em';
     btn.style.fontWeight = 'bold';
-    btn.style.background = 'linear-gradient(45deg, #ffd700, #ffed4e)';
-    btn.style.color = '#000';
-    btn.style.border = 'none';
-    btn.style.borderRadius = '10px';
+    btn.style.background = 'linear-gradient(135deg, #b71c1c 0%, #880e4f 100%)';
+    btn.style.color = '#fff';
+    btn.style.border = '1px solid #ef5350';
+    btn.style.borderRadius = '8px';
     btn.style.cursor = 'pointer';
-    btn.style.boxShadow = '0 4px 15px rgba(255, 215, 0, 0.4)';
-    btn.style.transition = 'all 0.3s ease';
-    btn.onmouseover = () => {
-        btn.style.transform = 'scale(1.05)';
-        btn.style.boxShadow = '0 6px 20px rgba(255, 215, 0, 0.6)';
-    };
-    btn.onmouseout = () => {
-        btn.style.transform = 'scale(1)';
-        btn.style.boxShadow = '0 4px 15px rgba(255, 215, 0, 0.4)';
-    };
+    btn.style.boxShadow = '0 4px 14px rgba(183, 28, 28, 0.4)';
+    btn.style.transition = 'all 0.2s ease';
+    btn.style.boxSizing = 'border-box';
+
     btn.onclick = () => {
         if (select.value) {
             socket.emit('assign black cat', select.value);
-            document.body.removeChild(container);
+            if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
         } else {
-            alert('กรุณาเลือกผู้เล่นก่อน!');
+            alert('กรุณาเลือกผู้เล่นก่อนยืนยัน!');
         }
     };
     container.appendChild(btn);
-    document.body.appendChild(container);
-    // แสดงรายชื่อทีมปอบ
-    if (currentRoomState && currentRoomState.players) {
-        const witchTeam = Object.values(currentRoomState.players).filter(p => p.hasBeenWitch);
-        if (witchTeam.length > 0) {
-            const witchList = document.createElement('div');
-            witchList.style.background = '#222';
-            witchList.style.color = '#ffd700';
-            witchList.style.padding = '10px 16px';
-            witchList.style.borderRadius = '8px';
-            witchList.style.marginBottom = '18px';
-            witchList.style.fontWeight = 'bold';
-            witchList.innerHTML = 'ทีมปอบ: ' + witchTeam.map(p => p.name).join(', ');
-            container.appendChild(witchList);
-        }
-    }
+
+    overlay.appendChild(container);
+    document.body.appendChild(overlay);
+}
+
+socket.on('popup assign black cat', (potentialTargets) => {
+    showAssignBlackCatPopup(potentialTargets);
 });
 
 function createNightActionPopup(actionType, timer) {
@@ -3488,6 +3504,24 @@ document.addEventListener('DOMContentLoaded', function() {
       if (event.target === cardsModal) {
         cardsModal.style.display = 'none';
       }
+    });
+
+    // Category Filter Pills Handler
+    const filterPills = cardsModal.querySelectorAll('.card-filter-pill');
+    const cardItems = cardsModal.querySelectorAll('.card-explain-card');
+    filterPills.forEach(function(pill) {
+      pill.addEventListener('click', function() {
+        filterPills.forEach(function(p) { p.classList.remove('active'); });
+        pill.classList.add('active');
+        const filterVal = pill.getAttribute('data-filter');
+        cardItems.forEach(function(card) {
+          if (filterVal === 'all' || card.getAttribute('data-cat') === filterVal) {
+            card.style.display = 'flex';
+          } else {
+            card.style.display = 'none';
+          }
+        });
+      });
     });
   }
 });

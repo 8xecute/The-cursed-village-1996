@@ -1389,15 +1389,17 @@ html, body {
     letter-spacing: 0.05em;
   }
 
-  button, input[type="text"], input[type="number"], select {
+  button:not(.btn-action):not(#draw-card-button):not(#play-card-button):not(#end-turn-button):not(.ready-btn),
+  input[type="text"], input[type="number"], select {
     width: 100%;
     margin: 4px 0;
   }
 
   .hand-action-buttons {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
   }
 
   .section {
@@ -2311,17 +2313,18 @@ button, .card, .tryal-card-btn, .mobile-tab-btn {
   .action-buttons-row {
     display: flex;
     flex-direction: row;
-    gap: 6px;
+    gap: 8px;
     align-items: stretch;
     width: 100%;
     box-sizing: border-box;
+    padding: 2px 0;
   }
 
   .action-buttons-row .btn-action {
     box-sizing: border-box;
     min-height: 44px;
     margin: 0 !important;
-    padding: 8px 6px;
+    padding: 10px 6px;
     border-radius: 8px;
     font-weight: bold;
     display: flex;
@@ -2330,24 +2333,28 @@ button, .card, .tryal-card-btn, .mobile-tab-btn {
     text-align: center;
     cursor: pointer;
     transition: all 0.18s ease;
+    white-space: nowrap;
+    user-select: none;
   }
 
   #draw-card-button {
     flex: 1 1 0;
     min-width: 0;
-    font-size: 0.84em !important;
-    background: #2e7d32;
+    font-size: 0.85em !important;
+    background: linear-gradient(135deg, #2e7d32 0%, #1b5e20 100%);
     color: #fff;
     border: 1.5px solid #43a047;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
   }
 
   #play-card-button {
-    flex: 1.35 1 0;
+    flex: 1.3 1 0;
     min-width: 0;
-    font-size: 0.86em !important;
-    background: #1565c0;
+    font-size: 0.88em !important;
+    background: linear-gradient(135deg, #1565c0 0%, #0d47a1 100%);
     color: #fff;
     border: 1.5px solid #1e88e5;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
   }
 
   #play-card-button.can-play {
@@ -2358,23 +2365,23 @@ button, .card, .tryal-card-btn, .mobile-tab-btn {
   }
 
   #end-turn-button {
-    flex: 0 0 88px;
-    width: 88px;
-    min-width: 84px;
-    max-width: 94px;
-    font-size: 0.80em !important;
-    background: #441717;
+    flex: 0 0 90px;
+    width: 90px;
+    min-width: 86px;
+    max-width: 96px;
+    font-size: 0.82em !important;
+    background: linear-gradient(135deg, #441717 0%, #2b0b0b 100%);
     color: #ffcdd2;
     border: 1.5px solid #7f1d1d;
-    box-shadow: none;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
     margin: 0 !important;
   }
 
   #end-turn-button.confirming {
-    background: #dc2626 !important;
+    background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%) !important;
     color: #ffffff !important;
     border: 2px solid #facc15 !important;
-    font-size: 0.76em !important;
+    font-size: 0.78em !important;
     box-shadow: 0 0 14px rgba(220, 38, 38, 0.8) !important;
   }
 
@@ -2802,3 +2809,312 @@ button, .card, .tryal-card-btn, .mobile-tab-btn {
     font-size: 0.85em;
   }
 }
+
+/* ==========================================================================
+   Card Explanation Modal Redesign (Responsive, Category Filter & Salem Themed)
+   ========================================================================== */
+.card-explain-modal-container {
+  background: linear-gradient(180deg, #1f1916 0%, #130f0d 100%);
+  color: #f0e6d6;
+  border: 1px solid #6b4d32;
+  box-shadow: 0 16px 50px rgba(0, 0, 0, 0.95), 0 0 20px rgba(107, 77, 50, 0.2);
+  border-radius: 16px;
+  width: 95vw;
+  max-width: 1160px;
+  height: 88vh;
+  max-height: 860px;
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.card-explain-header {
+  padding: 16px 22px 14px 22px;
+  background: #171311;
+  border-bottom: 1px solid #3d2b1f;
+  flex-shrink: 0;
+}
+
+.card-explain-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.card-explain-title-block {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.card-explain-icon {
+  font-size: 26px;
+}
+
+.card-explain-title {
+  font-size: 1.35em;
+  font-weight: 700;
+  color: #f7e6cd;
+  margin: 0;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+.card-explain-subtitle {
+  font-size: 0.82em;
+  color: #a89482;
+  display: block;
+  margin-top: 2px;
+}
+
+.card-explain-close-btn {
+  background: #2a201b;
+  color: #d8c2ad;
+  border: 1px solid #5a3e2a;
+  border-radius: 8px;
+  font-size: 24px;
+  line-height: 1;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.card-explain-close-btn:hover {
+  background: #7a1d1d;
+  color: #fff;
+  border-color: #ba2f2f;
+}
+
+.card-filter-scroll-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-top: 12px;
+  padding-bottom: 2px;
+}
+
+.card-filter-scroll-wrapper::-webkit-scrollbar {
+  height: 4px;
+}
+.card-filter-scroll-wrapper::-webkit-scrollbar-thumb {
+  background: #4a3828;
+  border-radius: 2px;
+}
+
+.card-filter-bar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: nowrap;
+  width: max-content;
+}
+
+.card-filter-pill {
+  background: #231b17;
+  color: #c9b49e;
+  border: 1px solid #483324;
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-size: 0.85em;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.card-filter-pill:hover {
+  background: #33261f;
+  color: #fff;
+  border-color: #8c5d38;
+}
+
+.card-filter-pill.active {
+  background: linear-gradient(180deg, #782626 0%, #521515 100%);
+  color: #fff;
+  border-color: #b73838;
+  box-shadow: 0 2px 8px rgba(183, 56, 56, 0.4);
+  font-weight: 700;
+}
+
+.card-explain-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 18px 22px 28px 22px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+  gap: 14px;
+  align-content: start;
+}
+
+.card-explain-body::-webkit-scrollbar {
+  width: 8px;
+}
+.card-explain-body::-webkit-scrollbar-thumb {
+  background: #4a3424;
+  border-radius: 4px;
+}
+
+.card-explain-card {
+  display: flex;
+  gap: 14px;
+  background: rgba(27, 21, 18, 0.88);
+  border: 1px solid #3d2c20;
+  border-radius: 12px;
+  padding: 12px;
+  align-items: flex-start;
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  box-sizing: border-box;
+}
+
+.card-explain-card:hover {
+  transform: translateY(-2px);
+  border-color: #7b5333;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.6);
+}
+
+.card-thumb-wrap {
+  flex-shrink: 0;
+  width: 66px;
+  height: 96px;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.6);
+  background: #0f0c0a;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.card-thumb-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.card-details-wrap {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.card-meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.card-name-text {
+  font-size: 1.05em;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.3px;
+}
+
+.card-type-tag {
+  font-size: 0.72em;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 8px;
+  white-space: nowrap;
+}
+
+.tag-red {
+  background: #3d1414;
+  color: #ff9191;
+  border: 1px solid #7d2626;
+}
+
+.tag-green {
+  background: #14351a;
+  color: #8ae096;
+  border: 1px solid #286b34;
+}
+
+.tag-blue {
+  background: #13243a;
+  color: #8ebaff;
+  border: 1px solid #224c7a;
+}
+
+.tag-black {
+  background: #1f1f1f;
+  color: #ffe066;
+  border: 1px solid #665214;
+}
+
+.tag-role-witch {
+  background: #421217;
+  color: #ff99aa;
+  border: 1px solid #8c2633;
+}
+
+.tag-role-villager {
+  background: #153820;
+  color: #8ce69f;
+  border: 1px solid #287a41;
+}
+
+.tag-role-constable {
+  background: #162440;
+  color: #8abbff;
+  border: 1px solid #294d8a;
+}
+
+.card-border-red { border-left: 3px solid #b72f2f; }
+.card-border-green { border-left: 3px solid #339944; }
+.card-border-blue { border-left: 3px solid #2e71c9; }
+.card-border-black { border-left: 3px solid #d4a017; }
+.card-border-role-witch { border-left: 3px solid #d42239; }
+.card-border-role-villager { border-left: 3px solid #2bb352; }
+.card-border-role-constable { border-left: 3px solid #3482f6; }
+
+.card-info-text {
+  margin: 0;
+  font-size: 0.88em;
+  color: #d1c4b2;
+  line-height: 1.42;
+  word-break: break-word;
+}
+
+/* Mobile Adjustments */
+@media (max-width: 680px) {
+  .card-explain-modal-container {
+    width: 96vw;
+    height: 92vh;
+    border-radius: 12px;
+  }
+  .card-explain-header {
+    padding: 12px 14px 10px 14px;
+  }
+  .card-explain-title {
+    font-size: 1.15em;
+  }
+  .card-explain-body {
+    grid-template-columns: 1fr;
+    padding: 10px 12px 24px 12px;
+    gap: 10px;
+  }
+  .card-explain-card {
+    padding: 10px;
+    gap: 10px;
+  }
+  .card-thumb-wrap {
+    width: 58px;
+    height: 84px;
+  }
+  .card-name-text {
+    font-size: 0.98em;
+  }
+  .card-info-text {
+    font-size: 0.84em;
+    line-height: 1.38;
+  }
+}
+

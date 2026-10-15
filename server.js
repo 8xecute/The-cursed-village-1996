@@ -17,14 +17,14 @@ const io = new Server(server, {
 
 // Serve static files with proper browser cache headers
 app.use(express.static('public', {
-    maxAge: '1h',
+    maxAge: 0,
     setHeaders: (res, filePath) => {
-        if (filePath.endsWith('.html')) {
-            res.setHeader('Cache-Control', 'no-cache');
+        if (filePath.endsWith('.html') || filePath.match(/\.(css|js)$/)) {
+            res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+            res.setHeader('Pragma', 'no-cache');
+            res.setHeader('Expires', '0');
         } else if (filePath.match(/\.(png|jpg|jpeg|gif|svg|mp3|ogg|wav)$/)) {
             res.setHeader('Cache-Control', 'public, max-age=604800, immutable');
-        } else if (filePath.match(/\.(css|js)$/)) {
-            res.setHeader('Cache-Control', 'public, max-age=86400');
         }
     }
 }));
@@ -2022,9 +2022,15 @@ function handlePlayerReconnection(socket, room, player) {
     }
 
     // Restore active state prompts if game is in progress
+    // 0. Black Cat Initial Assignment (Before Day 1 / Night 1)
+    if (room.isAssigningBlackCat && player.isWitch) {
+        const potentialTargets = getAlivePlayers(room);
+        io.to(socket.id).emit('popup assign black cat', potentialTargets.map(p => ({ uniqueId: p.uniqueId, name: p.name })));
+    }
+
     // 1. NIGHT Phase
     if (room.currentPhase === 'NIGHT' && player.alive) {
-        const witches = getAlivePlayers(room).filter(p => p.hasBeenWitch);
+        const witches = getAlivePlayers(room).filter(p => p.isWitch || p.hasBeenWitch);
         const constables = getAlivePlayers(room).filter(p => p.isConstable);
         const witchHasActed = hasNightActionChosen(room, 'witchKill');
 
@@ -2223,6 +2229,7 @@ io.on('connection', (socket) => {
             uniqueId: socket.uniqueId,
             name: playerName,
             isHost: true,
+            isReady: true,
             hand: [],
             tryalCards: [],
             inPlayCards: [], // Permanent cards in front of player

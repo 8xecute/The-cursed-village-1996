@@ -10,7 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Creepster&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Thai:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=2.2">
 </head>
 <body>
     <h1 class="game-title">หมู่บ้านต้องสาป 1996</h1>
@@ -507,327 +507,275 @@
     </div>
 
     <!-- Modal popup สำหรับอธิบายการ์ด -->
-    <div id="card-explain-modal" class="modal" style="display:none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.7); align-items: center; justify-content: center;">
-      <div class="modal-content" style="background: #222; color: #fff; margin: auto; padding: 32px; border-radius: 12px; width: 90%; max-width: 1600px; min-width: 1100px; height: 91vh; max-height: 93vh; min-height: 600px; margin: auto; display: flex; flex-direction: column; justify-content: flex-start; align-items: center;">
-        <span id="close-cards-modal" class="close" style="position: absolute; top: 12px; right: 18px; font-size: 2em; cursor: pointer;">&times;</span>
-        <h2 style="margin-top:0;">อธิบายการ์ด</h2>
-        <div id="cards-content">
-  <!-- บรรทัดที่ 1: การ์ดสีแดง + การ์ดสีเขียว -->
-  <div class="card-group-row" style="display:flex; flex-direction:row; justify-content:center; gap:48px; margin-bottom:24px; flex-wrap:wrap;">
-    <div>
-      <div style="text-align:center; margin-bottom:2px;">
-        <span style="color:#e53935; font-weight:bold; font-size:1.1em; letter-spacing:1px;">การ์ดสีแดง</span>
-      </div>
-      <div class="card-row card-row-red">
-        <div class="card-box red-bg">
-          <img src="cards/accusation.png" alt="ข้อกล่าวหา">
-          <div class="card-title">ข้อกล่าวหา</div>
-          <div class="card-desc">เพิ่ม 1 ข้อกล่าวหาให้เป้าหมาย</div>
-    </div>
-        <div class="card-box red-bg">
-          <img src="cards/evidence.png" alt="หลักฐาน">
-          <div class="card-title">หลักฐาน</div>
-          <div class="card-desc">เพิ่ม 3 ข้อกล่าวหาให้เป้าหมาย</div>
-    </div>
-        <div class="card-box red-bg">
-          <img src="cards/witness.png" alt="พยาน">
-          <div class="card-title">พยาน</div>
-          <div class="card-desc">เพิ่ม 7 ข้อกล่าวหาให้เป้าหมาย</div>
-    </div>
-  </div>
-    </div>
-    <div>
-      <div style="text-align:center; margin-bottom:2px;">
-        <span style="color:#43a047; font-weight:bold; font-size:1.1em; letter-spacing:1px;">การ์ดสีเขียว</span>
-      </div>
-      <div class="card-row card-row-green">
-        <div class="card-box green-bg">
-          <img src="cards/scapegoat.png" alt="แพะรับบาป">
-          <div class="card-title">แพะรับบาป</div>
-          <div class="card-desc">ย้ายการ์ดสีแดง/เขียว/น้ำเงินจากผู้เล่นหนึ่งไปอีกคน</div>
+    <div id="card-explain-modal" class="modal" style="display:none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+      <div class="card-explain-modal-container">
+        <!-- Header -->
+        <div class="card-explain-header">
+          <div class="card-explain-title-row">
+            <div class="card-explain-title-block">
+              <span class="card-explain-icon">📖</span>
+              <div>
+                <h2 class="card-explain-title">คู่มือและการ์ดทั้งหมด</h2>
+                <span class="card-explain-subtitle">แตะเลือกหมวดหมู่เพื่อดูรายละเอียดการ์ดแต่ละใบ</span>
+              </div>
+            </div>
+            <button id="close-cards-modal" class="card-explain-close-btn" aria-label="ปิด">&times;</button>
+          </div>
+
+          <!-- Category Filter Bar -->
+          <div class="card-filter-scroll-wrapper">
+            <div class="card-filter-bar" id="card-filter-bar">
+              <button type="button" class="card-filter-pill active" data-filter="all">🌟 ทั้งหมด (18)</button>
+              <button type="button" class="card-filter-pill" data-filter="red">🔴 สีแดง (3)</button>
+              <button type="button" class="card-filter-pill" data-filter="green">🟢 สีเขียว (6)</button>
+              <button type="button" class="card-filter-pill" data-filter="blue">🔵 สีน้ำเงิน (4)</button>
+              <button type="button" class="card-filter-pill" data-filter="black">⚫ สีดำ (2)</button>
+              <button type="button" class="card-filter-pill" data-filter="role">🎴 การ์ดชีวิต (3)</button>
+            </div>
+          </div>
         </div>
-        <div class="card-box green-bg">
-          <img src="cards/curse.png" alt="คำสาป">
-          <div class="card-title">คำสาป</div>
-          <div class="card-desc">ทำลายการ์ดสีน้ำเงิน 1 ใบของเป้าหมาย</div>
+
+        <!-- Scrollable Card Grid -->
+        <div id="cards-content" class="card-explain-body">
+          <!-- การ์ดสีแดง -->
+          <div class="card-explain-card card-border-red" data-cat="red">
+            <div class="card-thumb-wrap">
+              <img src="cards/accusation.png" alt="ข้อกล่าวหา" loading="lazy">
+            </div>
+            <div class="card-details-wrap">
+              <div class="card-meta-row">
+                <span class="card-name-text">ข้อกล่าวหา</span>
+                <span class="card-type-tag tag-red">🔴 สีแดง (1 แต้ม)</span>
+              </div>
+              <p class="card-info-text">วางหน้าผู้เล่นเป้าหมาย เพิ่ม 1 แต้มข้อกล่าวหา (เมื่อผู้เล่นใดสะสมครบ 7 แต้ม จะถูกบังคับเปิดการ์ดชีวิต 1 ใบ)</p>
+            </div>
+          </div>
+
+          <div class="card-explain-card card-border-red" data-cat="red">
+            <div class="card-thumb-wrap">
+              <img src="cards/evidence.png" alt="หลักฐาน" loading="lazy">
+            </div>
+            <div class="card-details-wrap">
+              <div class="card-meta-row">
+                <span class="card-name-text">หลักฐาน</span>
+                <span class="card-type-tag tag-red">🔴 สีแดง (3 แต้ม)</span>
+              </div>
+              <p class="card-info-text">วางหน้าผู้เล่นเป้าหมาย เพิ่ม 3 แต้มข้อกล่าวหา (ช่วยเร่งแต้มให้ครบ 7 เพื่อบังคับเปิดการ์ดชีวิต)</p>
+            </div>
+          </div>
+
+          <div class="card-explain-card card-border-red" data-cat="red">
+            <div class="card-thumb-wrap">
+              <img src="cards/witness.png" alt="พยาน" loading="lazy">
+            </div>
+            <div class="card-details-wrap">
+              <div class="card-meta-row">
+                <span class="card-name-text">พยาน</span>
+                <span class="card-type-tag tag-red">🔴 สีแดง (7 แต้ม)</span>
+              </div>
+              <p class="card-info-text">วางหน้าผู้เล่นเป้าหมาย เพิ่ม 7 แต้มข้อกล่าวหาทันที! ส่งผลให้เป้าหมายต้องเปิดการ์ดชีวิต 1 ใบในทันที</p>
+            </div>
+          </div>
+
+          <!-- การ์ดสีเขียว -->
+          <div class="card-explain-card card-border-green" data-cat="green">
+            <div class="card-thumb-wrap">
+              <img src="cards/scapegoat.png" alt="แพะรับบาป" loading="lazy">
+            </div>
+            <div class="card-details-wrap">
+              <div class="card-meta-row">
+                <span class="card-name-text">แพะรับบาป</span>
+                <span class="card-type-tag tag-green">🟢 สีเขียว (แอ็กชัน)</span>
+              </div>
+              <p class="card-info-text">ย้ายการ์ดสีแดง เขียว หรือน้ำเงิน จากตรงหน้าผู้เล่นคนหนึ่ง ไปวางไว้ตรงหน้าอีกคนหนึ่ง</p>
+            </div>
+          </div>
+
+          <div class="card-explain-card card-border-green" data-cat="green">
+            <div class="card-thumb-wrap">
+              <img src="cards/curse.png" alt="คำสาป" loading="lazy">
+            </div>
+            <div class="card-details-wrap">
+              <div class="card-meta-row">
+                <span class="card-name-text">คำสาป</span>
+                <span class="card-type-tag tag-green">🟢 สีเขียว (แอ็กชัน)</span>
+              </div>
+              <p class="card-info-text">ทำลายการ์ดสีน้ำเงิน 1 ใบที่วางอยู่ตรงหน้าผู้เล่นเป้าหมาย ทิ้งลงสุสานการ์ด</p>
+            </div>
+          </div>
+
+          <div class="card-explain-card card-border-green" data-cat="green">
+            <div class="card-thumb-wrap">
+              <img src="cards/alibi.png" alt="ข้อแก้ต่าง" loading="lazy">
+            </div>
+            <div class="card-details-wrap">
+              <div class="card-meta-row">
+                <span class="card-name-text">ข้อแก้ต่าง</span>
+                <span class="card-type-tag tag-green">🟢 สีเขียว (แอ็กชัน)</span>
+              </div>
+              <p class="card-info-text">ลบแต้มข้อกล่าวหา (การ์ดสีแดง) ออกจากตรงหน้าผู้เล่นเป้าหมาย 3 ใบ/แต้ม</p>
+            </div>
+          </div>
+
+          <div class="card-explain-card card-border-green" data-cat="green">
+            <div class="card-thumb-wrap">
+              <img src="cards/robbery.png" alt="ช่วงชิง" loading="lazy">
+            </div>
+            <div class="card-details-wrap">
+              <div class="card-meta-row">
+                <span class="card-name-text">ช่วงชิง</span>
+                <span class="card-type-tag tag-green">🟢 สีเขียว (แอ็กชัน)</span>
+              </div>
+              <p class="card-info-text">ขโมยการ์ดบนมือทั้งหมดจากผู้เล่นคนหนึ่ง แล้วนำไปมอบให้ผู้เล่นอีกคนหนึ่ง</p>
+            </div>
+          </div>
+
+          <div class="card-explain-card card-border-green" data-cat="green">
+            <div class="card-thumb-wrap">
+              <img src="cards/stocks.png" alt="พันธนาการ" loading="lazy">
+            </div>
+            <div class="card-details-wrap">
+              <div class="card-meta-row">
+                <span class="card-name-text">พันธนาการ</span>
+                <span class="card-type-tag tag-green">🟢 สีเขียว (แอ็กชัน)</span>
+              </div>
+              <p class="card-info-text">กักขังผู้เล่นเป้าหมาย บังคับให้ข้ามรอบเล่น (Turn) ของตนเองไป 1 ครั้ง</p>
+            </div>
+          </div>
+
+          <div class="card-explain-card card-border-green" data-cat="green">
+            <div class="card-thumb-wrap">
+              <img src="cards/arson.png" alt="วางเพลิง" loading="lazy">
+            </div>
+            <div class="card-details-wrap">
+              <div class="card-meta-row">
+                <span class="card-name-text">วางเพลิง</span>
+                <span class="card-type-tag tag-green">🟢 สีเขียว (แอ็กชัน)</span>
+              </div>
+              <p class="card-info-text">เผาทำลาย บังคับให้ผู้เล่นเป้าหมายทิ้งการ์ดบนมือทั้งหมดลงกองทิ้งทันที</p>
+            </div>
+          </div>
+
+          <!-- การ์ดสีน้ำเงิน -->
+          <div class="card-explain-card card-border-blue" data-cat="blue">
+            <div class="card-thumb-wrap">
+              <img src="cards/blackcat.png" alt="เครื่องเซ่น" loading="lazy">
+            </div>
+            <div class="card-details-wrap">
+              <div class="card-meta-row">
+                <span class="card-name-text">เครื่องเซ่น (แมวดำ)</span>
+                <span class="card-type-tag tag-blue">🔵 สีน้ำเงิน (คำสาป)</span>
+              </div>
+              <p class="card-info-text">ผู้ถือจะได้เริ่มเล่นเป็นคนแรก และเมื่อเกิด "พิธีเซ่นไหว้" ผู้ถือจะต้องเปิดการ์ดชีวิต 1 ใบ</p>
+            </div>
+          </div>
+
+          <div class="card-explain-card card-border-blue" data-cat="blue">
+            <div class="card-thumb-wrap">
+              <img src="cards/asylum.png" alt="ที่หลบภัย" loading="lazy">
+            </div>
+            <div class="card-details-wrap">
+              <div class="card-meta-row">
+                <span class="card-name-text">ที่หลบภัย</span>
+                <span class="card-type-tag tag-blue">🔵 สีน้ำเงิน (คุ้มครอง)</span>
+              </div>
+              <p class="card-info-text">วางหน้าตนเอง ปกป้องผู้ถือจากการถูกปอบสังหารในยามวิกาลอย่างสมบูรณ์</p>
+            </div>
+          </div>
+
+          <div class="card-explain-card card-border-blue" data-cat="blue">
+            <div class="card-thumb-wrap">
+              <img src="cards/piety.png" alt="พลังศรัทธา" loading="lazy">
+            </div>
+            <div class="card-details-wrap">
+              <div class="card-meta-row">
+                <span class="card-name-text">พลังศรัทธา</span>
+                <span class="card-type-tag tag-blue">🔵 สีน้ำเงิน (คุ้มครอง)</span>
+              </div>
+              <p class="card-info-text">การ์ดข้อกล่าวหาทั้งหมดจะไม่มีผลต่อผู้ถือใบนี้ (ไม่ต้องเปิดการ์ดชีวิตจากแต้มกล่าวหา)</p>
+            </div>
+          </div>
+
+          <div class="card-explain-card card-border-blue" data-cat="blue">
+            <div class="card-thumb-wrap">
+              <img src="cards/matchmaker.png" alt="ผูกวิญญาณ" loading="lazy">
+            </div>
+            <div class="card-details-wrap">
+              <div class="card-meta-row">
+                <span class="card-name-text">ผูกวิญญาณ</span>
+                <span class="card-type-tag tag-blue">🔵 สีน้ำเงิน (ผูกดวง)</span>
+              </div>
+              <p class="card-info-text">ผูกวิญญาณคนสองคนเข้าด้วยกัน หากคนหนึ่งเปิดการ์ดชีวิตจนตาย อีกคนจะต้องตายตามทันที</p>
+            </div>
+          </div>
+
+          <!-- การ์ดสีดำ -->
+          <div class="card-explain-card card-border-black" data-cat="black">
+            <div class="card-thumb-wrap">
+              <img src="cards/conspiracy.png" alt="พิธีเซ่นไหว้" loading="lazy">
+            </div>
+            <div class="card-details-wrap">
+              <div class="card-meta-row">
+                <span class="card-name-text">พิธีเซ่นไหว้</span>
+                <span class="card-type-tag tag-black">⚫ สีดำ (ฉับพลัน)</span>
+              </div>
+              <p class="card-info-text">ผู้มีเครื่องเซ่นต้องเปิดการ์ดชีวิต 1 ใบ จากนั้นทุกคนสลับหยิบการ์ดชีวิตจากคนทางซ้ายมือ 1 ใบ</p>
+            </div>
+          </div>
+
+          <div class="card-explain-card card-border-black" data-cat="black">
+            <div class="card-thumb-wrap">
+              <img src="cards/night.png" alt="ยามวิกาล" loading="lazy">
+            </div>
+            <div class="card-details-wrap">
+              <div class="card-meta-row">
+                <span class="card-name-text">ยามวิกาล</span>
+                <span class="card-type-tag tag-black">⚫ สีดำ (ฉับพลัน)</span>
+              </div>
+              <p class="card-info-text">เข้าสู่ช่วงค่ำคืนทันที! ฝ่ายปอบจะร่วมกันเลือกเหยื่อ 1 คน และหมอผีจะเลือกผู้เล่น 1 คนเพื่อปกป้อง</p>
+            </div>
+          </div>
+
+          <!-- การ์ดชีวิต / บทบาท -->
+          <div class="card-explain-card card-border-role-witch" data-cat="role">
+            <div class="card-thumb-wrap">
+              <img src="cards/witch.png" alt="ปอบ" loading="lazy">
+            </div>
+            <div class="card-details-wrap">
+              <div class="card-meta-row">
+                <span class="card-name-text">ปอบ (Witch)</span>
+                <span class="card-type-tag tag-role-witch">🎴 การ์ดชีวิต (ฝ่ายปอบ)</span>
+              </div>
+              <p class="card-info-text">ผู้ที่ได้รับการ์ดใบนี้จะกลายเป็นฝ่ายปอบตลอดทั้งเกม เป้าหมายคือกำจัดชาวบ้านให้หมดหรือแพร่เชื้อให้ทุกคน</p>
+            </div>
+          </div>
+
+          <div class="card-explain-card card-border-role-villager" data-cat="role">
+            <div class="card-thumb-wrap">
+              <img src="cards/notawitch.png" alt="ชาวบ้าน" loading="lazy">
+            </div>
+            <div class="card-details-wrap">
+              <div class="card-meta-row">
+                <span class="card-name-text">ชาวบ้าน (Villager)</span>
+                <span class="card-type-tag tag-role-villager">🎴 การ์ดชีวิต (ฝ่ายชาวบ้าน)</span>
+              </div>
+              <p class="card-info-text">ชาวบ้านผู้บริสุทธิ์ ไม่มีพลังพิเศษ ต้องจับมือร่วมกับชาวบ้านคนอื่นช่วยกันหาและเปิดการ์ดปอบให้ครบ</p>
+            </div>
+          </div>
+
+          <div class="card-explain-card card-border-role-constable" data-cat="role">
+            <div class="card-thumb-wrap">
+              <img src="cards/constable.png" alt="หมอผี" loading="lazy">
+            </div>
+            <div class="card-details-wrap">
+              <div class="card-meta-row">
+                <span class="card-name-text">หมอผี (Constable)</span>
+                <span class="card-type-tag tag-role-constable">🎴 การ์ดชีวิต (ฝ่ายชาวบ้าน)</span>
+              </div>
+              <p class="card-info-text">ผู้มีอาคมฝ่ายชาวบ้าน ในช่วงยามวิกาลสามารถเลือกคุ้มครองผู้เล่น 1 คนเพื่อปัดเป่าคุ้มครองไม่ให้ถูกปอบฆ่า</p>
+            </div>
+          </div>
         </div>
-        <div class="card-box green-bg">
-          <img src="cards/alibi.png" alt="ข้อแก้ต่าง">
-          <div class="card-title">ข้อแก้ต่าง</div>
-          <div class="card-desc">ลบข้อกล่าวหา 3 ใบจากเป้าหมาย</div>
-        </div>
-        <div class="card-box green-bg">
-          <img src="cards/robbery.png" alt="ช่วงชิง">
-          <div class="card-title">ช่วงชิง</div>
-          <div class="card-desc">ขโมยการ์ดบนมือทั้งหมดจากผู้เล่นหนึ่งไปให้อีกคน</div>
-    </div>
-        <div class="card-box green-bg">
-          <img src="cards/stocks.png" alt="พันธนาการ">
-          <div class="card-title">พันธนาการ</div>
-          <div class="card-desc">ผู้เล่นนี้ข้ามตาตัวเอง</div>
-    </div>
-        <div class="card-box green-bg">
-          <img src="cards/arson.png" alt="วางเพลิง">
-          <div class="card-title">วางเพลิง</div>
-          <div class="card-desc">บังคับเป้าหมายทิ้งการ์ดบนมือทั้งหมด</div>
-    </div>
-    </div>
-    </div>
-  </div>
-  <!-- บรรทัดที่ 2: การ์ดสีน้ำเงิน + การ์ดสีดำ + การ์ดชีวิต -->
-  <div class="card-group-row" style="display:flex; flex-direction:row; justify-content:center; gap:48px; margin-bottom:0; flex-wrap:wrap;">
-    <div>
-      <div style="text-align:center; margin-bottom:2px;">
-        <span style="color:#1976d2; font-weight:bold; font-size:1.1em; letter-spacing:1px;">การ์ดสีน้ำเงิน</span>
-      </div>
-      <div class="card-row card-row-blue">
-        <div class="card-box blue-bg">
-          <img src="cards/blackcat.png" alt="เครื่องเซ่น">
-          <div class="card-title">เครื่องเซ่น</div>
-          <div class="card-desc">ผู้ถือเริ่มเล่นคนแรก, ถ้าเปิดพิธีเซ่นไหว้ต้องเปิดการ์ดชีวิต</div>
-    </div>
-        <div class="card-box blue-bg">
-          <img src="cards/asylum.png" alt="ที่หลบภัย">
-          <div class="card-title">ที่หลบภัย</div>
-          <div class="card-desc">ป้องกันถูกฆ่าในยามวิกาล</div>
-    </div>
-        <div class="card-box blue-bg">
-          <img src="cards/piety.png" alt="พลังศรัทธา">
-          <div class="card-title">พลังศรัทธา</div>
-          <div class="card-desc">ข้อกล่าวหาไม่มีผลกับผู้ถือ</div>
-    </div>
-        <div class="card-box blue-bg">
-          <img src="cards/matchmaker.png" alt="ผูกวิญญาณ">
-          <div class="card-title">ผูกวิญญาณ</div>
-          <div class="card-desc">ถ้าคนหนึ่งตาย อีกคนต้องตายตาม</div>
-    </div>
-  </div>
-    </div>
-    <div>
-      <div style="text-align:center; margin-bottom:2px;">
-        <span style="color:#ffd700; background:#222; border-radius:6px; padding:2px 12px; font-weight:bold; font-size:1.1em; letter-spacing:1px;">การ์ดสีดำ</span>
-      </div>
-      <div class="card-row card-row-black">
-        <div class="card-box black-bg">
-          <img src="cards/conspiracy.png" alt="พิธีเซ่นไหว้">
-          <div class="card-title">พิธีเซ่นไหว้</div>
-          <div class="card-desc">เปิดการ์ดชีวิตของผู้มีเครื่องเซ่น, ทุกคนหยิบการ์ดชีวิตจากซ้ายมือ 1 ใบ</div>
-        </div>
-        <div class="card-box black-bg">
-          <img src="cards/night.png" alt="ยามวิกาล">
-          <div class="card-title">ยามวิกาล</div>
-          <div class="card-desc">ปอบเลือกเหยื่อ หมอผีเลือกป้องกัน</div>
-    </div>
-  </div>
-    </div>
-    <div>
-      <div style="text-align:center; margin-bottom:2px;">
-        <span style="color:#fff; background:#232323; border-radius:6px; padding:2px 12px; font-weight:bold; font-size:1.1em; letter-spacing:1px;">การ์ดชีวิต</span>
-      </div>
-      <div class="card-row card-row-role">
-        <div class="card-box role-bg" rolecard="witch">
-          <img src="cards/witch.png" alt="ปอบ">
-          <div class="card-title">ปอบ</div>
-          <div class="card-desc">ได้การ์ดนี้จะเป็นปอบตลอดเกม</div>
-        </div>
-        <div class="card-box role-bg" rolecard="villager">
-          <img src="cards/notawitch.png" alt="ชาวบ้าน">
-          <div class="card-title">ชาวบ้าน</div>
-          <div class="card-desc">ไม่มีความสามารถพิเศษ</div>
-        </div>
-        <div class="card-box role-bg" rolecard="constable">
-          <img src="cards/constable.png" alt="หมอผี">
-          <div class="card-title">หมอผี</div>
-          <div class="card-desc">ปัดเป่าป้องกันผู้เล่นจากปอบในยามวิกาล</div>
-        </div>
-    </div>
-    </div>
-  </div>
-</div>
-      <style>
-        #card-explain-modal .modal-content {
-          font-size: 1.12em;
-          padding: 0;
-          width: 99vw;
-          max-width: 1600px;
-          min-width: 1100px;
-          height: 91vh;
-          max-height: 93vh;
-          min-height: 600px;
-          margin: auto;
-          display: flex;
-          flex-direction: column;
-          justify-content: flex-start;
-          align-items: center;
-          border-radius: 24px;
-        }
-        #cards-content {
-          width: 100%;
-          max-width: 1800px;
-          margin: 0 auto;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-        }
-        #cards-content .card-group-row {
-          display: flex;
-          flex-direction: row;
-          justify-content: center;
-          gap: 48px;
-          margin-bottom: 24px;
-          flex-wrap: wrap;
-        }
-        #cards-content .card-row {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 18px;
-          justify-content: center;
-          align-items: stretch;
-          overflow-x: visible;
-          padding-bottom: 8px;
-        }
-        #cards-content .card-box {
-          width: 140px;
-          min-width: 0;
-          background: #232323;
-          border-radius: 12px;
-          padding: 14px 8px 16px 8px;
-          text-align: center;
-          border: 2px solid #444;
-          box-shadow: 0 2px 8px #0002;
-          flex: 1 1 0;
-          margin-bottom: 0;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          height: 100%;
-        }
-        /* สีการ์ดชีวิต (role) */
-        #cards-content .card-box.role-bg[rolecard="villager"] {
-          background: #204d26;
-          border-color: #43a047;
-        }
-        #cards-content .card-box.role-bg[rolecard="witch"] {
-          background: #4d1a1a;
-          border-color: #e53935;
-        }
-        #cards-content .card-box.role-bg[rolecard="constable"] {
-          background: #18202a;
-          border-color: #1976d2;
-        }
-        #cards-content .card-box img {
-          width: 99px;
-          height: auto;
-          border-radius: 10px;
-          margin-bottom: 8px;
-        }
-        #cards-content .card-title {
-          font-weight: bold;
-          font-size: 1.13em;
-          margin-bottom: 2px;
-          color: #fff;
-        }
-        #cards-content .card-desc {
-          font-size: 0.95em;
-          color: #ccc;
-          line-height: 1.2;
-          max-width: 130px;
-          text-align: center;
-          white-space: normal;
-          overflow: visible;
-          display: block;
-        }
-        #cards-content .red-bg { background: #2a1818; border-radius: 8px; padding: 6px 0; }
-        #cards-content .green-bg { background: #182a18; border-radius: 8px; padding: 6px 0; }
-        #cards-content .blue-bg { background: #18202a; border-radius: 8px; padding: 6px 0; }
-        #cards-content .black-bg { background: #181818; border-radius: 8px; padding: 6px 0; }
-        #cards-content .role-bg { background: #232323; border-radius: 8px; padding: 6px 0; }
-        #cards-content .card-row-red, #cards-content .card-row-green, #cards-content .card-row-blue, #cards-content .card-row-black, #cards-content .card-row-role {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 18px;
-          justify-content: center;
-          align-items: stretch;
-          overflow-x: visible;
-          padding-bottom: 8px;
-        }
-        @media (max-width: 1400px) {
-          #cards-content .card-box { width: 110px; }
-          #cards-content .card-box img { width: 70px; }
-        }
-        @media (max-width: 1200px) {
-          #card-explain-modal .modal-content {
-            max-width: 99vw;
-            min-width: 0;
-            padding: 0;
-          }
-          #cards-content .card-group-row { gap: 14px; }
-          #cards-content .card-row { gap: 8px; }
-        }
-        @media (max-width: 900px) {
-          #card-explain-modal .modal-content {
-            max-width: 100vw;
-            min-width: 0;
-            padding: 0;
-          }
-          #cards-content .card-group-row { gap: 8px; }
-          #cards-content .card-row { gap: 8px; }
-          #cards-content .card-box { width: 90px; }
-          #cards-content .card-box img { width: 54px; }
-        }
-        @media (max-width: 600px) {
-          #card-explain-modal .modal-content {
-            max-width: 100vw;
-            min-width: 0;
-            padding: 16px 8px;
-            min-height: 0;
-            height: 99vh;
-            overflow-y: auto;
-            overflow-x: hidden;
-          }
-          #cards-content {
-            width: 100%;
-            padding: 0 4px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-          }
-          #cards-content .card-group-row { 
-            gap: 20px; 
-            margin-bottom: 24px;
-            flex-direction: column;
-            width: 100%;
-            max-width: 300px;
-          }
-          #cards-content .card-row { 
-            gap: 12px; 
-            padding-bottom: 12px;
-            flex-direction: column;
-            align-items: center;
-            width: 100%;
-          }
-          #cards-content .card-box { 
-            width: 100%; 
-            max-width: 280px;
-            min-width: 280px;
-            padding: 16px 12px 20px 12px;
-            margin-bottom: 12px;
-          }
-          #cards-content .card-box img { 
-            width: 100px; 
-            margin-bottom: 12px;
-          }
-          #cards-content .card-title {
-            font-size: 1.2em;
-            margin-bottom: 6px;
-          }
-          #cards-content .card-desc {
-            font-size: 1em;
-            max-width: 100%;
-            line-height: 1.4;
-          }
-        }
-      </style>
       </div>
     </div>
 
@@ -1019,6 +967,6 @@
     </script>
 
     <script src="/socket.io/socket.io.js"></script>
-    <script src="script.js"></script>
+    <script src="script.js?v=2.2"></script>
 </body>
 </html>
