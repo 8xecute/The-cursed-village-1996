@@ -298,13 +298,12 @@ if (roomFromUrl) {
     }
 }
 
+playerNameDisplay.textContent = myPlayerName || 'ผู้เล่นใหม่';
+nameInput.value = myPlayerName || '';
+nameInputContainer.style.display = 'flex'; // Keep editable on main page
 if (myPlayerName) {
-    playerNameDisplay.textContent = myPlayerName;
-    nameInput.value = myPlayerName;
-    nameInputContainer.style.display = 'none'; // Hide name input if already set
     socket.emit('set player name', myPlayerName); // Send name to server on load
 } else {
-    nameInputContainer.style.display = 'flex';
     nameInput.placeholder = 'กรอกชื่อของคุณ';
 }
 
@@ -337,6 +336,7 @@ socket.on('room joined', (roomName) => {
     currentRoomName = roomName;
     try { sessionStorage.setItem('currentRoomName', roomName); } catch (e) {}
     currentRoomDisplay.textContent = roomName || 'ไม่มี';
+    nameInputContainer.style.display = 'none'; // Lock name setting once inside a room
     roomManagementSection.style.display = 'none';
     roomLobbySection.style.display = 'block';
     gameSection.style.display = 'none'; // Ensure game section is hidden initially
@@ -368,6 +368,14 @@ socket.on('room state update', (roomState) => {
     if (roomState.currentPhase) {
         changePhaseMusic(roomState.currentPhase);
     }
+    // Update deck and discard pile counts if provided
+    if (typeof roomState.deckCount === 'number' && deckCountDisplay) {
+        deckCountDisplay.textContent = roomState.deckCount;
+    }
+    if (typeof roomState.discardPileCount === 'number' && discardPileCountDisplay) {
+        discardPileCountDisplay.textContent = roomState.discardPileCount;
+    }
+
     // Update lobby/game UI based on roomState
     lobbyRoomName.textContent = roomState.name;
     lobbyPlayerCount.textContent = roomState.playerCount;
@@ -614,6 +622,13 @@ socket.on('room state update', (roomState) => {
             confessSection.style.display = 'none';
         } else {
             confessSection.style.display = 'none';
+            // ปิด popup สารภาพบาปหากไม่ได้อยู่ในช่วง PRE_DAWN หรือทำแอ็กชันไปแล้ว
+            if (roomState.currentPhase !== 'PRE_DAWN' || (roomState.nightConfessors && roomState.nightConfessors.includes(myUniqueId))) {
+                const existing = document.getElementById('confess-popup');
+                if (existing) existing.remove();
+                const existingOverlay = document.getElementById('confess-overlay');
+                if (existingOverlay) existingOverlay.remove();
+            }
         }
 
         // Show/hide Witch action section for Black Cat assignment
@@ -843,10 +858,9 @@ socket.on('room left', () => {
     updatePlayersGrid(null, myUniqueId);
     updateWitchChatVisibility(false);
     confessSection.style.display = 'none';
-    // Show name input if not set
-    if (!myPlayerName) {
-        nameInputContainer.style.display = 'flex';
-    }
+    // Show name input on main page
+    nameInputContainer.style.display = 'flex';
+    nameInput.value = myPlayerName || '';
     socket.emit('request rooms list');
     addGameMessage('คุณออกจากห้องแล้ว.', 'orange');
 });
@@ -1241,9 +1255,10 @@ setNameButton.addEventListener('click', () => {
         myPlayerName = name;
         localStorage.setItem('playerName', myPlayerName);
         playerNameDisplay.textContent = myPlayerName;
-        nameInputContainer.style.display = 'none';
+        nameInput.value = myPlayerName;
         socket.emit('set player name', myPlayerName);
         socket.emit('request rooms list');
+        addGameMessage(`เปลี่ยนชื่อผู้เล่นเป็น "${myPlayerName}" เรียบร้อยแล้ว`, 'green', true);
 
         // Auto-join invited room if available
         const pendingRoom = (joinRoomNameInput && joinRoomNameInput.value.trim()) || roomFromUrl;
@@ -1510,18 +1525,16 @@ confessButton.addEventListener('click', () => {
             } else {
                 addGameMessage('หมายเลขการ์ดไม่ถูกต้อง.', 'red');
             }
-            confessPopupShownForThisPreDawn = false;
         } else if (currentRoomState && currentRoomState.currentPhase === 'DAY' && currentRoomState.playerForcedToRevealTryal === myUniqueId) {
             // For DAY forced reveal, prompt for card selection
             const cardIndex = prompt(`เลือกหมายเลขการ์ดชีวิตที่จะเปิดเผย (1-${myTryalCards.length}):`);
             const index = parseInt(cardIndex, 10) - 1; // Convert to 0-based index
             if (!isNaN(index) && index >= 0 && index < myTryalCards.length) {
                 socket.emit('reveal tryal card', index);
-        } else {
+            } else {
                 addGameMessage('หมายเลขการ์ดไม่ถูกต้อง.', 'red');
-        }
-        confessPopupShownForThisPreDawn = false;
-    } else {
+            }
+        } else {
             // Legacy confession (should not be used anymore)
             const cardIndex = prompt(`เลือกหมายเลขการ์ดชีวิตที่จะเปิดเผย (1-${myTryalCards.length}):`);
             const index = parseInt(cardIndex, 10) - 1; // Convert to 0-based index
@@ -1544,7 +1557,6 @@ skipConfessButton.addEventListener('click', () => {
     }
     if (currentRoomName) {
         socket.emit('skip confession');
-        confessPopupShownForThisPreDawn = false;
     }
 });
 
@@ -2020,18 +2032,9 @@ function updateTryalCardDisplay() {
             tryalCardsList.appendChild(cardDiv);
         });
     }
-    if (myRevealedTryalCardIndexes && myRevealedTryalCardIndexes.length > 0) {
-        const revealedNames = myRevealedTryalCardIndexes
-            .map((item) => {
-                if (typeof item === 'number') return myTryalCards[item]?.name;
-                if (typeof item === 'string') return item;
-                return null;
-            })
-            .filter(Boolean)
-            .map((name) => displayCardName(name));
-        myRevealedTryalCards.textContent = `Revealed: ${revealedNames.join(', ')}`;
-    } else {
+    if (myRevealedTryalCards) {
         myRevealedTryalCards.textContent = '';
+        myRevealedTryalCards.style.display = 'none';
     }
     // Use hasBeenWitch for team display and update witch chat
     const myPlayer = currentRoomState && currentRoomState.players && currentRoomState.players[myUniqueId];
@@ -3175,24 +3178,23 @@ function showSelectPlayerPopup(title, playerList, callback, cardObj = null, acti
     document.body.appendChild(modal);
 }
 
-// --- Room Management: Change Player Name ---
-const roomPlayerNameInput = document.getElementById('room-player-name-input');
-const roomSetNameButton = document.getElementById('room-set-name-button');
-
-roomSetNameButton.addEventListener('click', () => {
-    const newName = roomPlayerNameInput.value.trim();
-    if (!newName) {
-        addGameMessage('Please enter a valid name.', 'red', true);
-        return;
-    }
-    myPlayerName = newName;
-    localStorage.setItem('playerName', myPlayerName);
-    playerNameDisplay.textContent = myPlayerName;
-    nameInput.value = myPlayerName;
-    socket.emit('set player name', myPlayerName);
-    socket.emit('request rooms list');
-    addGameMessage('Name updated successfully!', 'green', true);
-});
+// --- Room Management: Change Player Name (Handled exclusively from main page #name-input-container) ---
+if (roomSetNameButton && roomPlayerNameInput) {
+    roomSetNameButton.addEventListener('click', () => {
+        const newName = roomPlayerNameInput.value.trim();
+        if (!newName) {
+            addGameMessage('Please enter a valid name.', 'red', true);
+            return;
+        }
+        myPlayerName = newName;
+        localStorage.setItem('playerName', myPlayerName);
+        playerNameDisplay.textContent = myPlayerName;
+        nameInput.value = myPlayerName;
+        socket.emit('set player name', myPlayerName);
+        socket.emit('request rooms list');
+        addGameMessage('Name updated successfully!', 'green', true);
+    });
+}
 
 // --- Card Name Localization ---
 function displayCardName(name) {
@@ -3298,13 +3300,13 @@ function showGameOverModal(data) {
         let cardsHtml = '';
 
         // Card 1: Top Accuser
-        const topAccuser = mvp.mostAccuser;
+        const topAccuser = mvp.mostAccusationsGiven || mvp.mostAccuser;
         cardsHtml += `
             <div class="mvp-card">
                 <div class="mvp-icon">🗣️</div>
                 <div class="mvp-award-name">ยอดนักกล่าวหา</div>
-                <div class="mvp-player-name">${topAccuser ? topAccuser.name : '-'}</div>
-                <div class="mvp-detail">${topAccuser ? `ลงข้อกล่าวหา +${topAccuser.count} แต้ม` : 'ไม่มีการกล่าวหา'}</div>
+                <div class="mvp-player-name">${topAccuser && topAccuser.count > 0 ? topAccuser.name : '-'}</div>
+                <div class="mvp-detail">${topAccuser && topAccuser.count > 0 ? `ลงข้อกล่าวหา +${topAccuser.count} แต้ม` : 'ไม่มีการกล่าวหา'}</div>
             </div>
         `;
 
@@ -3314,19 +3316,22 @@ function showGameOverModal(data) {
             <div class="mvp-card">
                 <div class="mvp-icon">🎯</div>
                 <div class="mvp-award-name">เป้าหมายยอดฮิต</div>
-                <div class="mvp-player-name">${mostAccused ? mostAccused.name : '-'}</div>
-                <div class="mvp-detail">${mostAccused ? `โดนกล่าวหา ${mostAccused.count} แต้ม` : 'ไม่มีผู้ถูกเพ่งเล็ง'}</div>
+                <div class="mvp-player-name">${mostAccused && mostAccused.count > 0 ? mostAccused.name : '-'}</div>
+                <div class="mvp-detail">${mostAccused && mostAccused.count > 0 ? `โดนกล่าวหา ${mostAccused.count} แต้ม` : 'ไม่มีผู้ถูกเพ่งเล็ง'}</div>
             </div>
         `;
 
         // Card 3: First Victim
-        const firstVictim = mvp.firstVictim;
+        const firstVictimData = mvp.firstVictim;
+        const firstVictimName = typeof firstVictimData === 'object' && firstVictimData !== null
+            ? (firstVictimData.name || null)
+            : (typeof firstVictimData === 'string' && firstVictimData !== 'undefined' ? firstVictimData : null);
         cardsHtml += `
             <div class="mvp-card">
                 <div class="mvp-icon">🕯️</div>
                 <div class="mvp-award-name">สังเวยคนแรก</div>
-                <div class="mvp-player-name">${firstVictim ? firstVictim.name : '-'}</div>
-                <div class="mvp-detail">${firstVictim ? 'เหยื่อเคราะห์ร้ายรายแรก' : 'ไม่มีใครตาย'}</div>
+                <div class="mvp-player-name">${firstVictimName ? firstVictimName : '-'}</div>
+                <div class="mvp-detail">${firstVictimName ? 'เหยื่อเคราะห์ร้ายรายแรก' : 'ไม่มีใครตาย'}</div>
             </div>
         `;
 
