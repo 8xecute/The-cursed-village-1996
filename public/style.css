@@ -12,6 +12,98 @@ body.in-game #name-input-container {
   font-size: 0.85rem;
 }
 
+.table3d-section[hidden],
+.table3d-section [hidden] {
+  display: none !important;
+}
+
+.table3d-section {
+  position: relative;
+  width: 100%;
+  margin: 12px 0 18px;
+  border: 1px solid #78512c;
+  border-radius: 18px;
+  background: #110d0a;
+  overflow: hidden;
+  box-shadow: 0 12px 32px #0008;
+}
+
+.table3d-canvas {
+  width: 100%;
+  height: clamp(380px, 62vh, 700px);
+  cursor: grab;
+}
+
+.table3d-canvas:active { cursor: grabbing; }
+.table3d-canvas canvas { display: block; touch-action: none; }
+
+.table3d-hud {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  max-width: calc(100% - 210px);
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #151310de;
+  color: #f4e5ca;
+  pointer-events: none;
+}
+
+.table3d-hud strong { display: block; margin-bottom: 4px; }
+.table3d-hud span { display: block; font-size: 0.8rem; color: #c9bba5; }
+
+.table3d-camera-controls {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  gap: 5px;
+}
+
+.table3d-camera-controls button {
+  width: auto !important;
+  min-width: 36px;
+  min-height: 36px;
+  margin: 0;
+  padding: 6px 10px;
+  border: 1px solid #87653c;
+  border-radius: 8px;
+  background: #261c12ed;
+  color: #ffe1aa;
+  cursor: pointer;
+}
+
+.table3d-instructions {
+  margin: 0;
+  padding: 8px 12px;
+  background: #1d1712;
+  text-align: center;
+  font-size: 0.78rem;
+  color: #d9c8ab;
+}
+
+.table3d-loading {
+  position: absolute;
+  top: 45%;
+  left: 10%;
+  width: 80%;
+  margin: 0;
+  padding: 12px;
+  box-sizing: border-box;
+  border-radius: 10px;
+  background: #1b140ff2;
+  color: #ffe1aa;
+  text-align: center;
+}
+
+@media (max-width: 768px) {
+  .table3d-canvas { height: clamp(330px, 52vh, 490px); }
+  .table3d-hud { top: 8px; left: 8px; max-width: calc(100% - 16px); padding: 7px 10px; }
+  .table3d-hud strong { font-size: 0.85rem; }
+  .table3d-hud span { font-size: 0.7rem; }
+  .table3d-camera-controls { top: auto; bottom: 62px; right: 8px; }
+}
+
 #game-view-toggle {
   display: inline-flex;
   align-items: center;
@@ -58,81 +150,6 @@ body.in-game #name-input-container {
 #game-view-toggle:focus-visible {
   outline: 2px solid #ffe3ac;
   outline-offset: 3px;
-}
-
-/* Perspective surfaces retain the existing card elements and click handlers. */
-body.game-view-3d #game-section {
-  background: linear-gradient(135deg, #443121, #241b14 65%, #493323);
-  border: 1px solid #8a633c;
-  box-shadow: inset 0 1px 0 #d2ac7666, inset 0 -8px 0 #110d0a99, 0 18px 35px #0008;
-}
-
-body.game-view-3d #game-main-content {
-  background: radial-gradient(ellipse at 45% 20%, #32433b, #182720 75%);
-  border-radius: 16px;
-  box-shadow: inset 0 0 0 1px #b7955b66, inset 0 0 40px #0009, 0 8px 0 #100f0bd9, 0 14px 24px #0007;
-}
-
-body.game-view-3d :is(#player-hand, #my-tryal-cards-list) {
-  perspective: 900px;
-  perspective-origin: 50% 30%;
-  padding-top: 18px;
-  padding-bottom: 20px;
-  background: linear-gradient(165deg, #17251bcc, #0e1a13aa);
-  border-color: #9c7d4c66;
-  box-shadow: inset 0 5px 15px #0006;
-}
-
-body.game-view-3d #player-hand > .card,
-body.game-view-3d #my-tryal-cards-list .tryal-card {
-  transform: rotateX(12deg) rotateY(-7deg);
-  transform-origin: center 65%;
-  box-shadow: 2px 3px 0 #b3a38a, 4px 6px 0 #524837, 9px 15px 13px #000a;
-  transition: transform 180ms ease, box-shadow 180ms ease;
-}
-
-body.game-view-3d #player-hand > .card.selected {
-  transform: translateY(-7px) rotateX(0) rotateY(0) scale(1.04);
-  box-shadow: 2px 3px 0 #b3a38a, 4px 6px 0 #524837, 0 0 16px #ffd54f88, 8px 18px 14px #000b !important;
-}
-
-body.game-view-3d #players-board-list {
-  perspective: 1100px;
-  padding: 6px;
-}
-
-body.game-view-3d .player-board-card {
-  transform: rotateX(3deg) rotateY(3deg);
-  background: linear-gradient(135deg, #34382e, #1d241d);
-  box-shadow: 2px 4px 0 #463c2a, 4px 8px 12px #0007;
-}
-
-body.game-view-3d .player-board-card.current-turn {
-  box-shadow: 2px 4px 0 #a88c38, 0 0 14px #ffd54f66, 4px 8px 12px #0007;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  body.game-view-3d #player-hand > .card:hover,
-  body.game-view-3d #my-tryal-cards-list .tryal-card:hover {
-    transform: translateY(-5px) rotateX(0) rotateY(0) scale(1.03);
-  }
-}
-
-@media (max-width: 768px) {
-  .game-view-toolbar { margin-bottom: 7px; }
-  body.game-view-3d #player-hand > .card,
-  body.game-view-3d #my-tryal-cards-list .tryal-card {
-    transform: rotateX(8deg) rotateY(-4deg);
-  }
-  body.game-view-3d .player-board-card { transform: none; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .game-view-toggle-track > span,
-  body.game-view-3d #player-hand > .card,
-  body.game-view-3d #my-tryal-cards-list .tryal-card {
-    transition: none;
-  }
 }
 
 body, .section, .sidebar, .main-game-content, .container, h1, h2, h3, h4, h5, h6, p, button, input, select, .player-item, .player-board-card, .player-board-header, .player-board-status, .player-board-tryal-card, .tryal-card, .night-player-card, .player-name, .player-role, .player-status, .card-indicator, .message-black, .message-red, .message-green, .message-blue, .message-orange, .message-purple, .message-darkred, .message-gold {

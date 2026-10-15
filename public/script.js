@@ -10,6 +10,65 @@ const socket = io();
 // View preferences are local to this device and never change game state.
 const gameViewToggle = document.getElementById('game-view-toggle');
 const gameViewDescription = document.getElementById('game-view-description');
+let table3D = null;
+let table3DBundle = null;
+let table3DFocusedPlayer = null;
+
+function updateTable3DFocus() {
+    const player = currentRoomState?.players?.[table3DFocusedPlayer || myUniqueId];
+    if (!player) return;
+    const name = document.getElementById('table3d-player-name');
+    const status = document.getElementById('table3d-player-status');
+    name.textContent = `${player.name}${player.uniqueId === myUniqueId ? ' (คุณ)' : ''}`;
+    const team = player.hasBeenWitch ? ' · ทีมปอบ' : '';
+    status.textContent = `${player.alive ? 'ยังมีชีวิต' : 'เสียชีวิตแล้ว'} · ชีวิต ${player.tryalCardCount} · การ์ด ${player.handSize} · ข้อกล่าวหา ${player.accusationPoints || 0}${team}`;
+}
+
+async function syncTable3D() {
+    const section = document.getElementById('table3d-section');
+    const visible = !document.hidden && document.body.classList.contains('game-view-3d') && !!currentRoomState?.gameStarted;
+    section.hidden = !visible;
+    if (!visible) { table3D?.setActive(false); return; }
+    const loading = document.getElementById('table3d-loading');
+    try {
+        if (!table3DBundle) {
+            table3DBundle = new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = 'table3d.bundle.js';
+                script.onload = () => window.VillageTable3D ? resolve() : reject(new Error('โหลดฉาก 3D ไม่สำเร็จ'));
+                script.onerror = () => { script.remove(); reject(new Error('โหลดฉาก 3D ไม่สำเร็จ กรุณาลองใหม่')); };
+                document.head.appendChild(script);
+            }).catch(error => { table3DBundle = null; throw error; });
+        }
+        await table3DBundle;
+        if (!document.body.classList.contains('game-view-3d') || !currentRoomState?.gameStarted) return;
+        if (!table3D) {
+            table3D = window.VillageTable3D.create({
+                container: document.getElementById('table3d-canvas'),
+                onCard: index => {
+                    const cards = document.querySelectorAll('#player-hand > .card');
+                    cards[index]?.click();
+                },
+                onDraw: () => document.getElementById('draw-card-button')?.click(),
+                onPlayer: id => { table3DFocusedPlayer = id; updateTable3DFocus(); },
+                onError: message => {
+                    loading.textContent = message;
+                    loading.hidden = false;
+                    table3D?.setActive(false);
+                },
+            });
+        }
+        loading.hidden = true;
+        table3D.setActive(true);
+        table3D.update({ state: currentRoomState, me: myUniqueId, hand: myCurrentHand || [], selected: selectedCard,
+            imageFor: name => name ? createCardImage(name).src : null });
+        updateTable3DFocus();
+    } catch (error) {
+        loading.textContent = 'อุปกรณ์นี้ยังแสดงโต๊ะ 3D ไม่ได้ ใช้กระดานด้านล่างหรือสลับเป็น 2D ได้';
+        loading.hidden = false;
+        console.warn('3D table unavailable:', error);
+    }
+}
 function setGameViewMode(mode) {
     const use3D = mode === '3d';
     document.body.classList.toggle('game-view-3d', use3D);
@@ -24,8 +83,19 @@ setGameViewMode(savedGameViewMode);
 gameViewToggle?.addEventListener('click', () => {
     const mode = document.body.classList.contains('game-view-3d') ? '2d' : '3d';
     setGameViewMode(mode);
+    syncTable3D();
     try { localStorage.setItem('villageGameView', mode); } catch (_) { /* The toggle still works without storage. */ }
 });
+
+document.getElementById('table3d-reset')?.addEventListener('click', () => table3D?.resetCamera());
+document.getElementById('table3d-zoom-in')?.addEventListener('click', () => table3D?.zoom('in'));
+document.getElementById('table3d-zoom-out')?.addEventListener('click', () => table3D?.zoom('out'));
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden) table3D?.setActive(false);
+    else syncTable3D();
+});
+window.addEventListener('pagehide', () => table3D?.setActive(false));
+window.addEventListener('pageshow', () => { if (currentRoomState) syncTable3D(); });
 
 // --- Background Music Controls ---
 const backgroundMusic = document.getElementById('background-music');
@@ -199,6 +269,9 @@ const discardPileCountDisplay = document.getElementById('discard-pile-count-disp
 const waitingStatusBanner = document.getElementById('waiting-status-banner');
 const handCardCount = document.getElementById('hand-card-count');
 const playerHandDiv = document.getElementById('player-hand');
+new MutationObserver(() => syncTable3D()).observe(playerHandDiv, {
+    childList: true, subtree: true, attributes: true, attributeFilter: ['class'],
+});
 const tryalCardsDisplay = document.getElementById('tryal-cards-display');
 const mySecretTryalCardsCount = document.getElementById('my-secret-tryal-cards-count');
 const myRoleDisplay = document.getElementById('my-role-display'); // To display the *first* Tryal Card
@@ -386,6 +459,7 @@ socket.on('room joined', (roomName) => {
 socket.on('room state update', (roomState) => {
     console.log('Room state updated:', roomState);
     currentRoomState = roomState; // Store room state for night actions
+    syncTable3D();
     if (nameInputContainer) nameInputContainer.style.display = 'none';
     const registeredName = roomState.players?.[myUniqueId]?.name;
     if (registeredName) {
@@ -849,6 +923,9 @@ socket.on('request player name', () => {
 });
 
 socket.on('room left', () => {
+    table3D?.setActive(false);
+    table3DFocusedPlayer = null;
+    document.getElementById('table3d-section').hidden = true;
     // ลบ popup สถิติถ้ามี
     const statsPopup = document.querySelector('.stats-popup');
     if (statsPopup) {
@@ -2154,6 +2231,7 @@ function updateTryalCardDisplay() {
 function updatePlayersGrid(roomState, myUniqueId, actionType = null) {
     const nightPlayersListSection = document.getElementById('night-players-list-section');
     const nightPlayersList = document.getElementById('night-players-list');
+    if (!nightPlayersListSection || !nightPlayersList) return;
     
     if (!roomState || !roomState.players) {
         nightPlayersListSection.style.display = 'none';

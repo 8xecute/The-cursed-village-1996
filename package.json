@@ -10,7 +10,10 @@
     "start": "node server.js",
     "dev": "nodemon server.js",
     "build": "npm run build:client && npm run build:server",
-    "build:client": "webpack --mode production",
+    "build:client": "npm run build:3d && webpack --mode production",
+    "build:3d": "webpack --config webpack.table3d.config.js --mode production",
+    "prestart": "npm run build:3d",
+    "predev": "npm run build:3d",
     "build:server": "echo 'Server build complete'",
     "build:render": "npm run build:client",
     "optimize:assets": "echo \"No asset optimizer configured\"",
@@ -40,6 +43,7 @@
     "helmet": "^7.1.0",
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",
+    "three": "^0.186.1",
     "uuid": "^14.0.0"
   },
   "devDependencies": {
