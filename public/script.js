@@ -480,7 +480,10 @@ socket.on('room state update', (roomState) => {
     // Host controls visibility
     if (isHost) {
         hostControlsLobby.style.display = 'block';
-        if (addBotButton) addBotButton.disabled = roomState.gameStarted || roomState.playerCount >= roomState.maxPlayers;
+        if (addBotButton) {
+            addBotButton.style.display = roomState.gameStarted ? 'none' : 'inline-flex';
+            addBotButton.disabled = roomState.gameStarted || roomState.playerCount >= roomState.maxPlayers;
+        }
         startGameButton.style.display = roomState.gameStarted ? 'none' : 'inline-block';
         if (!roomState.gameStarted) {
             const nonHostPlayers = Object.values(roomState.players).filter(p => !p.isHost);
@@ -501,6 +504,7 @@ socket.on('room state update', (roomState) => {
         hostControlsLobby.style.display = 'none';
         hostControlsGame.style.display = 'none';
         startGameButton.style.display = 'none';
+        if (addBotButton) addBotButton.style.display = 'none';
     }
 
     // Game state updates
