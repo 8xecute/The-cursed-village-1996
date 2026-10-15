@@ -12,6 +12,47 @@ body.in-game #name-input-container {
   font-size: 0.85rem;
 }
 
+.night-target-row.team-marked:not(.selected) {
+  border-color: #bd5963;
+  background: rgba(113, 35, 48, 0.25);
+}
+
+.night-target-marks {
+  margin-top: 5px;
+  color: #ffb3ba;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.witch-kill-confirm-panel {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid #c95664;
+  border-radius: 10px;
+  background: #38151c;
+  color: #ffe5e8;
+}
+
+.night-action-content {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.night-action-header { flex-shrink: 0; }
+
+.witch-kill-confirm-panel p { margin: 0 0 10px; font-size: 0.9rem; }
+.witch-kill-confirm-panel button { margin: 4px; }
+.witch-kill-cancel-btn {
+  padding: 9px 12px;
+  border: 1px solid #81656b;
+  border-radius: 7px;
+  background: #32262a;
+  color: #ead7dc;
+  cursor: pointer;
+}
+
 .table3d-section[hidden],
 .table3d-section [hidden] {
   display: none !important;

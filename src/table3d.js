@@ -180,7 +180,7 @@ function create({ container, onCard, onDraw, onPlayer, onError }) {
 
     function update({ state, me, hand, selected, imageFor }) {
         if (!state) return;
-        const nextSignature = JSON.stringify([state.players, state.currentTurnPlayerUniqueId, state.deckCount, state.discardPileCount, hand, selected, me]);
+        const nextSignature = JSON.stringify([state.players, state.currentTurnPlayerUniqueId, state.deckCount, state.discardPileCount, state.witchNightState, hand, selected, me]);
         if (signature === nextSignature) return;
         signature = nextSignature;
         clearDynamic();
@@ -208,6 +208,16 @@ function create({ container, onCard, onDraw, onPlayer, onError }) {
             }
             label(seat, `${player.name}${player.uniqueId === me ? ' (คุณ)' : ''}${!player.alive ? ' · เสียชีวิต' : ''}`, [0, 1.45, 0],
                 player.alive ? '#eddbb7' : '#a39b91');
+            const witchNight = state.witchNightState;
+            if (witchNight && !witchNight.committed) {
+                const memberNames = new Map((witchNight.members || []).map(member => [member.uniqueId, member.name]));
+                const markedBy = Object.entries(witchNight.marks || {})
+                    .filter(([id, target]) => target === player.uniqueId && memberNames.has(id))
+                    .map(([id]) => memberNames.get(id));
+                if (markedBy.length) {
+                    label(seat, `มาร์ค: ${markedBy.join(', ')}`, [0, 1.85, 0], '#ff9999');
+                }
+            }
             const lives = Number(player.tryalCardCount) || 0;
             for (let life = 0; life < lives; life++) {
                 const revealedName = player.tryalCards?.[life]?.name;

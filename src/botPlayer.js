@@ -112,6 +112,20 @@ function createBotClient({ url, uniqueId, token, name }) {
         const me = currentBot();
         if (!me || !state.gameStarted || state.gameOver) return;
 
+        const witchNight = state.witchNightState;
+        if (state.currentPhase === 'NIGHT' && witchNight && !witchNight.committed &&
+            witchNight.members?.every(member => member.isBot) &&
+            Object.prototype.hasOwnProperty.call(witchNight.marks || {}, uniqueId)) {
+            const nightId = witchNight.nightId;
+            later('witch-confirm', () => {
+                const latest = roomState?.witchNightState;
+                if (roomState?.currentPhase !== 'NIGHT' || !latest || latest.nightId !== nightId || latest.committed ||
+                    !latest.members?.every(member => member.isBot) ||
+                    !Object.prototype.hasOwnProperty.call(latest.marks || {}, uniqueId)) return;
+                socket.emit('witch kill target', latest.marks[uniqueId], { confirmed: true, nightId });
+            }, 1500);
+        }
+
         if (state.currentPhase === 'PRE_DAWN' && state.confessionOrder?.[state.currentConfessionIndex] === uniqueId &&
             !(state.confessionActions || []).includes(uniqueId)) {
             later('confession', () => {
@@ -149,7 +163,7 @@ function createBotClient({ url, uniqueId, token, name }) {
             const targets = aliveOthers().filter(player =>
                 !player.hasBeenWitch && !player.inPlayCards?.some(card => card.name === 'Asylum'));
             const target = pickRandom(targets);
-            socket.emit('witch kill target', target?.uniqueId || null);
+            socket.emit('witch mark target', target?.uniqueId || null, roomState?.witchNightState?.nightId);
         });
     });
 

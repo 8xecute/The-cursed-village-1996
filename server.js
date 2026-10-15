@@ -298,6 +298,10 @@ function emitRoomState(roomName) {
             io.to(player.id).emit('room state update', {
                 ...publicState,
                 players: buildPlayersStateFor(player),
+                witchNightState: room.currentPhase === 'NIGHT' && player.alive && (player.hasBeenWitch || player.isWitch)
+                    ? { nightId: room.witchNightId, marks: { ...(room.witchNightMarks || {}) }, committed: hasNightActionChosen(room, 'witchKill'),
+                        members: getAlivePlayers(room).filter(p => p.hasBeenWitch || p.isWitch).map(p => ({ uniqueId: p.uniqueId, name: p.name, isBot: !!p.isBot })) }
+                    : null,
             });
             io.to(player.id).emit('update hand', player.hand);
             io.to(player.id).emit('update tryal cards initial', player.tryalCards);
@@ -674,6 +678,10 @@ function changePhase(roomName, forcedNextPhase = null) {
         delete room.awaitingCurseSelection;
     }
 
+    if (nextPhase === 'NIGHT') {
+        room.witchNightId = uuidv4();
+        room.witchNightMarks = {};
+    }
     room.currentPhase = nextPhase;
     nextDuration = room.phaseConfig[nextPhase] || DEFAULT_PHASE_DURATIONS[nextPhase];
     startPhaseTimer(roomName, nextDuration);
@@ -691,7 +699,7 @@ function changePhase(roomName, forcedNextPhase = null) {
         checkWinCondition(room);
         if (room.gameOver) return; // ถ้าจบเกมแล้ว ไม่ต้องดำเนินต่อ
         const constables = getAlivePlayers(room).filter(p => p.isConstable);
-        const witches = getAlivePlayers(room).filter(p => p.isWitch);
+        const witches = getAlivePlayers(room).filter(p => p.hasBeenWitch || p.isWitch);
         
         // PATCH: ปิด log Night phase - Checking roles
         // console.log('Night phase - Checking roles:');
@@ -1769,7 +1777,7 @@ function resolveNightActions(roomName) {
     // console.log('playersWhoActedAtNight:', room.playersWhoActedAtNight);
 
     // 1. Witch Kill (if any alive witches) - but don't reveal who was killed yet
-    const aliveWitches = getAlivePlayers(room).filter(p => p.isWitch);
+    const aliveWitches = getAlivePlayers(room).filter(p => p.hasBeenWitch || p.isWitch);
     const chosenToKillUniqueId = room.playersWhoActedAtNight['witchKill'];
 
     if (aliveWitches.length > 0 && chosenToKillUniqueId) {
@@ -2754,16 +2762,39 @@ io.on('connection', (socket) => {
         }
     });
 
-    socket.on('witch kill target', (targetUniqueId) => {
+    socket.on('witch mark target', (targetUniqueId, nightId) => {
+        const room = rooms[socket.currentRoom];
+        const player = room?.players[socket.uniqueId];
+        if (!room || room.gameOver || room.currentPhase !== 'NIGHT' || !player?.alive ||
+            !(player.hasBeenWitch || player.isWitch) || hasNightActionChosen(room, 'witchKill')) return;
+        if (!nightId || nightId !== room.witchNightId) return;
+        const target = room.players[targetUniqueId];
+        if (targetUniqueId !== null && (!target?.alive || targetUniqueId === player.uniqueId ||
+            target.inPlayCards.some(card => card.name === 'Asylum'))) {
+            io.to(socket.id).emit('game message', 'ไม่สามารถมาร์คเป้าหมายนี้ได้.', 'red');
+            return;
+        }
+        if (!room.witchNightMarks) room.witchNightMarks = {};
+        room.witchNightMarks[player.uniqueId] = targetUniqueId;
+        emitRoomState(room.name);
+    });
+
+    socket.on('witch kill target', (targetUniqueId, confirmation) => {
         const roomName = socket.currentRoom;
         if (!roomName) return;
         const room = rooms[roomName];
         if (!room || room.gameOver) return;
         const player = room.players[socket.uniqueId];
 
-        if (room.currentPhase === 'NIGHT' && player && player.isWitch && player.alive) {
+        if (room.currentPhase === 'NIGHT' && player && (player.hasBeenWitch || player.isWitch) && player.alive) {
             if (hasNightActionChosen(room, 'witchKill')) {
                 io.to(socket.id).emit('game message', 'คุณได้เลือกเป้าหมายการสังหารไปแล้ว.', 'red');
+                return;
+            }
+            if (!confirmation || confirmation.confirmed !== true || confirmation.nightId !== room.witchNightId ||
+                !Object.prototype.hasOwnProperty.call(room.witchNightMarks || {}, player.uniqueId) ||
+                room.witchNightMarks[player.uniqueId] !== targetUniqueId) {
+                io.to(socket.id).emit('game message', 'กรุณามาร์คเป้าหมายและยืนยันการสังหารอีกครั้ง.', 'orange');
                 return;
             }
             // ป้องกันไม่ให้ปอบเลือกฆ่าตัวเอง
@@ -2775,6 +2806,7 @@ io.on('connection', (socket) => {
             if (!targetUniqueId) {
                 sendGameMessage(room.name, `<b>${player.name}</b> ไม่ได้เลือกสังหารใครในคืนนี้.`, 'orange');
                 room.playersWhoActedAtNight['witchKill'] = null;
+                emitRoomState(room.name);
                 // ถ้ามีหมอผีที่ยังไม่ได้เลือก ให้รอ
                 const constables = getAlivePlayers(room).filter(p => p.isConstable);
                 if (constables.length > 0 && !hasNightActionChosen(room, 'constableSave')) {
@@ -2795,6 +2827,7 @@ io.on('connection', (socket) => {
             if (targetUniqueId && room.players[targetUniqueId]?.alive) {
                 room.playersWhoActedAtNight['witchKill'] = targetUniqueId;
                 room.lastNightKillerName = player.name;
+                emitRoomState(room.name);
                 io.to(socket.id).emit('game message', `คุณได้เลือก ${room.players[targetUniqueId].name} เป็นเป้าหมายการสังหาร.`, 'green');
                 // แจ้งเตือนทีมปอบทุกคนว่าใครเลือกฆ่าใคร (เฉพาะปอบเห็น)
                 const witches = Object.values(room.players).filter(p => p.hasBeenWitch && p.id);
@@ -3648,7 +3681,7 @@ function eliminatePlayerWithoutLifeCards(room, player) {
 
 // เพิ่มฟังก์ชัน helper
 function allWitchesActed(room) {
-    const witches = getAlivePlayers(room).filter(p => p.isWitch);
+    const witches = getAlivePlayers(room).filter(p => p.hasBeenWitch || p.isWitch);
     // ถ้าไม่มีปอบ หรือมีการเลือก witchKill แล้ว (null หรือ id)
     return witches.length === 0 || room.playersWhoActedAtNight['witchKill'] !== undefined;
 }

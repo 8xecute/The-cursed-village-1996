@@ -764,7 +764,7 @@ socket.on('room state update', (roomState) => {
         // Show/hide Night action section
         if (roomState.currentPhase === 'NIGHT' && myPlayer && myPlayer.alive) {
             // Check if player is witch or constable
-            if (myPlayer.isWitch || myPlayer.isConstable) {
+            if (myPlayer.hasBeenWitch || myPlayer.isWitch || myPlayer.isConstable) {
                 const nightActionSection = document.getElementById('night-action-section');
                 if (nightActionSection) nightActionSection.style.display = 'block';
                 // Update players grid
@@ -808,7 +808,7 @@ socket.on('room state update', (roomState) => {
         }
 
         // Reset nightActionState.hasSubmitted เมื่อเริ่มรอบใหม่ (เฟสเปลี่ยน)
-        nightActionState.hasSubmitted = false;
+        if (roomState.currentPhase !== 'NIGHT') nightActionState.hasSubmitted = false;
         
         // ลบ popup สถิติถ้าเกมยังไม่จบ
         if (!roomState.gameOver) {
@@ -875,9 +875,11 @@ socket.on('room state update', (roomState) => {
     }
     // --- ปิด popup เลือกฆ่า/วางแมวดำถ้าคนอื่นเลือกไปแล้ว ---
     // ปิด popup เลือกฆ่า (night-action-popup) ถ้า phase ไม่ใช่ NIGHT
-    if (roomState.currentPhase !== 'NIGHT') {
+    if (roomState.currentPhase !== 'NIGHT' ||
+        (nightActionState.actionType === 'witch' && roomState.witchNightState?.committed)) {
         removeNightActionPopup();
     }
+    updateWitchNightMarks();
     // ปิด popup เลือกวางแมวดำ (assign-blackcat-popup) ถ้าไม่ได้อยู่ในสถานะ assign แล้ว
     if (document.getElementById('assign-blackcat-popup') && !roomState.isAssigningBlackCat) {
         document.getElementById('assign-blackcat-popup').remove();
@@ -1758,8 +1760,8 @@ confirmNightActionButton.addEventListener('click', () => {
         socket.emit('constable action', nightActionState.selectedTargetId);
         addGameMessage('คุณได้เลือกที่จะปกป้องเป้าหมายแล้ว', 'green');
     } else if (nightActionState.actionType === 'witch') {
-        socket.emit('witch kill target', nightActionState.selectedTargetId);
-        addGameMessage('คุณได้เลือกเป้าหมายที่จะสังหารแล้ว', 'darkred');
+        submitNightAction('witch');
+        return;
     }
 
     // Hide UI and reset state after confirming
@@ -2403,6 +2405,9 @@ function handleNightPlayerCardClick(event) {
     
     if (targetUniqueId) {
         nightActionState.selectedTargetId = targetUniqueId;
+        if (nightActionState.actionType === 'witch') {
+            socket.emit('witch mark target', targetUniqueId, currentRoomState?.witchNightState?.nightId);
+        }
         
         // Get player name for display
         const playerNameElement = selectedCard.querySelector('.player-name');
@@ -2691,6 +2696,9 @@ function createNightActionPopup(actionType, timer) {
     
     // Remove existing popup & overlay if any
     removeNightActionPopup();
+    nightActionState.actionType = actionType;
+    nightActionState.selectedTargetId = actionType === 'witch'
+        ? (currentRoomState?.witchNightState?.marks?.[myUniqueId] || null) : null;
     
     const overlay = document.createElement('div');
     overlay.id = 'night-action-overlay';
@@ -2703,7 +2711,7 @@ function createNightActionPopup(actionType, timer) {
     const icon = actionType === 'witch' ? '🩸' : '🛡️';
     const title = actionType === 'witch' ? 'ปอบ — เลือกเป้าหมายสังหาร' : 'หมอผี — เลือกผู้เล่นเพื่อปกป้อง';
     const subtitle = actionType === 'witch'
-        ? 'เลือกชาวบ้าน 1 คนในความมืดมิดเพื่อสังหารในคืนนี้'
+        ? 'แตะเพื่อมาร์คให้ทีมเห็น ยังไม่ฆ่าจริง · ปอบคนใดก็กดฆ่าแล้วคอนเฟิร์มอีกครั้งได้'
         : 'เลือกผู้เล่น 1 คนเพื่อคุ้มครองจากเงื้อมมือของปอบ';
     
     popup.innerHTML = `
@@ -2733,7 +2741,7 @@ function createNightActionPopup(actionType, timer) {
             <div class="night-action-footer">
                 ${actionType === 'witch' ? `<button type="button" id="propose-night-action-btn" class="btn btn-secondary btn-sm" style="display: none; margin-right: 8px;">💡 เสนอชื่อในแชท</button>` : ''}
                 <button id="confirm-night-action" class="night-confirm-btn" style="display: none;">
-                    ยืนยันการเลือก
+                    ${actionType === 'witch' ? '🩸 ฆ่าเป้าหมายที่เลือก…' : 'ยืนยันการเลือก'}
                 </button>
             </div>
         </div>
@@ -2791,12 +2799,83 @@ function createNightActionPopup(actionType, timer) {
     // Populate players list
     console.log('Calling populateNightActionPlayersList');
     populateNightActionPlayersList(actionType);
+    updateWitchNightMarks();
+}
+
+function updateWitchNightMarks() {
+    const state = currentRoomState?.witchNightState;
+    const popup = document.getElementById('night-action-popup');
+    if (!state || !popup || nightActionState.actionType !== 'witch') return;
+    const members = new Map((state.members || []).map(member => [member.uniqueId, member.name]));
+    popup.querySelectorAll('.night-target-row').forEach(row => {
+        let marks = row.querySelector('.night-target-marks');
+        if (!marks) {
+            marks = document.createElement('div');
+            marks.className = 'night-target-marks';
+            row.querySelector('.night-target-info')?.appendChild(marks);
+        }
+        const names = Object.entries(state.marks || {})
+            .filter(([id, target]) => target === row.dataset.uniqueId && members.has(id))
+            .map(([id]) => `${members.get(id)}${id === myUniqueId ? ' (คุณ)' : ''}`);
+        marks.textContent = names.length ? `🎯 มาร์คโดย: ${names.join(', ')}` : '';
+        row.classList.toggle('team-marked', names.length > 0);
+        row.classList.toggle('selected', row.dataset.uniqueId === nightActionState.selectedTargetId);
+        const badge = row.querySelector('.night-target-badge');
+        if (badge) badge.textContent = row.dataset.uniqueId === nightActionState.selectedTargetId ? '✓ มาร์คของคุณ' : 'แตะมาร์ค';
+    });
+    const confirmBtn = popup.querySelector('#confirm-night-action');
+    if (confirmBtn) confirmBtn.style.display = nightActionState.selectedTargetId ? 'inline-block' : 'none';
+}
+
+function showWitchKillConfirmation(targetId) {
+    const state = currentRoomState?.witchNightState;
+    const target = currentRoomState?.players?.[targetId];
+    if (!state || state.committed || (targetId !== null && !target?.alive)) return;
+    if (targetId === null && !Object.prototype.hasOwnProperty.call(state.marks || {}, myUniqueId)) {
+        socket.emit('witch mark target', null, state.nightId);
+    } else if (state.marks?.[myUniqueId] !== targetId) {
+        addGameMessage('กรุณารอให้มาร์คเป้าหมายส่งถึงทีมก่อน แล้วกดฆ่าอีกครั้ง', 'orange');
+        return;
+    }
+    const popup = document.getElementById('night-action-popup');
+    if (!popup) { createNightActionPopup('witch'); return showWitchKillConfirmation(targetId); }
+    document.getElementById('witch-kill-confirm-panel')?.remove();
+    const panel = document.createElement('div');
+    panel.id = 'witch-kill-confirm-panel';
+    panel.className = 'witch-kill-confirm-panel';
+    const text = document.createElement('p');
+    text.textContent = targetId === null ? 'ยืนยันไม่สังหารใครคืนนี้? การยืนยันของคุณจะเป็นคำตัดสินของทั้งทีม'
+        : `ยืนยันสังหาร ${target.name} คืนนี้? การยืนยันของคุณจะเป็นคำตัดสินของทั้งทีม`;
+    const confirm = document.createElement('button');
+    confirm.type = 'button';
+    confirm.className = 'night-confirm-btn';
+    confirm.textContent = targetId === null ? 'ยืนยันไม่สังหาร' : 'ยืนยันฆ่าจริง';
+    const cancel = document.createElement('button');
+    cancel.type = 'button';
+    cancel.className = 'witch-kill-cancel-btn';
+    cancel.textContent = 'กลับไปปรึกษา';
+    cancel.onclick = () => { panel.remove(); popup.querySelector('#confirm-night-action')?.focus(); };
+    const nightId = state.nightId;
+    confirm.onclick = () => {
+        const latest = currentRoomState?.witchNightState;
+        if (!latest || latest.nightId !== nightId || latest.committed || latest.marks?.[myUniqueId] !== targetId) {
+            panel.remove();
+            addGameMessage('เป้าหมายหรือช่วงกลางคืนเปลี่ยนแล้ว กรุณาเลือกใหม่', 'orange');
+            return;
+        }
+        socket.emit('witch kill target', targetId, { confirmed: true, nightId });
+    };
+    panel.append(text, confirm, cancel);
+    popup.querySelector('.night-action-content').appendChild(panel);
+    confirm.focus();
 }
 
 function autoSubmitNightAction(actionType) {
     // ส่ง action แบบ skip (ไม่เลือกเป้าหมาย)
     if (actionType === 'witch') {
-        socket.emit('witch kill target', null); // null = ไม่เลือก
+        // Skipping also requires an explicit confirmation from a player.
+        showWitchKillConfirmation(null);
+        return;
     } else if (actionType === 'constable') {
         socket.emit('constable action', null); // null = ไม่เลือก
     }
@@ -2819,9 +2898,8 @@ function submitNightAction(actionType) {
     console.log('Submitting night action:', actionType, 'target:', nightActionState.selectedTargetId);
     
     if (actionType === 'witch') {
-        socket.emit('witch kill target', nightActionState.selectedTargetId);
-        nightActionState.hasSubmitted = true; // ตั้ง flag
-        removeNightActionPopup();
+        showWitchKillConfirmation(nightActionState.selectedTargetId);
+        return;
     } else if (actionType === 'constable') {
         socket.emit('constable action', nightActionState.selectedTargetId);
         addGameMessage('คุณได้เลือกที่จะปกป้องเป้าหมายแล้ว', 'green');
@@ -2923,6 +3001,14 @@ function populateNightActionPlayersList(actionType) {
         emptyDiv.style.cssText = 'color: #baa89b; text-align: center; padding: 24px; font-style: italic; font-size: 0.95em;';
         emptyDiv.textContent = 'ไม่มีเป้าหมายที่เลือกได้ในขณะนี้';
         playersList.appendChild(emptyDiv);
+        if (actionType === 'witch') {
+            const skip = document.createElement('button');
+            skip.type = 'button';
+            skip.className = 'witch-kill-cancel-btn';
+            skip.textContent = 'ไม่สังหารคืนนี้…';
+            skip.onclick = () => showWitchKillConfirmation(null);
+            playersList.appendChild(skip);
+        }
         return;
     }
 
@@ -2958,6 +3044,11 @@ function populateNightActionPlayersList(actionType) {
             
             // Update state
             nightActionState.selectedTargetId = player.uniqueId;
+            if (actionType === 'witch') {
+                document.getElementById('witch-kill-confirm-panel')?.remove();
+                socket.emit('witch mark target', player.uniqueId, currentRoomState?.witchNightState?.nightId);
+                updateWitchNightMarks();
+            }
             console.log('Updated nightActionState.selectedTargetId to:', player.uniqueId);
             
             // Show confirm button
