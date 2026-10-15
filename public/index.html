@@ -17,9 +17,6 @@
     
     <!-- Background Music Controls -->
     <div class="music-controls">
-        <button id="toggle-music-btn" class="music-btn">
-          <span class="music-icon" id="music-icon">🔇</span>
-        </button>
         <input id="music-volume-slider" type="range" min="0" max="100" value="20" step="1" class="music-slider">
         <span id="music-volume-label" class="music-volume-label">20%</span>
     </div>
@@ -411,7 +408,7 @@
                         </div>
 
                         <div id="confess-section" style="display: none;">
-                            <h3>Confess! (<span id="confess-timer-display"></span>s left - Auto-skip if time expires)</h3>
+                            <h3>สารภาพบาป</h3>
                             <button id="confess-button">Confess (Reveal Tryal Card)</button>
                             <button id="skip-confess-button" style="background-color: #666; margin-left: 10px;">Skip Confession</button>
                         </div>
@@ -937,6 +934,7 @@
     </style>
 
     <!-- End Game Victory & Summary Modal -->
+    <button id="reopen-game-summary-btn" type="button" class="reopen-game-summary-btn" style="display: none;">📜 ดูสรุปจบเกม</button>
     <div id="game-over-modal" class="modal game-over-modal" style="display: none;">
         <div class="game-over-modal-content">
             <div class="victory-header">

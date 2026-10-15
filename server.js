@@ -47,7 +47,7 @@ const DEFAULT_PHASE_DURATIONS = {
     DAY: 0, // No automatic timer - Host advances
     NIGHT: 0, // No automatic timer - Host advances, but special timer for Night actions
     PRE_DAWN: 0, // No automatic timer - Host advances, confession period
-    CONFESSION: 25, // 25 seconds safety timeout for individual confession
+    CONFESSION: 0, // Players choose to confess or skip without a time limit.
     GAME_OVER: 0, // No timer
 };
 
@@ -2880,8 +2880,9 @@ io.on('connection', (socket) => {
     socket.on('set confession timer', (roomName, confessionTime) => {
         const room = rooms[roomName];
         if (room && room.hostUniqueId === socket.uniqueId) {
-            room.confessionTimerDuration = confessionTime;
-            io.to(socket.id).emit('game message', `ตั้งเวลา confession เป็น ${confessionTime} วินาทีแล้ว.`, 'blue');
+            room.confessionTimerDuration = 0;
+            clearConfessionTimer(room.name);
+            io.to(socket.id).emit('game message', 'ช่วงสารภาพบาปไม่มีการจำกัดเวลา เลือกสารภาพหรือข้ามได้เอง.', 'blue');
             emitRoomState(roomName); // Update clients with new confession timer
         } else {
             io.to(socket.id).emit('game message', 'คุณไม่มีสิทธิ์ตั้งเวลา confession.', 'red');
@@ -3457,7 +3458,8 @@ function startConfessionTimer(roomName, playerUniqueId) {
 
     clearConfessionTimer(roomName);
 
-    const duration = (room.confessionTimerDuration || 25) * 1000;
+    if (!room.confessionTimerDuration || room.confessionTimerDuration <= 0) return;
+    const duration = room.confessionTimerDuration * 1000;
     room.confessionTimer = setTimeout(() => {
         if (!room || room.gameOver || room.currentPhase !== 'PRE_DAWN') return;
         const currentConfessor = room.confessionOrder && room.confessionOrder[room.currentConfessionIndex];

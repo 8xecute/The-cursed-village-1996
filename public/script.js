@@ -9,8 +9,6 @@ const socket = io();
 
 // --- Background Music Controls ---
 const backgroundMusic = document.getElementById('background-music');
-const toggleMusicBtn = document.getElementById('toggle-music-btn');
-const musicIcon = document.getElementById('music-icon');
 const musicVolumeSlider = document.getElementById('music-volume-slider');
 const musicVolumeLabel = document.getElementById('music-volume-label');
 
@@ -20,35 +18,24 @@ let currentVolume = savedMusicVolume === null
     ? 0.2
     : Math.max(0, Math.min(1, Number(savedMusicVolume) || 0));
 let hasUserStartedMusic = false; // เพิ่ม flag นี้
-let userPausedMusic = localStorage.getItem('musicPaused') === 'true';
+if (localStorage.getItem('musicPaused') === 'true') currentVolume = 0;
+localStorage.removeItem('musicPaused');
+const userPausedMusic = false;
 
 function updateMusicUI() {
-    if (isMusicPlaying) {
-        musicIcon.textContent = '⏸️'; // แสดง pause icon เมื่อเล่นอยู่
-    } else {
-        musicIcon.textContent = '▶️'; // แสดง play icon เมื่อหยุด
-    }
     musicVolumeLabel.textContent = `${Math.round(currentVolume * 100)}%`;
             musicVolumeSlider.value = Math.round(currentVolume * 100); // default to 20
 }
 
-toggleMusicBtn.addEventListener('click', () => {
-    if (isMusicPlaying) {
-        backgroundMusic.pause();
-        isMusicPlaying = false;
-        userPausedMusic = true; // ผู้ใช้ pause เอง
-    } else {
-        backgroundMusic.play().catch(()=>{});
-        isMusicPlaying = true;
-        userPausedMusic = false; // ผู้ใช้ play เอง
-    }
-    localStorage.setItem('musicPaused', String(userPausedMusic));
-    updateMusicUI();
-});
-
 // Slider event
 musicVolumeSlider.addEventListener('input', (e) => {
     setMusicVolume(e.target.value / 100);
+    if (currentVolume > 0 && backgroundMusic.paused) {
+        backgroundMusic.play().then(() => {
+            isMusicPlaying = true;
+            hasUserStartedMusic = true;
+        }).catch(() => {});
+    }
 });
 
 function setMusicVolume(vol) {
@@ -1249,7 +1236,7 @@ function addTryalPopupCollapseControl(popup, overlay, title) {
 
     const toggle = document.createElement('button');
     toggle.type = 'button';
-    toggle.className = 'popup-collapse-toggle';
+    toggle.className = 'popup-collapse-toggle action-btn';
     toggle.textContent = 'ย่อ';
     toggle.setAttribute('aria-expanded', 'true');
     toggle.setAttribute('aria-label', 'ย่อหน้าต่าง');
@@ -2605,7 +2592,7 @@ function createNightActionPopup(actionType, timer) {
         <div class="night-action-header">
             <div class="night-action-title-row">
                 <h2 class="night-action-title">${icon} ${title}</h2>
-                <button type="button" class="popup-collapse-toggle" aria-expanded="true" aria-label="ย่อหน้าต่าง">ย่อ</button>
+                <button type="button" class="popup-collapse-toggle action-btn" aria-expanded="true" aria-label="ย่อหน้าต่าง">ย่อ</button>
             </div>
             <div class="night-action-subtitle">${subtitle}</div>
         </div>
@@ -3328,10 +3315,29 @@ function displayCardDescription(name) {
     return map[name] || '';
 }
 
+let latestGameOverSummary = null;
+let gameOverSummaryDismissed = false;
+const reopenGameSummaryButton = document.getElementById('reopen-game-summary-btn');
+reopenGameSummaryButton?.addEventListener('click', () => {
+    gameOverSummaryDismissed = false;
+    showGameOverModal(latestGameOverSummary);
+});
+
+function resetGameOverSummary() {
+    latestGameOverSummary = null;
+    gameOverSummaryDismissed = false;
+    if (reopenGameSummaryButton) reopenGameSummaryButton.style.display = 'none';
+    const modal = document.getElementById('game-over-modal');
+    if (modal) modal.style.display = 'none';
+}
+socket.on('room left', resetGameOverSummary);
+
 // ฟังก์ชันแสดงสถิติตอนจบเกม และหน้าจอสรุปผลชัยชนะ
 function showGameOverModal(data) {
     if (!data) return;
     const summary = data.gameSummary || data;
+    latestGameOverSummary = summary;
+    if (gameOverSummaryDismissed) return;
     const modal = document.getElementById('game-over-modal');
     if (!modal) return;
 
@@ -3439,9 +3445,12 @@ function showGameOverModal(data) {
     if (closeBtn) {
         closeBtn.onclick = () => {
             modal.style.display = 'none';
+            gameOverSummaryDismissed = true;
+            if (reopenGameSummaryButton) reopenGameSummaryButton.style.display = 'inline-flex';
         };
     }
 
+    if (reopenGameSummaryButton) reopenGameSummaryButton.style.display = 'none';
     modal.style.display = 'flex';
 }
 
@@ -3454,6 +3463,7 @@ socket.on('game over summary', (summary) => {
 });
 
 socket.on('game restarted', () => {
+    resetGameOverSummary();
     const modal = document.getElementById('game-over-modal');
     if (modal) modal.style.display = 'none';
     const oldPopup = document.getElementById('game-over-popup');
