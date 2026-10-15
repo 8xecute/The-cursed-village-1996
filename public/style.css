@@ -152,8 +152,10 @@ button:disabled {
 
 #name-section {
     display: flex;
-    gap: 10px;
-    align-items: center;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 #name-input-container {
@@ -941,6 +943,15 @@ button:disabled {
     animation: pulseEndTurn 0.7s infinite alternate;
 }
 
+#draw-card-button.confirming {
+    background: #1d4ed8 !important;
+    color: #ffffff !important;
+    border: 2px solid #38bdf8 !important;
+    font-weight: bold !important;
+    box-shadow: 0 0 16px rgba(56, 189, 248, 0.85) !important;
+    animation: pulseDrawCard 0.7s infinite alternate;
+}
+
 @keyframes pulsePlayBtn {
     0% { transform: scale(1); filter: brightness(1); }
     100% { transform: scale(1.02); filter: brightness(1.15); }
@@ -949,6 +960,11 @@ button:disabled {
 @keyframes pulseEndTurn {
     0% { transform: scale(1); box-shadow: 0 0 6px #dc2626; }
     100% { transform: scale(1.04); box-shadow: 0 0 16px #facc15; }
+}
+
+@keyframes pulseDrawCard {
+    0% { transform: scale(1); box-shadow: 0 0 6px #1d4ed8; }
+    100% { transform: scale(1.04); box-shadow: 0 0 16px #38bdf8; }
 }
 
 /* ขอบหรือเงาทองเมื่อถึงเทิร์นของผู้เล่น */
@@ -1266,10 +1282,7 @@ button:disabled {
 }
 
 #room-management-section button {
-  margin-bottom: 0;
-}
-#room-management-section #join-room-button {
-  margin-top: 12px;
+  margin: 0;
 }
 
 #room-management-section > div {
@@ -1389,8 +1402,9 @@ html, body {
     letter-spacing: 0.05em;
   }
 
-  button:not(.btn-action):not(#draw-card-button):not(#play-card-button):not(#end-turn-button):not(.ready-btn),
-  input[type="text"], input[type="number"], select {
+  button:not(.btn-action):not(#draw-card-button):not(#play-card-button):not(#end-turn-button):not(.ready-btn):not(#room-set-name-button):not(#create-room-button):not(#join-room-button):not(#set-name-button):not(.active-room-join-btn):not(.top-nav-btn):not(.music-btn),
+  input[type="text"]:not(#room-player-name-input):not(#new-room-name-input):not(#join-room-name-input):not(#name-input),
+  input[type="number"], select {
     width: 100%;
     margin: 4px 0;
   }
@@ -1403,7 +1417,19 @@ html, body {
   }
 
   .section {
-    padding: 10px 8px;
+    padding: 12px 10px;
+    margin-bottom: 8px;
+    border-radius: 10px;
+    background-color: rgba(30, 23, 19, 0.94);
+    border: 1px solid #443224;
+  }
+
+  .section h2 {
+    font-size: 1.25em;
+    margin-bottom: 8px;
+    padding-bottom: 4px;
+    color: #ff9800;
+    border-bottom: 1px solid rgba(255, 152, 0, 0.4);
   }
 
   #game-state-bar {
@@ -1584,8 +1610,10 @@ html, body {
 }
 #name-section {
   display: flex;
-  align-items: center;
-  gap: 12px;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  box-sizing: border-box;
 }
 #leave-room-button {
   margin-left: 18px;
@@ -1958,29 +1986,79 @@ body > .tryal-selection-popup {
 
 /* Room Input Group for mobile and desktop */
 .room-input-group {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  width: 100%;
-  box-sizing: border-box;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 8px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  margin-bottom: 10px !important;
 }
 
 .room-input-group input[type="text"] {
-  flex: 1 1 auto;
-  min-width: 0;
-  min-height: 44px;
+  flex: 1 1 0 !important;
+  width: auto !important;
+  min-width: 0 !important;
+  min-height: 42px !important;
+  height: 42px !important;
   margin: 0 !important;
-  font-size: 16px;
-  box-sizing: border-box;
+  padding: 8px 12px !important;
+  font-size: 0.95em !important;
+  background: rgba(16, 12, 10, 0.85) !important;
+  border: 1px solid #5a4030 !important;
+  border-radius: 8px !important;
+  color: #f7ede2 !important;
+  box-sizing: border-box !important;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.room-input-group button {
-  flex: 0 0 auto;
-  min-height: 44px;
+.room-input-group input[type="text"]::placeholder {
+  color: #8c7664 !important;
+}
+
+.room-input-group input[type="text"]:focus {
+  border-color: #ff9800 !important;
+  outline: none !important;
+  box-shadow: 0 0 8px rgba(255, 152, 0, 0.35) !important;
+}
+
+.room-input-group button,
+.active-room-join-btn {
+  flex: 0 0 auto !important;
+  width: auto !important;
+  min-width: 86px !important;
+  max-width: 110px !important;
+  min-height: 42px !important;
+  height: 42px !important;
   margin: 0 !important;
-  padding: 0 16px;
-  white-space: nowrap;
-  box-sizing: border-box;
+  padding: 0 16px !important;
+  font-weight: 700 !important;
+  font-size: 0.95em !important;
+  white-space: nowrap !important;
+  border-radius: 8px !important;
+  cursor: pointer !important;
+  box-sizing: border-box !important;
+  background: linear-gradient(180deg, #c44d18 0%, #872905 100%) !important;
+  border: 1px solid #d96e34 !important;
+  color: #fff !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  transition: all 0.18s ease;
+  letter-spacing: 0.3px;
+}
+
+.room-input-group button:hover,
+.active-room-join-btn:hover {
+  background: linear-gradient(180deg, #d85c22 0%, #9e330a 100%) !important;
+  border-color: #f5884a !important;
+  box-shadow: 0 4px 12px rgba(216, 92, 34, 0.4);
+  transform: translateY(-1px);
+}
+
+.room-input-group button:active,
+.active-room-join-btn:active {
+  transform: translateY(1px);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
 }
 
 /* Lobby player list */
@@ -2383,6 +2461,14 @@ button, .card, .tryal-card-btn, .mobile-tab-btn {
     border: 2px solid #facc15 !important;
     font-size: 0.78em !important;
     box-shadow: 0 0 14px rgba(220, 38, 38, 0.8) !important;
+  }
+
+  #draw-card-button.confirming {
+    background: linear-gradient(135deg, #2563eb 0%, #1e3a8a 100%) !important;
+    color: #ffffff !important;
+    border: 2px solid #38bdf8 !important;
+    font-size: 0.78em !important;
+    box-shadow: 0 0 14px rgba(37, 99, 235, 0.8) !important;
   }
 
   /* Tryal cards in hand */
@@ -3158,13 +3244,13 @@ button, .card, .tryal-card-btn, .mobile-tab-btn {
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 10px;
-  margin: 10px 0 12px 0;
-  background: rgba(28, 22, 18, 0.75);
+  gap: 8px;
+  margin: 4px 0 6px 0;
+  background: rgba(26, 20, 16, 0.85);
   border: 1px solid #483425;
-  border-radius: 10px;
-  padding: 10px 14px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  padding: 8px 12px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
 }
 
 .player-name-tag {
@@ -3217,9 +3303,9 @@ button, .card, .tryal-card-btn, .mobile-tab-btn {
   align-items: center;
   flex-wrap: wrap;
   gap: 8px;
-  font-size: 0.92em;
+  font-size: 0.88em;
   color: #c9b8a5;
-  margin-top: 6px;
+  margin-top: 2px;
 }
 
 /* ==========================================================================
@@ -3722,6 +3808,234 @@ button, .card, .tryal-card-btn, .mobile-tab-btn {
   .night-action-title {
     font-size: 1.2em;
   }
+}
+
+/* ==========================================================================
+   In-Modal Witch Chat (Night Phase Coordination)
+   ========================================================================== */
+.modal-witch-chat-section {
+  background: rgba(20, 8, 8, 0.92);
+  border: 1px solid #7f1d1d;
+  border-radius: 10px;
+  margin: 12px 0;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.modal-witch-chat-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.88em;
+  font-weight: bold;
+  color: #f87171;
+  border-bottom: 1px solid rgba(127, 29, 29, 0.4);
+  padding-bottom: 5px;
+}
+
+.modal-witch-chat-sub {
+  font-size: 0.78em;
+  color: #fca5a5;
+  font-weight: normal;
+}
+
+.modal-witch-chat-messages {
+  max-height: 120px;
+  min-height: 55px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 4px;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 6px;
+}
+
+.modal-witch-chat-input-bar {
+  display: flex;
+  gap: 6px;
+}
+
+.modal-witch-chat-input-bar input {
+  flex: 1;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid #7f1d1d;
+  color: #fff;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 0.88em;
+}
+
+.modal-witch-chat-input-bar input:focus {
+  outline: none;
+  border-color: #ef4444;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.4);
+}
+
+.modal-witch-chat-input-bar button {
+  padding: 6px 14px;
+  font-size: 0.88em;
+  border-radius: 6px;
+}
+
+/* ==========================================================================
+   Death Notification Modal & Visuals
+   ========================================================================== */
+.death-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(6px);
+  z-index: 9999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 16px;
+  animation: fadeInDeath 0.5s ease-out;
+}
+
+.death-modal-content {
+  background: radial-gradient(circle at top, #240b0b 0%, #120505 70%, #050202 100%);
+  border: 2px solid #991b1b;
+  border-radius: 16px;
+  padding: 28px 24px 24px 24px;
+  max-width: 440px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 10px 40px rgba(153, 27, 27, 0.6), inset 0 0 25px rgba(0, 0, 0, 0.8);
+  animation: popInDeath 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+}
+
+.death-modal-icon {
+  font-size: 3.5em;
+  margin-bottom: 8px;
+  filter: drop-shadow(0 0 12px rgba(239, 68, 68, 0.6));
+}
+
+.death-modal-title {
+  color: #f87171;
+  font-size: 1.6em;
+  font-weight: bold;
+  margin: 0 0 8px 0;
+  letter-spacing: 0.5px;
+  text-shadow: 0 0 12px rgba(220, 38, 38, 0.8);
+}
+
+.death-modal-badge {
+  display: inline-block;
+  background: rgba(127, 29, 29, 0.5);
+  border: 1px solid #dc2626;
+  color: #fecaca;
+  padding: 4px 14px;
+  border-radius: 20px;
+  font-size: 0.86em;
+  margin-bottom: 14px;
+}
+
+.death-modal-desc {
+  color: #d1d5db;
+  font-size: 0.94em;
+  line-height: 1.6;
+  margin: 0 0 22px 0;
+}
+
+.death-modal-close-btn {
+  background: linear-gradient(180deg, #7f1d1d 0%, #450a0a 100%);
+  border: 1px solid #ef4444;
+  color: #ffffff;
+  padding: 10px 22px;
+  font-size: 0.96em;
+  font-weight: bold;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(127, 29, 29, 0.5);
+}
+
+.death-modal-close-btn:hover {
+  background: linear-gradient(180deg, #991b1b 0%, #581010 100%);
+  box-shadow: 0 6px 16px rgba(239, 68, 68, 0.6);
+  transform: translateY(-2px);
+}
+
+@keyframes fadeInDeath {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes popInDeath {
+  from { transform: scale(0.85); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+/* Dead badges on cards & sidebar */
+.player-dead-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #3f0f0f;
+  color: #fca5a5;
+  border: 1px solid #7f1d1d;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 0.78em;
+  font-weight: bold;
+  vertical-align: middle;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+
+.player-dead-badge-sm {
+  background: #450a0a;
+  color: #fca5a5;
+  border: 1px solid #991b1b;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 0.75em;
+  font-weight: 600;
+  margin-left: 4px;
+}
+
+.player-board-card.dead {
+  background: linear-gradient(135deg, #181414 0%, #0d0a0a 100%) !important;
+  border: 1.5px solid #450a0a !important;
+  opacity: 0.68;
+  filter: grayscale(40%);
+  position: relative;
+}
+
+.player-board-card.dead:hover {
+  opacity: 0.9;
+  filter: grayscale(10%);
+}
+
+.player-board-card.dead .player-board-header {
+  color: #9ca3af !important;
+}
+
+/* ==========================================================================
+   Spectator / Observer Mode Banner
+   ========================================================================== */
+.spectator-status-banner {
+  background: linear-gradient(90deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%);
+  border: 1.5px solid #38bdf8;
+  color: #e0f2fe;
+  padding: 10px 18px;
+  border-radius: 10px;
+  margin: 10px 0 14px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 0.95em;
+  box-shadow: 0 4px 16px rgba(56, 189, 248, 0.25);
+  animation: slideDownBanner 0.4s ease-out;
+}
+
+@keyframes slideDownBanner {
+  from { transform: translateY(-10px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 }
 
 

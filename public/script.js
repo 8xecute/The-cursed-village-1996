@@ -389,7 +389,7 @@ socket.on('room state update', (roomState) => {
         }
         html += ` ${player.isHost ? '(Host)' : ''} ${player.isBlackCatHolder ? ' (เครื่องเซ่น)' : ''}`;
         if (!player.alive) {
-            html += ' <span class="dead-label">ผู้เล่นนี้ตายแล้ว</span>';
+            html += ' <span class="player-dead-badge-sm">💀 เสียชีวิตแล้ว</span>';
         }
         if (!roomState.gameStarted) {
             if (player.isHost) {
@@ -527,11 +527,16 @@ socket.on('room state update', (roomState) => {
             }
         }
 
+        // --- Spectator handling ---
+        isSpectatorMode = !!roomState.isSpectator;
+        updateSpectatorUI(isSpectatorMode);
+
         // --- NEW: Disable all controls if player is dead ---
         if (myPlayer && !myPlayer.alive) {
             if (!deathNotified) {
-                addGameMessage('คุณตายแล้ว! คุณจะไม่สามารถทำแอ็กชันใดๆ ได้อีก', 'red', true);
+                addGameMessage('💀 คุณตายแล้ว! คุณจะไม่สามารถทำแอ็กชันใดๆ ได้อีก', 'red', true);
                 deathNotified = true;
+                showDeathNoticeModal();
             }
             if (typeof drawCardButton !== 'undefined' && drawCardButton) drawCardButton.disabled = true;
             if (typeof playCardButton !== 'undefined' && playCardButton) playCardButton.disabled = true;
@@ -1016,8 +1021,16 @@ function addWitchChatMessage(senderName, message, timestamp) {
     } else {
         msgDiv.innerHTML = `<span class='sender'>${senderName}</span>: <span class='message'>${message}</span><br><span class='timestamp'>${formatTime(timestamp)}</span>`;
     }
-    witchChatMessages.appendChild(msgDiv);
-    witchChatMessages.scrollTop = witchChatMessages.scrollHeight;
+    if (witchChatMessages) {
+        witchChatMessages.appendChild(msgDiv);
+        witchChatMessages.scrollTop = witchChatMessages.scrollHeight;
+    }
+    const modalChatMessages = document.getElementById('modal-witch-chat-messages');
+    if (modalChatMessages) {
+        const modalMsg = msgDiv.cloneNode(true);
+        modalChatMessages.appendChild(modalMsg);
+        modalChatMessages.scrollTop = modalChatMessages.scrollHeight;
+    }
     if (currentMobileGameTab !== 'chat' && tabChatBadge) {
         tabChatBadge.style.display = 'inline-block';
     }
@@ -1333,16 +1346,53 @@ function handleForceNextPhase() {
 forceNextPhaseButton.addEventListener('click', handleForceNextPhase);
 forceNextPhaseGameButton.addEventListener('click', handleForceNextPhase);
 
+let drawCardPendingTimeout = null;
+let drawCardConfirming = false;
+
+function resetDrawCardButton() {
+    if (drawCardPendingTimeout) {
+        clearTimeout(drawCardPendingTimeout);
+        drawCardPendingTimeout = null;
+    }
+    drawCardConfirming = false;
+    if (drawCardButton) {
+        drawCardButton.classList.remove('confirming');
+        drawCardButton.innerHTML = '🃏 จั่วการ์ด';
+    }
+}
+
 drawCardButton.addEventListener('click', () => {
     const me = currentRoomState && currentRoomState.players && currentRoomState.players[myUniqueId];
     if (me && !me.alive) {
         addGameMessage('คุณตายแล้ว ไม่สามารถทำแอ็กชันได้', 'red');
+        resetDrawCardButton();
         return;
     }
     if (!isMyTurn) {
         addGameMessage('ไม่ใช่ตาของคุณ.', 'red');
+        resetDrawCardButton();
         return;
     }
+    if (me && me.hasPlayedCardsThisTurn) {
+        addGameMessage('คุณได้เล่นการ์ดไปแล้วในเทิร์นนี้ คุณต้องจบเทิร์น.', 'red');
+        resetDrawCardButton();
+        return;
+    }
+
+    // First tap: prompt confirmation with countdown reset
+    if (!drawCardConfirming) {
+        drawCardConfirming = true;
+        drawCardButton.classList.add('confirming');
+        drawCardButton.innerHTML = '⚠️ แตะยืนยันจั่ว?';
+        if (drawCardPendingTimeout) clearTimeout(drawCardPendingTimeout);
+        drawCardPendingTimeout = setTimeout(() => {
+            resetDrawCardButton();
+        }, 3500);
+        return;
+    }
+
+    // Second tap: confirmed draw cards
+    resetDrawCardButton();
     socket.emit('draw cards');
 });
 
@@ -1386,8 +1436,8 @@ playCardButton.addEventListener('click', () => {
             clearCardSelection();
             drawCardButton.disabled = true;
         }, card);
-                    return;
-                }
+        return;
+    }
     if (card.name === 'Curse') {
         // Disable draw after playing Curse
         drawCardButton.disabled = true;
@@ -1422,6 +1472,11 @@ endTurnButton.addEventListener('click', () => {
     }
     if (!isMyTurn) {
         addGameMessage('ไม่ใช่ตาของคุณ.', 'red');
+        resetEndTurnButton();
+        return;
+    }
+    if (!me || !me.hasPlayedCardsThisTurn) {
+        addGameMessage('คุณต้องเลือกจั่วการ์ด 2 ใบ หรือเล่นการ์ดก่อนจบเทิร์น', 'red');
         resetEndTurnButton();
         return;
     }
@@ -1574,6 +1629,7 @@ function clearCardSelection() {
         playCardButton.innerHTML = '⚡ เล่นการ์ดที่เลือก';
     }
     resetEndTurnButton();
+    resetDrawCardButton();
 }
 
 function updateTurnUI() {
@@ -1584,6 +1640,7 @@ function updateTurnUI() {
     if (!isMyTurn) {
         clearCardSelection();
         resetEndTurnButton();
+        resetDrawCardButton();
         drawButtonDisabled = false; // Reset when turn changes
     }
     // เพิ่ม/ลบ class my-turn-active
@@ -1600,15 +1657,20 @@ function updateTurnUI() {
 }
 
 function updateDrawCardButton() {
+    const me = currentRoomState && currentRoomState.players && currentRoomState.players[myUniqueId];
+    if (me && me.hasPlayedCardsThisTurn) {
+        drawCardButton.disabled = true;
+        return;
+    }
     // Disable draw card button if a card is selected and needs a target
-    if (selectedCard !== null && myCurrentHand[selectedCard] && CARDS_NEED_TARGET.includes(myCurrentHand[selectedCard].name) && cardTargetSelect.value) {
+    if (selectedCard !== null && myCurrentHand[selectedCard] && CARDS_NEED_TARGET.includes(myCurrentHand[selectedCard].name) && cardTargetSelect && cardTargetSelect.value) {
         drawCardButton.disabled = true;
     } else if (isMyTurn && !drawButtonDisabled) {
         // Don't disable draw button for Night card since it's played after turn ends
         drawCardButton.disabled = false;
-            } else {
+    } else {
         drawCardButton.disabled = true;
-            }
+    }
 }
 
 function showCardDescription(card, cardElement) {
@@ -2028,7 +2090,7 @@ function updatePlayersGrid(roomState, myUniqueId, actionType = null) {
         if (isWitchView && player.hasBeenWitch) header += ' <span style="color:#ff1744;font-size:0.95em;font-weight:bold;">(ทีมปอบ)</span>';
         if (player.isHost) header += ' <span style="color:#ff4500;">(Host)</span>';
         if (player.isBlackCatHolder) header += ' <span style="color:#ffd700;">(เครื่องเซ่น)</span>';
-        if (!player.alive) header += ' <span class="dead-label">ผู้เล่นนี้ตายแล้ว</span>';
+        if (!player.alive) header += ' <span class="player-dead-badge">💀 เสียชีวิตแล้ว</span>';
         if (roomState.currentTurnPlayerUniqueId === player.uniqueId) header += ' <span style="color:#2196f3;font-weight:bold;">[เทิร์น]</span>';
         header += '</div>';
         // Status
@@ -2204,7 +2266,7 @@ function updatePlayersBoardGrid(roomState, myUniqueId) {
         header += `${player.name}`;
         if (player.isHost) header += ' <span style="color:#ff4500;">(Host)</span>';
         if (player.isBlackCatHolder) header += ' <span style="color:#ffd700;">(เครื่องเซ่น)</span>';
-        if (!player.alive) header += ' <span class="dead-label">ผู้เล่นนี้ตายแล้ว</span>';
+        if (!player.alive) header += ' <span class="player-dead-badge">💀 เสียชีวิตแล้ว</span>';
         if (roomState.currentTurnPlayerUniqueId === player.uniqueId) header += ' <span style="color:#2196f3;font-weight:bold;">[เทิร์น]</span>';
         header += '</div>';
         // Status
@@ -2475,7 +2537,21 @@ function createNightActionPopup(actionType, timer) {
         </div>
         <div id="night-action-witch-team-container"></div>
         <div id="night-action-players-list" class="night-targets-scroll"></div>
+        ${actionType === 'witch' ? `
+        <div class="modal-witch-chat-section" id="modal-witch-chat-section">
+            <div class="modal-witch-chat-header">
+                <span>💬 แชทปรึกษาทีมปอบ</span>
+                <span class="modal-witch-chat-sub">คุยสดกับเพื่อนปอบก่อนยืนยัน</span>
+            </div>
+            <div id="modal-witch-chat-messages" class="modal-witch-chat-messages"></div>
+            <div class="modal-witch-chat-input-bar">
+                <input type="text" id="modal-witch-chat-input" placeholder="พิมพ์ข้อความปรึกษาเพื่อนปอบ..." maxlength="100">
+                <button type="button" id="modal-witch-chat-send" class="btn btn-sm btn-danger">ส่ง</button>
+            </div>
+        </div>
+        ` : ''}
         <div class="night-action-footer">
+            ${actionType === 'witch' ? `<button type="button" id="propose-night-action-btn" class="btn btn-secondary btn-sm" style="display: none; margin-right: 8px;">💡 เสนอชื่อในแชท</button>` : ''}
             <button id="confirm-night-action" class="night-confirm-btn" style="display: none;">
                 ยืนยันการเลือก
             </button>
@@ -2496,6 +2572,35 @@ function createNightActionPopup(actionType, timer) {
                 witchList.innerHTML = '🤝 สมาชิกทีมปอบ: <strong>' + witchTeam.map(p => p.name).join(', ') + '</strong>';
                 teamContainer.appendChild(witchList);
             }
+        }
+
+        // เชื่อมต่อแชทปอบในโมดอล
+        const modalChatInput = popup.querySelector('#modal-witch-chat-input');
+        const modalChatSend = popup.querySelector('#modal-witch-chat-send');
+        const modalChatMessages = popup.querySelector('#modal-witch-chat-messages');
+
+        if (modalChatMessages && witchChatMessages) {
+            modalChatMessages.innerHTML = witchChatMessages.innerHTML;
+            modalChatMessages.scrollTop = modalChatMessages.scrollHeight;
+        }
+
+        const sendFromModal = () => {
+            if (!modalChatInput) return;
+            const msg = modalChatInput.value.trim();
+            if (msg && currentRoomName) {
+                socket.emit('send witch chat message', currentRoomName, msg);
+                modalChatInput.value = '';
+            }
+        };
+
+        if (modalChatSend) modalChatSend.onclick = sendFromModal;
+        if (modalChatInput) {
+            modalChatInput.onkeydown = (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    sendFromModal();
+                }
+            };
         }
     }
 
@@ -2675,6 +2780,17 @@ function populateNightActionPlayersList(actionType) {
             const confirmBtn = document.getElementById('confirm-night-action');
             if (confirmBtn) {
                 confirmBtn.style.display = 'inline-block';
+            }
+
+            // Show propose to witch chat button
+            const proposeBtn = document.getElementById('propose-night-action-btn');
+            if (proposeBtn && actionType === 'witch') {
+                proposeBtn.style.display = 'inline-block';
+                proposeBtn.onclick = () => {
+                    if (currentRoomName) {
+                        socket.emit('send witch chat message', currentRoomName, `💡 ขอเสนอเป้าหมาย: "${player.name}"`);
+                    }
+                };
             }
         });
         
@@ -3624,6 +3740,77 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
+// --- Death Notification Modal ---
+function showDeathNoticeModal() {
+    const existing = document.getElementById('death-notice-overlay');
+    if (existing) existing.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'death-notice-overlay';
+    overlay.className = 'death-modal-overlay';
+
+    const modal = document.createElement('div');
+    modal.className = 'death-modal-content';
+    modal.innerHTML = `
+        <div class="death-modal-icon">🪦</div>
+        <h2 class="death-modal-title">คุณเสียชีวิตแล้ว!</h2>
+        <div class="death-modal-badge">☠️ เข้าสู่สถานะวิญญาณเร่ร่อน</div>
+        <p class="death-modal-desc">
+            ชีวิตของคุณในหมู่บ้านต้องคำสาปได้ดับสูญแล้ว...<br>
+            คุณไม่สามารถจั่วการ์ด เล่นการ์ด หรือกล่าวหาใครได้อีกต่อไป<br>
+            แต่ยังคงสามารถเฝ้าดูชะตากรรมของหมู่บ้านต่อได้ในฐานะวิญญาณ
+        </p>
+        <button type="button" class="death-modal-close-btn" id="death-modal-close-btn">
+            👁️ รับทราบ (เฝ้าดูต่อในฐานะวิญญาณ)
+        </button>
+    `;
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+
+    const closeBtn = modal.querySelector('#death-modal-close-btn');
+    if (closeBtn) {
+        closeBtn.onclick = () => {
+            overlay.remove();
+        };
+    }
+}
+
+// --- Spectator UI Support ---
+function updateSpectatorUI(isSpec) {
+    let specBanner = document.getElementById('spectator-status-banner');
+    if (isSpec) {
+        if (!specBanner) {
+            specBanner = document.createElement('div');
+            specBanner.id = 'spectator-status-banner';
+            specBanner.className = 'spectator-status-banner';
+            specBanner.innerHTML = '<span>👁️ <strong>โหมดผู้ชม (Spectator)</strong> — คุณกำลังเฝ้าดูการเล่น ไม่สามารถกระทำแอ็กชัน และไม่เห็นบทบาทลับ</span>';
+            const gamePage = document.getElementById('game-page');
+            if (gamePage) gamePage.insertBefore(specBanner, gamePage.firstChild);
+        } else {
+            specBanner.style.display = 'flex';
+        }
+        // Disable hand action controls for spectators
+        if (typeof drawCardButton !== 'undefined' && drawCardButton) drawCardButton.disabled = true;
+        if (typeof playCardButton !== 'undefined' && playCardButton) playCardButton.disabled = true;
+        if (typeof endTurnButton !== 'undefined' && endTurnButton) endTurnButton.disabled = true;
+        if (typeof confessButton !== 'undefined' && confessButton) confessButton.disabled = true;
+        const gameActions = document.getElementById('game-actions');
+        if (gameActions) gameActions.style.display = 'none';
+        const confessSection = document.getElementById('confess-section');
+        if (confessSection) confessSection.style.display = 'none';
+        const witchChatSection = document.getElementById('witch-chat-section');
+        if (witchChatSection) witchChatSection.style.display = 'none';
+    } else if (specBanner) {
+        specBanner.style.display = 'none';
+    }
+}
+
+socket.on('joined as spectator', ({ roomName, name }) => {
+    isSpectatorMode = true;
+    addGameMessage(`👁️ คุณเข้าร่วมในฐานะผู้ชมของห้อง ${roomName}`, 'gray', true);
+    updateSpectatorUI(true);
+});
+
 // --- Witch Card Popup Logic ---
 function showWitchPopup(fromName) {
     // ถ้าเคยกดเข้าใจแล้ว ไม่ต้องแสดง popup อีก
@@ -3707,8 +3894,9 @@ socket.on('prompt select blackcat tryal', ({ blackCatHolder, tryalCount, blackCa
         : '🐱 เลือกการ์ดชีวิตของผู้ถือเครื่องเซ่นเพื่อเปิดเผย';
     popup.appendChild(title);
 
+    const holderName = blackCatHolderName || (currentRoomState && currentRoomState.players && currentRoomState.players[blackCatHolder] && currentRoomState.players[blackCatHolder].name) || 'ไม่ทราบชื่อ';
     const subtitle = document.createElement('p');
-    subtitle.innerHTML = `ผู้ถือการ์ดเครื่องเซ่นในปัจจุบัน: <b style="color:#ffb74d;">${blackCatHolderName || 'ไม่ทราบชื่อ'}</b>`;
+    subtitle.innerHTML = `ผู้ถือการ์ดเครื่องเซ่นในปัจจุบัน: <b style="color:#ffb74d;">${holderName}</b>`;
     subtitle.style = 'color: #d7ccc8; font-size: 0.95em; margin-top: -6px; margin-bottom: 16px;';
     popup.appendChild(subtitle);
 

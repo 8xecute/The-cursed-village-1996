@@ -209,8 +209,8 @@ function emitRoomState(roomName) {
       const playersState = {};
       for (const uniqueId in room.players) {
         const player = room.players[uniqueId];
-        const isSelf = viewer?.uniqueId === uniqueId;
-        const viewerKnowsWitchTeam = !!(room.gameOver || isSelf || viewer?.hasBeenWitch);
+        const isSelf = !viewer?.isSpectator && viewer?.uniqueId === uniqueId;
+        const viewerKnowsWitchTeam = !!(room.gameOver || (isSelf && !viewer?.isSpectator) || (!viewer?.isSpectator && viewer?.hasBeenWitch));
         const revealedIndexes = new Set(player.revealedTryalCardIndexes || []);
         playersState[uniqueId] = {
             id: player.id, // socket id
@@ -220,7 +220,7 @@ function emitRoomState(roomName) {
             handSize: player.hand.length,
             tryalCardCount: player.tryalCards.length, // Send total count of Tryal Cards
             tryalCards: player.tryalCards.map((card, index) => (
-                room.gameOver || !player.alive || isSelf || revealedIndexes.has(index)
+                room.gameOver || !player.alive || (isSelf && !viewer?.isSpectator) || revealedIndexes.has(index)
                     ? { name: card.name, type: card.type }
                     : { name: null, type: null }
             )),
@@ -231,8 +231,8 @@ function emitRoomState(roomName) {
             })),
             alive: player.alive,
             isSilenced: player.isSilenced,
-            isWitch: room.gameOver || isSelf ? player.isWitch : false,
-            isConstable: room.gameOver || isSelf ? player.isConstable : false,
+            isWitch: room.gameOver || (isSelf && !viewer?.isSpectator) ? player.isWitch : false,
+            isConstable: room.gameOver || (isSelf && !viewer?.isSpectator) ? player.isConstable : false,
             hasBeenWitch: viewerKnowsWitchTeam ? player.hasBeenWitch : false,
             // Explicitly send blackCatHolder and gavelHolder for the player list display
             accusationPoints: room.accusedPlayers[uniqueId] || 0,
@@ -240,6 +240,7 @@ function emitRoomState(roomName) {
             mustRevealTryal: room.playerForcedToRevealTryal === uniqueId,
             revealedTryalCardIndexes: Array.from(player.revealedTryalCardIndexes), // Send revealed roles as array
             isReady: !!player.isReady,
+            hasPlayedCardsThisTurn: !!player.hasPlayedCardsThisTurn,
         };
       }
       return playersState;
@@ -289,6 +290,22 @@ function emitRoomState(roomName) {
             });
             io.to(player.id).emit('update hand', player.hand);
             io.to(player.id).emit('update tryal cards initial', player.tryalCards);
+        }
+    }
+
+    // --- ส่งข้อมูลแบบ Sanitized ให้ผู้ชม (Spectators) ไม่เปิดเผยบทบาทลับใดๆ ---
+    if (room.spectators) {
+        for (const specUniqueId in room.spectators) {
+            const spec = room.spectators[specUniqueId];
+            if (spec && spec.id) {
+                io.to(spec.id).emit('room state update', {
+                    ...publicState,
+                    players: buildPlayersStateFor(spec),
+                    isSpectator: true,
+                });
+                io.to(spec.id).emit('update hand', []);
+                io.to(spec.id).emit('update tryal cards initial', []);
+            }
         }
     }
 }
@@ -402,7 +419,8 @@ function setNextTurn(room, fromPlayerUniqueId = null, forceFromPlayer = false) {
                                     sendGameMessage(room.name, `จั่วได้การ์ด ${getCardNameWithColor('Conspiracy')}`, 'orange', true);
                                     io.to(nextPlayer.id).emit('prompt select blackcat tryal', {
                                         blackCatHolder: room.blackCatHolder,
-                                        tryalCount: bcHolder.tryalCards.length
+                                        tryalCount: bcHolder.tryalCards.length,
+                                        blackCatHolderName: bcHolder.name
                                     });
                                     room.discardPile.push(card);
                                     // Don't proceed to next turn until selection is complete
@@ -450,7 +468,8 @@ function setNextTurn(room, fromPlayerUniqueId = null, forceFromPlayer = false) {
                                         sendGameMessage(room.name, `จั่วได้การ์ด ${getCardNameWithColor('Conspiracy')}`, 'orange', true);
                                         io.to(nextPlayer.id).emit('prompt select blackcat tryal', {
                                             blackCatHolder: room.blackCatHolder,
-                                            tryalCount: bcHolder.tryalCards.length
+                                            tryalCount: bcHolder.tryalCards.length,
+                                            blackCatHolderName: bcHolder.name
                                         });
                                         room.discardPile.push(card);
                                         // Don't proceed to next turn until selection is complete
@@ -495,32 +514,28 @@ function setNextTurn(room, fromPlayerUniqueId = null, forceFromPlayer = false) {
     
     emitRoomState(room.name);
 
-    // --- Only shuffle discard pile into draw pile at the start of a new DAY phase ---
-    if (room.currentPhase === 'DAY' && room.dayNumber > 0 && !room.hasShuffledThisDay) {
-        if (room.discardPile && room.discardPile.length > 0) {
-            room.drawPile = room.drawPile || [];
-            room.drawPile = room.drawPile.concat(room.discardPile);
-            room.discardPile = [];
-        }
-        if (room.drawPile && room.drawPile.length > 0) {
-            // เอา Night card ออกทั้งหมด ยกเว้น 1 ใบ
-            const nightCards = room.drawPile.filter(card => card.name === 'Night');
-            const otherCards = room.drawPile.filter(card => card.name !== 'Night');
-            const shuffled = shuffleArray(otherCards);
-            // วาง Night card 1 ใบไว้ล่างสุดเสมอ
-            const nightCard = nightCards.length > 0 ? [nightCards[0]] : [];
-            room.drawPile = shuffled.concat([]); // shuffle เฉพาะใบอื่น
-            if (nightCard.length > 0) {
-                room.drawPile.push(nightCard[0]); // push Night card ไปล่างสุด
-            }
-        }
-        room.hasShuffledThisDay = true;
-        sendDeckInfo(room.name);
+}
+
+function prepareDeckForNewDay(room) {
+    if (!room) return;
+    if (room.discardPile && room.discardPile.length > 0) {
+        room.gameDeck = (room.gameDeck || []).concat(room.discardPile);
+        room.discardPile = [];
     }
-    // Reset flag at the end of the day (when phase changes away from DAY)
-    if (room.currentPhase !== 'DAY') {
-        room.hasShuffledThisDay = false;
+    if (room.gameDeck && room.gameDeck.length > 0) {
+        // Keep exactly one Night card at the bottom of the deck
+        const nightCards = room.gameDeck.filter(card => card.name === 'Night');
+        const otherCards = room.gameDeck.filter(card => card.name !== 'Night');
+        const shuffled = shuffleArray(otherCards);
+        const nightCard = nightCards.length > 0 ? [nightCards[0]] : [];
+        room.gameDeck = shuffled;
+        if (nightCard.length > 0) {
+            room.gameDeck.push(nightCard[0]);
+        }
     }
+    room.hasShuffledThisDay = true;
+    sendDeckInfo(room.name);
+    sendGameMessage(room.name, '🎴 กองการ์ดและกองทิ้งถูกสับรวมเตรียมพร้อมสำหรับวันใหม่เรียบร้อยแล้ว', 'blue', true);
 }
 
 function startPhaseTimer(roomName, duration) {
@@ -681,26 +696,7 @@ function changePhase(roomName, forcedNextPhase = null) {
             changePhase(roomName, 'PRE_DAWN');
         }
     } else if (nextPhase === 'DAY') {
-        // --- Always shuffle discard pile into gameDeck and place Night card at the bottom at the start of DAY phase ---
-        if (room.discardPile && room.discardPile.length > 0) {
-            room.gameDeck = room.gameDeck || [];
-            room.gameDeck = room.gameDeck.concat(room.discardPile);
-            room.discardPile = [];
-            sendDeckInfo(roomName); // <--- เพิ่มบรรทัดนี้หลัง reshuffle
-        }
-        if (room.gameDeck && room.gameDeck.length > 0) {
-            // Remove all Night cards except one
-            const nightCards = room.gameDeck.filter(card => card.name === 'Night');
-            const otherCards = room.gameDeck.filter(card => card.name !== 'Night');
-            const shuffled = shuffleArray(otherCards);
-            // Place only one Night card at the LAST index (bottom of the deck)
-            const nightCard = nightCards.length > 0 ? [nightCards[0]] : [];
-            room.gameDeck = shuffled;
-            if (nightCard.length > 0) {
-                room.gameDeck.push(nightCard[0]);
-            }
-            sendDeckInfo(roomName); // <--- เพิ่มบรรทัดนี้หลังจัดเรียง deck ใหม่
-        }
+        prepareDeckForNewDay(room);
         setNextTurn(room); // Start the turn cycle for the day phase
     }
 
@@ -1350,8 +1346,11 @@ function endTurn(roomName, playerUniqueId) {
         return;
     }
 
+    if (!player.hasPlayedCardsThisTurn) {
+        io.to(player.id).emit('game message', 'คุณต้องเลือกจั่วการ์ด 2 ใบ หรือเล่นการ์ดก่อนจบเทิร์น.', 'red');
+        return;
+    }
 
-    
     setNextTurn(room); // Now advance to next player's turn
 }
 
@@ -1416,6 +1415,7 @@ function drawCards(roomName, playerUniqueId, count = 2) {
                                 io.to(player.id).emit('prompt select blackcat tryal', {
                                     blackCatHolder: room.blackCatHolder,
                                     tryalCount: bcHolder.tryalCards.length,
+                                    blackCatHolderName: bcHolder.name,
                                     fromConspiracyDraw: true
                                 });
                                 room.discardPile.push(card); // discard ทันที
@@ -1468,6 +1468,7 @@ function drawCards(roomName, playerUniqueId, count = 2) {
                                     io.to(player.id).emit('prompt select blackcat tryal', {
                                         blackCatHolder: room.blackCatHolder,
                                         tryalCount: bcHolder.tryalCards.length,
+                                        blackCatHolderName: bcHolder.name,
                                         fromConspiracyDraw: true
                                     });
                                     room.discardPile.push(card);
@@ -1598,6 +1599,7 @@ function confessTryalCard(roomName, playerUniqueId, cardIndex) {
         room.nightCardDrawer = null;
         room.confessionOrder = [];
         room.currentConfessionIndex = 0;
+        prepareDeckForNewDay(room);
         room.currentPhase = 'DAY';
         emitRoomState(room.name);
         setNextTurn(room);
@@ -2000,6 +2002,17 @@ function handlePlayerDisconnection(room, playerUniqueId, playerName, isDisconnec
     emitRoomState(room.name);
 }
 
+function handleSpectatorReconnection(socket, room, spec) {
+    spec.id = socket.id;
+    spec.connected = true;
+    socket.uniqueId = spec.uniqueId;
+    socket.currentRoom = room.name;
+    socket.join(room.name);
+    io.to(socket.id).emit('room joined', room.name);
+    io.to(socket.id).emit('joined as spectator', { roomName: room.name, name: spec.name });
+    emitRoomState(room.name);
+}
+
 function handlePlayerReconnection(socket, room, player) {
     if (player.disconnectTimeout) {
         clearTimeout(player.disconnectTimeout);
@@ -2094,6 +2107,7 @@ function handlePlayerReconnection(socket, room, player) {
             io.to(socket.id).emit('prompt select blackcat tryal', {
                 blackCatHolder: room.blackCatHolder,
                 tryalCount: bcHolder.tryalCards.length,
+                blackCatHolderName: bcHolder.name,
                 fromConspiracyDraw: true
             });
         }
@@ -2153,6 +2167,23 @@ io.on('connection', (socket) => {
                 return;
             }
         }
+
+        // Look for existing spectator room where this uniqueId belongs
+        const existingSpecRoom = Object.values(rooms).find(room =>
+            room && room.spectators && room.spectators[uniqueId]
+        );
+        if (existingSpecRoom) {
+            const spec = existingSpecRoom.spectators[uniqueId];
+            if (spec) {
+                if (playerName && playerName.trim()) {
+                    spec.name = playerName.trim();
+                }
+                handleSpectatorReconnection(socket, existingSpecRoom, spec);
+                broadcastActiveRooms();
+                return;
+            }
+        }
+
         // If not reconnected to existing room, prompt name input on client
         io.to(socket.id).emit('request player name');
     });
@@ -2272,16 +2303,44 @@ io.on('connection', (socket) => {
             return;
         }
 
-        if (Object.keys(room.players).length >= PLAYER_LIMIT) {
-            io.to(socket.id).emit('game message', 'ห้องเต็มแล้ว.', 'red');
+        // Reconnecting as spectator
+        if (room.spectators && room.spectators[socket.uniqueId]) {
+            const spec = room.spectators[socket.uniqueId];
+            if (playerName && playerName.trim()) {
+                spec.name = playerName.trim();
+            }
+            handleSpectatorReconnection(socket, room, spec);
             return;
         }
-        if (room.gameStarted) {
-            io.to(socket.id).emit('game message', 'เกมในห้องนี้เริ่มไปแล้ว. ไม่สามารถเข้าร่วมได้.', 'red');
-            return;
-        }
+
         if (!playerName || playerName.trim() === '') {
             io.to(socket.id).emit('game message', 'โปรดป้อนชื่อผู้เล่นของคุณก่อนเข้าร่วมห้อง.', 'red');
+            return;
+        }
+
+        if (room.gameStarted) {
+            // Join as spectator / observer
+            if (!room.spectators) room.spectators = {};
+            const spec = {
+                id: socket.id,
+                uniqueId: socket.uniqueId,
+                name: playerName.trim(),
+                isSpectator: true,
+                connected: true,
+            };
+            room.spectators[socket.uniqueId] = spec;
+            socket.join(roomName);
+            socket.currentRoom = roomName;
+            io.to(socket.id).emit('room joined', roomName);
+            io.to(socket.id).emit('joined as spectator', { roomName: room.name, name: spec.name });
+            sendGameMessage(roomName, `👁️ <b>${spec.name}</b> เข้ามาเป็นผู้ชมการเล่น`, 'gray', true);
+            emitRoomState(roomName);
+            broadcastActiveRooms();
+            return;
+        }
+
+        if (Object.keys(room.players).length >= PLAYER_LIMIT) {
+            io.to(socket.id).emit('game message', 'ห้องเต็มแล้ว.', 'red');
             return;
         }
 
@@ -2320,6 +2379,9 @@ io.on('connection', (socket) => {
             const player = room.players[socket.uniqueId];
             handlePlayerReconnection(socket, room, player);
             broadcastActiveRooms();
+        } else if (room && room.spectators && room.spectators[socket.uniqueId]) {
+            const spec = room.spectators[socket.uniqueId];
+            handleSpectatorReconnection(socket, room, spec);
         } else {
             io.to(socket.id).emit('room not found or not in room');
             socket.currentRoom = null;
@@ -2390,6 +2452,18 @@ io.on('connection', (socket) => {
         if (roomName && rooms[roomName]) {
             const room = rooms[roomName];
             const playerUniqueId = socket.uniqueId;
+
+            if (room.spectators && room.spectators[playerUniqueId]) {
+                const specName = room.spectators[playerUniqueId].name;
+                delete room.spectators[playerUniqueId];
+                socket.leave(roomName);
+                socket.currentRoom = null;
+                io.to(socket.id).emit('room left');
+                sendGameMessage(roomName, `👁️ ${specName} เลิกเป็นผู้ชมแล้ว.`, 'gray');
+                emitRoomState(roomName);
+                return;
+            }
+
             const playerName = room.players[playerUniqueId]?.name || 'Unknown Player';
 
             delete room.players[playerUniqueId];
@@ -2752,6 +2826,15 @@ io.on('connection', (socket) => {
         if (roomName && rooms[roomName]) {
             const room = rooms[roomName];
             const playerUniqueId = socket.uniqueId;
+
+            if (room.spectators && room.spectators[playerUniqueId]) {
+                if (room.spectators[playerUniqueId].id === socket.id) {
+                    delete room.spectators[playerUniqueId];
+                    emitRoomState(roomName);
+                }
+                return;
+            }
+
             const player = room.players[playerUniqueId];
             if (player) {
                 // If player has already reconnected on another socket, ignore this stale disconnect!
