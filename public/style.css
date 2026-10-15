@@ -205,8 +205,10 @@ button:disabled {
     font-weight: bold;
 }
 .player-item.dead {
-    text-decoration: line-through;
-    color: #888;
+    text-decoration: none;
+    color: #c7a6a6;
+    background: rgba(127, 29, 29, 0.18);
+    border-left: 3px solid #ef4444;
 }
 
 .player-stats {
@@ -3925,9 +3927,9 @@ button, .card, .tryal-card-btn, .mobile-tab-btn {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  background: #3f0f0f;
-  color: #fca5a5;
-  border: 1px solid #7f1d1d;
+  background: #7f1d1d;
+  color: #fff;
+  border: 1px solid #ef4444;
   padding: 2px 8px;
   border-radius: 6px;
   font-size: 0.78em;
@@ -3937,9 +3939,9 @@ button, .card, .tryal-card-btn, .mobile-tab-btn {
 }
 
 .player-dead-badge-sm {
-  background: #450a0a;
-  color: #fca5a5;
-  border: 1px solid #991b1b;
+  background: #7f1d1d;
+  color: #fff;
+  border: 1px solid #ef4444;
   padding: 1px 6px;
   border-radius: 4px;
   font-size: 0.75em;
@@ -3948,15 +3950,15 @@ button, .card, .tryal-card-btn, .mobile-tab-btn {
 }
 
 .player-board-card.dead {
-  background: linear-gradient(135deg, #181414 0%, #0d0a0a 100%) !important;
-  border: 1.5px solid #450a0a !important;
-  opacity: 0.68;
-  filter: grayscale(40%);
+  background: linear-gradient(135deg, #251414 0%, #130b0b 100%) !important;
+  border: 1.5px solid #b91c1c !important;
+  opacity: 1;
+  filter: grayscale(20%);
   position: relative;
 }
 
 .player-board-card.dead:hover {
-  opacity: 0.9;
+  opacity: 1;
   filter: grayscale(10%);
 }
 

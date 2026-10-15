@@ -15,9 +15,12 @@ const musicVolumeSlider = document.getElementById('music-volume-slider');
 const musicVolumeLabel = document.getElementById('music-volume-label');
 
 let isMusicPlaying = false;
-let currentVolume = 0.2; // Start at 20% volume
+const savedMusicVolume = localStorage.getItem('musicVolume');
+let currentVolume = savedMusicVolume === null
+    ? 0.2
+    : Math.max(0, Math.min(1, Number(savedMusicVolume) || 0));
 let hasUserStartedMusic = false; // เพิ่ม flag นี้
-let userPausedMusic = false; // เพิ่ม flag นี้
+let userPausedMusic = localStorage.getItem('musicPaused') === 'true';
 
 function updateMusicUI() {
     if (isMusicPlaying) {
@@ -39,6 +42,7 @@ toggleMusicBtn.addEventListener('click', () => {
         isMusicPlaying = true;
         userPausedMusic = false; // ผู้ใช้ play เอง
     }
+    localStorage.setItem('musicPaused', String(userPausedMusic));
     updateMusicUI();
 });
 
@@ -52,15 +56,23 @@ function setMusicVolume(vol) {
     const scaledVol = Math.max(0, Math.min(1, vol)) * 0.3;
     currentVolume = Math.max(0, Math.min(1, vol)); // for UI only
     backgroundMusic.volume = scaledVol;
+    localStorage.setItem('musicVolume', String(currentVolume));
     updateMusicUI();
 }
 
 // --- Play lobby music on page load ---
 window.addEventListener('DOMContentLoaded', () => {
-    // Set initial lobby music and try to play
+    // Restore saved volume and preserve an explicit pause across page loads.
+    musicVolumeSlider.value = Math.round(currentVolume * 100);
+    setMusicVolume(currentVolume);
     changePhaseMusic('LOBBY');
-    
-    // Try to play music (may be blocked by browser autoplay policy)
+    if (userPausedMusic) {
+        isMusicPlaying = false;
+        updateMusicUI();
+        return;
+    }
+
+    // Try to play music (may be blocked by browser autoplay policy).
     backgroundMusic.play().then(() => {
         isMusicPlaying = true;
         hasUserStartedMusic = true;
@@ -107,10 +119,9 @@ function changePhaseMusic(phase) {
             backgroundMusic.src = musicFile;
         }
         // เฟสที่ต้องบังคับเปิดเพลง
-        if (["DAY", "NIGHT", "PRE_DAWN"].includes(phase)) {
+        if (["DAY", "NIGHT", "PRE_DAWN"].includes(phase) && !userPausedMusic) {
             backgroundMusic.play().then(() => {
                 isMusicPlaying = true;
-                userPausedMusic = false;
                 updateMusicUI();
             }).catch(()=>{});
         } else if (hasUserStartedMusic && !userPausedMusic) {
@@ -176,7 +187,6 @@ const waitingStatusBanner = document.getElementById('waiting-status-banner');
 const handCardCount = document.getElementById('hand-card-count');
 const playerHandDiv = document.getElementById('player-hand');
 const tryalCardsDisplay = document.getElementById('tryal-cards-display');
-const myRevealedTryalCards = document.getElementById('my-revealed-tryal-cards');
 const mySecretTryalCardsCount = document.getElementById('my-secret-tryal-cards-count');
 const myRoleDisplay = document.getElementById('my-role-display'); // To display the *first* Tryal Card
 const gameActionsDiv = document.getElementById('game-actions');
@@ -281,9 +291,9 @@ if (!myUniqueId) {
 }
 playerUniqueIdDisplay.textContent = myUniqueId;
 
-// Set default music volume to 50% (UI), which is 0.35 real volume
-musicVolumeSlider.value = 50;
-setMusicVolume(0.5);
+// Initialize the slider from the saved preference.
+musicVolumeSlider.value = Math.round(currentVolume * 100);
+setMusicVolume(currentVolume);
 
 // Check for room invitation in URL (?room=...)
 const urlParams = new URLSearchParams(window.location.search);
@@ -1633,9 +1643,10 @@ function clearCardSelection() {
 }
 
 function updateTurnUI() {
+    const me = currentRoomState && currentRoomState.players && currentRoomState.players[myUniqueId];
     drawCardButton.disabled = !isMyTurn || drawButtonDisabled;
     playCardButton.disabled = !isMyTurn;
-    endTurnButton.disabled = !isMyTurn;
+    endTurnButton.disabled = !isMyTurn || !me || !me.alive || !me.hasPlayedCardsThisTurn;
     // ไม่ต้องซ่อน turnControlsDiv หรือ #game-actions แล้ว
     if (!isMyTurn) {
         clearCardSelection();
@@ -1652,8 +1663,6 @@ function updateTurnUI() {
         document.querySelector('.hand-action-buttons')?.classList.remove('my-turn-active');
     }
     updateDrawCardButton();
-    // ปุ่มจบเทิร์น enable เสมอถ้าเป็นเทิร์นเรา
-    endTurnButton.disabled = !isMyTurn;
 }
 
 function updateDrawCardButton() {
@@ -2019,19 +2028,6 @@ function updateTryalCardDisplay() {
             });
             tryalCardsList.appendChild(cardDiv);
         });
-    }
-    if (myRevealedTryalCardIndexes && myRevealedTryalCardIndexes.length > 0) {
-        const revealedNames = myRevealedTryalCardIndexes
-            .map((item) => {
-                if (typeof item === 'number') return myTryalCards[item]?.name;
-                if (typeof item === 'string') return item;
-                return null;
-            })
-            .filter(Boolean)
-            .map((name) => displayCardName(name));
-        myRevealedTryalCards.textContent = `Revealed: ${revealedNames.join(', ')}`;
-    } else {
-        myRevealedTryalCards.textContent = '';
     }
     // Use hasBeenWitch for team display and update witch chat
     const myPlayer = currentRoomState && currentRoomState.players && currentRoomState.players[myUniqueId];
@@ -3638,7 +3634,7 @@ document.addEventListener('DOMContentLoaded', () => {
             overlay.style.opacity = '0';
             setTimeout(() => overlay.style.display = 'none', 500);
             // บังคับเปิดเพลง lobby-music แค่ตอนนี้เท่านั้น (ก่อนเข้า lobby/game)
-            if (!isMusicPlaying) {
+            if (!isMusicPlaying && !userPausedMusic) {
                 if (!backgroundMusic.src || !backgroundMusic.src.includes('lobby-music.mp3')) {
                     backgroundMusic.src = 'audio/lobby-music.mp3';
                 }
@@ -3647,7 +3643,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     hasUserStartedMusic = true; // เซ็ต flag ว่า user เคยกดเริ่มเพลงเองแล้ว
                     updateMusicUI();
                 }).catch(()=>{});
-            } else {
+            } else if (!userPausedMusic) {
                 hasUserStartedMusic = true; // เซ็ต flag แม้จะเล่นอยู่แล้ว
             }
             hasEnteredVillage = true;

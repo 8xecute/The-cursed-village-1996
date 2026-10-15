@@ -1713,26 +1713,7 @@ function confessDuringNight(roomName, playerUniqueId, cardIndex) {
         resolveNightActions(roomName);
         if (room.gameOver) return;
         // reset state for new day
-        // --- SHUFFLE DISCARD INTO DECK IMMEDIATELY ---
-        if (room.discardPile && room.discardPile.length > 0) {
-            room.gameDeck = room.gameDeck || [];
-            room.gameDeck = room.gameDeck.concat(room.discardPile);
-            room.discardPile = [];
-            sendDeckInfo(roomName); // <--- เพิ่มบรรทัดนี้หลัง reshuffle
-        }
-        if (room.gameDeck && room.gameDeck.length > 0) {
-            // Remove all Night cards except one
-            const nightCards = room.gameDeck.filter(card => card.name === 'Night');
-            const otherCards = room.gameDeck.filter(card => card.name !== 'Night');
-            const shuffled = shuffleArray(otherCards);
-            // Place only one Night card at the LAST index (bottom of the deck)
-            const nightCard = nightCards.length > 0 ? [nightCards[0]] : [];
-            room.gameDeck = shuffled;
-            if (nightCard.length > 0) {
-                room.gameDeck.push(nightCard[0]);
-            }
-            sendDeckInfo(roomName); // <--- เพิ่มบรรทัดนี้หลังจัดเรียง deck ใหม่
-        }
+        prepareDeckForNewDay(room);
         room.dayNumber++;
         room.blackCatHolderAlreadyActedThisDay = false;
         room.playersWhoActedAtNight = {};
@@ -2604,6 +2585,7 @@ io.on('connection', (socket) => {
                 room.nightCardDrawer = null;
                 room.confessionOrder = [];
                 room.currentConfessionIndex = 0;
+                prepareDeckForNewDay(room);
                 room.currentPhase = 'DAY';
                 emitRoomState(room.name);
                 setNextTurn(room);
