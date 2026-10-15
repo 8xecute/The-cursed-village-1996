@@ -294,7 +294,7 @@ function emitRoomState(roomName) {
 }
 
 function getAlivePlayers(room) {
-    return Object.values(room.players).filter(p => p.alive && p.connected);
+    return Object.values(room.players || {}).filter(p => p && p.alive);
 }
 
 function hasNightActionChosen(room, key) {
@@ -1984,9 +1984,12 @@ function handlePlayerDisconnection(room, playerUniqueId, playerName, isDisconnec
     if (room.gameStarted && !room.gameOver) {
         const alivePlayers = getAlivePlayers(room);
         
-        // If less than minimum players, end game
-        if (alivePlayers.length < MIN_PLAYERS_TO_START) {
-            finishGame(room, 'None (Not enough players)', `ผู้เล่นเหลือน้อยเกินไป (${alivePlayers.length}/${MIN_PLAYERS_TO_START}). เกมจบลง.`, 'red');
+        // If less than 2 alive players, evaluate win condition or end game
+        if (alivePlayers.length < 2) {
+            checkWinCondition(room);
+            if (!room.gameOver) {
+                finishGame(room, 'None (Not enough players)', 'ผู้เล่นเหลือน้อยเกินไป เกมจบลง.', 'red');
+            }
         } else {
             // Check win conditions
             checkWinCondition(room);
@@ -1998,10 +2001,15 @@ function handlePlayerDisconnection(room, playerUniqueId, playerName, isDisconnec
 }
 
 function handlePlayerReconnection(socket, room, player) {
+    if (player.disconnectTimeout) {
+        clearTimeout(player.disconnectTimeout);
+        player.disconnectTimeout = null;
+    }
     player.id = socket.id;
     player.connected = true;
-    socket.join(room.name);
+    socket.uniqueId = player.uniqueId;
     socket.currentRoom = room.name;
+    socket.join(room.name);
     io.to(socket.id).emit('room joined', room.name);
 
     // Send private player data before emitting room state
@@ -2129,25 +2137,20 @@ io.on('connection', (socket) => {
             console.log(`Player connected: ${playerName}`);
         }
 
-        // If player name is provided on registration (e.g., from localStorage)
-        if (playerName && playerName !== '') {
-            const roomName = Object.values(rooms).find(room =>
-                Object.values(room.players).some(p => p.uniqueId === uniqueId && p.name === playerName)
-            )?.name;
+        // Look for existing room where this uniqueId belongs
+        const existingRoom = Object.values(rooms).find(room =>
+            room && room.players && room.players[uniqueId]
+        );
 
-            if (roomName) {
-                // If the uniqueId and name combo exists in a room, update socket.id
-                const player = rooms[roomName].players[uniqueId];
-                if (player) {
-                    player.id = socket.id; // Update socket ID for reconnection
-                    player.connected = true; // Mark as connected
-                    socket.join(roomName);
-                    socket.currentRoom = roomName;
-                    io.to(socket.id).emit('room joined', roomName);
-                    emitRoomState(roomName);
-                    sendGameMessage(roomName, `${playerName} ได้เชื่อมต่อกลับเข้ามาในเกม.`, 'blue');
-                    return; // Exit if reconnected successfully
+        if (existingRoom) {
+            const player = existingRoom.players[uniqueId];
+            if (player) {
+                if (playerName && playerName.trim()) {
+                    player.name = playerName.trim();
                 }
+                handlePlayerReconnection(socket, existingRoom, player);
+                broadcastActiveRooms();
+                return;
             }
         }
         // If not reconnected to existing room, prompt name input on client
@@ -2749,23 +2752,36 @@ io.on('connection', (socket) => {
         if (roomName && rooms[roomName]) {
             const room = rooms[roomName];
             const playerUniqueId = socket.uniqueId;
-            if (room.players[playerUniqueId]) {
-                const playerName = room.players[playerUniqueId].name;
+            const player = room.players[playerUniqueId];
+            if (player) {
+                // If player has already reconnected on another socket, ignore this stale disconnect!
+                if (player.id !== socket.id) {
+                    console.log(`Ignoring disconnect from stale socket ${socket.id} for player ${player.name} (active socket: ${player.id})`);
+                    return;
+                }
+
+                const playerName = player.name;
                 
                 // Don't immediately remove the player - allow for reconnection
-                // Just mark them as disconnected
-                room.players[playerUniqueId].connected = false;
-                room.players[playerUniqueId].lastDisconnectTime = Date.now();
+                player.connected = false;
+                player.lastDisconnectTime = Date.now();
+
+                if (player.disconnectTimeout) {
+                    clearTimeout(player.disconnectTimeout);
+                    player.disconnectTimeout = null;
+                }
                 
                 sendGameMessage(room.name, `${playerName} ขาดการเชื่อมต่อ. (ระบบจะรอเชื่อมต่อใหม่ 2 นาที)`, 'orange');
+                emitRoomState(room.name);
                 
                 // Set a timeout to remove the player if they don't reconnect
-                setTimeout(() => {
+                player.disconnectTimeout = setTimeout(() => {
                     if (room.players[playerUniqueId] && !room.players[playerUniqueId].connected) {
                         // Player hasn't reconnected, remove them
+                        const pName = room.players[playerUniqueId].name;
                         delete room.players[playerUniqueId];
-                        sendGameMessage(room.name, `${playerName} ออกจากเกมแล้วเนื่องจากขาดการเชื่อมต่อนานเกิน 2 นาที.`, 'red');
-                        handlePlayerDisconnection(room, playerUniqueId, playerName, true);
+                        sendGameMessage(room.name, `${pName} ออกจากเกมแล้วเนื่องจากขาดการเชื่อมต่อนานเกิน 2 นาที.`, 'red');
+                        handlePlayerDisconnection(room, playerUniqueId, pName, true);
                         if (Object.keys(room.players).length === 0) {
                             delete rooms[roomName];
                         }

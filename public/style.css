@@ -3118,3 +3118,610 @@ button, .card, .tryal-card-btn, .mobile-tab-btn {
   }
 }
 
+/* ==========================================================================
+   Top Navigation Buttons (Salem Antique Themed)
+   ========================================================================== */
+.top-nav-btn {
+  background: linear-gradient(180deg, #2a201b 0%, #17120f 100%);
+  color: #dfceb7;
+  border: 1px solid #5a3f2b;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  border-radius: 20px;
+  padding: 8px 16px;
+  font-size: 0.9em;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.top-nav-btn:hover {
+  background: linear-gradient(180deg, #3d2c22 0%, #221813 100%);
+  color: #fff;
+  border-color: #a37243;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.7), 0 0 10px rgba(163, 114, 67, 0.3);
+}
+
+.top-nav-icon {
+  font-size: 1.1em;
+}
+
+/* ==========================================================================
+   Player Identity Profile & UUID Badge (Clean & Discreet)
+   ========================================================================== */
+.player-profile-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 10px 0 12px 0;
+  background: rgba(28, 22, 18, 0.75);
+  border: 1px solid #483425;
+  border-radius: 10px;
+  padding: 10px 14px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.player-name-tag {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.profile-label {
+  color: #a89582;
+  font-size: 0.9em;
+}
+
+.profile-name {
+  color: #ffdda1;
+  font-weight: 700;
+  font-size: 1.05em;
+  letter-spacing: 0.3px;
+}
+
+.player-uuid-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid #3d2c20;
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 0.78em;
+  color: #9c8a79;
+  font-family: monospace;
+}
+
+.uuid-icon {
+  font-size: 1em;
+  opacity: 0.8;
+}
+
+.uuid-label {
+  font-weight: 600;
+  color: #7d6b5c;
+}
+
+.uuid-value {
+  color: #baa896;
+}
+
+.player-current-room-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 0.92em;
+  color: #c9b8a5;
+  margin-top: 6px;
+}
+
+/* ==========================================================================
+   Game Rules Modal Redesign (Salem Parchment / Scroll Themed)
+   ========================================================================== */
+.game-rules-modal-container {
+  background: linear-gradient(180deg, #1f1916 0%, #130f0d 100%);
+  color: #f0e6d6;
+  border: 1px solid #6b4d32;
+  box-shadow: 0 16px 50px rgba(0, 0, 0, 0.95), 0 0 20px rgba(107, 77, 50, 0.2);
+  border-radius: 16px;
+  width: 95vw;
+  max-width: 860px;
+  height: 88vh;
+  max-height: 860px;
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.game-rules-header {
+  padding: 16px 22px 14px 22px;
+  background: #171311;
+  border-bottom: 1px solid #3d2b1f;
+  flex-shrink: 0;
+}
+
+.game-rules-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.game-rules-title-block {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.game-rules-icon {
+  font-size: 26px;
+}
+
+.game-rules-title {
+  font-size: 1.3em;
+  font-weight: 700;
+  color: #f7e6cd;
+  margin: 0;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+.game-rules-subtitle {
+  font-size: 0.82em;
+  color: #a89482;
+  display: block;
+  margin-top: 2px;
+}
+
+.game-rules-close-btn {
+  background: #2a201b;
+  color: #d8c2ad;
+  border: 1px solid #5a3e2a;
+  border-radius: 8px;
+  font-size: 24px;
+  line-height: 1;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.game-rules-close-btn:hover {
+  background: #7a1d1d;
+  color: #fff;
+  border-color: #ba2f2f;
+}
+
+.game-rules-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 22px 28px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.game-rules-body::-webkit-scrollbar {
+  width: 8px;
+}
+.game-rules-body::-webkit-scrollbar-thumb {
+  background: #4a3424;
+  border-radius: 4px;
+}
+
+.rule-card {
+  background: rgba(28, 22, 19, 0.9);
+  border: 1px solid #3d2c20;
+  border-radius: 12px;
+  padding: 16px 18px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.rule-card-gold {
+  border-left: 3px solid #d4a373;
+}
+
+.rule-card-crimson {
+  border-left: 3px solid #b72f2f;
+}
+
+.rule-card-title {
+  margin: 0 0 12px 0;
+  font-size: 1.1em;
+  color: #ffdda1;
+  letter-spacing: 0.3px;
+}
+
+.rule-factions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.rule-faction-box {
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+
+.faction-witch {
+  background: rgba(60, 20, 20, 0.6);
+  border: 1px solid #7d2626;
+}
+
+.faction-town {
+  background: rgba(20, 50, 25, 0.6);
+  border: 1px solid #287a41;
+}
+
+.faction-badge {
+  font-size: 0.85em;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  display: inline-block;
+  margin-bottom: 8px;
+}
+
+.badge-witch {
+  background: #501616;
+  color: #ff9999;
+}
+
+.badge-town {
+  background: #143e1d;
+  color: #90ee90;
+}
+
+.faction-desc {
+  margin: 0;
+  font-size: 0.9em;
+  line-height: 1.45;
+  color: #e0d5c5;
+}
+
+.rule-ordered-list,
+.rule-bullet-list,
+.rule-alert-list {
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 0.92em;
+  line-height: 1.5;
+  color: #dcd0bf;
+}
+
+.rule-intro-text {
+  margin: 0 0 10px 0;
+  font-size: 0.92em;
+  color: #b5a593;
+}
+
+.rule-turn-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.turn-option-pill {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: rgba(18, 14, 12, 0.7);
+  border: 1px solid #38271c;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 0.92em;
+  line-height: 1.4;
+}
+
+.opt-num {
+  background: #8b3a2b;
+  color: #fff;
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 0.85em;
+  flex-shrink: 0;
+}
+
+.rule-card-types-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.card-type-row {
+  padding: 8px 12px;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.type-red { background: rgba(60, 20, 20, 0.4); border-left: 3px solid #b72f2f; }
+.type-green { background: rgba(20, 50, 25, 0.4); border-left: 3px solid #339944; }
+.type-blue { background: rgba(20, 36, 60, 0.4); border-left: 3px solid #2e71c9; }
+.type-black { background: rgba(30, 30, 30, 0.6); border-left: 3px solid #d4a017; }
+
+.card-type-label {
+  font-weight: 700;
+  font-size: 0.9em;
+  color: #fff;
+}
+
+.card-type-explain {
+  font-size: 0.86em;
+  color: #cfc1b0;
+  line-height: 1.38;
+}
+
+.rule-alert-box {
+  background: rgba(45, 30, 16, 0.85);
+  border: 1px solid #7d5329;
+  border-radius: 10px;
+  padding: 14px 18px;
+}
+
+.rule-alert-header {
+  font-weight: bold;
+  color: #ffd166;
+  font-size: 0.98em;
+  margin-bottom: 8px;
+}
+
+/* ==========================================================================
+   Night Action Modal (Salem Horror & Mystical Theme)
+   ========================================================================== */
+.night-action-overlay {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(8, 6, 8, 0.88);
+  backdrop-filter: blur(5px);
+  z-index: 2500;
+  animation: fadeIn 0.25s ease-out;
+}
+
+.night-action-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 92vw;
+  max-width: 520px;
+  max-height: 88vh;
+  border-radius: 16px;
+  padding: 24px 22px;
+  z-index: 2501;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: popupFadeIn 0.25s ease-out;
+}
+
+/* Witch Night Theme */
+.night-action-modal.theme-witch-night {
+  background: linear-gradient(180deg, #241417 0%, #130a0c 100%);
+  border: 1px solid #7d2633;
+  box-shadow: 0 16px 50px rgba(0, 0, 0, 0.95), 0 0 30px rgba(125, 38, 51, 0.35);
+  color: #f7e6e6;
+}
+
+/* Constable Night Theme */
+.night-action-modal.theme-constable-night {
+  background: linear-gradient(180deg, #141f2b 0%, #0c121a 100%);
+  border: 1px solid #2e5585;
+  box-shadow: 0 16px 50px rgba(0, 0, 0, 0.95), 0 0 30px rgba(46, 85, 133, 0.35);
+  color: #e6f0fa;
+}
+
+.night-action-header {
+  text-align: center;
+  margin-bottom: 14px;
+}
+
+.night-action-title {
+  margin: 0;
+  font-size: 1.35em;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.theme-witch-night .night-action-title {
+  color: #ff8595;
+  text-shadow: 0 2px 8px rgba(255, 60, 90, 0.4);
+}
+
+.theme-constable-night .night-action-title {
+  color: #8ac0ff;
+  text-shadow: 0 2px 8px rgba(70, 150, 255, 0.4);
+}
+
+.night-action-subtitle {
+  font-size: 0.88em;
+  color: #bfb2a8;
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+.night-witch-team-box {
+  background: rgba(60, 15, 20, 0.7);
+  border: 1px solid #6b202a;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 0.88em;
+  color: #ffd700;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.night-targets-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 42vh;
+}
+
+.night-targets-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.night-targets-scroll::-webkit-scrollbar-thumb {
+  background: #4a3424;
+  border-radius: 3px;
+}
+
+.night-target-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  background: rgba(28, 20, 18, 0.8);
+  border: 1px solid #422f25;
+}
+
+.night-target-row:hover {
+  transform: translateY(-1px);
+  background: rgba(45, 32, 28, 0.95);
+  border-color: #8c5d3d;
+}
+
+.theme-witch-night .night-target-row.selected {
+  background: rgba(80, 20, 28, 0.85);
+  border-color: #ff4760;
+  box-shadow: 0 0 14px rgba(255, 71, 96, 0.45);
+}
+
+.theme-constable-night .night-target-row.selected {
+  background: rgba(20, 48, 80, 0.85);
+  border-color: #4da3ff;
+  box-shadow: 0 0 14px rgba(77, 163, 255, 0.45);
+}
+
+.night-target-name {
+  font-weight: 700;
+  font-size: 1.05em;
+  color: #fff;
+}
+
+.night-target-meta {
+  font-size: 0.82em;
+  color: #baa89b;
+  margin-top: 2px;
+}
+
+.night-target-badge {
+  font-size: 0.82em;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.4);
+  color: #b5a595;
+  border: 1px solid #423225;
+}
+
+.selected .night-target-badge {
+  color: #fff;
+  font-weight: bold;
+}
+
+.theme-witch-night .selected .night-target-badge {
+  background: #7d1c28;
+  border-color: #ff4760;
+}
+
+.theme-constable-night .selected .night-target-badge {
+  background: #1c4a7d;
+  border-color: #4da3ff;
+}
+
+.night-action-footer {
+  text-align: center;
+  margin-top: 14px;
+}
+
+.night-confirm-btn {
+  padding: 12px 28px;
+  border-radius: 10px;
+  font-size: 1.05em;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+}
+
+.theme-witch-night .night-confirm-btn {
+  background: linear-gradient(180deg, #991c2c 0%, #660e19 100%);
+  border: 1px solid #cc2b40;
+}
+.theme-witch-night .night-confirm-btn:hover {
+  background: linear-gradient(180deg, #b82236 0%, #801220 100%);
+  box-shadow: 0 6px 20px rgba(204, 43, 64, 0.5);
+  transform: translateY(-2px);
+}
+
+.theme-constable-night .night-confirm-btn {
+  background: linear-gradient(180deg, #1c4e8a 0%, #0f3057 100%);
+  border: 1px solid #2d70c4;
+}
+.theme-constable-night .night-confirm-btn:hover {
+  background: linear-gradient(180deg, #2360aa 0%, #153f70 100%);
+  box-shadow: 0 6px 20px rgba(45, 112, 196, 0.5);
+  transform: translateY(-2px);
+}
+
+@media (max-width: 680px) {
+  .game-rules-modal-container {
+    width: 96vw;
+    height: 92vh;
+    border-radius: 12px;
+  }
+  .game-rules-header {
+    padding: 12px 14px 10px 14px;
+  }
+  .game-rules-title {
+    font-size: 1.15em;
+  }
+  .game-rules-body {
+    padding: 14px 12px 24px 12px;
+    gap: 12px;
+  }
+  .rule-card {
+    padding: 12px 14px;
+  }
+  .night-action-modal {
+    width: 95vw;
+    padding: 18px 14px;
+  }
+  .night-action-title {
+    font-size: 1.2em;
+  }
+}
+
+

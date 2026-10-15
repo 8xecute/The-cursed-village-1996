@@ -242,7 +242,7 @@ if (mobileTabChatBtn) {
 // --- Game State Variables (Client-side) ---
 let myUniqueId = localStorage.getItem('uniqueId');
 let myPlayerName = localStorage.getItem('playerName'); // Load name from local storage
-let currentRoomName = null;
+let currentRoomName = (function() { try { return sessionStorage.getItem('currentRoomName'); } catch(e) { return null; } })();
 let myCurrentHand = [];
 let myTryalCards = []; // My personal stack of Tryal Cards
 let myRevealedTryalCardIndexes = []; // Indexes revealed from my stack
@@ -335,6 +335,7 @@ socket.on('active rooms list', (rooms) => {
 
 socket.on('room joined', (roomName) => {
     currentRoomName = roomName;
+    try { sessionStorage.setItem('currentRoomName', roomName); } catch (e) {}
     currentRoomDisplay.textContent = roomName || 'ไม่มี';
     roomManagementSection.style.display = 'none';
     roomLobbySection.style.display = 'block';
@@ -745,8 +746,8 @@ socket.on('room state update', (roomState) => {
     }
     // --- ปิด popup เลือกฆ่า/วางแมวดำถ้าคนอื่นเลือกไปแล้ว ---
     // ปิด popup เลือกฆ่า (night-action-popup) ถ้า phase ไม่ใช่ NIGHT
-    if (document.getElementById('night-action-popup') && roomState.currentPhase !== 'NIGHT') {
-        document.getElementById('night-action-popup').remove();
+    if (roomState.currentPhase !== 'NIGHT') {
+        removeNightActionPopup();
     }
     // ปิด popup เลือกวางแมวดำ (assign-blackcat-popup) ถ้าไม่ได้อยู่ในสถานะ assign แล้ว
     if (document.getElementById('assign-blackcat-popup') && !roomState.isAssigningBlackCat) {
@@ -822,6 +823,7 @@ socket.on('room left', () => {
     }
     // Reset game state variables
     currentRoomName = null;
+    try { sessionStorage.removeItem('currentRoomName'); } catch (e) {}
     currentRoomState = null;
     myCurrentHand = [];
     myTryalCards = [];
@@ -2435,78 +2437,71 @@ socket.on('popup assign black cat', (potentialTargets) => {
     showAssignBlackCatPopup(potentialTargets);
 });
 
+function removeNightActionPopup() {
+    const existingPopup = document.getElementById('night-action-popup');
+    if (existingPopup) {
+        existingPopup.remove();
+    }
+    const existingOverlay = document.getElementById('night-action-overlay');
+    if (existingOverlay) {
+        existingOverlay.remove();
+    }
+}
+
 function createNightActionPopup(actionType, timer) {
     console.log('createNightActionPopup called with actionType:', actionType, 'timer:', timer);
     
-    // Remove existing popup if any
-    const existingPopup = document.getElementById('night-action-popup');
-    if (existingPopup) {
-        console.log('Removing existing night action popup');
-        existingPopup.remove();
-    }
+    // Remove existing popup & overlay if any
+    removeNightActionPopup();
     
+    const overlay = document.createElement('div');
+    overlay.id = 'night-action-overlay';
+    overlay.className = 'night-action-overlay';
+
     const popup = document.createElement('div');
     popup.id = 'night-action-popup';
-    popup.style.cssText = `
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        background: #2a2a2a;
-        border: 3px solid #ff7f50;
-        border-radius: 15px;
-        padding: 30px;
-        z-index: 1000;
-        min-width: 400px;
-        max-width: 600px;
-        box-shadow: 0 0 30px rgba(255, 127, 80, 0.5);
-        animation: popupFadeIn 0.3s ease-out;
-    `;
+    popup.className = `night-action-modal ${actionType === 'witch' ? 'theme-witch-night' : 'theme-constable-night'}`;
     
-    const title = actionType === 'witch' ? 'ปอบ - เลือกเป้าหมายที่จะสังหาร' : 'หมอผี - เลือกผู้เล่นที่จะปกป้อง';
-    const titleColor = actionType === 'witch' ? '#ff6666' : '#66ccff';
+    const icon = actionType === 'witch' ? '🩸' : '🛡️';
+    const title = actionType === 'witch' ? 'ปอบ — เลือกเป้าหมายสังหาร' : 'หมอผี — เลือกผู้เล่นเพื่อปกป้อง';
+    const subtitle = actionType === 'witch'
+        ? 'เลือกชาวบ้าน 1 คนในความมืดมิดเพื่อสังหารในคืนนี้'
+        : 'เลือกผู้เล่น 1 คนเพื่อคุ้มครองจากเงื้อมมือของปอบ';
     
     popup.innerHTML = `
-        <h2 style="color: ${titleColor}; margin-top: 0; text-align: center; font-size: 1.5em;">${title}</h2>
-        <div style="color: #ccc; text-align: center; margin-bottom: 20px;">
-            คลิกที่ชื่อผู้เล่นเพื่อเลือกเป้าหมาย
+        <div class="night-action-header">
+            <h2 class="night-action-title">${icon} ${title}</h2>
+            <div class="night-action-subtitle">${subtitle}</div>
         </div>
-        <div id="night-action-players-list" style="max-height: 300px; overflow-y: auto;"></div>
-        <div style="text-align: center; margin-top: 20px;">
-            <button id="confirm-night-action" style="
-                background: #ff4500; 
-                color: white; 
-                padding: 12px 24px; 
-                border: none; 
-                border-radius: 8px; 
-                font-size: 1.1em; 
-                cursor: pointer;
-                display: none;
-            ">ยืนยันการเลือก</button>
+        <div id="night-action-witch-team-container"></div>
+        <div id="night-action-players-list" class="night-targets-scroll"></div>
+        <div class="night-action-footer">
+            <button id="confirm-night-action" class="night-confirm-btn" style="display: none;">
+                ยืนยันการเลือก
+            </button>
         </div>
     `;
     
-    console.log('Adding popup to document body');
+    document.body.appendChild(overlay);
     document.body.appendChild(popup);
     
+    // แสดงรายชื่อทีมปอบ (ถ้ามี)
+    if (actionType === 'witch' && currentRoomState && currentRoomState.players) {
+        const witchTeam = Object.values(currentRoomState.players).filter(p => p.hasBeenWitch);
+        if (witchTeam.length > 0) {
+            const teamContainer = popup.querySelector('#night-action-witch-team-container');
+            if (teamContainer) {
+                const witchList = document.createElement('div');
+                witchList.className = 'night-witch-team-box';
+                witchList.innerHTML = '🤝 สมาชิกทีมปอบ: <strong>' + witchTeam.map(p => p.name).join(', ') + '</strong>';
+                teamContainer.appendChild(witchList);
+            }
+        }
+    }
+
     // Populate players list
     console.log('Calling populateNightActionPlayersList');
     populateNightActionPlayersList(actionType);
-    // แสดงรายชื่อทีมปอบ
-    if (currentRoomState && currentRoomState.players) {
-        const witchTeam = Object.values(currentRoomState.players).filter(p => p.hasBeenWitch);
-        if (witchTeam.length > 0) {
-            const witchList = document.createElement('div');
-            witchList.style.background = '#222';
-            witchList.style.color = '#ffd700';
-            witchList.style.padding = '10px 16px';
-            witchList.style.borderRadius = '8px';
-            witchList.style.marginBottom = '18px';
-            witchList.style.fontWeight = 'bold';
-            witchList.innerHTML = 'ทีมปอบ: ' + witchTeam.map(p => p.name).join(', ');
-            popup.appendChild(witchList);
-        }
-    }
 }
 
 function autoSubmitNightAction(actionType) {
@@ -2517,10 +2512,7 @@ function autoSubmitNightAction(actionType) {
         socket.emit('constable action', null); // null = ไม่เลือก
     }
     // ปิด popup
-    const popup = document.getElementById('night-action-popup');
-    if (popup) {
-            popup.remove();
-    }
+    removeNightActionPopup();
     nightActionState.selectedTargetId = null;
     disableNightTargetSelection();
 }
@@ -2540,19 +2532,11 @@ function submitNightAction(actionType) {
     if (actionType === 'witch') {
         socket.emit('witch kill target', nightActionState.selectedTargetId);
         nightActionState.hasSubmitted = true; // ตั้ง flag
-        // ปิด popup ทันที
-        const popup = document.getElementById('night-action-popup');
-        if (popup) {
-            popup.remove();
-        }
+        removeNightActionPopup();
     } else if (actionType === 'constable') {
         socket.emit('constable action', nightActionState.selectedTargetId);
         addGameMessage('คุณได้เลือกที่จะปกป้องเป้าหมายแล้ว', 'green');
-        // ปิด popup ทันที (optionally)
-    const popup = document.getElementById('night-action-popup');
-    if (popup) {
-        popup.remove();
-        }
+        removeNightActionPopup();
     }
     
     // Hide UI and reset state after confirming
@@ -2645,46 +2629,43 @@ function populateNightActionPlayersList(actionType) {
     
     console.log('Eligible players for night action:', eligiblePlayers.map(p => ({ name: p.name, uniqueId: p.uniqueId })));
     
+    if (eligiblePlayers.length === 0) {
+        const emptyDiv = document.createElement('div');
+        emptyDiv.style.cssText = 'color: #baa89b; text-align: center; padding: 24px; font-style: italic; font-size: 0.95em;';
+        emptyDiv.textContent = 'ไม่มีเป้าหมายที่เลือกได้ในขณะนี้';
+        playersList.appendChild(emptyDiv);
+        return;
+    }
+
     eligiblePlayers.forEach(player => {
         console.log(`Adding player ${player.name} to night action list`);
         
         const playerDiv = document.createElement('div');
-        playerDiv.style.cssText = `
-            background: #444;
-            border: 2px solid #666;
-            border-radius: 8px;
-            padding: 15px;
-            margin: 8px 0;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        `;
+        playerDiv.className = 'night-target-row';
+        playerDiv.dataset.uniqueId = player.uniqueId;
         
         playerDiv.innerHTML = `
-            <div>
-                <div style="font-weight: bold; color: #fff;">${player.name}</div>
-                <div style="font-size: 0.9em; color: #ccc;">
-                    การ์ด: ${player.handSize} | ชีวิต: ${player.tryalCardCount}
-                </div>
+            <div class="night-target-info">
+                <div class="night-target-name">${player.name}</div>
+                <div class="night-target-meta">การ์ดในมือ: ${player.handSize ?? 0} ใบ | การ์ดชีวิต: ${player.tryalCardCount ?? 0} ใบ</div>
             </div>
-            <div style="color: #888;">คลิกเพื่อเลือก</div>
+            <div class="night-target-badge">แตะเลือก</div>
         `;
         
         playerDiv.addEventListener('click', () => {
             console.log(`Player ${player.name} clicked in night action popup`);
             
             // Remove previous selection
-            playersList.querySelectorAll('div').forEach(p => {
-                p.style.borderColor = '#666';
-                p.style.background = '#444';
+            playersList.querySelectorAll('.night-target-row').forEach(p => {
+                p.classList.remove('selected');
+                const badge = p.querySelector('.night-target-badge');
+                if (badge) badge.textContent = 'แตะเลือก';
             });
             
             // Highlight selected player
-            playerDiv.style.borderColor = '#ffd700';
-            playerDiv.style.background = '#5a5a5a';
-            playerDiv.style.boxShadow = '0 0 10px #ffd700';
+            playerDiv.classList.add('selected');
+            const badge = playerDiv.querySelector('.night-target-badge');
+            if (badge) badge.textContent = '✓ เลือกแล้ว';
             
             // Update state
             nightActionState.selectedTargetId = player.uniqueId;
@@ -2697,30 +2678,16 @@ function populateNightActionPlayersList(actionType) {
             }
         });
         
-        playerDiv.addEventListener('mouseover', () => {
-            if (nightActionState.selectedTargetId !== player.uniqueId) {
-                playerDiv.style.borderColor = '#ff7f50';
-                playerDiv.style.background = '#4a4a4a';
-            }
-        });
-        
-        playerDiv.addEventListener('mouseout', () => {
-            if (nightActionState.selectedTargetId !== player.uniqueId) {
-                playerDiv.style.borderColor = '#666';
-                playerDiv.style.background = '#444';
-            }
-        });
-        
         playersList.appendChild(playerDiv);
     });
     
     // Add confirm button event listener
     const confirmBtn = document.getElementById('confirm-night-action');
     if (confirmBtn) {
-        confirmBtn.addEventListener('click', () => {
+        confirmBtn.onclick = () => {
             console.log('Confirm button clicked');
             submitNightAction(actionType);
-        });
+        };
     }
 }
 
@@ -3377,6 +3344,7 @@ function returnToLobby() {
     
     // รีเซ็ตสถานะเกม
     currentRoomName = null;
+    try { sessionStorage.removeItem('currentRoomName'); } catch (e) {}
     myPlayerName = null;
     isMyTurn = false;
     selectedCard = null;
@@ -3415,6 +3383,7 @@ function goToNameSetup() {
     
     // รีเซ็ตสถานะเกม
     currentRoomName = null;
+    try { sessionStorage.removeItem('currentRoomName'); } catch (e) {}
     isMyTurn = false;
     selectedCard = null;
     myCurrentHand = [];

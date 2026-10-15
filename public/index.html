@@ -24,11 +24,20 @@
         <span id="music-volume-label" class="music-volume-label">20%</span>
     </div>
     
-    <!-- เพิ่มปุ่มดูเนื้อเรื่อง -->
+    <!-- Top Navigation Buttons (Salem Themed) -->
     <div class="top-buttons">
-      <button id="show-story-btn" class="rules-btn">ดูเนื้อเรื่อง</button>
-      <button id="show-cards-btn" class="rules-btn">อธิบายการ์ด</button>
-      <button id="show-rules-btn" class="rules-btn">คู่มือการเล่น</button>
+      <button id="show-story-btn" class="top-nav-btn btn-story" title="อ่านตำนานหมู่บ้านต้องสาป">
+        <span class="top-nav-icon">📜</span>
+        <span class="top-nav-text">เนื้อเรื่อง</span>
+      </button>
+      <button id="show-cards-btn" class="top-nav-btn btn-cards" title="ดูสารบัญการ์ดทั้งหมด 18 ใบ">
+        <span class="top-nav-icon">📖</span>
+        <span class="top-nav-text">อธิบายการ์ด</span>
+      </button>
+      <button id="show-rules-btn" class="top-nav-btn btn-rules" title="กติกาและวิธีการเล่น">
+        <span class="top-nav-icon">⚖️</span>
+        <span class="top-nav-text">คู่มือการเล่น</span>
+      </button>
     </div>
 
     <style>
@@ -259,12 +268,22 @@
                     <input type="text" id="name-input" placeholder="กรอกชื่อของคุณ">
                     <button id="set-name-button">ตั้งชื่อ</button>
                 </div>
-                <p>ชื่อของคุณ: <span id="player-name-display">ผู้เล่นใหม่</span></p>
-                <p id="player-uuid-row">uuid: <span id="player-unique-id-display"></span></p>
-                <p>ห้องปัจจุบัน: <span id="current-room-display">ไม่มี</span> 
+                <div class="player-profile-row">
+                    <div class="player-name-tag">
+                        <span class="profile-label">👤 ชื่อของคุณ:</span>
+                        <span id="player-name-display" class="profile-name">ผู้เล่นใหม่</span>
+                    </div>
+                    <div id="player-uuid-row" class="player-uuid-badge" title="รหัสประจำตัวผู้เล่น (ใช้สำหรับ Reconnect อัตโนมัติ)">
+                        <span class="uuid-icon">🪪</span>
+                        <span class="uuid-label">ID:</span>
+                        <span id="player-unique-id-display" class="uuid-value"></span>
+                    </div>
+                </div>
+                <div class="player-current-room-row">
+                    <span>ห้องปัจจุบัน: <span id="current-room-display">ไม่มี</span></span>
                     <button id="copy-room-link-header-btn" style="display: none; background: #2e7d32; color: #fff; border: 1px solid #4caf50; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 0.85em; margin-left: 8px;">🔗 คัดลอกลิงก์ห้อง</button>
                     <button id="leave-room-button" style="display: none;">ออกจากห้อง</button>
-                </p>
+                </div>
             </div>
 
             <div id="room-management-section" class="section">
@@ -450,57 +469,115 @@
     <div id="card-description-popup"></div>
 
     <!-- Modal popup สำหรับกติกาเกม -->
-    <div id="game-rules-modal" class="modal" style="display:none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.7); align-items: center; justify-content: center;">
-      <div class="modal-content" style="background: #222; color: #fff; margin: auto; padding: 32px; border-radius: 12px; width: 90%; max-width: 600px; position: relative; max-height: 80vh; overflow-y: auto;">
-        <span id="close-rules-modal" class="close" style="position: absolute; right: 18px; top: 12px; color: #fff; font-size: 2em; cursor: pointer;">&times;</span>
-        <h2 style="text-align:center; margin-bottom:24px;">คู่มือการเล่น</h2>
-        <div id="rules-content">
-          <h4 style="color:#ff7043; margin-top:18px;">🎯 เป้าหมายของเกม</h4>
-          <ul style="margin-bottom:12px;">
-            <li><b style="color:#ec274f;">ฝ่ายปอบ:</b> ฆ่าชาวบ้านให้หมด หรือแพร่เชื้อให้ทุกคนเป็นปอบ</li>
-            <li><b style="color:#4caf50;">ฝ่ายชาวบ้าน:</b> เปิดการ์ด "ปอบ" ให้ครบทุกใบที่ยังไม่ถูกเปิด</li>
-          </ul>
-          <h4 style="color:#ff7043; margin-top:18px;">🃏 การตั้งค่าเกม</h4>
-          <ol style="margin-bottom:12px;">
-            <li>แจกการ์ดชีวิตคนละ 5 ใบ ผู้เล่น 4-5 คน ปอบ 1 ใบ หมอผี 1 ใบ</li>
-            <li>หากผู้เล่นมากกว่า 6 คนจะมีปอบ 2 ใบ หมอผี 1 ใบ</li>
-            <li>ดูการ์ดของตัวเอง ห้ามบอกใคร</li>
-          </ol>
-          <h4 style="color:#ff7043; margin-top:18px;">🚩 การเริ่มเกม</h4>
-          <ol style="margin-bottom:12px;">
-            <li>ฝ่ายปอบปรึกษากันและเลือกผู้เล่น 1 คนรับ "เครื่องเซ่น" (ปอบสามารถวางทีมตัวเองได้)</li>
-            <li>ผู้ที่ได้ "เครื่องเซ่น" จะได้เริ่มเล่นเป็นคนแรก</li>
-            <li>เล่นวนตามเข็มนาฬิกา</li>
-          </ol>
-          <h4 style="color:#ff7043; margin-top:18px;">🔄 การเล่นแต่ละตา</h4>
-          <ul style="margin-bottom:12px;">
-            <li>เลือก <b>จั่วการ์ด 2 ใบ</b> หรือ <b>เล่นการ์ด</b> ใส่คนอื่น</li>
-            <li>จั่วได้การ์ดสีดำ ต้องใช้ทันที</li>
-            <li>เล่นการ์ดใส่ตัวเองไม่ได้</li>
-          </ul>
-          <h4 style="color:#ff7043; margin-top:18px;">🃏 ประเภทของการ์ด</h4>
-          <ul style="margin-bottom:12px;">
-            <li><b style="color:#e53935;">การ์ดสีแดง:</b> วางหน้าผู้เล่นอื่น สะสมครบ 7 ใบต้องเปิดการ์ดชีวิต</li>
-            <li><b style="color:#43a047;">การ์ดสีเขียว:</b> ใช้แล้วทิ้งทันที</li>
-            <li><b style="color:#1976d2;">การ์ดสีน้ำเงิน:</b> วางหน้าผู้เล่น มีผลต่อเนื่อง</li>
-            <li><b style="color:#ffd700; background:#222; border-radius:4px; padding:0 6px;">การ์ดสีดำ:</b> จั่วแล้วต้องใช้ทันที</li>
-          </ul>
-          <h4 style="color:#ff7043; margin-top:18px;">🌙 เหตุการณ์พิเศษ</h4>
-          <ul style="margin-bottom:12px;">
-            <li><b>พิธีเซ่นไหว้:</b> เปิดการ์ดชีวิตของผู้ที่มีการ์ดเครื่องเซ่นอยู่ตรงหน้า 1 ใบ และทุกคนหยิบการ์ดชีวิตจากซ้ายมือ 1 ใบ ถ้าได้ "การ์ดปอบ" จะกลายเป็นปอบทันที</li>
-            <li><b>ยามวิกาล:</b> ปอบเลือกเหยื่อ หมอผีเลือกป้องกัน ผู้เล่นสามารถ "สารภาพ" เพื่อรอดตาย</li>
-          </ul>
-          <h4 style="color:#ff7043; margin-top:18px;">💡 หมายเหตุสำคัญ</h4>
-          <div style="background:#333; color:#ffe082; border-left:5px solid #ff9800; padding:10px 16px; border-radius:8px; margin-bottom:12px;">
-            <ul style="margin:0; padding-left:18px;">
-              <li>ถ้าได้การ์ด "ปอบ" จะเป็นปอบตลอดเกม</li>
-              <li>ฝ่ายชาวบ้านชนะเมื่อเปิดการ์ด "ปอบ" ครบ</li>
-              <li>ฝ่ายปอบชนะเมื่อชาวบ้านตายหมด หรือทุกคนเป็นปอบ</li>
-              <li>เมื่อผู้เล่นตายจะสามารถพูดคำสั่งเสียได้ แต่ห้ามส่งผลกระทบกับเกม</li>
+    <div id="game-rules-modal" class="modal" style="display:none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+      <div class="game-rules-modal-container">
+        <!-- Header -->
+        <div class="game-rules-header">
+          <div class="game-rules-title-row">
+            <div class="game-rules-title-block">
+              <span class="game-rules-icon">⚖️</span>
+              <div>
+                <h2 class="game-rules-title">คู่มือกติกาหมู่บ้านต้องสาป</h2>
+                <span class="game-rules-subtitle">กฎระเบียบและวิธีเอาชีวิตรอดในเมืองลับแล</span>
+              </div>
+            </div>
+            <button id="close-rules-modal" class="game-rules-close-btn" aria-label="ปิด">&times;</button>
+          </div>
+        </div>
+
+        <!-- Scrollable Content -->
+        <div id="rules-content" class="game-rules-body">
+          <!-- 1. เป้าหมายของเกม -->
+          <div class="rule-card rule-card-gold">
+            <h3 class="rule-card-title">🎯 เป้าหมายของทั้งสองฝ่าย</h3>
+            <div class="rule-factions-grid">
+              <div class="rule-faction-box faction-witch">
+                <div class="faction-header">
+                  <span class="faction-badge badge-witch">🩸 ฝ่ายปอบ</span>
+                </div>
+                <p class="faction-desc">สังหารชาวบ้านผู้บริสุทธิ์ให้หมด หรือแพร่เชื้อปอบให้ผู้เล่นที่รอดชีวิตทุกคนตกเป็นปอบ</p>
+              </div>
+              <div class="rule-faction-box faction-town">
+                <div class="faction-header">
+                  <span class="faction-badge badge-town">🛡️ ฝ่ายชาวบ้าน</span>
+                </div>
+                <p class="faction-desc">ร่วมมือกันตามหาและเปิดเผยการ์ด "ปอบ (Witch)" ให้ครบทุกใบที่ยังซ่อนอยู่ในหมู่บ้าน</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. การตั้งค่าและการเริ่มเกม -->
+          <div class="rule-card">
+            <h3 class="rule-card-title">🃏 การตั้งค่าบทบาท & การเริ่มเกม</h3>
+            <ol class="rule-ordered-list">
+              <li><b>แจกการ์ดชีวิต (Tryal Cards)</b> คนละ 5 ใบคว่ำไว้ (ผู้เล่น 4-5 คน มีปอบ 1 ใบ / 6 คนขึ้นไป มีปอบ 2 ใบ และมีหมอผี 1 ใบเสมอ)</li>
+              <li>ผู้เล่นแอบดูการ์ดชีวิตของตนเอง <b>ห้ามบอกใครเด็ดขาด</b> หากมีการ์ดปอบแม้แต่ใบเดียว คุณคือฝ่ายปอบทันที!</li>
+              <li><b>พิธีมอบเครื่องเซ่น:</b> ฝ่ายปอบจะเลือกมอบการ์ด "เครื่องเซ่น (แมวดำ)" ให้ผู้เล่น 1 คน (สามารถวางให้ทีมตัวเองได้)</li>
+              <li>ผู้ที่ได้รับเครื่องเซ่นจะได้ <b>เริ่มเล่นเป็นคนแรก</b> และเกมจะดำเนินวนตามเข็มนาฬิกา</li>
+            </ol>
+          </div>
+
+          <!-- 3. การเล่นในแต่ละเทิร์น -->
+          <div class="rule-card">
+            <h3 class="rule-card-title">🔄 การเล่นในแต่ละเทิร์น (Turn Flow)</h3>
+            <p class="rule-intro-text">เมื่อถึงเทิร์นของคุณ ผู้เล่นต้องเลือกทำ 1 อย่างต่อไปนี้:</p>
+            <div class="rule-turn-options">
+              <div class="turn-option-pill">
+                <span class="opt-num">1</span>
+                <div>
+                  <b>จั่วการ์ด 2 ใบ:</b> หยิบการ์ดจากกองกลางเข้ามือ (หากจั่วได้การ์ดสีดำ จะแสดงผลทันที!)
+                </div>
+              </div>
+              <div class="turn-option-pill">
+                <span class="opt-num">2</span>
+                <div>
+                  <b>เล่นการ์ด:</b> เลือกเล่นการ์ดสีแดง เขียว หรือน้ำเงิน จากบนมือใส่ผู้เล่นคนอื่น (ไม่สามารถเล่นใส่ตัวเองได้)
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4. ประเภทของการ์ด -->
+          <div class="rule-card">
+            <h3 class="rule-card-title">🎴 ประเภทของการ์ดในสำรับ</h3>
+            <div class="rule-card-types-list">
+              <div class="card-type-row type-red">
+                <span class="card-type-label">🔴 การ์ดสีแดง (ข้อกล่าวหา)</span>
+                <span class="card-type-explain">วางใส่หน้าผู้เล่นอื่นเพื่อสะสมแต้ม หากใครสะสมครบ 7 แต้ม จะถูกบังคับเปิดการ์ดชีวิต 1 ใบ!</span>
+              </div>
+              <div class="card-type-row type-green">
+                <span class="card-type-label">🟢 การ์ดสีเขียว (แอ็กชัน)</span>
+                <span class="card-type-explain">ส่งผลทันทีแล้วทิ้งลงกองสุสาน เช่น ล้างมลทิน, สลับการ์ด, บังคับทิ้งไพ่ หรือข้ามเทิร์น</span>
+              </div>
+              <div class="card-type-row type-blue">
+                <span class="card-type-label">🔵 การ์ดสีน้ำเงิน (ต่อเนื่อง)</span>
+                <span class="card-type-explain">วางค้างไว้ตรงหน้าตนเองหรือผู้อื่น เช่น ที่หลบภัย (กันปอบฆ่า), พลังศรัทธา, ผูกดวงชะตา</span>
+              </div>
+              <div class="card-type-row type-black">
+                <span class="card-type-label">⚫ การ์ดสีดำ (ฉับพลัน)</span>
+                <span class="card-type-explain">จั่วได้เมื่อใดจะทำงานทันที! บังคับเข้าสู่ "ยามวิกาล" หรือเริ่ม "พิธีเซ่นไหว้"</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 5. เหตุการณ์พิเศษและช่วงกลางคืน -->
+          <div class="rule-card rule-card-crimson">
+            <h3 class="rule-card-title">🌙 เหตุการณ์พิเศษและยามวิกาล</h3>
+            <ul class="rule-bullet-list">
+              <li><b>พิธีเซ่นไหว้ (Conspiracy):</b> ผู้ถือเครื่องเซ่นต้องเปิดการ์ดชีวิต 1 ใบ จากนั้นทุกคนจะหยิบการ์ดชีวิตจากคนซ้ายมือ 1 ใบ (หากหยิบได้การ์ดปอบ คุณจะติดเชื้อกลายเป็นปอบทันที!)</li>
+              <li><b>ยามวิกาล (Night Phase):</b> ฝ่ายปอบจะร่วมกันเลือกเหยื่อ 1 คนเพื่อสังหาร และหมอผีจะเลือกผู้เล่น 1 คนเพื่อสวดคุ้มครอง</li>
+              <li><b>การสารภาพบาป (Confession):</b> ก่อนรุ่งสาง ผู้เล่นที่กำลังจะถูกสังหารมีโอกาสรอดตายได้ 1 ครั้ง โดยต้องยอมเปิดเผยการ์ดชีวิตของตนเอง 1 ใบ</li>
             </ul>
           </div>
-          <div style="font-size:0.97em; color:#bbb; margin-top:18px; background:#232323; border-radius:8px; padding:10px 16px;">
-            <b>Tip:</b> อ่านรายละเอียดการ์ดแต่ละใบได้ที่ปุ่ม <span style="color:#ff9800;">"อธิบายการ์ด"</span> ด้านบน
+
+          <!-- 6. คำแนะนำและข้อควรระวัง -->
+          <div class="rule-alert-box">
+            <div class="rule-alert-header">💡 คำสั่งเสียและกฎสำคัญ</div>
+            <ul class="rule-alert-list">
+              <li>หากได้รับการ์ด "ปอบ" ในระหว่างเกม จะกลายเป็นฝ่ายปอบไปจนจบเกม ห้ามเปลี่ยนกลับ!</li>
+              <li>เมื่อเปิดการ์ดชีวิตจนหมด ผู้เล่นจะเสียชีวิตทันทียังพูดคำสั่งเสียได้สั้นๆ แต่ห้ามเปิดเผยข้อมูลลับที่ส่งผลกระทบต่อเกม</li>
+              <li>กดปุ่ม <b>"อธิบายการ์ด"</b> ด้านบน เพื่อเปิดดูรายละเอียดความสามารถของการ์ดทั้ง 18 ใบได้ตลอดเวลา</li>
+            </ul>
           </div>
         </div>
       </div>
