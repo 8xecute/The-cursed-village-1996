@@ -319,6 +319,16 @@ button:disabled {
 .tryal-card-in-hand {
     background-color: #444;
     border-color: #666;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    width: 96px;
+    height: 136px;
+    margin: 4px;
+    font-size: 1.1em;
+    font-weight: bold;
+    cursor: grab;
+    box-sizing: border-box;
 }
 
 /* Popup for card description */
@@ -734,22 +744,51 @@ button:disabled {
 
 .hand-action-buttons {
     display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 8px;
+    width: 100%;
+}
+
+.targets-container {
+    display: flex;
     flex-direction: row;
-    gap: 24px;
-    align-items: center;
-    margin-top: 4px;
+    gap: 8px;
+    flex-wrap: wrap;
+    width: 100%;
 }
 
-#card-target-select {
-    min-width: 120px;
+.targets-container select {
+    min-width: 160px;
     height: 38px;
-    font-size: 1em;
+    font-size: 0.95em;
+    padding: 4px 10px;
+    border-radius: 6px;
+    background-color: #333;
+    color: #fff;
+    border: 1.5px solid #ff9800;
 }
 
-#end-turn-button {
-    padding: 10px 18px;
-    font-size: 1em;
-    margin-left: 24px;
+.action-buttons-row {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+    align-items: center;
+    width: 100%;
+}
+
+.action-buttons-row .btn-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 40px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+    user-select: none;
 }
 
 /* --- Game State Bar --- */
@@ -835,34 +874,81 @@ button:disabled {
     font-size: 0.97em;
 }
 
+.action-buttons-row button,
 .hand-action-buttons button {
-    font-size: 0.86em; /* ลดลง 20% */
-    padding: 9px 18px; /* ลดลง 20% */
-    min-width: 80px;
-    min-height: 36px;
+    font-size: 0.9em;
+    padding: 8px 14px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    box-sizing: border-box;
 }
-#draw-card-button, #play-card-button, #end-turn-button {
-    font-size: 0.86em !important;
-    padding: 9px 18px !important;
-    min-width: 80px;
-    min-height: 36px;
-}
-#end-turn-button {
-    background: #dc3545;
+
+#draw-card-button {
+    background: #2e7d32;
     color: #fff;
-    border: 2px solid #b71c1c;
-    font-size: 1.13em;
+    border: 1.5px solid #43a047;
+    flex: 1;
+    min-width: 120px;
     font-weight: bold;
-    box-shadow: 0 2px 12px rgba(220,53,69,0.15);
-    padding: 14px 30px;
-    border-radius: 10px;
-    margin-left: 16px;
 }
-#end-turn-button:hover {
-    background: #ff1744;
+#draw-card-button:hover:not(:disabled) {
+    background: #388e3c;
+    box-shadow: 0 4px 14px rgba(46, 125, 50, 0.4);
+}
+
+#play-card-button {
+    background: #1565c0;
     color: #fff;
-    border-color: #ff1744;
-    box-shadow: 0 4px 18px rgba(255,23,68,0.18);
+    border: 1.5px solid #1e88e5;
+    flex: 1.4;
+    min-width: 140px;
+    font-weight: bold;
+}
+#play-card-button:hover:not(:disabled) {
+    background: #1976d2;
+    box-shadow: 0 4px 14px rgba(21, 101, 192, 0.4);
+}
+#play-card-button.can-play {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
+    color: #1a0f00 !important;
+    border: 2px solid #fde047 !important;
+    box-shadow: 0 0 14px rgba(245, 158, 11, 0.65) !important;
+    animation: pulsePlayBtn 1.2s infinite alternate;
+}
+
+#end-turn-button {
+    background: #441717;
+    color: #ffcdd2;
+    border: 1.5px solid #7f1d1d;
+    font-size: 0.9em;
+    font-weight: 600;
+    flex: 0 0 auto;
+    min-width: 100px;
+    margin-left: auto;
+}
+#end-turn-button:hover:not(:disabled) {
+    background: #7f1d1d;
+    color: #ffffff;
+    box-shadow: 0 3px 12px rgba(127, 29, 29, 0.4);
+}
+#end-turn-button.confirming {
+    background: #dc2626 !important;
+    color: #ffffff !important;
+    border: 2px solid #facc15 !important;
+    font-weight: bold !important;
+    box-shadow: 0 0 16px rgba(220, 38, 38, 0.85) !important;
+    animation: pulseEndTurn 0.7s infinite alternate;
+}
+
+@keyframes pulsePlayBtn {
+    0% { transform: scale(1); filter: brightness(1); }
+    100% { transform: scale(1.02); filter: brightness(1.15); }
+}
+
+@keyframes pulseEndTurn {
+    0% { transform: scale(1); box-shadow: 0 0 6px #dc2626; }
+    100% { transform: scale(1.04); box-shadow: 0 0 16px #facc15; }
 }
 
 /* ขอบหรือเงาทองเมื่อถึงเทิร์นของผู้เล่น */
@@ -871,26 +957,16 @@ button:disabled {
     border-radius: 12px;
     transition: box-shadow 0.2s;
 }
-/* ปุ่มเด่นเมื่อถึงเทิร์นของผู้เล่น */
-.hand-action-buttons.my-turn-active #draw-card-button {
-    background: #43a047;
-    color: #fff;
-    border-color: #388e3c;
-}
-.hand-action-buttons.my-turn-active #play-card-button {
-    background: #1976d2;
-    color: #fff;
-    border-color: #1565c0;
-}
-.hand-action-buttons.my-turn-active #end-turn-button {
-    background: #d32f2f;
-    color: #fff;
-    border-color: #b71c1c;
-}
+
 .hand-action-buttons button:disabled {
-    background: #555 !important;
-    color: #bbb !important;
-    border-color: #888 !important;
+    background: #333333 !important;
+    color: #777777 !important;
+    border-color: #555555 !important;
+    box-shadow: none !important;
+    cursor: not-allowed !important;
+    opacity: 0.55;
+    animation: none !important;
+    transform: none !important;
 }
 
 /* Witch Tryal Card */
@@ -1592,6 +1668,35 @@ html, body {
    Cursed Village 1996 - Tryal Card Selection & Reveal Theme
    ======================================================== */
 
+/* Tryal Modal Overlay Container (Guarantees Dead Center Alignment on all devices) */
+.tryal-modal-overlay,
+#select-left-tryal-overlay,
+#select-blackcat-overlay,
+#blackcat-tryal-overlay,
+#accused-tryal-select-overlay,
+#confess-overlay,
+#forced-reveal-notice-overlay {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  width: 100dvw !important;
+  height: 100dvh !important;
+  background: rgba(0, 0, 0, 0.85) !important;
+  backdrop-filter: blur(5px) !important;
+  -webkit-backdrop-filter: blur(5px) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  z-index: 10000 !important;
+  padding: 14px !important;
+  box-sizing: border-box !important;
+  overflow-y: auto !important;
+}
+
 /* Unified Popup Container for Life Card Selection */
 .tryal-selection-popup,
 #accused-tryal-select-popup,
@@ -1600,20 +1705,34 @@ html, body {
 #select-left-tryal-popup,
 #confess-popup,
 #forced-reveal-notice-popup {
-  position: fixed !important;
-  top: 50% !important;
-  left: 50% !important;
-  transform: translate(-50%, -50%) !important;
+  position: relative !important;
+  top: auto !important;
+  left: auto !important;
+  transform: none !important;
+  margin: auto !important;
   background: radial-gradient(circle at 50% 25%, #2a1f18 0%, #15110e 100%) !important;
   border: 2px solid #b38842 !important;
   border-radius: 16px !important;
   box-shadow: 0 16px 50px rgba(0, 0, 0, 0.95), 0 0 30px rgba(179, 136, 66, 0.3) !important;
-  padding: 24px 20px !important;
-  z-index: 9999 !important;
+  padding: 22px 14px !important;
+  z-index: 10001 !important;
   text-align: center !important;
   color: #f5e6cb !important;
-  max-width: 92vw !important;
+  width: 100% !important;
+  max-width: 440px !important;
+  max-height: 88vh !important;
+  max-height: 88dvh !important;
+  overflow-y: auto !important;
   box-sizing: border-box !important;
+}
+
+/* Fallback if attached directly to body without overlay wrapper */
+body > .tryal-selection-popup {
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  max-width: 92vw !important;
 }
 
 /* Forced Reveal Notice Special Crimson Border */
@@ -1748,9 +1867,15 @@ html, body {
 
 @media (max-width: 600px) {
   #accused-tryal-select-popup, #blackcat-tryal-select-popup, #select-blackcat-tryal-popup, #select-left-tryal-popup, #confess-popup, #forced-reveal-notice-popup {
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    transform: none !important;
+    margin: auto !important;
     width: 95vw !important;
-    max-width: 98vw !important;
-    padding: 16px 8px !important;
+    max-width: 400px !important;
+    padding: 18px 10px !important;
+    box-sizing: border-box !important;
   }
   .tryal-card-btn,
   #accused-tryal-select-popup button:not(.action-btn),
@@ -1758,12 +1883,12 @@ html, body {
   #select-blackcat-tryal-popup button:not(.action-btn),
   #select-left-tryal-popup button:not(.action-btn),
   #confess-popup button:not(.action-btn):not(#skip-confess-button) {
-    width: 62px !important;
-    height: 94px !important;
-    min-width: 58px !important;
-    max-width: 68px !important;
-    font-size: 0.82em !important;
-    margin: 3px !important;
+    width: 68px !important;
+    height: 100px !important;
+    min-width: 62px !important;
+    max-width: 76px !important;
+    font-size: 0.85em !important;
+    margin: 4px !important;
   }
   .select-player-popup, #select-player-popup, #must-play-night-popup, #card-description-popup, #night-action-popup, #assign-blackcat-popup {
     width: 95vw !important;
@@ -2147,54 +2272,117 @@ button, .card, .tryal-card-btn, .mobile-tab-btn {
   .hand-action-buttons {
     position: sticky;
     bottom: 0;
-    background: rgba(28, 28, 28, 0.95);
-    backdrop-filter: blur(8px);
+    background: rgba(20, 20, 20, 0.97);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     border-top: 1.5px solid rgba(255, 255, 255, 0.15);
-    border-radius: 10px 10px 0 0;
-    padding: 8px;
+    border-radius: 12px 12px 0 0;
+    padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 0px));
     margin-top: 8px;
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
     z-index: 40;
     box-sizing: border-box;
+    width: 100%;
   }
 
-  .hand-action-buttons button,
-  .hand-action-buttons select,
-  #end-turn-button {
+  .targets-container {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 100%;
+  }
+
+  .targets-container select {
     box-sizing: border-box;
     width: 100%;
-    min-width: 0;
-    min-height: 46px;
+    min-height: 42px;
     margin: 0 !important;
     padding: 8px 10px;
-    font-size: 0.92em;
-    font-weight: bold;
+    font-size: 15px;
+    font-weight: 600;
     border-radius: 8px;
-    white-space: normal;
-  }
-
-  .hand-action-buttons #card-target-select,
-  .hand-action-buttons #card-second-target-select {
-    grid-column: 1 / -1;
-    font-size: 16px;
     background-color: #383838;
     color: #fff;
     border: 1.5px solid #ff9800;
   }
 
-  .hand-action-buttons #end-turn-button {
-    grid-column: 1 / -1;
-    min-height: 48px;
-    font-size: 1.05em;
-    box-shadow: 0 2px 10px rgba(220, 53, 69, 0.4);
+  .action-buttons-row {
+    display: flex;
+    flex-direction: row;
+    gap: 6px;
+    align-items: stretch;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .action-buttons-row .btn-action {
+    box-sizing: border-box;
+    min-height: 44px;
+    margin: 0 !important;
+    padding: 8px 6px;
+    border-radius: 8px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.18s ease;
+  }
+
+  #draw-card-button {
+    flex: 1 1 0;
+    min-width: 0;
+    font-size: 0.84em !important;
+    background: #2e7d32;
+    color: #fff;
+    border: 1.5px solid #43a047;
+  }
+
+  #play-card-button {
+    flex: 1.35 1 0;
+    min-width: 0;
+    font-size: 0.86em !important;
+    background: #1565c0;
+    color: #fff;
+    border: 1.5px solid #1e88e5;
+  }
+
+  #play-card-button.can-play {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
+    color: #1a0f00 !important;
+    border: 2px solid #fde047 !important;
+    box-shadow: 0 0 12px rgba(245, 158, 11, 0.7) !important;
+  }
+
+  #end-turn-button {
+    flex: 0 0 88px;
+    width: 88px;
+    min-width: 84px;
+    max-width: 94px;
+    font-size: 0.80em !important;
+    background: #441717;
+    color: #ffcdd2;
+    border: 1.5px solid #7f1d1d;
+    box-shadow: none;
+    margin: 0 !important;
+  }
+
+  #end-turn-button.confirming {
+    background: #dc2626 !important;
+    color: #ffffff !important;
+    border: 2px solid #facc15 !important;
+    font-size: 0.76em !important;
+    box-shadow: 0 0 14px rgba(220, 38, 38, 0.8) !important;
   }
 
   /* Tryal cards in hand */
   .tryal-card-in-hand {
-    width: 75px !important;
-    height: 105px !important;
+    width: 72px !important;
+    height: 102px !important;
+    margin: 3px !important;
     font-size: 0.85em !important;
     flex-shrink: 0;
   }
@@ -2276,5 +2464,341 @@ button, .card, .tryal-card-btn, .mobile-tab-btn {
 @media (max-width: 600px) {
   #enter-village-btn {
     bottom: calc(24px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+}
+
+/* --- Ready System (Lobby) --- */
+.ready-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 22px;
+  border-radius: 8px;
+  font-size: 1.05em;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  border: 1px solid transparent;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.ready-btn.not-ready {
+  background: linear-gradient(135deg, #37474f 0%, #263238 100%);
+  color: #cfd8dc;
+  border-color: #546e7a;
+}
+.ready-btn.not-ready:hover {
+  background: linear-gradient(135deg, #455a64 0%, #37474f 100%);
+  color: #fff;
+  border-color: #78909c;
+}
+
+.ready-btn.ready {
+  background: linear-gradient(135deg, #2e7d32 0%, #1b5e20 100%);
+  color: #fff;
+  border-color: #81c784;
+  box-shadow: 0 0 14px rgba(76, 175, 80, 0.6);
+}
+.ready-btn.ready:hover {
+  background: linear-gradient(135deg, #388e3c 0%, #2e7d32 100%);
+}
+
+.ready-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.82em;
+  font-weight: 600;
+  margin-left: 8px;
+  letter-spacing: 0.3px;
+}
+.ready-badge.host {
+  background: rgba(255, 179, 0, 0.18);
+  color: #ffb300;
+  border: 1px solid rgba(255, 179, 0, 0.4);
+}
+.ready-badge.ready {
+  background: rgba(76, 175, 80, 0.2);
+  color: #81c784;
+  border: 1px solid rgba(76, 175, 80, 0.45);
+}
+.ready-badge.not-ready {
+  background: rgba(158, 158, 158, 0.15);
+  color: #b0bec5;
+  border: 1px solid rgba(158, 158, 158, 0.3);
+}
+
+/* --- End Game Victory & MVP Modal --- */
+.game-over-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 2500;
+  background: rgba(8, 7, 7, 0.85);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.game-over-modal-content {
+  background: radial-gradient(circle at top, #2b1f1a 0%, #161211 60%, #0d0a09 100%);
+  color: #e0d7cd;
+  width: 100%;
+  max-width: 780px;
+  max-height: 90vh;
+  overflow-y: auto;
+  border-radius: 16px;
+  border: 2px solid #8d6e63;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.8), 0 0 24px rgba(183, 28, 28, 0.3);
+  padding: 24px 20px;
+  box-sizing: border-box;
+  animation: victoryModalFadeIn 0.35s ease-out;
+}
+
+@keyframes victoryModalFadeIn {
+  from { opacity: 0; transform: scale(0.94) translateY(12px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.victory-header {
+  text-align: center;
+  margin-bottom: 22px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(141, 110, 99, 0.35);
+}
+
+.victory-badge {
+  display: inline-block;
+  font-size: 0.9em;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  background: rgba(255, 179, 0, 0.15);
+  color: #ffca28;
+  border: 1px solid rgba(255, 179, 0, 0.4);
+  padding: 4px 14px;
+  border-radius: 20px;
+  margin-bottom: 8px;
+}
+
+.victory-title {
+  font-family: 'Creepster', 'Merriweather', 'Noto Serif Thai', serif;
+  font-size: 2.2em;
+  margin: 6px 0;
+  letter-spacing: 1px;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.7);
+}
+.victory-title.townsfolk-win {
+  color: #81c784;
+  text-shadow: 0 0 16px rgba(76, 175, 80, 0.45);
+}
+.victory-title.witch-win {
+  color: #e57373;
+  text-shadow: 0 0 16px rgba(229, 115, 115, 0.5);
+}
+
+.victory-desc {
+  color: #d7ccc8;
+  font-size: 1.05em;
+  margin: 6px 0 0;
+  line-height: 1.5;
+}
+
+.mvp-section, .roles-reveal-section {
+  margin-bottom: 22px;
+}
+
+.section-title {
+  font-size: 1.12em;
+  color: #ffb74d;
+  margin: 0 0 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.mvp-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.mvp-card {
+  background: rgba(43, 31, 26, 0.7);
+  border: 1px solid rgba(141, 110, 99, 0.4);
+  border-radius: 10px;
+  padding: 12px;
+  text-align: center;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+.mvp-card:hover {
+  transform: translateY(-2px);
+  border-color: #ffb74d;
+}
+
+.mvp-icon {
+  font-size: 1.8em;
+  margin-bottom: 4px;
+}
+
+.mvp-award-name {
+  font-size: 0.85em;
+  color: #bcaaa4;
+  margin-bottom: 4px;
+}
+
+.mvp-player-name {
+  font-size: 1.1em;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 4px;
+  word-break: break-word;
+}
+
+.mvp-detail {
+  font-size: 0.82em;
+  color: #ffcc80;
+}
+
+.roles-table-wrapper {
+  overflow-x: auto;
+  border: 1px solid rgba(141, 110, 99, 0.35);
+  border-radius: 8px;
+  background: rgba(22, 18, 17, 0.6);
+}
+
+.roles-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92em;
+}
+
+.roles-table th, .roles-table td {
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid rgba(141, 110, 99, 0.2);
+}
+
+.roles-table th {
+  background: rgba(43, 31, 26, 0.85);
+  color: #ffb74d;
+  font-weight: 600;
+}
+
+.role-tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 0.88em;
+  font-weight: bold;
+}
+.role-tag.witch {
+  background: rgba(211, 47, 47, 0.25);
+  color: #ef5350;
+  border: 1px solid rgba(211, 47, 47, 0.5);
+}
+.role-tag.town {
+  background: rgba(56, 142, 60, 0.25);
+  color: #81c784;
+  border: 1px solid rgba(56, 142, 60, 0.5);
+}
+.role-tag.constable {
+  background: rgba(25, 118, 210, 0.25);
+  color: #64b5f6;
+  border: 1px solid rgba(25, 118, 210, 0.5);
+}
+
+.tryal-pill-container {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.tryal-pill {
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.78em;
+  font-weight: 600;
+}
+.tryal-pill.witch {
+  background: #c62828;
+  color: #fff;
+}
+.tryal-pill.not-witch {
+  background: #37474f;
+  color: #eceff1;
+}
+.tryal-pill.constable {
+  background: #1565c0;
+  color: #fff;
+}
+
+.game-over-actions {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 14px;
+  margin-top: 20px;
+  flex-wrap: wrap;
+}
+
+.rematch-btn {
+  background: linear-gradient(135deg, #ff8f00 0%, #e65100 100%);
+  color: #fff;
+  border: 1px solid #ffa726;
+  font-weight: bold;
+  font-size: 1.05em;
+  padding: 10px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(230, 81, 0, 0.4);
+  transition: all 0.18s ease;
+}
+.rematch-btn:hover {
+  background: linear-gradient(135deg, #ffa000 0%, #f57c00 100%);
+  transform: translateY(-1px);
+}
+
+.rematch-waiting {
+  color: #ffb74d;
+  font-size: 0.95em;
+  font-style: italic;
+}
+
+.close-victory-btn {
+  background: rgba(255, 255, 255, 0.08);
+  color: #d7ccc8;
+  border: 1px solid rgba(215, 204, 200, 0.3);
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-size: 0.95em;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.close-victory-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+
+@media (max-width: 600px) {
+  .game-over-modal-content {
+    padding: 18px 14px;
+    max-height: 92vh;
+  }
+  .victory-title {
+    font-size: 1.7em;
+  }
+  .mvp-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .roles-table th, .roles-table td {
+    padding: 8px 6px;
+    font-size: 0.85em;
   }
 }

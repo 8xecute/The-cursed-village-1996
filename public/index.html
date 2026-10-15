@@ -307,7 +307,12 @@
                 <p>ผู้เล่น: <span id="lobby-player-count"></span>/<span id="lobby-max-players"></span></p>
                 <h3>รายชื่อผู้เล่นในห้อง:</h3>
                 <div id="player-list"></div>
-                <button id="start-game-button">เริ่มเกม</button>
+                <div class="lobby-action-row" style="display: flex; gap: 12px; flex-wrap: wrap; margin-top: 14px; align-items: center;">
+                    <button id="ready-toggle-btn" class="ready-btn not-ready" style="display: none;">
+                        <span class="ready-btn-icon">⏳</span> <span class="ready-btn-text">กดพร้อม (Ready)</span>
+                    </button>
+                    <button id="start-game-button">เริ่มเกม</button>
+                </div>
                 <p style="color:#ff9800; font-size:1em; margin-top:8px;">* ต้องมีผู้เล่นอย่างน้อย 4 คนจึงจะเริ่มเกมได้</p>
                 <div class="host-controls" id="host-controls-lobby" style="display: none;">
                     <h3>ควบคุมโฮสต์ (ล็อบบี้)</h3>
@@ -359,16 +364,20 @@
                     <div class="main-game-content" id="game-main-content">
                         <h3 style="color: #ff7f50;">การ์ดเล่นในมือ (<span id="hand-card-count">0</span> cards)</h3>
                         <div id="player-hand"></div>
-                        <div class="hand-action-buttons" style="margin-top: 8px;">
-                            <button id="draw-card-button">จั่วการ์ด 2 ใบ</button>
-                            <button id="play-card-button">เล่นการ์ดที่เลือก</button>
-                            <select id="card-target-select" style="display: none; margin-left: 8px;">
-                                <option value="">Select Target</option>
-                            </select>
-                            <select id="card-second-target-select" style="display: none; margin-left: 8px;">
-                                <option value="">Select Second Target</option>
-                            </select>
-                            <button id="end-turn-button" style="background-color: #dc3545; color: white; font-weight: bold; margin-left: 12px;">จบเทิร์น</button>
+                        <div class="hand-action-buttons">
+                            <div class="targets-container">
+                                <select id="card-target-select" style="display: none;">
+                                    <option value="">🎯 เลือกเป้าหมาย</option>
+                                </select>
+                                <select id="card-second-target-select" style="display: none;">
+                                    <option value="">🎯 เลือกเป้าหมายที่ 2</option>
+                                </select>
+                            </div>
+                            <div class="action-buttons-row">
+                                <button id="draw-card-button" class="btn-action btn-draw" title="จั่วการ์ด 2 ใบ">📥 จั่วการ์ด 2 ใบ</button>
+                                <button id="play-card-button" class="btn-action btn-play" title="เล่นการ์ดที่เลือก">⚡ เล่นการ์ดที่เลือก</button>
+                                <button id="end-turn-button" class="btn-action btn-end" title="จบเทิร์น (แตะ 2 ครั้งเพื่อยืนยัน)">🛑 จบเทิร์น</button>
+                            </div>
                         </div>
 
                         <div style="display: flex; align-items: center; justify-content: space-between;">
@@ -905,6 +914,52 @@
         .witch-popup-close-btn { font-size: 1em; padding: 10px 18px; }
       }
     </style>
+
+    <!-- End Game Victory & Summary Modal -->
+    <div id="game-over-modal" class="modal game-over-modal" style="display: none;">
+        <div class="game-over-modal-content">
+            <div class="victory-header">
+                <div class="victory-badge" id="victory-badge">🏆 สรุปผลชัยชนะ</div>
+                <h2 id="victory-title" class="victory-title">ฝ่ายชาวบ้านเป็นผู้ชนะ!</h2>
+                <p id="victory-message" class="victory-desc">ปอบทั้งหมดในหมู่บ้านถูกกำจัดแล้ว ความสงบสุขกลับคืนสู่หมู่บ้านลับแล</p>
+            </div>
+
+            <!-- MVP & Match Highlights -->
+            <div class="mvp-section" id="game-over-mvp-section">
+                <h3 class="section-title">🌟 ผู้เล่นทรงคุณค่า & สถิติของเกม (MVP Highlights)</h3>
+                <div class="mvp-grid" id="mvp-cards-grid">
+                    <!-- Populated dynamically via JS -->
+                </div>
+            </div>
+
+            <!-- Player Roles & Final Tryal Cards Reveal -->
+            <div class="roles-reveal-section">
+                <h3 class="section-title">📜 เปิดเผยตัวตนและการ์ดชีวิตของผู้เล่นทุกคน</h3>
+                <div class="roles-table-wrapper">
+                    <table class="roles-table">
+                        <thead>
+                            <tr>
+                                <th>ผู้เล่น</th>
+                                <th>บทบาทที่แท้จริง</th>
+                                <th>สถานะ</th>
+                                <th>การ์ดชีวิต (Tryal Cards)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="roles-reveal-tbody">
+                            <!-- Populated dynamically via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Modal Action Footer -->
+            <div class="game-over-actions">
+                <button id="rematch-btn" class="rematch-btn" style="display: none;">🔄 เล่นอีกรอบ (เริ่มรอบใหม่)</button>
+                <div id="rematch-waiting-notice" class="rematch-waiting" style="display: none;">⏳ รอหัวห้องเริ่มเกมรอบใหม่...</div>
+                <button id="close-victory-modal-btn" class="close-victory-btn">ดูหน้ากระดานเกม</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Popup เนื้อเรื่อง -->
     <div id="story-modal" class="modal" style="display:none; position: fixed; z-index: 2100; left: 0; top: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); align-items: center; justify-content: center;">

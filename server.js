@@ -45,6 +45,7 @@ const DEFAULT_PHASE_DURATIONS = {
     DAY: 0, // No automatic timer - Host advances
     NIGHT: 0, // No automatic timer - Host advances, but special timer for Night actions
     PRE_DAWN: 0, // No automatic timer - Host advances, confession period
+    CONFESSION: 25, // 25 seconds safety timeout for individual confession
     GAME_OVER: 0, // No timer
 };
 
@@ -238,6 +239,7 @@ function emitRoomState(roomName) {
             isBlackCatHolder: room.blackCatHolder === player.uniqueId,
             mustRevealTryal: room.playerForcedToRevealTryal === uniqueId,
             revealedTryalCardIndexes: Array.from(player.revealedTryalCardIndexes), // Send revealed roles as array
+            isReady: !!player.isReady,
         };
       }
       return playersState;
@@ -259,6 +261,7 @@ function emitRoomState(roomName) {
         isAssigningBlackCat: room.isAssigningBlackCat, // Flag for witch action
         gameOver: room.gameOver,
         winner: room.winner,
+        gameSummary: room.gameSummary || null,
         // Add deck and discard pile information
         deckCount: room.gameDeck ? room.gameDeck.length : 0,
         discardPileCount: room.discardPile ? room.discardPile.length : 0,
@@ -734,6 +737,9 @@ function startGame(roomName) {
     room.gameMessageHistory = []; // Reset game message history for new game
     room.infectionLog = [];
     room.deathLog = [];
+    room.firstVictim = null;
+    room.gameSummary = null;
+    room.gameStartTime = Date.now();
     broadcastActiveRooms();
 
     // --- Dynamically create TRYAL_CARDS deck based on player count ---
@@ -776,6 +782,9 @@ function startGame(roomName) {
         player.inPlayCards = []; // Clear permanent cards from previous game
         player.hand = []; // Clear hand from previous game
         player.hasPlayedCardsThisTurn = false; // Initialize turn action flag
+        player.accusationsGiven = 0;
+        player.accusationsReceived = 0;
+        player.isReady = false;
 
         // Deal 5 Tryal Cards to each player
         for (let i = 0; i < 5; i++) {
@@ -958,7 +967,10 @@ function playCard(roomName, playerUniqueId, cardIndex, targetUniqueId = null, se
         case 'Evidence':
             if (targetUniqueId && room.players[targetUniqueId]) {
                 const targetPlayer = room.players[targetUniqueId];
-                room.accusedPlayers[targetUniqueId] = (room.accusedPlayers[targetUniqueId] || 0) + (cardToPlay.value || 0);
+                const accVal = cardToPlay.value || 0;
+                player.accusationsGiven = (player.accusationsGiven || 0) + accVal;
+                targetPlayer.accusationsReceived = (targetPlayer.accusationsReceived || 0) + accVal;
+                room.accusedPlayers[targetUniqueId] = (room.accusedPlayers[targetUniqueId] || 0) + accVal;
                 targetPlayer.inPlayCards.push(cardToPlay);
                 io.to(targetPlayer.id).emit('update in play cards', targetPlayer.inPlayCards);
                 sendGameMessage(room.name, `<b>${player.name}</b> ใช้การ์ด ${getCardNameWithColor(cardToPlay.name)} ใส่ <b>${targetPlayer.name}</b> (+${cardToPlay.value || 0})`, 'orange', true);
@@ -1232,8 +1244,11 @@ function playCard(roomName, playerUniqueId, cardIndex, targetUniqueId = null, se
         case 'Witness':
             if (targetUniqueId && room.players[targetUniqueId]) {
                 const targetPlayer = room.players[targetUniqueId];
+                const accVal = cardToPlay.value || 0;
+                player.accusationsGiven = (player.accusationsGiven || 0) + accVal;
+                targetPlayer.accusationsReceived = (targetPlayer.accusationsReceived || 0) + accVal;
                 // เพิ่มแต้มข้อกล่าวหา
-                room.accusedPlayers[targetUniqueId] = (room.accusedPlayers[targetUniqueId] || 0) + cardToPlay.value;
+                room.accusedPlayers[targetUniqueId] = (room.accusedPlayers[targetUniqueId] || 0) + accVal;
                 sendGameMessage(room.name, `<b>${player.name}</b> ใช้การ์ด ${getCardNameWithColor('Witness')} ใส่ <b>${targetPlayer.name}</b>`, 'orange', true);
                 // Place RED card in front of the target player
                 targetPlayer.inPlayCards.push(cardToPlay);
@@ -1859,10 +1874,51 @@ function finishGame(room, winner, message, color) {
     clearTimeout(room.confessionTimer);
     room.phaseTimer = 0;
     sendGameMessage(room.name, message, color, true);
-    const summary = Object.values(room.players)
-        .map(player => `${player.name} - ${player.hasBeenWitch ? 'ทีมปอบ' : 'ทีมชาวบ้าน'}`)
-        .join('<br>');
-    sendGameMessage(room.name, `<b>สรุปทีมผู้เล่น:</b><br>${summary}`, 'gold', true);
+
+    const playersArr = Object.values(room.players || {});
+    let mostAccusationsPlayer = null;
+    let maxAccusationsGiven = 0;
+    let mostAccusedPlayer = null;
+    let maxAccusationsReceived = 0;
+
+    playersArr.forEach(p => {
+        if ((p.accusationsGiven || 0) > maxAccusationsGiven) {
+            maxAccusationsGiven = p.accusationsGiven;
+            mostAccusationsPlayer = p.name;
+        }
+        if ((p.accusationsReceived || 0) > maxAccusationsReceived) {
+            maxAccusationsReceived = p.accusationsReceived;
+            mostAccusedPlayer = p.name;
+        }
+    });
+
+    const survivingTownsfolk = playersArr.filter(p => p.alive && !p.hasBeenWitch).map(p => p.name);
+
+    room.gameSummary = {
+        winner: winner,
+        message: message,
+        color: color,
+        daysSurvived: room.dayNumber,
+        players: playersArr.map(p => ({
+            name: p.name,
+            alive: !!p.alive,
+            isHost: !!p.isHost,
+            hasBeenWitch: !!p.hasBeenWitch,
+            isConstable: !!p.isConstable,
+            tryalCards: (p.tryalCards || []).map(c => c.name),
+            revealedTryals: Array.from(p.revealedTryalCardIndexes || []),
+            accusationsGiven: p.accusationsGiven || 0,
+            accusationsReceived: p.accusationsReceived || 0
+        })),
+        mvp: {
+            mostAccusationsGiven: mostAccusationsPlayer ? { name: mostAccusationsPlayer, count: maxAccusationsGiven } : null,
+            mostAccused: mostAccusedPlayer ? { name: mostAccusedPlayer, count: maxAccusationsReceived } : null,
+            firstVictim: room.firstVictim || null,
+            survivingTownsfolk: survivingTownsfolk
+        }
+    };
+
+    io.to(room.name).emit('game over summary', room.gameSummary);
     emitRoomState(room.name);
 }
 
@@ -1939,6 +1995,119 @@ function handlePlayerDisconnection(room, playerUniqueId, playerName, isDisconnec
 
     // Update room state for remaining players
     emitRoomState(room.name);
+}
+
+function handlePlayerReconnection(socket, room, player) {
+    player.id = socket.id;
+    player.connected = true;
+    socket.join(room.name);
+    socket.currentRoom = room.name;
+    io.to(socket.id).emit('room joined', room.name);
+
+    // Send private player data before emitting room state
+    io.to(socket.id).emit('update hand', player.hand || []);
+    io.to(socket.id).emit('update tryal cards initial', player.tryalCards || []);
+    if (player.revealedTryalCardIndexes) {
+        io.to(socket.id).emit('update revealed tryal indexes', Array.from(player.revealedTryalCardIndexes));
+    }
+    if (player.inPlayCards) {
+        io.to(socket.id).emit('update in play cards', player.inPlayCards);
+    }
+
+    emitRoomState(room.name);
+    sendGameMessage(room.name, `<b>${player.name}</b> ได้เชื่อมต่อกลับเข้ามาในเกม.`, 'blue');
+
+    if (!room.gameStarted) {
+        return;
+    }
+
+    // Restore active state prompts if game is in progress
+    // 1. NIGHT Phase
+    if (room.currentPhase === 'NIGHT' && player.alive) {
+        const witches = getAlivePlayers(room).filter(p => p.hasBeenWitch);
+        const constables = getAlivePlayers(room).filter(p => p.isConstable);
+        const witchHasActed = hasNightActionChosen(room, 'witchKill');
+
+        if (player.hasBeenWitch && !witchHasActed) {
+            io.to(socket.id).emit('prompt witch kill');
+        } else if (player.isConstable && (witchHasActed || witches.length === 0) && !hasNightActionChosen(room, 'constableSave')) {
+            io.to(socket.id).emit('prompt constable action');
+        }
+    }
+
+    // 2. PRE_DAWN Phase
+    if (room.currentPhase === 'PRE_DAWN' && player.alive) {
+        sendDeckInfo(room.name);
+    }
+
+    // 3. Forced Tryal Reveal (7 Accusation points or Witness)
+    if (room.playerForcedToRevealTryal) {
+        const targetUniqueId = room.playerForcedToRevealTryal;
+        const selectorUniqueId = room.playerForcedToRevealSelector;
+        const targetPlayer = room.players[targetUniqueId];
+        const selectorPlayer = room.players[selectorUniqueId];
+
+        if (player.uniqueId === selectorUniqueId && targetPlayer) {
+            io.to(socket.id).emit('prompt select accused tryal', {
+                accusedUniqueId: targetUniqueId,
+                tryalCount: targetPlayer.tryalCards.length
+            });
+        } else if (player.uniqueId === targetUniqueId && selectorPlayer) {
+            io.to(socket.id).emit('forced reveal notice', {
+                byPlayerName: selectorPlayer.name,
+                reason: 'accusation_threshold',
+                points: room.accusedPlayers[targetUniqueId] || 0
+            });
+        }
+    }
+
+    // 4. Curse target selection
+    if (room.awaitingCurseSelection && room.awaitingCurseSelection.selector === player.uniqueId) {
+        const targetP = room.players[room.awaitingCurseSelection.target];
+        if (targetP) {
+            const blueCards = targetP.inPlayCards.filter(c => c.color === 'Blue');
+            io.to(socket.id).emit('prompt select curse target', {
+                targetUniqueId: room.awaitingCurseSelection.target,
+                blueCards: blueCards.map(c => ({ name: c.name }))
+            });
+        }
+    }
+
+    // 5. Conspiracy Black Cat selection
+    if (room.awaitingConspiracySelection && room.awaitingConspiracySelection.selector === player.uniqueId) {
+        const bcHolder = room.players[room.blackCatHolder];
+        if (bcHolder) {
+            io.to(socket.id).emit('prompt select blackcat tryal', {
+                blackCatHolder: room.blackCatHolder,
+                tryalCount: bcHolder.tryalCards.length,
+                fromConspiracyDraw: true
+            });
+        }
+    }
+
+    // 6. Conspiracy Left Tryal selection
+    if (room.awaitingLeftTryalSelections && player.alive) {
+        if (room.conspiracyTryalSelections && room.conspiracyTryalSelections[player.uniqueId] === undefined) {
+            const alivePlayers = getAlivePlayers(room);
+            const idx = alivePlayers.findIndex(p => p.uniqueId === player.uniqueId);
+            if (idx !== -1) {
+                const leftIdx = (idx + alivePlayers.length - 1) % alivePlayers.length;
+                const leftPlayer = alivePlayers[leftIdx];
+                if (leftPlayer) {
+                    io.to(socket.id).emit('prompt select left tryal', {
+                        leftPlayerUniqueId: leftPlayer.uniqueId,
+                        leftPlayerName: leftPlayer.name,
+                        leftPlayerTryalCount: leftPlayer.tryalCards.length
+                    });
+                }
+            }
+        }
+    }
+
+    // 7. Game Over summary
+    if (room.gameOver && room.gameSummary) {
+        io.to(socket.id).emit('game over summary', room.gameSummary);
+    }
 }
 
 // --- Socket.IO Connection Handling ---
@@ -2081,6 +2250,18 @@ io.on('connection', (socket) => {
             io.to(socket.id).emit('game message', 'ไม่พบห้องนี้.', 'red');
             return;
         }
+
+        // Reconnecting with existing uniqueId
+        if (room.players[socket.uniqueId]) {
+            const player = room.players[socket.uniqueId];
+            if (playerName && playerName.trim()) {
+                player.name = playerName.trim();
+            }
+            handlePlayerReconnection(socket, room, player);
+            broadcastActiveRooms();
+            return;
+        }
+
         if (Object.keys(room.players).length >= PLAYER_LIMIT) {
             io.to(socket.id).emit('game message', 'ห้องเต็มแล้ว.', 'red');
             return;
@@ -2093,68 +2274,105 @@ io.on('connection', (socket) => {
             io.to(socket.id).emit('game message', 'โปรดป้อนชื่อผู้เล่นของคุณก่อนเข้าร่วมห้อง.', 'red');
             return;
         }
-        // Check if uniqueId already exists in this room (rejoining with same uniqueId)
-        if (room.players[socket.uniqueId]) {
-            // Player is rejoining with the same uniqueId, update socket.id
-            room.players[socket.uniqueId].id = socket.id;
-            socket.join(roomName);
-            socket.currentRoom = roomName;
-            io.to(socket.id).emit('room joined', roomName);
-            sendGameMessage(roomName, `${playerName} ได้เชื่อมต่อกลับเข้ามาในเกม.`, 'blue');
-        } else {
-            // New player joining
-            const newPlayer = {
-                id: socket.id,
-                uniqueId: socket.uniqueId,
-                name: playerName,
-                isHost: false,
-                hand: [],
-                tryalCards: [],
-                inPlayCards: [],
-                alive: true,
-                isSilenced: false,
-                isWitch: false,
-                isConstable: false,
-                hasBeenWitch: false, // Track if player has ever been a witch
-                revealedTryalCardIndexes: new Set(),
-                connected: true, // Mark as connected
-            };
-            room.players[socket.uniqueId] = newPlayer;
-            socket.join(roomName);
-            socket.currentRoom = roomName;
-            io.to(socket.id).emit('room joined', roomName);
-            sendGameMessage(roomName, `${playerName} เข้าร่วมห้อง ${roomName} แล้ว.`, 'green');
-        }
+
+        // New player joining
+        const newPlayer = {
+            id: socket.id,
+            uniqueId: socket.uniqueId,
+            name: playerName.trim(),
+            isHost: false,
+            isReady: false,
+            accusationsGiven: 0,
+            accusationsReceived: 0,
+            hand: [],
+            tryalCards: [],
+            inPlayCards: [],
+            alive: true,
+            isSilenced: false,
+            isWitch: false,
+            isConstable: false,
+            hasBeenWitch: false,
+            revealedTryalCardIndexes: new Set(),
+            connected: true,
+        };
+        room.players[socket.uniqueId] = newPlayer;
+        socket.join(roomName);
+        socket.currentRoom = roomName;
+        io.to(socket.id).emit('room joined', roomName);
+        sendGameMessage(roomName, `${newPlayer.name} เข้าร่วมห้อง ${roomName} แล้ว.`, 'green');
         emitRoomState(roomName);
         broadcastActiveRooms();
-        // --- ส่ง hand และ tryalCards ให้ผู้เล่นนี้ ---
-        const player = room.players[socket.uniqueId];
-        if (player) {
-            io.to(socket.id).emit('update hand', player.hand);
-            io.to(socket.id).emit('update tryal cards initial', player.tryalCards);
-            emitRoomState(room.name);
-        }
     });
 
     socket.on('join existing room', (roomName) => {
         const room = rooms[roomName];
         if (room && room.players[socket.uniqueId]) {
             const player = room.players[socket.uniqueId];
-            player.id = socket.id; // Update socket ID in case of reconnect
-            socket.join(roomName);
-            socket.currentRoom = roomName;
-            io.to(socket.id).emit('room joined', roomName);
-            emitRoomState(roomName);
-            sendGameMessage(roomName, `<b>${player.name}</b> ได้เชื่อมต่อกลับเข้ามาในเกม.`, 'blue');
-            // --- ส่ง hand และ tryalCards ให้ผู้เล่นนี้ ---
-            io.to(socket.id).emit('update hand', player.hand);
-            io.to(socket.id).emit('update tryal cards initial', player.tryalCards);
-            emitRoomState(room.name);
+            handlePlayerReconnection(socket, room, player);
+            broadcastActiveRooms();
         } else {
-            // If they can't rejoin, send them back to the lobby view
             io.to(socket.id).emit('room not found or not in room');
             socket.currentRoom = null;
         }
+    });
+
+    socket.on('toggle ready', (roomName) => {
+        const room = rooms[roomName || socket.currentRoom];
+        if (!room || room.gameStarted) return;
+        const player = room.players[socket.uniqueId];
+        if (!player) return;
+        player.isReady = !player.isReady;
+        emitRoomState(room.name);
+    });
+
+    socket.on('restart game', (roomName) => {
+        const room = rooms[roomName || socket.currentRoom];
+        if (!room || room.hostUniqueId !== socket.uniqueId) {
+            io.to(socket.id).emit('game message', 'คุณไม่มีสิทธิ์เริ่มเกมรอบใหม่.', 'red');
+            return;
+        }
+
+        room.gameStarted = false;
+        room.gameOver = false;
+        room.gameSummary = null;
+        room.gameDeck = [];
+        room.discardPile = [];
+        room.confessionOrder = [];
+        room.currentConfessionIndex = 0;
+        room.firstVictim = null;
+        room.accusedPlayers = {};
+        room.playersWhoActedAtNight = {};
+        room.nightConfessors = [];
+        room.nightCardDrawer = null;
+        room.conspiracyDrawer = null;
+        room.blackCatHolder = null;
+        room.currentTurnIndex = 0;
+        room.dayNumber = 0;
+        room.currentPhase = 'LOBBY';
+        delete room.awaitingCurseSelection;
+        delete room.awaitingConspiracySelection;
+        delete room.playerForcedToRevealTryal;
+        delete room.playerForcedToRevealSelector;
+
+        Object.values(room.players).forEach(p => {
+            p.hand = [];
+            p.tryalCards = [];
+            p.inPlayCards = [];
+            p.alive = true;
+            p.isSilenced = false;
+            p.isWitch = false;
+            p.isConstable = false;
+            p.hasBeenWitch = false;
+            p.revealedTryalCardIndexes = new Set();
+            p.isReady = false;
+            p.accusationsGiven = 0;
+            p.accusationsReceived = 0;
+        });
+
+        io.to(room.name).emit('game restarted');
+        emitRoomState(room.name);
+        sendGameMessage(room.name, '<b>หัวห้องได้รีเซ็ตเกมเพื่อเริ่มรอบใหม่!</b> กลับสู่ห้องล็อบบี้', 'green', true);
+        broadcastActiveRooms();
     });
 
     socket.on('leave room', () => {
@@ -3033,6 +3251,54 @@ function clearConfessionTimer(roomName) {
     }
 }
 
+function startConfessionTimer(roomName, playerUniqueId) {
+    const room = rooms[roomName];
+    if (!room || room.gameOver || room.currentPhase !== 'PRE_DAWN') return;
+
+    clearConfessionTimer(roomName);
+
+    const duration = (room.confessionTimerDuration || 25) * 1000;
+    room.confessionTimer = setTimeout(() => {
+        if (!room || room.gameOver || room.currentPhase !== 'PRE_DAWN') return;
+        const currentConfessor = room.confessionOrder && room.confessionOrder[room.currentConfessionIndex];
+        if (currentConfessor === playerUniqueId) {
+            const player = room.players[playerUniqueId];
+            const playerName = player ? player.name : 'ผู้เล่น';
+            sendGameMessage(room.name, `<b>${playerName}</b> หมดเวลาการสารภาพ (ข้ามให้อัตโนมัติ).`, 'orange', true);
+            
+            if (!room.nightConfessors) room.nightConfessors = [];
+            const witchTarget = room.playersWhoActedAtNight['witchKill'];
+            if (playerUniqueId !== witchTarget) {
+                room.nightConfessors.push(playerUniqueId);
+            }
+
+            if (room.confessionOrder && room.currentConfessionIndex < room.confessionOrder.length - 1) {
+                room.currentConfessionIndex++;
+                emitRoomState(room.name);
+                const nextConfessor = room.confessionOrder[room.currentConfessionIndex];
+                const nextPlayer = room.players[nextConfessor];
+                if (nextPlayer && nextPlayer.alive && nextPlayer.tryalCards.length > 0 && room.confessionTimerDuration > 0) {
+                    sendGameMessage(room.name, `<b>${nextPlayer.name}</b> มีเวลา ${room.confessionTimerDuration} วินาทีในการสารภาพ (จะข้ามการสารภาพหากหมดเวลา).`, 'blue', true);
+                    startConfessionTimer(roomName, nextConfessor);
+                }
+            } else {
+                resolveNightActions(roomName);
+                if (room.gameOver) return;
+                sendGameMessage(room.name, 'เช้าแล้ว! ถึงเวลาตามล่าปอบ...', 'blue', true);
+                if (room.killedPlayer) {
+                    sendGameMessage(room.name, `${room.killedPlayer.name} ถูกสังหารในตอนกลางคืน!`, 'red', true);
+                    handlePlayerDeath(room, room.killedPlayer, {
+                        byPlayerName: room.lastNightKillerName || null,
+                        cause: 'night_kill',
+                    });
+                    room.killedPlayer = null;
+                }
+                changePhase(roomName, 'DAY');
+            }
+        }
+    }, duration);
+}
+
 function revealTryalCard(roomName, playerUniqueId, cardIndex) {
     const room = rooms[roomName];
     if (!room || room.gameOver) return;
@@ -3095,6 +3361,7 @@ function handlePlayerDeath(room, player, metadata = {}) {
     if (!player || !player.alive || room.gameOver) return;
     player.alive = false;
     if (!room.deathLog) room.deathLog = [];
+    if (!room.firstVictim) room.firstVictim = player.name;
     room.deathLog.push({
         playerName: player.name,
         byPlayerName: metadata.byPlayerName || null,
