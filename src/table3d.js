@@ -21,7 +21,7 @@ function create({ container, onCard, onDraw, onPlayer, onError }) {
     renderer.shadowMap.type = THREE.PCFShadowMap;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     container.appendChild(renderer.domElement);
-    renderer.domElement.setAttribute('aria-label', 'โต๊ะเกม 3D ลากเพื่อหมุน ใช้ปุ่มซูมเพื่อเปลี่ยนระยะ');
+    renderer.domElement.setAttribute('aria-label', 'โต๊ะเกม 3D ลากเพื่อหมุน เลื่อนล้อเมาส์หรือใช้ปุ่มเพื่อซูม');
     renderer.domElement.setAttribute('role', 'img');
 
     const scene = new THREE.Scene();
@@ -36,11 +36,8 @@ function create({ container, onCard, onDraw, onPlayer, onError }) {
     controls.maxDistance = 23;
     controls.minPolarAngle = 0.18;
     controls.maxPolarAngle = Math.PI / 2.15;
-    // The wheel scrolls the page. Zoom is available through the buttons or pinch.
     controls.enableZoom = true;
-    controls.mouseButtons.MIDDLE = null;
-    renderer.domElement.addEventListener('wheel', stopWheelZoom, { capture: true });
-    function stopWheelZoom(event) { event.stopImmediatePropagation(); }
+    controls.zoomSpeed = 0.8;
 
     function resetCamera() {
         camera.position.set(0, 9.5, 12.8);
@@ -152,16 +149,22 @@ function create({ container, onCard, onDraw, onPlayer, onError }) {
     }
 
     function label(parent, text, position, color = '#eddbb7') {
-        const texture = canvasTexture(512, 112, (ctx, w, h) => {
-            ctx.fillStyle = 'rgba(19,15,12,.9)'; ctx.fillRect(0, 0, w, h);
-            ctx.font = 'bold 36px "Noto Serif Thai", sans-serif'; ctx.fillStyle = color;
+        const font = 'bold 32px "Noto Serif Thai", sans-serif';
+        const measure = document.createElement('canvas').getContext('2d');
+        measure.font = font;
+        const width = Math.ceil(Math.min(420, Math.max(76, measure.measureText(text).width + 28)));
+        const height = 62;
+        const texture = canvasTexture(width, height, (ctx, w, h) => {
+            ctx.fillStyle = 'rgba(19,15,12,.86)';
+            ctx.beginPath(); ctx.roundRect(1, 1, w - 2, h - 2, 12); ctx.fill();
+            ctx.font = font; ctx.fillStyle = color;
             ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-            ctx.fillText(text, w / 2, h / 2, w - 24);
+            ctx.fillText(text, w / 2, h / 2, w - 28);
         });
         const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, depthTest: false }));
         sprite.userData.disposableTexture = texture;
         sprite.position.set(...position);
-        sprite.scale.set(1.7, 0.37, 1);
+        sprite.scale.set(width / height * 0.23, 0.23, 1);
         parent.add(sprite);
     }
 
@@ -207,8 +210,6 @@ function create({ container, onCard, onDraw, onPlayer, onError }) {
                 player.alive ? '#eddbb7' : '#a39b91');
             const lives = Number(player.tryalCardCount) || 0;
             for (let life = 0; life < lives; life++) {
-                mesh(new THREE.SphereGeometry(.075, 10, 8), new THREE.MeshStandardMaterial({ color: player.alive ? 0x64b86b : 0x655e50 }),
-                    seat, [(life - (lives - 1) / 2) * .18, .12, -.5]);
                 const revealedName = player.tryalCards?.[life]?.name;
                 card(seat, [(life - (lives - 1) / 2) * .42, .06, -.98], [-Math.PI / 2, 0, 0],
                     revealedName ? cardTexture(imageFor(revealedName)) : back, { playerId: player.uniqueId }, .38);
@@ -225,9 +226,12 @@ function create({ container, onCard, onDraw, onPlayer, onError }) {
                     own ? { cardIndex: i } : { playerId: player.uniqueId }, own ? .68 : .47);
                 if (own && selected === i) face.material.emissive.set(0x4b330c);
             }
-            (player.inPlayCards || []).forEach((effect, i) => {
-                card(seat, [1.05 + (i % 3) * .25, .06 + Math.floor(i / 3) * .012, -.15],
-                    [-Math.PI / 2, 0, .08 * i], cardTexture(imageFor(effect.name)), { playerId: player.uniqueId }, .4);
+            // Public effects form a row toward the table centre, above life cards.
+            const effects = player.inPlayCards || [];
+            const effectSpacing = Math.min(.43, 2.1 / Math.max(1, effects.length));
+            effects.forEach((effect, i) => {
+                card(seat, [(i - (effects.length - 1) / 2) * effectSpacing, .08 + i * .002, -1.75],
+                    [-Math.PI / 2, 0, 0], cardTexture(imageFor(effect.name)), { playerId: player.uniqueId }, .4);
             });
         });
 
