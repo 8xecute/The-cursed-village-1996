@@ -75,6 +75,7 @@ window.addEventListener('DOMContentLoaded', () => {
 // --- Play lobby music on room creation ---
 socket.on('room joined', (roomName) => {
     currentRoomName = roomName;
+    if (nameInputContainer) nameInputContainer.style.display = 'none';
     currentRoomDisplay.textContent = roomName || 'ไม่มี';
     roomManagementSection.style.display = 'none';
     roomLobbySection.style.display = 'block';
@@ -794,7 +795,7 @@ socket.on('game message history', (messages) => {
 
 socket.on('request player name', () => {
     // If name is not set, show input. If already set, do nothing.
-    if (!myPlayerName) {
+    if (!myPlayerName && !currentRoomName) {
         nameInputContainer.style.display = 'flex';
     }
 });
@@ -3238,15 +3239,13 @@ function showGameOverModal(data) {
     const victoryBadge = document.getElementById('victory-badge');
     const victoryTitle = document.getElementById('victory-title');
     const victoryMessage = document.getElementById('victory-message');
-    const mvpCardsGrid = document.getElementById('mvp-cards-grid');
     const rolesRevealTbody = document.getElementById('roles-reveal-tbody');
     const rematchBtn = document.getElementById('rematch-btn');
-    const rematchWaiting = document.getElementById('rematch-waiting-notice');
     const closeBtn = document.getElementById('close-victory-modal-btn');
 
     const winner = summary.winner || '';
     const isWitchWin = winner.toLowerCase().includes('witch') || winner.includes('ปอบ');
-    const isTownWin = winner.toLowerCase().includes('town') || winner.toLowerCase().includes('constable') || winner.includes('ชาวบ้าน');
+    const isTownWin = winner.toLowerCase().includes('town') || winner.includes('ชาวบ้าน');
 
     if (isWitchWin) {
         if (victoryBadge) victoryBadge.textContent = '🧙‍♀️ ฝ่ายปอบเป็นผู้ชนะ!';
@@ -3272,58 +3271,6 @@ function showGameOverModal(data) {
         victoryMessage.innerHTML = summary.message || 'การต่อสู้อันดุเดือดระหว่างชาวบ้านและปอบได้จบลงแล้ว';
     }
 
-    // Render MVP Cards
-    if (mvpCardsGrid) {
-        const mvp = summary.mvp || {};
-        let cardsHtml = '';
-
-        // Card 1: Top Accuser
-        const topAccuser = mvp.mostAccuser;
-        cardsHtml += `
-            <div class="mvp-card">
-                <div class="mvp-icon">🗣️</div>
-                <div class="mvp-award-name">ยอดนักกล่าวหา</div>
-                <div class="mvp-player-name">${topAccuser ? topAccuser.name : '-'}</div>
-                <div class="mvp-detail">${topAccuser ? `ลงข้อกล่าวหา +${topAccuser.count} แต้ม` : 'ไม่มีการกล่าวหา'}</div>
-            </div>
-        `;
-
-        // Card 2: Most Accused
-        const mostAccused = mvp.mostAccused;
-        cardsHtml += `
-            <div class="mvp-card">
-                <div class="mvp-icon">🎯</div>
-                <div class="mvp-award-name">เป้าหมายยอดฮิต</div>
-                <div class="mvp-player-name">${mostAccused ? mostAccused.name : '-'}</div>
-                <div class="mvp-detail">${mostAccused ? `โดนกล่าวหา ${mostAccused.count} แต้ม` : 'ไม่มีผู้ถูกเพ่งเล็ง'}</div>
-            </div>
-        `;
-
-        // Card 3: First Victim
-        const firstVictim = mvp.firstVictim;
-        cardsHtml += `
-            <div class="mvp-card">
-                <div class="mvp-icon">🕯️</div>
-                <div class="mvp-award-name">สังเวยคนแรก</div>
-                <div class="mvp-player-name">${firstVictim ? firstVictim.name : '-'}</div>
-                <div class="mvp-detail">${firstVictim ? 'เหยื่อเคราะห์ร้ายรายแรก' : 'ไม่มีใครตาย'}</div>
-            </div>
-        `;
-
-        // Card 4: Surviving Townsfolk
-        const survivors = mvp.survivingTownsfolk || [];
-        cardsHtml += `
-            <div class="mvp-card">
-                <div class="mvp-icon">🛡️</div>
-                <div class="mvp-award-name">ชาวบ้านผู้รอดชีวิต</div>
-                <div class="mvp-player-name">${survivors.length > 0 ? survivors.join(', ') : '-'}</div>
-                <div class="mvp-detail">${survivors.length > 0 ? `รอดชีวิต ${survivors.length} คน` : 'ไม่มีชาวบ้านรอดชีวิต'}</div>
-            </div>
-        `;
-
-        mvpCardsGrid.innerHTML = cardsHtml;
-    }
-
     // Render Roles Reveal Table
     if (rolesRevealTbody) {
         let rowsHtml = '';
@@ -3335,8 +3282,6 @@ function showGameOverModal(data) {
             let roleBadge = '';
             if (p.hasBeenWitch || p.role === 'Witch' || p.isWitch) {
                 roleBadge = '<span class="role-tag witch">ปอบ 🧙‍♀️</span>';
-            } else if (p.isConstable || p.role === 'Constable') {
-                roleBadge = '<span class="role-tag constable">หมอผี 🛡️</span>';
             } else {
                 roleBadge = '<span class="role-tag town">ชาวบ้าน 🌾</span>';
             }
@@ -3386,10 +3331,6 @@ function showGameOverModal(data) {
         } else {
             rematchBtn.style.display = 'none';
         }
-    }
-
-    if (rematchWaiting) {
-        rematchWaiting.style.display = isMeHost ? 'none' : 'block';
     }
 
     if (closeBtn) {

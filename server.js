@@ -1892,24 +1892,6 @@ function finishGame(room, winner, message, color) {
     sendGameMessage(room.name, message, color, true);
 
     const playersArr = Object.values(room.players || {});
-    let mostAccusationsPlayer = null;
-    let maxAccusationsGiven = 0;
-    let mostAccusedPlayer = null;
-    let maxAccusationsReceived = 0;
-
-    playersArr.forEach(p => {
-        if ((p.accusationsGiven || 0) > maxAccusationsGiven) {
-            maxAccusationsGiven = p.accusationsGiven;
-            mostAccusationsPlayer = p.name;
-        }
-        if ((p.accusationsReceived || 0) > maxAccusationsReceived) {
-            maxAccusationsReceived = p.accusationsReceived;
-            mostAccusedPlayer = p.name;
-        }
-    });
-
-    const survivingTownsfolk = playersArr.filter(p => p.alive && !p.hasBeenWitch).map(p => p.name);
-
     room.gameSummary = {
         winner: winner,
         message: message,
@@ -1920,18 +1902,9 @@ function finishGame(room, winner, message, color) {
             alive: !!p.alive,
             isHost: !!p.isHost,
             hasBeenWitch: !!p.hasBeenWitch,
-            isConstable: !!p.isConstable,
             tryalCards: (p.tryalCards || []).map(c => c.name),
-            revealedTryals: Array.from(p.revealedTryalCardIndexes || []),
-            accusationsGiven: p.accusationsGiven || 0,
-            accusationsReceived: p.accusationsReceived || 0
-        })),
-        mvp: {
-            mostAccusationsGiven: mostAccusationsPlayer ? { name: mostAccusationsPlayer, count: maxAccusationsGiven } : null,
-            mostAccused: mostAccusedPlayer ? { name: mostAccusedPlayer, count: maxAccusationsReceived } : null,
-            firstVictim: room.firstVictim || null,
-            survivingTownsfolk: survivingTownsfolk
-        }
+            revealedTryals: Array.from(p.revealedTryalCardIndexes || [])
+        }))
     };
 
     io.to(room.name).emit('game over summary', room.gameSummary);

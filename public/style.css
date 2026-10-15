@@ -2702,7 +2702,7 @@ button, .card, .tryal-card-btn, .mobile-tab-btn {
   line-height: 1.5;
 }
 
-.mvp-section, .roles-reveal-section {
+.roles-reveal-section {
   margin-bottom: 22px;
 }
 
@@ -2714,49 +2714,6 @@ button, .card, .tryal-card-btn, .mobile-tab-btn {
   align-items: center;
   gap: 8px;
   font-weight: 600;
-}
-
-.mvp-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 12px;
-}
-
-.mvp-card {
-  background: rgba(43, 31, 26, 0.7);
-  border: 1px solid rgba(141, 110, 99, 0.4);
-  border-radius: 10px;
-  padding: 12px;
-  text-align: center;
-  transition: transform 0.15s ease, border-color 0.15s ease;
-}
-.mvp-card:hover {
-  transform: translateY(-2px);
-  border-color: #ffb74d;
-}
-
-.mvp-icon {
-  font-size: 1.8em;
-  margin-bottom: 4px;
-}
-
-.mvp-award-name {
-  font-size: 0.85em;
-  color: #bcaaa4;
-  margin-bottom: 4px;
-}
-
-.mvp-player-name {
-  font-size: 1.1em;
-  font-weight: 700;
-  color: #fff;
-  margin-bottom: 4px;
-  word-break: break-word;
-}
-
-.mvp-detail {
-  font-size: 0.82em;
-  color: #ffcc80;
 }
 
 .roles-table-wrapper {
@@ -2800,11 +2757,6 @@ button, .card, .tryal-card-btn, .mobile-tab-btn {
   background: rgba(56, 142, 60, 0.25);
   color: #81c784;
   border: 1px solid rgba(56, 142, 60, 0.5);
-}
-.role-tag.constable {
-  background: rgba(25, 118, 210, 0.25);
-  color: #64b5f6;
-  border: 1px solid rgba(25, 118, 210, 0.5);
 }
 
 .tryal-pill-container {
@@ -2858,12 +2810,6 @@ button, .card, .tryal-card-btn, .mobile-tab-btn {
   transform: translateY(-1px);
 }
 
-.rematch-waiting {
-  color: #ffb74d;
-  font-size: 0.95em;
-  font-style: italic;
-}
-
 .close-victory-btn {
   background: rgba(255, 255, 255, 0.08);
   color: #d7ccc8;
@@ -2886,9 +2832,6 @@ button, .card, .tryal-card-btn, .mobile-tab-btn {
   }
   .victory-title {
     font-size: 1.7em;
-  }
-  .mvp-grid {
-    grid-template-columns: repeat(2, 1fr);
   }
   .roles-table th, .roles-table td {
     padding: 8px 6px;
