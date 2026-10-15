@@ -583,6 +583,7 @@ socket.on('room state update', (roomState) => {
         if (
             roomState.currentPhase === 'PRE_DAWN' &&
             myPlayer && myPlayer.alive &&
+            (!roomState.confessionActions || !roomState.confessionActions.includes(myUniqueId)) &&
             (!roomState.nightConfessors || !roomState.nightConfessors.includes(myUniqueId)) &&
             roomState.confessionOrder &&
             roomState.confessionOrder[roomState.currentConfessionIndex] === myUniqueId &&
@@ -944,6 +945,7 @@ socket.on('update tryal cards initial', (tryalCards, fromName) => {
         currentRoomState &&
         currentRoomState.currentPhase === 'PRE_DAWN' &&
         myPlayer && myPlayer.alive &&
+        (!currentRoomState.confessionActions || !currentRoomState.confessionActions.includes(myUniqueId)) &&
         (!currentRoomState.nightConfessors || !currentRoomState.nightConfessors.includes(myUniqueId)) &&
         currentRoomState.confessionOrder &&
         currentRoomState.confessionOrder[currentRoomState.currentConfessionIndex] === myUniqueId &&
@@ -1510,7 +1512,6 @@ confessButton.addEventListener('click', () => {
             } else {
                 addGameMessage('หมายเลขการ์ดไม่ถูกต้อง.', 'red');
             }
-            confessPopupShownForThisPreDawn = false;
         } else if (currentRoomState && currentRoomState.currentPhase === 'DAY' && currentRoomState.playerForcedToRevealTryal === myUniqueId) {
             // For DAY forced reveal, prompt for card selection
             const cardIndex = prompt(`เลือกหมายเลขการ์ดชีวิตที่จะเปิดเผย (1-${myTryalCards.length}):`);
@@ -1520,7 +1521,6 @@ confessButton.addEventListener('click', () => {
         } else {
                 addGameMessage('หมายเลขการ์ดไม่ถูกต้อง.', 'red');
         }
-        confessPopupShownForThisPreDawn = false;
     } else {
             // Legacy confession (should not be used anymore)
             const cardIndex = prompt(`เลือกหมายเลขการ์ดชีวิตที่จะเปิดเผย (1-${myTryalCards.length}):`);
@@ -1544,7 +1544,6 @@ skipConfessButton.addEventListener('click', () => {
     }
     if (currentRoomName) {
         socket.emit('skip confession');
-        confessPopupShownForThisPreDawn = false;
     }
 });
 
@@ -3174,25 +3173,6 @@ function showSelectPlayerPopup(title, playerList, callback, cardObj = null, acti
     modal.appendChild(content);
     document.body.appendChild(modal);
 }
-
-// --- Room Management: Change Player Name ---
-const roomPlayerNameInput = document.getElementById('room-player-name-input');
-const roomSetNameButton = document.getElementById('room-set-name-button');
-
-roomSetNameButton.addEventListener('click', () => {
-    const newName = roomPlayerNameInput.value.trim();
-    if (!newName) {
-        addGameMessage('Please enter a valid name.', 'red', true);
-        return;
-    }
-    myPlayerName = newName;
-    localStorage.setItem('playerName', myPlayerName);
-    playerNameDisplay.textContent = myPlayerName;
-    nameInput.value = myPlayerName;
-    socket.emit('set player name', myPlayerName);
-    socket.emit('request rooms list');
-    addGameMessage('Name updated successfully!', 'green', true);
-});
 
 // --- Card Name Localization ---
 function displayCardName(name) {

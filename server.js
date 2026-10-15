@@ -258,6 +258,7 @@ function emitRoomState(roomName) {
         currentTurnPlayerName: room.currentTurnPlayerUniqueId ? room.players[room.currentTurnPlayerUniqueId]?.name : null,
         phaseConfig: room.phaseConfig,
         confessors: room.confessors, // Players who have confessed this day
+        confessionActions: room.confessionActions || [],
         playerForcedToRevealTryal: room.playerForcedToRevealTryal,
         isAssigningBlackCat: room.isAssigningBlackCat, // Flag for witch action
         gameOver: room.gameOver,
@@ -600,6 +601,7 @@ function changePhase(roomName, forcedNextPhase = null) {
         case 'PRE_DAWN':
             // ตั้งค่าลำดับสารภาพ
             room.confessionOrder = [];
+            room.confessionActions = [];
             const witchTarget = room.playersWhoActedAtNight['witchKill'];
             if (room.nightCardDrawer && (!room.playersWhoActedAtNight['constableSave'] || room.nightCardDrawer !== room.playersWhoActedAtNight['constableSave'])) {
                 // ข้ามถ้ามี Asylum
@@ -1518,6 +1520,12 @@ function confessTryalCard(roomName, playerUniqueId, cardIndex) {
         return;
     }
 
+    if (room.confessionOrder?.length &&
+        room.confessionOrder[room.currentConfessionIndex] !== playerUniqueId) {
+        if (player) io.to(player.id).emit('game message', 'ยังไม่ถึงลำดับของคุณในการสารภาพบาป.', 'red');
+        return;
+    }
+
     if (!player || !player.alive) {
         if (player) io.to(player.id).emit('game message', 'คุณไม่สามารถสารภาพบาปได้.', 'red');
         return;
@@ -1528,7 +1536,8 @@ function confessTryalCard(roomName, playerUniqueId, cardIndex) {
         return;
     }
 
-    if (room.nightConfessors && room.nightConfessors.includes(playerUniqueId)) {
+    if (room.confessionActions?.includes(playerUniqueId) ||
+        (room.nightConfessors && room.nightConfessors.includes(playerUniqueId))) {
         io.to(player.id).emit('game message', 'คุณสารภาพบาปไปแล้วในคืนนี้.', 'red');
         return;
     }
@@ -1544,6 +1553,7 @@ function confessTryalCard(roomName, playerUniqueId, cardIndex) {
     
     // Clear confession timer for this player
     clearConfessionTimer(roomName);
+    markConfessionAction(room, playerUniqueId);
     
     // Initialize nightConfessors if it doesn't exist
     if (!room.nightConfessors) {
@@ -1552,6 +1562,7 @@ function confessTryalCard(roomName, playerUniqueId, cardIndex) {
     room.nightConfessors.push(playerUniqueId); // Mark as confessed for the night
 
     sendGameMessage(room.name, `<b>${player.name}</b> สารภาพบาปและเปิดเผยการ์ดชีวิต: ${revealedCard.name}!`, 'gold', true);
+    emitRoomState(room.name);
     io.to(player.id).emit('update tryal cards initial', player.tryalCards); // Update client's view
     io.to(player.id).emit('update revealed tryal indexes', Array.from(player.revealedTryalCardIndexes)); // Update client's revealed roles
 
@@ -1635,7 +1646,8 @@ function confessDuringNight(roomName, playerUniqueId, cardIndex) {
         return;
     }
 
-    if (room.nightConfessors && room.nightConfessors.includes(playerUniqueId)) {
+    if (room.confessionActions?.includes(playerUniqueId) ||
+        (room.nightConfessors && room.nightConfessors.includes(playerUniqueId))) {
         io.to(player.id).emit('game message', 'คุณสารภาพบาปไปแล้วในคืนนี้.', 'red');
         return;
     }
@@ -1651,6 +1663,7 @@ function confessDuringNight(roomName, playerUniqueId, cardIndex) {
     
     // Clear confession timer for this player
     clearConfessionTimer(roomName);
+    markConfessionAction(room, playerUniqueId);
     
     // Initialize nightConfessors if it doesn't exist
     if (!room.nightConfessors) {
@@ -1659,6 +1672,7 @@ function confessDuringNight(roomName, playerUniqueId, cardIndex) {
     room.nightConfessors.push(playerUniqueId); // Mark as confessed for the night
 
     sendGameMessage(room.name, `<b>${player.name}</b> สารภาพบาปและเปิดเผยการ์ดชีวิต: ${revealedCard.name}!`, 'gold', true);
+    emitRoomState(room.name);
     io.to(player.id).emit('update tryal cards initial', player.tryalCards); // Update client's view
     io.to(player.id).emit('update revealed tryal indexes', Array.from(player.revealedTryalCardIndexes)); // Update client's revealed roles
 
@@ -2237,6 +2251,7 @@ io.on('connection', (socket) => {
             discardPile: [],
             accusedPlayers: {}, // { uniqueId: accusationCount }
             confessors: [], // List of uniqueIds who confessed this day
+            confessionActions: [], // Players who confessed or skipped this PRE_DAWN
             nightConfessors: [], // List of uniqueIds who confessed during night
             playerForcedToRevealTryal: null, // Player who must reveal Tryal Card
             nightCardDrawer: null, // Who drew the Night card (for confession order)
@@ -2555,13 +2570,15 @@ io.on('connection', (socket) => {
                 }
             }
 
-            if (room.nightConfessors && room.nightConfessors.includes(player.uniqueId)) {
+            if (room.confessionActions?.includes(player.uniqueId) ||
+                (room.nightConfessors && room.nightConfessors.includes(player.uniqueId))) {
                 io.to(player.id).emit('game message', 'คุณได้ทำการกระทำไปแล้วในคืนนี้.', 'red');
                 return;
             }
 
             // Clear confession timer for this player
             clearConfessionTimer(roomName);
+            markConfessionAction(room, player.uniqueId);
             
             // Mark as confessed (skipped) to prevent further attempts
             if (!room.nightConfessors) {
@@ -3357,6 +3374,13 @@ function clearConfessionTimer(roomName) {
     }
 }
 
+function markConfessionAction(room, playerUniqueId) {
+    if (!room.confessionActions) room.confessionActions = [];
+    if (!room.confessionActions.includes(playerUniqueId)) {
+        room.confessionActions.push(playerUniqueId);
+    }
+}
+
 function startConfessionTimer(roomName, playerUniqueId) {
     const room = rooms[roomName];
     if (!room || room.gameOver || room.currentPhase !== 'PRE_DAWN') return;
@@ -3368,9 +3392,11 @@ function startConfessionTimer(roomName, playerUniqueId) {
         if (!room || room.gameOver || room.currentPhase !== 'PRE_DAWN') return;
         const currentConfessor = room.confessionOrder && room.confessionOrder[room.currentConfessionIndex];
         if (currentConfessor === playerUniqueId) {
+            if (room.confessionActions?.includes(playerUniqueId)) return;
             const player = room.players[playerUniqueId];
             const playerName = player ? player.name : 'ผู้เล่น';
             sendGameMessage(room.name, `<b>${playerName}</b> หมดเวลาการสารภาพ (ข้ามให้อัตโนมัติ).`, 'orange', true);
+            markConfessionAction(room, playerUniqueId);
             
             if (!room.nightConfessors) room.nightConfessors = [];
             const witchTarget = room.playersWhoActedAtNight['witchKill'];
