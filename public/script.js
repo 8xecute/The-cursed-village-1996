@@ -169,6 +169,12 @@ if (readyToggleBtn) {
     });
 }
 const hostControlsLobby = document.getElementById('host-controls-lobby');
+const addBotButton = document.getElementById('add-bot-button');
+if (addBotButton) {
+    addBotButton.addEventListener('click', () => {
+        if (currentRoomName) socket.emit('add bot', currentRoomName);
+    });
+}
 const forceNextPhaseButton = document.getElementById('force-next-phase-button');
 const shareRoomLinkBtn = document.getElementById('share-room-link-btn');
 const copyRoomLinkHeaderBtn = document.getElementById('copy-room-link-header-btn');
@@ -386,6 +392,7 @@ socket.on('room state update', (roomState) => {
     playerListDiv.innerHTML = '';
     let isHost = false;
     let myPlayer = null;
+    const viewerIsHost = !!roomState.players?.[myUniqueId]?.isHost;
     const playersInOrder = Object.values(roomState.players).sort((a, b) => a.name.localeCompare(b.name));
 
     // Populate player list and check host status
@@ -399,6 +406,7 @@ socket.on('room state update', (roomState) => {
             html += ' <span style="color:#ff1744;font-size:0.95em;font-weight:bold;">(ทีมปอบ)</span>';
         }
         html += ` ${player.isHost ? '(Host)' : ''} ${player.isBlackCatHolder ? ' (เครื่องเซ่น)' : ''}`;
+        if (player.isBot) html += ' <span class="bot-player-badge">🤖 บอท</span>';
         if (!player.alive) {
             html += ' <span class="player-dead-badge-sm">💀 เสียชีวิตแล้ว</span>';
         }
@@ -432,6 +440,16 @@ socket.on('room state update', (roomState) => {
             }
         }
         playerDiv.innerHTML = html;
+        if (!roomState.gameStarted && viewerIsHost && player.isBot) {
+            const removeBotButton = document.createElement('button');
+            removeBotButton.type = 'button';
+            removeBotButton.className = 'bot-player-remove-btn';
+            removeBotButton.textContent = 'นำบอทออก';
+            removeBotButton.addEventListener('click', () => {
+                socket.emit('remove bot', roomState.name, player.uniqueId);
+            });
+            playerDiv.appendChild(removeBotButton);
+        }
         playerListDiv.appendChild(playerDiv);
         if (player.uniqueId === myUniqueId) {
             isHost = player.isHost;
@@ -462,6 +480,7 @@ socket.on('room state update', (roomState) => {
     // Host controls visibility
     if (isHost) {
         hostControlsLobby.style.display = 'block';
+        if (addBotButton) addBotButton.disabled = roomState.gameStarted || roomState.playerCount >= roomState.maxPlayers;
         startGameButton.style.display = roomState.gameStarted ? 'none' : 'inline-block';
         if (!roomState.gameStarted) {
             const nonHostPlayers = Object.values(roomState.players).filter(p => !p.isHost);
@@ -1155,11 +1174,24 @@ socket.on('prompt select accused tryal', ({ accusedUniqueId, tryalCount }) => {
     forcedRevealJustHappened = true;
 });
 
+let forcedRevealNoticeCountdown = null;
+let forcedRevealNoticeTimeout = null;
+
+function closeForcedRevealNotice() {
+    if (forcedRevealNoticeCountdown) {
+        clearInterval(forcedRevealNoticeCountdown);
+        forcedRevealNoticeCountdown = null;
+    }
+    if (forcedRevealNoticeTimeout) {
+        clearTimeout(forcedRevealNoticeTimeout);
+        forcedRevealNoticeTimeout = null;
+    }
+    document.getElementById('forced-reveal-notice-overlay')?.remove();
+    document.getElementById('forced-reveal-notice-popup')?.remove();
+}
+
 socket.on('forced reveal notice', ({ byPlayerName, reason, points }) => {
-    const old = document.getElementById('forced-reveal-notice-popup');
-    if (old) old.remove();
-    const oldOverlay = document.getElementById('forced-reveal-notice-overlay');
-    if (oldOverlay) oldOverlay.remove();
+    closeForcedRevealNotice();
 
     const overlay = document.createElement('div');
     overlay.id = 'forced-reveal-notice-overlay';
@@ -1182,17 +1214,56 @@ socket.on('forced reveal notice', ({ byPlayerName, reason, points }) => {
     const okBtn = document.createElement('button');
     okBtn.className = 'tryal-popup-action-btn action-btn';
     okBtn.textContent = 'รับทราบ';
-    okBtn.onclick = () => {
-        if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);
-        if (popup && popup.parentNode) popup.parentNode.removeChild(popup);
-    };
+    okBtn.onclick = closeForcedRevealNotice;
     popup.appendChild(okBtn);
+
+    const countdownLabel = document.createElement('div');
+    countdownLabel.className = 'forced-reveal-countdown';
+    countdownLabel.textContent = 'ปิดอัตโนมัติใน 5 วินาที';
+    popup.appendChild(countdownLabel);
     overlay.appendChild(popup);
     document.body.appendChild(overlay);
+
+    let secondsRemaining = 5;
+    forcedRevealNoticeCountdown = setInterval(() => {
+        secondsRemaining -= 1;
+        if (secondsRemaining > 0) {
+            countdownLabel.textContent = `ปิดอัตโนมัติใน ${secondsRemaining} วินาที`;
+        }
+    }, 1000);
+    forcedRevealNoticeTimeout = setTimeout(closeForcedRevealNotice, 5000);
 });
 
 // --- Black Cat Tryal Card Selection Popup (สำหรับ พิธีเซ่นไหว้) ---
 let blackCatTryalSelection = null;
+
+function addTryalPopupCollapseControl(popup, overlay, title) {
+    const header = document.createElement('div');
+    header.className = 'popup-collapse-header';
+    popup.insertBefore(header, title);
+    header.appendChild(title);
+
+    const toggle = document.createElement('button');
+    toggle.type = 'button';
+    toggle.className = 'popup-collapse-toggle';
+    toggle.textContent = 'ย่อ';
+    toggle.setAttribute('aria-expanded', 'true');
+    toggle.setAttribute('aria-label', 'ย่อหน้าต่าง');
+    header.appendChild(toggle);
+
+    const content = document.createElement('div');
+    content.className = 'popup-collapsible-content';
+    while (header.nextSibling) content.appendChild(header.nextSibling);
+    popup.appendChild(content);
+
+    toggle.onclick = () => {
+        const isCollapsed = popup.classList.toggle('is-collapsed');
+        overlay.classList.toggle('is-collapsed', isCollapsed);
+        toggle.textContent = isCollapsed ? 'ขยาย' : 'ย่อ';
+        toggle.setAttribute('aria-expanded', String(!isCollapsed));
+        toggle.setAttribute('aria-label', isCollapsed ? 'ขยายหน้าต่าง' : 'ย่อหน้าต่าง');
+    };
+}
 
 function showBlackCatTryalSelection(blackCatHolder, tryalCount, fromConspiracyDraw = false) {
     // Remove any existing popups to prevent overlapping
@@ -2528,31 +2599,45 @@ function createNightActionPopup(actionType, timer) {
     
     popup.innerHTML = `
         <div class="night-action-header">
-            <h2 class="night-action-title">${icon} ${title}</h2>
+            <div class="night-action-title-row">
+                <h2 class="night-action-title">${icon} ${title}</h2>
+                <button type="button" class="popup-collapse-toggle" aria-expanded="true" aria-label="ย่อหน้าต่าง">ย่อ</button>
+            </div>
             <div class="night-action-subtitle">${subtitle}</div>
         </div>
-        <div id="night-action-witch-team-container"></div>
-        <div id="night-action-players-list" class="night-targets-scroll"></div>
-        ${actionType === 'witch' ? `
-        <div class="modal-witch-chat-section" id="modal-witch-chat-section">
-            <div class="modal-witch-chat-header">
-                <span>💬 แชทปรึกษาทีมปอบ</span>
-                <span class="modal-witch-chat-sub">คุยสดกับเพื่อนปอบก่อนยืนยัน</span>
+        <div class="night-action-content">
+            <div id="night-action-witch-team-container"></div>
+            <div id="night-action-players-list" class="night-targets-scroll"></div>
+            ${actionType === 'witch' ? `
+            <div class="modal-witch-chat-section" id="modal-witch-chat-section">
+                <div class="modal-witch-chat-header">
+                    <span>💬 แชทปรึกษาทีมปอบ</span>
+                    <span class="modal-witch-chat-sub">คุยสดกับเพื่อนปอบก่อนยืนยัน</span>
+                </div>
+                <div id="modal-witch-chat-messages" class="modal-witch-chat-messages"></div>
+                <div class="modal-witch-chat-input-bar">
+                    <input type="text" id="modal-witch-chat-input" placeholder="พิมพ์ข้อความปรึกษาเพื่อนปอบ..." maxlength="100">
+                    <button type="button" id="modal-witch-chat-send" class="btn btn-sm btn-danger">ส่ง</button>
+                </div>
             </div>
-            <div id="modal-witch-chat-messages" class="modal-witch-chat-messages"></div>
-            <div class="modal-witch-chat-input-bar">
-                <input type="text" id="modal-witch-chat-input" placeholder="พิมพ์ข้อความปรึกษาเพื่อนปอบ..." maxlength="100">
-                <button type="button" id="modal-witch-chat-send" class="btn btn-sm btn-danger">ส่ง</button>
+            ` : ''}
+            <div class="night-action-footer">
+                ${actionType === 'witch' ? `<button type="button" id="propose-night-action-btn" class="btn btn-secondary btn-sm" style="display: none; margin-right: 8px;">💡 เสนอชื่อในแชท</button>` : ''}
+                <button id="confirm-night-action" class="night-confirm-btn" style="display: none;">
+                    ยืนยันการเลือก
+                </button>
             </div>
-        </div>
-        ` : ''}
-        <div class="night-action-footer">
-            ${actionType === 'witch' ? `<button type="button" id="propose-night-action-btn" class="btn btn-secondary btn-sm" style="display: none; margin-right: 8px;">💡 เสนอชื่อในแชท</button>` : ''}
-            <button id="confirm-night-action" class="night-confirm-btn" style="display: none;">
-                ยืนยันการเลือก
-            </button>
         </div>
     `;
+
+    const collapseButton = popup.querySelector('.popup-collapse-toggle');
+    collapseButton.onclick = () => {
+        const isCollapsed = popup.classList.toggle('is-collapsed');
+        overlay.classList.toggle('is-collapsed', isCollapsed);
+        collapseButton.textContent = isCollapsed ? 'ขยาย' : 'ย่อ';
+        collapseButton.setAttribute('aria-expanded', String(!isCollapsed));
+        collapseButton.setAttribute('aria-label', isCollapsed ? 'ขยายหน้าต่าง' : 'ย่อหน้าต่าง');
+    };
     
     document.body.appendChild(overlay);
     document.body.appendChild(popup);
@@ -2865,6 +2950,7 @@ socket.on('prompt select left tryal', ({ leftPlayerUniqueId, leftPlayerName, lef
     }
     popup.appendChild(cardsDiv);
 
+    addTryalPopupCollapseControl(popup, overlay, title);
     overlay.appendChild(popup);
     document.body.appendChild(overlay);
 });
@@ -2974,12 +3060,25 @@ function showSelectPlayerPopup(title, playerList, callback, cardObj = null, acti
 
     const modal = document.createElement('div');
     modal.className = 'modal select-player-modal';
+    const targetThemes = {
+        Red: { accent: '#f87171', rgb: '248, 113, 113' },
+        Green: { accent: '#86efac', rgb: '134, 239, 172' },
+        Blue: { accent: '#7dd3fc', rgb: '125, 211, 252' },
+    };
+    const theme = actionType === 'witch'
+        ? targetThemes.Red
+        : actionType === 'constable'
+            ? targetThemes.Blue
+            : (targetThemes[cardObj?.color] || { accent: '#fbbf24', rgb: '251, 191, 36' });
+    modal.style.setProperty('--target-accent', theme.accent);
+    modal.style.setProperty('--target-accent-rgb', theme.rgb);
     modal.style.position = 'fixed';
     modal.style.top = '0';
     modal.style.left = '0';
     modal.style.width = '100vw';
     modal.style.height = '100vh';
     modal.style.background = 'rgba(0,0,0,0.65)';
+    modal.style.backdropFilter = 'blur(4px)';
     modal.style.display = 'flex';
     modal.style.alignItems = 'center';
     modal.style.justifyContent = 'center';
@@ -3001,11 +3100,12 @@ function showSelectPlayerPopup(title, playerList, callback, cardObj = null, acti
     document.addEventListener('keydown', escListener);
 
     const content = document.createElement('div');
-    content.style.background = '#2d2d2d'; // เทาเข้ม
-    content.style.color = '#ff9800';
+    content.className = 'select-player-modal-content';
+    content.style.background = 'linear-gradient(160deg, #292522 0%, #171513 100%)';
+    content.style.color = '#f5eee4';
     content.style.padding = '14px 10px';
     content.style.borderRadius = '12px';
-    content.style.boxShadow = '0 2px 12px #0002';
+    content.style.boxShadow = `0 16px 48px rgba(0,0,0,.75), 0 0 22px rgba(${theme.rgb},.18)`;
     content.style.textAlign = 'center';
     content.style.minWidth = '0';
     content.style.maxWidth = '240px';
@@ -3013,12 +3113,12 @@ function showSelectPlayerPopup(title, playerList, callback, cardObj = null, acti
     content.style.maxHeight = '75vh';
     content.style.overflowY = 'auto';
     content.style.position = 'relative';
-    content.style.border = '2.5px solid #ff9800';
+    content.style.border = `2px solid ${theme.accent}`;
     content.style.fontSize = '0.9em';
 
     const titleElem = document.createElement('h3');
     titleElem.textContent = title;
-    titleElem.style.color = '#ff9800';
+    titleElem.style.color = theme.accent;
     titleElem.style.fontWeight = 'bold';
     titleElem.style.marginBottom = '10px';
     titleElem.style.fontSize = '1.02em'; // เดิม 1.13em ลดลง 10%
@@ -3049,15 +3149,15 @@ function showSelectPlayerPopup(title, playerList, callback, cardObj = null, acti
     alivePlayers.forEach(player => {
         const btn = document.createElement('div');
         btn.className = 'player-select-card';
-        btn.style.background = '#444'; // การ์ดผู้เล่นเทาอ่อนขึ้น
-        btn.style.color = '#ff9800';
+        btn.style.background = `linear-gradient(135deg, rgba(${theme.rgb},.16), #28231f)`;
+        btn.style.color = '#f5eee4';
         btn.style.fontWeight = 'bold';
         btn.style.fontSize = '1.02em';
         btn.style.padding = '8px 8px 6px 8px';
         btn.style.borderRadius = '9px';
         btn.style.margin = '0 auto';
         btn.style.cursor = 'pointer';
-        btn.style.boxShadow = '0 1px 6px #ff980022';
+        btn.style.boxShadow = '0 3px 12px rgba(0,0,0,.28)';
         btn.style.transition = 'all 0.13s';
         btn.style.minWidth = '0';
         btn.style.maxWidth = '210px';
@@ -3067,16 +3167,16 @@ function showSelectPlayerPopup(title, playerList, callback, cardObj = null, acti
         btn.style.flexDirection = 'row';
         btn.style.alignItems = 'center';
         btn.style.position = 'relative';
-        btn.style.border = '2px solid #ffe0b2';
+        btn.style.border = `1px solid rgba(${theme.rgb},.55)`;
         // Highlight current turn
         if (currentRoomState && currentRoomState.currentTurnPlayerUniqueId === player.uniqueId) {
-            btn.innerHTML += '<span style="color:#ff9800;font-size:1.08em;position:absolute;top:6px;right:10px;">🔥</span>';
+            btn.innerHTML += `<span style="color:${theme.accent};font-size:1.08em;position:absolute;top:6px;right:10px;">🔥</span>`;
         }
         // Icon (profile or emoji)
         btn.innerHTML += `<div style=\"font-size:1.3em;margin-right:10px;\">👤</div>`;
         // Name + status
         let info = `<div style=\"display:flex;flex-direction:column;align-items:flex-start;justify-content:center;\">`;
-        info += `<span style=\"font-weight:bold;font-size:0.97em;color:#ff9800;\">${player.name}</span>`;
+        info += `<span style=\"font-weight:bold;font-size:0.97em;color:${theme.accent};\">${player.name}</span>`;
         info += `<span style=\"font-size:0.88em;color:#fff;opacity:0.95;\">การ์ด: ${player.handSize} | ชีวิต: ${player.tryalCardCount}`;
         // คำนวณคะแนนข้อกล่าวหา
         if (player.inPlayCards && player.inPlayCards.length > 0) {
@@ -3102,7 +3202,7 @@ function showSelectPlayerPopup(title, playerList, callback, cardObj = null, acti
                 }
             }).filter(Boolean).join(', ');
             if (statusText) {
-                info += `<span style='font-size:0.84em;color:#ffb74d;'>${statusText}</span>`;
+                info += `<span style='font-size:0.84em;color:#fcd34d;'>${statusText}</span>`;
             }
         }
         info += `</div>`;
@@ -3116,10 +3216,11 @@ function showSelectPlayerPopup(title, playerList, callback, cardObj = null, acti
         btn.addEventListener('click', () => {
             // Remove highlight from all
             listDiv.querySelectorAll('.player-select-card').forEach(el => {
-                // ไม่เปลี่ยนสีหรือขอบเมื่อเลือก
                 el.style.transform = '';
+                el.classList.remove('selected');
             });
-            btn.style.transform = 'scale(1.06)'; // อนุญาตขยายเล็กน้อยถ้าต้องการ
+            btn.style.transform = 'scale(1.02)';
+            btn.classList.add('selected');
             selectedId = player.uniqueId;
             confirmBtn.disabled = false;
         });
@@ -3129,15 +3230,16 @@ function showSelectPlayerPopup(title, playerList, callback, cardObj = null, acti
 
     // Confirm button
     const confirmBtn = document.createElement('button');
+    confirmBtn.className = 'target-confirm-btn';
     confirmBtn.textContent = 'ยืนยันเป้าหมาย';
-    confirmBtn.style.background = 'linear-gradient(90deg, #ff9800 60%, #ff6f00 100%)';
+    confirmBtn.style.background = `linear-gradient(90deg, ${theme.accent}, rgba(${theme.rgb},.72))`;
     confirmBtn.style.color = '#fff';
     confirmBtn.style.fontWeight = 'bold';
     confirmBtn.style.fontSize = '0.97em'; // เดิม 1.08em
     confirmBtn.style.padding = '8px 20px';
     confirmBtn.style.border = 'none';
     confirmBtn.style.borderRadius = '7px';
-    confirmBtn.style.boxShadow = '0 1px 6px #ff980088';
+    confirmBtn.style.boxShadow = `0 4px 14px rgba(${theme.rgb},.24)`;
     confirmBtn.style.cursor = 'pointer';
     confirmBtn.style.marginTop = '6px';
     confirmBtn.disabled = true;
@@ -3151,6 +3253,7 @@ function showSelectPlayerPopup(title, playerList, callback, cardObj = null, acti
 
     // Cancel button
     const cancelBtn = document.createElement('button');
+    cancelBtn.className = 'target-cancel-btn';
     cancelBtn.textContent = 'ยกเลิก';
     cancelBtn.style.marginTop = '6px';
     cancelBtn.style.background = '#616161';
@@ -3833,6 +3936,7 @@ socket.on('prompt select blackcat tryal', ({ blackCatHolder, tryalCount, blackCa
     }
 
     popup.appendChild(cardsDiv);
+    addTryalPopupCollapseControl(popup, overlay, title);
     overlay.appendChild(popup);
     document.body.appendChild(overlay);
 });

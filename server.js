@@ -3,6 +3,7 @@ const express = require('express');
 const compression = require('compression');
 const http = require('http');
 const { Server } = require('socket.io');
+const { createBotClient } = require('./src/botPlayer');
 const { v4: uuidv4 } = require('uuid'); // For unique player IDs (Ensure you 'npm install uuid')
 const { getGameCardsForPlayerCount } = require('./src/gameLogic');
 
@@ -33,6 +34,7 @@ const PORT = process.env.PORT || 3000;
 
 // --- Game State Variables ---
 const rooms = {}; // Stores all active rooms and their game states
+const botClients = new Map();
 
 const PLAYER_LIMIT = 12; // Max players per room (keep at 12)
 const MIN_PLAYERS_TO_START = 4; // Minimum players required to start a game
@@ -217,6 +219,7 @@ function emitRoomState(roomName) {
             name: player.name,
             uniqueId: player.uniqueId,
             isHost: player.isHost,
+            isBot: !!player.isBot,
             handSize: player.hand.length,
             tryalCardCount: player.tryalCards.length, // Send total count of Tryal Cards
             tryalCards: player.tryalCards.map((card, index) => (
@@ -1582,6 +1585,10 @@ function confessTryalCard(roomName, playerUniqueId, cardIndex) {
     }
 
     if (!diedFromWitch) {
+        eliminatePlayerWithoutLifeCards(room, player);
+    }
+
+    if (!diedFromWitch) {
     emitRoomState(room.name);
     checkWinCondition(room);
     }
@@ -1689,6 +1696,10 @@ function confessDuringNight(roomName, playerUniqueId, cardIndex) {
             diedFromWitch = true;
             // ไม่ return ทันที ให้ดำเนิน flow ต่อ
         }
+    }
+
+    if (!diedFromWitch) {
+        eliminatePlayerWithoutLifeCards(room, player);
     }
 
     if (!diedFromWitch) {
@@ -1937,16 +1948,25 @@ function promptTryalCardSelectionToLeft(roomName) {
 function handlePlayerDisconnection(room, playerUniqueId, playerName, isDisconnect) {
     // Check if this was the host
     if (room.hostUniqueId === playerUniqueId) {
-        // Find a new host from remaining players
-        const remainingPlayers = Object.values(room.players).filter(p => p.uniqueId !== playerUniqueId);
+        // Bots cannot own a room; transfer to a human or remove orphaned bots.
+        const remainingPlayers = Object.values(room.players).filter(p => p.uniqueId !== playerUniqueId && !p.isBot);
         if (remainingPlayers.length > 0) {
             const newHost = remainingPlayers[0];
             room.hostUniqueId = newHost.uniqueId;
             newHost.isHost = true;
             sendGameMessage(room.name, `${newHost.name} กลายเป็นผู้ดูแลห้องใหม่.`, 'blue', true);
         } else {
-            // No players left, end the game
-            finishGame(room, 'None (All players left)', 'ผู้เล่นทั้งหมดออกจากเกมแล้ว. เกมจบลง.', 'grey');
+            Object.values(room.players).filter(p => p.isBot).forEach(bot => {
+                delete room.players[bot.uniqueId];
+                const connection = botClients.get(bot.uniqueId);
+                botClients.delete(bot.uniqueId);
+                connection?.socket.disconnect();
+            });
+            room.hostUniqueId = null;
+            // No human owner remains to manage the room.
+            if (Object.keys(room.players).length === 0) {
+                finishGame(room, 'None (All players left)', 'ผู้เล่นทั้งหมดออกจากเกมแล้ว. เกมจบลง.', 'grey');
+            }
         }
     }
 
@@ -2113,6 +2133,12 @@ io.on('connection', (socket) => {
     // Store a temporary mapping from socket.id to uniqueId
     // This is useful if a client reconnects with the same uniqueId
     socket.on('register uniqueId', (uniqueId, playerName) => {
+        const existingRoom = Object.values(rooms).find(room => room && room.players && room.players[uniqueId]);
+        const existingPlayer = existingRoom?.players?.[uniqueId];
+        if (existingPlayer?.isBot && socket.handshake.auth?.botToken !== existingPlayer.botToken) {
+            socket.disconnect(true);
+            return;
+        }
         socket.uniqueId = uniqueId;
         console.log(`Socket ${socket.id} registered with uniqueId: ${uniqueId}`);
         if (playerName && playerName !== '') {
@@ -2120,10 +2146,6 @@ io.on('connection', (socket) => {
         }
 
         // Look for existing room where this uniqueId belongs
-        const existingRoom = Object.values(rooms).find(room =>
-            room && room.players && room.players[uniqueId]
-        );
-
         if (existingRoom) {
             const player = existingRoom.players[uniqueId];
             if (player) {
@@ -2366,6 +2388,91 @@ io.on('connection', (socket) => {
         emitRoomState(room.name);
     });
 
+    socket.on('add bot', roomName => {
+        const room = rooms[roomName || socket.currentRoom];
+        if (!room || room.hostUniqueId !== socket.uniqueId) {
+            io.to(socket.id).emit('game message', 'เฉพาะหัวห้องเท่านั้นที่เพิ่มบอทได้.', 'red');
+            return;
+        }
+        if (room.gameStarted) {
+            io.to(socket.id).emit('game message', 'เพิ่มบอทได้เฉพาะตอนอยู่ในล็อบบี้.', 'red');
+            return;
+        }
+        if (Object.keys(room.players).length >= PLAYER_LIMIT) {
+            io.to(socket.id).emit('game message', 'ห้องเต็มแล้ว ไม่สามารถเพิ่มบอทได้.', 'red');
+            return;
+        }
+
+        let botNumber = 1;
+        const existingNames = new Set(Object.values(room.players).map(player => player.name));
+        while (existingNames.has(`บอท ${botNumber}`)) botNumber++;
+        const uniqueId = `bot-${uuidv4()}`;
+        const botToken = uuidv4();
+        const botName = `บอท ${botNumber}`;
+        room.players[uniqueId] = {
+            id: `offline-${uniqueId}`,
+            uniqueId,
+            name: botName,
+            isHost: false,
+            isBot: true,
+            botToken,
+            isReady: true,
+            hand: [],
+            tryalCards: [],
+            inPlayCards: [],
+            alive: true,
+            isSilenced: false,
+            isWitch: false,
+            isConstable: false,
+            hasBeenWitch: false,
+            revealedTryalCardIndexes: new Set(),
+            connected: false,
+        };
+
+        const address = server.address();
+        const internalPort = address && typeof address === 'object' ? address.port : Number(PORT);
+        const botSocket = createBotClient({
+            url: `http://127.0.0.1:${internalPort}`,
+            uniqueId,
+            token: botToken,
+            name: botName,
+        });
+        botClients.set(uniqueId, { socket: botSocket, roomName: room.name });
+        botSocket.on('connect_error', error => {
+            console.warn(`Bot ${botName} connection failed:`, error.message);
+        });
+
+        sendGameMessage(room.name, `🤖 ${botName} เข้าร่วมห้องและพร้อมเล่นแล้ว`, 'green', true);
+        emitRoomState(room.name);
+        broadcastActiveRooms();
+    });
+
+    socket.on('remove bot', (roomName, botUniqueId) => {
+        const room = rooms[roomName || socket.currentRoom];
+        if (!room || room.hostUniqueId !== socket.uniqueId) {
+            io.to(socket.id).emit('game message', 'เฉพาะหัวห้องเท่านั้นที่นำบอทออกได้.', 'red');
+            return;
+        }
+        if (room.gameStarted) {
+            io.to(socket.id).emit('game message', 'นำบอทออกได้เฉพาะตอนอยู่ในล็อบบี้.', 'red');
+            return;
+        }
+        const bot = room.players[botUniqueId];
+        if (!bot?.isBot) {
+            io.to(socket.id).emit('game message', 'ไม่พบบอทในห้องนี้.', 'red');
+            return;
+        }
+
+        if (bot.disconnectTimeout) clearTimeout(bot.disconnectTimeout);
+        delete room.players[botUniqueId];
+        const connection = botClients.get(botUniqueId);
+        botClients.delete(botUniqueId);
+        connection?.socket.disconnect();
+        sendGameMessage(room.name, `🤖 ${bot.name} ถูกนำออกจากห้องแล้ว`, 'orange', true);
+        emitRoomState(room.name);
+        broadcastActiveRooms();
+    });
+
     socket.on('restart game', (roomName) => {
         const room = rooms[roomName || socket.currentRoom];
         if (!room || room.hostUniqueId !== socket.uniqueId) {
@@ -2405,7 +2512,7 @@ io.on('connection', (socket) => {
             p.isConstable = false;
             p.hasBeenWitch = false;
             p.revealedTryalCardIndexes = new Set();
-            p.isReady = false;
+            p.isReady = !!p.isBot;
             p.accusationsGiven = 0;
             p.accusationsReceived = 0;
         });
@@ -2858,7 +2965,7 @@ io.on('connection', (socket) => {
             room.playerForcedToRevealSelector === socket.uniqueId) {
             
             const targetPlayer = room.players[targetPlayerUniqueId];
-            if (targetPlayer && targetPlayer.tryalCards.length > cardIndex) {
+            if (targetPlayer && targetPlayer.alive && Number.isInteger(cardIndex) && cardIndex >= 0 && targetPlayer.tryalCards.length > cardIndex) {
                 const selectedCard = targetPlayer.tryalCards.splice(cardIndex, 1)[0];
                 targetPlayer.revealedTryalCardIndexes.add(selectedCard.name);
                 
@@ -2892,7 +2999,8 @@ io.on('connection', (socket) => {
                 
                 room.playerForcedToRevealTryal = null;
                 room.playerForcedToRevealSelector = null;
-                room.confessors.push(targetPlayerUniqueId);
+                eliminatePlayerWithoutLifeCards(room, targetPlayer);
+                if (targetPlayer.alive) room.confessors.push(targetPlayerUniqueId);
                 
                 io.to(targetPlayer.id).emit('update tryal cards initial', targetPlayer.tryalCards);
                 io.to(targetPlayer.id).emit('update revealed tryal indexes', Array.from(targetPlayer.revealedTryalCardIndexes));
@@ -3024,6 +3132,12 @@ io.on('connection', (socket) => {
             // setNextTurn(room); // <--- ลบออก ไม่ต้องข้ามเทิร์นซ้ำ
             return;
         }
+
+        eliminatePlayerWithoutLifeCards(room, bcHolder);
+        if (room.gameOver) {
+            delete room.awaitingConspiracySelection;
+            return;
+        }
         
         // Check win condition after revealing Tryal Card
         checkWinCondition(room);
@@ -3138,6 +3252,7 @@ io.on('connection', (socket) => {
                     }
                 }
             });
+            alivePlayers.forEach(player => eliminatePlayerWithoutLifeCards(room, player));
             delete room.conspiracyTryalSelections;
             room.awaitingLeftTryalSelections = false;
             checkWinCondition(room);
@@ -3438,6 +3553,9 @@ function revealTryalCard(roomName, playerUniqueId, cardIndex) {
 
     // Clear the forced reveal state so the game can continue
     room.playerForcedToRevealTryal = null;
+    room.playerForcedToRevealSelector = null;
+
+    eliminatePlayerWithoutLifeCards(room, player);
 
     emitRoomState(room.name); // Update all players
     checkWinCondition(room); // Check win condition after revealing Tryal Card
@@ -3500,6 +3618,16 @@ function handlePlayerDeath(room, player, metadata = {}) {
     updateBlackCatHolder(room);
     emitRoomState(room.name); // อัปเดตสถานะผู้เล่น
     checkWinCondition(room); // เช็คปอบชนะทันทีหลังมีผู้เล่นตาย
+}
+
+function eliminatePlayerWithoutLifeCards(room, player) {
+    if (!room || room.gameOver || !player || !player.alive || !Array.isArray(player.tryalCards) || player.tryalCards.length > 0) {
+        return false;
+    }
+
+    sendGameMessage(room.name, `<b>${player.name}</b> การ์ดชีวิตหมดแล้ว!`, 'red', true);
+    handlePlayerDeath(room, player, { cause: 'tryal_cards_exhausted' });
+    return true;
 }
 
 // เพิ่มฟังก์ชัน helper
