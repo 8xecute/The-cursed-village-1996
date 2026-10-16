@@ -70,7 +70,8 @@ client.actions.getTable3DInteraction = function getTable3DInteraction() {
 client.actions.handleTable3DPlayer = function handleTable3DPlayer(id) {
     client.state.table3DFocusedPlayer = id;
     client.actions.updateTable3DFocus();
-    client.actions.showPlayerStatus?.(id);
+    if (client.actions.getTable3DInteraction()) client.actions.hidePlayerStatus?.();
+    else client.actions.showPlayerStatus?.(id);
     if (!canAct()) return;
     let choice = picker();
     if (!choice) {
@@ -88,6 +89,12 @@ client.actions.handleTable3DPlayer = function handleTable3DPlayer(id) {
     } else {
         const row = choice?.rows.find(row => row.dataset.uniqueId === id);
         if (!row || row.getAttribute('aria-disabled') === 'true') return;
+        if (choice.root.id === 'night-action-popup' && client.state.currentRoomState?.currentPhase === 'NIGHT' &&
+            client.state.nightActionState?.actionType === 'constable' &&
+            client.state.nightActionState.selectedTargetId === id && row.classList.contains('selected')) {
+            client.actions.submitNightAction('constable');
+            return;
+        }
         row.click();
         if (choice.root.classList.contains('select-player-modal')) {
             choice.root.classList.remove('table3d-docked', 'table3d-panel-minimized');
@@ -223,7 +230,7 @@ export function initialize() {
         phasePanel.appendChild(header);
         const note = document.createElement('p');
         note.textContent = life ? choice?.root === life ? `เลือกใบที่ ${choice.index + 1} แล้ว · แตะใบเดิมอีกครั้งเพื่อยืนยัน` : 'แตะการ์ดชีวิตที่มีกรอบบนโต๊ะ'
-            : selectedId && night ? `เป้าหมาย: ${client.state.currentRoomState.players[selectedId]?.name || ''}` : 'เลือกเป้าหมายบนโต๊ะ แล้วกดยืนยัน';
+            : selectedId && night ? `เป้าหมาย: ${client.state.currentRoomState.players[selectedId]?.name || ''}${client.state.nightActionState.actionType === 'constable' ? ' · แตะคนเดิมอีกครั้งเพื่อปกป้อง' : ''}` : 'เลือกเป้าหมายบนโต๊ะ แล้วกดยืนยัน';
         phasePanel.appendChild(note);
         function action(label, handler, disabled = false) {
             const button = document.createElement('button');
@@ -247,7 +254,7 @@ export function initialize() {
                 action('กลับไปเลือก', () => kill.querySelector('.witch-kill-cancel-btn')?.click());
             } else {
                 const witch = client.state.nightActionState.actionType === 'witch';
-                action(witch ? 'เลือกฆ่าคนนี้ →' : 'ยืนยันปกป้อง', () => client.actions.submitNightAction(client.state.nightActionState.actionType), !selectedId || !!client.state.currentRoomState?.witchNightState?.committed).className = witch ? 'table3d-kill-select' : 'table3d-protect';
+                if (witch) action('เลือกฆ่าคนนี้ →', () => client.actions.submitNightAction('witch'), !selectedId || !!client.state.currentRoomState?.witchNightState?.committed).className = 'table3d-kill-select';
                 if (witch && !request?.eligible?.length) action('ไม่สังหารคืนนี้…', () => client.actions.showWitchKillConfirmation(null));
             }
         } else if (event) {
@@ -261,7 +268,8 @@ export function initialize() {
         } else if (assign) {
             action('ยืนยันมอบเครื่องเซ่น', () => assign.querySelector('button')?.click(), !assign.querySelector('select')?.value);
         }
-        action(night && client.state.nightActionState.actionType === 'witch' ? 'แชททีม / รายละเอียด' : 'เปิด / ปิดรายละเอียด', () => document.body.classList.toggle('table3d-phase-details'));
+        if (night && client.state.nightActionState.actionType === 'witch') action('แชททีม', () => document.body.classList.toggle('table3d-phase-details'));
+        if (life) phasePanel.classList.add('table3d-direct-action'); else phasePanel.classList.remove('table3d-direct-action');
     }
     function refresh() {
         scheduled = false;

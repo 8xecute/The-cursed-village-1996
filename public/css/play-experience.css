@@ -22,3 +22,31 @@
 @media (max-width:600px) { #player-status-peek { top:170px; max-height:30dvh; } }
 
 .flying-play-card { position:fixed; top:0; left:0; width:58px !important; height:80px !important; z-index:12600; pointer-events:none; object-fit:cover; }
+
+#game-preferences { position: relative; }
+#game-preferences > summary {
+    display: grid; place-items: center; list-style: none; cursor: pointer;
+    width: 30px; height: 30px; padding: 0; color: #d9c6a7; font-size: 20px;
+}
+#game-preferences > summary::-webkit-details-marker { display: none; }
+#game-preferences-content {
+    position: absolute; top: 38px; left: 0; width: 235px; max-width: calc(100vw - 24px);
+    box-sizing: border-box; padding: 12px; border: 1px solid #967b54; border-radius: 10px;
+    background: #241c16fa; color: #f0dfbd; z-index: 13000; text-align: left;
+}
+body #game-preferences .card-artwork-toggle {
+    position: static; display: block; width: 100%; height: auto; min-height: 36px;
+    padding: 6px 10px; margin: 0 0 10px; opacity: 1; font-size: .85rem;
+}
+#game-preferences #game-sound-settings {
+    position: static; border: 0; padding: 0; margin: 0; background: transparent;
+}
+#game-preferences #game-sound-settings label { font-size: .85rem; }
+#game-preferences #game-sound-settings input[type=checkbox] { width: auto; }
+@media (max-width: 768px) {
+    #game-preferences-content { left: auto; right: -20px; }
+}
+body.table3d-fullscreen .music-controls {
+    position: fixed !important; top: 4px; left: 50%; transform: translateX(-50%);
+    width: auto !important; margin: 0; z-index: 13000;
+}

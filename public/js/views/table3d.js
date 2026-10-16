@@ -35,6 +35,7 @@ client.actions.syncTable3D = async function syncTable3D() {
             client.state.table3D = window.VillageTable3D.create({
                 container: document.getElementById('table3d-canvas'),
                 onCard: index => {
+                    client.actions.hidePlayerStatus?.();
                     if (!client.actions.canUseTable3DHand()) return;
                     const cards = document.querySelectorAll('#player-hand > .card');
                     const card = client.state.myCurrentHand?.[index];

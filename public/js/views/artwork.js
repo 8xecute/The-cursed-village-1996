@@ -23,7 +23,7 @@ export function initialize() {
         }
     }
     function refresh() {
-        button.textContent = '▧';
+        button.textContent = client.state.cardArtwork === 'classic' ? 'ภาพการ์ด: เก่า ⇄' : 'ภาพการ์ด: ใหม่ ⇄';
         button.setAttribute('aria-pressed', String(client.state.cardArtwork === 'classic'));
         const label = `ภาพการ์ด: ${client.state.cardArtwork === 'classic' ? 'เก่า' : 'ใหม่'} · กดเพื่อสลับ`;
         button.title = label;

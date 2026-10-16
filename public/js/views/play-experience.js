@@ -83,6 +83,7 @@ export function initialize() {
         if (!effects.length) { const item = document.createElement('li'); item.textContent = 'ไม่มีการ์ดสถานะ'; list.appendChild(item); }
         status.hidden = false;
     }
+    client.actions.hidePlayerStatus = () => { focused = null; status.hidden = true; };
     client.actions.showPlayerStatus = id => { focused = id; renderStatus(); };
     document.addEventListener('click', e => {
         const card = e.target.closest?.('.player-board-card[data-player-id]');
@@ -97,9 +98,12 @@ export function initialize() {
         clearTimeout(feedbackTimer); feedbackTimer = setTimeout(() => { feedback.hidden = true; }, 3600);
     }
     // Sound is synthesized locally; no downloads, and no autoplay before a gesture.
-    const audioControls = document.createElement('details'); audioControls.id = 'game-sound-settings';
-    audioControls.innerHTML = '<summary>เสียงเกม</summary><label>เอฟเฟกต์ <input type="range" min="0" max="100" step="5"></label><label><input type="checkbox"> เสียงบรรยากาศกลางคืน</label>';
-    document.body.appendChild(audioControls);
+    const audioControls = document.createElement('div'); audioControls.id = 'game-sound-settings';
+    audioControls.innerHTML = '<strong>เสียงเกม</strong><label>เอฟเฟกต์ <input type="range" min="0" max="100" step="5"></label><label><input type="checkbox"> เสียงบรรยากาศกลางคืน</label>';
+    document.getElementById('game-preferences-content').appendChild(audioControls);
+    const preferences = document.getElementById('game-preferences');
+    document.addEventListener('click', event => { if (preferences.open && !preferences.contains(event.target)) preferences.open = false; });
+    document.addEventListener('keydown', event => { if (event.key === 'Escape') preferences.open = false; });
     const volume = audioControls.querySelector('input[type=range]'); const ambience = audioControls.querySelector('input[type=checkbox]');
     let saved = .35;
     try { const value = localStorage.getItem('villageSfxVolume'); if (value !== null && Number.isFinite(Number(value))) saved = Math.max(0,Math.min(1,Number(value))); ambience.checked = localStorage.getItem('villageAmbience') === 'true'; } catch (_) {}
