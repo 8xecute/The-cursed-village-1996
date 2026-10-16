@@ -135,6 +135,7 @@ module.exports = function registerHandlers(socket, game) {
               const targetPlayer = room.players[targetPlayerUniqueId];
               if (targetPlayer && targetPlayer.alive && Number.isInteger(cardIndex) && cardIndex >= 0 && targetPlayer.tryalCards.length > cardIndex) {
                   const selectedCard = targetPlayer.tryalCards.splice(cardIndex, 1)[0];
+                  (targetPlayer.revealedTryalCards ||= []).push({ name: selectedCard.name });
                   targetPlayer.revealedTryalCardIndexes.add(selectedCard.name);
                   
                   // เปลี่ยนข้อความให้ถูกต้องและระบุชื่อการ์ดที่ถูกเปิด

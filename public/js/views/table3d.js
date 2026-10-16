@@ -50,6 +50,7 @@ client.actions.syncTable3D = async function syncTable3D() {
                     const state = client.state.currentRoomState;
                     const name = Number.isInteger(data.cardIndex) ? client.state.myCurrentHand?.[data.cardIndex]?.name
                         : Number.isInteger(data.effectIndex) ? state?.players?.[data.playerId]?.inPlayCards?.[data.effectIndex]?.name
+                        : Number.isInteger(data.revealedIndex) ? state?.players?.[data.playerId]?.revealedTryalCards?.[data.revealedIndex]?.name
                         : Number.isInteger(data.lifeIndex) ? state?.players?.[data.playerId]?.tryalCards?.[data.lifeIndex]?.name : null;
                     if (name) client.actions.inspectGameCard?.(name);
                 },

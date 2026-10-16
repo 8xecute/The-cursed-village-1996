@@ -38,6 +38,7 @@ module.exports = function createServices(game) {
       }
 
       const revealedCard = player.tryalCards.splice(cardIndex, 1)[0]; // Remove selected card
+      (player.revealedTryalCards ||= []).push({ name: revealedCard.name });
       player.revealedTryalCardIndexes.add(revealedCard.name);
       
       // Clear confession timer for this player
@@ -152,6 +153,7 @@ module.exports = function createServices(game) {
       }
 
       const revealedCard = player.tryalCards.splice(cardIndex, 1)[0]; // Remove selected card
+      (player.revealedTryalCards ||= []).push({ name: revealedCard.name });
       player.revealedTryalCardIndexes.add(revealedCard.name);
       
       // Clear confession timer for this player
@@ -318,6 +320,7 @@ module.exports = function createServices(game) {
       }
 
       const revealedCard = player.tryalCards.splice(cardIndex, 1)[0]; // Remove selected card
+      (player.revealedTryalCards ||= []).push({ name: revealedCard.name });
       player.revealedTryalCardIndexes.add(revealedCard.name);
 
       game.sendGameMessage(room.name, `<b>${player.name}</b> เปิดเผยการ์ดชีวิต: ${revealedCard.name}!`, 'gold', true);

@@ -74,7 +74,7 @@ client.actions.showAlibiRedCardSelectionPopup = function showAlibiRedCardSelecti
                         selectedIndexes.push(card.index);
                     }
                 } else if (selectedType === 'Evidence') {
-                    selectedIndexes = [card.index]; // evidence เลือกได้แค่ 1
+                    selectedIndexes = selectedIndexes.includes(card.index) ? [] : [card.index]; // evidence เลือกได้แค่ 1
                 }
                 renderCardButtons();
                 updateConfirmBtn();
@@ -138,6 +138,7 @@ client.actions.showAlibiRedCardSelectionPopup = function showAlibiRedCardSelecti
 
     // Confirm button
     const confirmBtn = document.createElement('button');
+    confirmBtn.dataset.alibiAction = 'confirm';
     confirmBtn.textContent = 'ยืนยันการลบ';
     confirmBtn.style.background = '#ff9800';
     confirmBtn.style.color = '#fff';
@@ -157,6 +158,7 @@ client.actions.showAlibiRedCardSelectionPopup = function showAlibiRedCardSelecti
 
     // Cancel button
     const cancelBtn = document.createElement('button');
+    cancelBtn.dataset.alibiAction = 'cancel';
     cancelBtn.textContent = 'ยกเลิก';
     cancelBtn.style.background = '#888';
     cancelBtn.style.color = '#fff';

@@ -236,6 +236,7 @@ module.exports = function createServices(game) {
       const witches = []; // Array to hold witch players
       alivePlayers.forEach(player => {
           player.tryalCards = [];
+          player.revealedTryalCards = [];
           player.revealedTryalCardIndexes = new Set(); // Reset revealed roles for new game
           player.isWitch = false; // Reset role
           player.isConstable = false; // Reset role

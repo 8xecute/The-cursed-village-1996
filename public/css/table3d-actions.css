@@ -254,3 +254,6 @@ body.game-view-3d:not(.table3d-unavailable) :is(#waiting-status-banner, #turn-no
 @media(prefers-reduced-motion:reduce) { .table-phase-cue-night #table3d-canvas, .table-phase-cue-conspiracy #table3d-canvas { animation:none; } }
 
 body.game-view-3d:not(.table3d-unavailable) .select-player-modal.table3d-direct-target { display: none !important; }
+
+body.game-view-3d:not(.table3d-unavailable) #alibi-redcard-select-popup.table3d-phase-source { display:none !important; }
+#table3d-canvas { background-position: center center; }

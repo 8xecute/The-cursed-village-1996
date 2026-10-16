@@ -170,9 +170,10 @@ export function initialize() {
         const assign = document.querySelector('[data-player-select]');
         const event = document.getElementById('must-play-night-popup');
         const target = document.querySelector('.select-player-modal');
-        const root = life || night || assign || event || target;
+        const alibi = document.getElementById('alibi-redcard-select-popup');
+        const root = life || night || assign || event || target || alibi;
         document.querySelectorAll('.table3d-phase-source').forEach(element => {
-            if (!enabled || ![life?.closest('.tryal-modal-overlay'), night, assign?.closest('.tryal-modal-overlay'), event, target].includes(element)) element.classList.remove('table3d-phase-source');
+            if (!enabled || ![life?.closest('.tryal-modal-overlay'), night, assign?.closest('.tryal-modal-overlay'), event, target, alibi].includes(element)) element.classList.remove('table3d-phase-source');
         });
         if (root !== phaseRoot) {
             phaseRoot = root; phaseSignature = ''; phaseCollapsed = false;
@@ -180,7 +181,7 @@ export function initialize() {
             client.state.table3DLifeChoice = null;
             document.body.classList.remove('table3d-phase-details');
         }
-        const source = life?.closest('.tryal-modal-overlay') || night || assign?.closest('.tryal-modal-overlay') || event || target;
+        const source = life?.closest('.tryal-modal-overlay') || night || assign?.closest('.tryal-modal-overlay') || event || target || alibi;
         source?.querySelectorAll('.table3d-panel-toggle').forEach(toggle => toggle.remove());
         if (enabled && source) {
             for (const element of [source, root]) {
@@ -204,7 +205,7 @@ export function initialize() {
         phasePanel.replaceChildren();
         const heading = document.createElement('strong');
         heading.textContent = life ? life.querySelector('h3')?.textContent || 'เลือกการ์ดชีวิต'
-            : night ? (client.state.nightActionState.actionType === 'witch' ? 'ปอบ · แตะผู้เล่นเพื่อมาร์ค' : 'หมอผี · แตะผู้เล่นเพื่อปกป้อง') : assign ? 'แตะผู้เล่นเพื่อมอบเครื่องเซ่น' : target ? target.querySelector('h3')?.textContent : 'เล่นยามวิกาลเพื่อเข้าสู่กลางคืน';
+            : night ? (client.state.nightActionState.actionType === 'witch' ? 'ปอบ · แตะผู้เล่นเพื่อมาร์ค' : 'หมอผี · แตะผู้เล่นเพื่อปกป้อง') : assign ? 'แตะผู้เล่นเพื่อมอบเครื่องเซ่น' : target ? target.querySelector('h3')?.textContent : alibi ? 'ข้อแก้ต่าง · เลือกการ์ดแดงบนโต๊ะ' : 'เล่นยามวิกาลเพื่อเข้าสู่กลางคืน';
         const header = document.createElement('div');
         header.className = 'table3d-phase-header';
         const toggle = document.createElement('button');
@@ -221,7 +222,7 @@ export function initialize() {
         phasePanel.appendChild(header);
         const note = document.createElement('p');
         note.textContent = life ? choice?.root === life ? `เลือกใบที่ ${choice.index + 1} แล้ว · แตะใบเดิมอีกครั้งเพื่อยืนยัน` : 'แตะการ์ดชีวิตที่มีกรอบบนโต๊ะ'
-            : selectedId && night ? `เป้าหมาย: ${client.state.currentRoomState.players[selectedId]?.name || ''}${client.state.nightActionState.actionType === 'constable' ? ' · แตะคนเดิมอีกครั้งเพื่อปกป้อง' : ''}` : target ? request?.selected?.length ? `เลือก: ${client.state.currentRoomState.players[request.selected[0]]?.name || ''} · แตะคนเดิมอีกครั้งเพื่อยืนยัน` : 'แตะผู้เล่นเพื่อเลือก แล้วแตะคนเดิมอีกครั้งเพื่อยืนยัน' : 'เลือกเป้าหมายบนโต๊ะ แล้วกดยืนยัน';
+            : selectedId && night ? `เป้าหมาย: ${client.state.currentRoomState.players[selectedId]?.name || ''}${client.state.nightActionState.actionType === 'constable' ? ' · แตะคนเดิมอีกครั้งเพื่อปกป้อง' : ''}` : target ? request?.selected?.length ? `เลือก: ${client.state.currentRoomState.players[request.selected[0]]?.name || ''} · แตะคนเดิมอีกครั้งเพื่อยืนยัน` : 'แตะผู้เล่นเพื่อเลือก แล้วแตะคนเดิมอีกครั้งเพื่อยืนยัน' : alibi ? `เลือกแล้ว ${request?.selected?.length || 0} ใบ · เลือกชนิดเดียว แต้มรวมไม่เกิน 3` : 'เลือกเป้าหมายบนโต๊ะ แล้วกดยืนยัน';
         phasePanel.appendChild(note);
         function action(label, handler, disabled = false) {
             const button = document.createElement('button');
@@ -229,6 +230,11 @@ export function initialize() {
             button.onclick = () => { if (canAct() && root.isConnected) { handler(); schedule(); } };
             phasePanel.appendChild(button);
             return button;
+        }
+        if (alibi) {
+            const confirm = alibi.querySelector('[data-alibi-action=confirm]');
+            action('ยืนยันลบการ์ดที่เลือก', () => confirm?.click(), !confirm || confirm.disabled);
+            action('ยกเลิก', () => alibi.querySelector('[data-alibi-action=cancel]')?.click());
         }
         if (target) action('ยกเลิกการเล่น', () => target.querySelector('.target-cancel-btn')?.click());
         if (life) {

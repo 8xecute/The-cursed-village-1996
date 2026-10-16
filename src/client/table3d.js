@@ -31,13 +31,15 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
     scene.fog = new THREE.Fog(0x110d0a, 20, 42);
     const camera = new THREE.PerspectiveCamera(43, 1, 0.1, 60);
     const controls = new OrbitControls(camera, renderer.domElement);
-    controls.enablePan = false;
+    controls.enablePan = true;
+    controls.screenSpacePanning = true;
+    controls.panSpeed = .65;
     controls.enableDamping = true;
     controls.dampingFactor = 0.09;
-    controls.minDistance = 7;
-    controls.maxDistance = 23;
-    controls.minPolarAngle = 0.18;
-    controls.maxPolarAngle = Math.PI / 2.15;
+    controls.minDistance = 3;
+    controls.maxDistance = 30;
+    controls.minPolarAngle = .05;
+    controls.maxPolarAngle = Math.PI / 2.05;
     controls.enableZoom = true;
     controls.zoomSpeed = 0.8;
 
@@ -108,7 +110,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
     const flame = mesh(new THREE.SphereGeometry(0.13, 12, 12),
         new THREE.MeshBasicMaterial({ color: 0xffc34b }), scene, [0, 0.92, 0]);
     flame.scale.set(0.7, 1.9, 0.7);
-    mesh(new THREE.PlaneGeometry(80, 80), new THREE.MeshStandardMaterial({ color: 0x160f0b, roughness: 1 }),
+    mesh(new THREE.PlaneGeometry(80, 80), new THREE.ShadowMaterial({ opacity: .22 }),
         scene, [0, -0.4, 0]).rotation.x = -Math.PI / 2;
 
     const dynamic = new THREE.Group();
@@ -250,15 +252,13 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             seatPositions.set(player.uniqueId, seat.position.clone().setY(1.3));
             dynamic.add(seat);
             const material = new THREE.MeshStandardMaterial({ color: player.alive ? COLORS[index % COLORS.length] : 0x48423c, roughness: 0.6 });
-            const pawn = new THREE.Group(); pawn.position.z = 2.05; pawn.position.y = -.45; seat.add(pawn);
+            const pawn = new THREE.Group(); pawn.position.z = 2.05; pawn.position.y = -.1; seat.add(pawn);
             if (!player.alive) { pawn.rotation.z = Math.PI / 2; pawn.position.y = 0.2; }
             const parts = [
-                mesh(new THREE.CapsuleGeometry(.10,.30,4,10),material,pawn,[-.13,.25,0]),
-                mesh(new THREE.CapsuleGeometry(.10,.30,4,10),material.clone(),pawn,[.13,.25,0]),
-                mesh(new THREE.CylinderGeometry(.20,.25,.42,16),material.clone(),pawn,[0,.65,0]),
-                mesh(new THREE.SphereGeometry(.18,16,12),material.clone(),pawn,[0,1.03,0]),
-                mesh(new THREE.CapsuleGeometry(.075,.28,4,10),material.clone(),pawn,[-.29,.63,0]),
-                mesh(new THREE.CapsuleGeometry(.075,.28,4,10),material.clone(),pawn,[.29,.63,0]),
+                mesh(new THREE.CylinderGeometry(.20,.25,.42,16),material.clone(),pawn,[0,.25,0]),
+                mesh(new THREE.SphereGeometry(.18,16,12),material.clone(),pawn,[0,.63,0]),
+                mesh(new THREE.CapsuleGeometry(.075,.28,4,10),material.clone(),pawn,[-.29,.25,0]),
+                mesh(new THREE.CapsuleGeometry(.075,.28,4,10),material.clone(),pawn,[.29,.25,0]),
             ];
             parts.forEach(part => { part.userData = { playerId: player.uniqueId }; targets.push(part); });
             if (state.currentTurnPlayerUniqueId === player.uniqueId && player.alive) {
@@ -300,6 +300,13 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
                     label(seat, `${interaction.selected?.includes(life) ? '✓ ' : ''}${life + 1}`, [(life - (lives - 1) / 2) * .42, .24, -.98], '#ffe2a0');
                 }
             }
+            const revealed = player.revealedTryalCards || [];
+            revealed.forEach((revealedCard, i) => {
+                const face = card(seat, [(i-(revealed.length-1)/2)*.42, .075, -.38], [-Math.PI/2,0,0],
+                    cardTexture(imageFor(revealedCard.name)), { playerId: player.uniqueId, revealedIndex: i }, .38);
+                outline(face,0xb69a6b);
+            });
+            if (revealed.length) label(seat, 'เปิดแล้ว', [0,.3,-.38], '#cbb58b');
             const own = player.uniqueId === me;
             const count = own ? hand.length : Number(player.handSize) || 0;
             // All cards stay selectable; compress the fan for larger hands.
@@ -370,6 +377,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
         const data = hit.object.userData;
         if (Number.isInteger(data.cardIndex)) onCard(data.cardIndex);
         else if (data.draw) onDraw();
+        else if (Number.isInteger(data.revealedIndex)) onInspect?.(data);
         else if (Number.isInteger(data.lifeIndex) && onLife) onLife(data.playerId, data.lifeIndex);
         else if (Number.isInteger(data.effectIndex) && onEffect) onEffect(data.playerId, data.effectIndex);
         else if (data.playerId) onPlayer(data.playerId);

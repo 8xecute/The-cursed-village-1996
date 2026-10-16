@@ -44,6 +44,7 @@ module.exports = function createServices(game) {
               isHost: player.isHost,
               isBot: !!player.isBot,
               handSize: player.hand.length,
+              revealedTryalCards: (player.revealedTryalCards || []).map(card => ({ name: card.name })),
               tryalCardCount: player.tryalCards.length, // Send total count of Tryal Cards
               tryalCards: player.tryalCards.map((card, index) => (
                   room.gameOver || !player.alive || (isSelf && !viewer?.isSpectator) || revealedIndexes.has(index)

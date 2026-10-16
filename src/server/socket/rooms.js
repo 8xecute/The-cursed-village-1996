@@ -372,6 +372,7 @@ module.exports = function registerHandlers(socket, game) {
           Object.values(room.players).forEach(p => {
               p.hand = [];
               p.tryalCards = [];
+          p.revealedTryalCards = [];
               p.inPlayCards = [];
               p.alive = true;
               p.isSilenced = false;
