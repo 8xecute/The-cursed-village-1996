@@ -1,6 +1,6 @@
 import { client } from '../core/client.js';
 
-const dockSelector = '.select-player-modal, #night-action-overlay, #assign-blackcat-overlay, .tryal-modal-overlay, .curse-target-modal, #alibi-redcard-select-popup, #must-play-night-popup';
+const dockSelector = '.select-player-modal:not(.table3d-confirm), #night-action-overlay, #assign-blackcat-overlay, .tryal-modal-overlay, .curse-target-modal, #alibi-redcard-select-popup, #must-play-night-popup';
 const last = selector => [...document.querySelectorAll(selector)].at(-1);
 function picker() {
     const modal = document.querySelector('.select-player-modal');
@@ -83,7 +83,19 @@ client.actions.handleTable3DPlayer = function handleTable3DPlayer(id) {
         if (![...choice.select.options].some(option => option.value === id && !option.disabled)) return;
         choice.select.value = id;
         choice.select.dispatchEvent(new Event('change', { bubbles: true }));
-    } else choice?.rows.find(row => row.dataset.uniqueId === id)?.click();
+    } else {
+        const row = choice?.rows.find(row => row.dataset.uniqueId === id);
+        if (!row || row.getAttribute('aria-disabled') === 'true') return;
+        row.click();
+        if (choice.root.classList.contains('select-player-modal')) {
+            choice.root.classList.remove('table3d-docked', 'table3d-panel-minimized');
+            choice.root.classList.add('table3d-confirm');
+            choice.root.querySelector('.table3d-panel-toggle')?.remove();
+            choice.rows.forEach(item => { item.hidden = item !== row; item.style.display = item === row ? 'flex' : 'none'; });
+            choice.root.querySelector('h3').textContent = 'ยืนยันการเลือกเป้าหมาย';
+            choice.root.querySelector('.target-confirm-btn')?.focus();
+        }
+    }
 };
 client.actions.handleTable3DLife = function handleTable3DLife(id, index) {
     if (!canAct()) return;
@@ -145,13 +157,13 @@ export function initialize() {
                 : request?.kind === 'life' ? 'แตะการ์ดชีวิตที่มีกรอบ หรือเลือกใบในแผงข้างโต๊ะ'
                     : request?.kind === 'effect' ? 'แตะการ์ดที่วางหน้าผู้เล่นเพื่อเลือก · ยืนยันในแผงข้างโต๊ะ'
                         : request?.kind === 'event' ? 'ยืนยันเล่นยามวิกาลในแผงข้างโต๊ะ'
-                        : request?.kind === 'player' ? 'แตะตัวหมากที่เลือกได้ → ยืนยันในแผงข้างโต๊ะ'
+                        : request?.kind === 'player' ? 'แตะผู้เล่นที่เลือกได้ → ยืนยันในป๊อปอัป'
                             : document.getElementById('action-guide-title')?.textContent || 'เลือกการ์ดจากมือเพื่อเริ่ม';
         if (hint.textContent !== title) hint.textContent = title;
         const selected = client.state.myCurrentHand?.[client.state.selectedCard];
-        const text = selected ? `${client.actions.displayCardName(selected.name)} · ${client.actions.displayCardDescription(selected.name)}` : 'แตะการ์ดบนโต๊ะ หรือเปิดรายการการ์ดในมือ';
+        const text = selected ? `${client.actions.displayCardName(selected.name)} · ${client.actions.displayCardDescription(selected.name)}` : 'แตะการ์ดเพื่อเลือก · แตะซ้ำเพื่อยกเลิก · การ์ดไม่ระบุเป้าหมายแตะซ้ำเพื่อใช้';
         if (description.textContent !== text) description.textContent = text;
-        panel.querySelectorAll('[data-table-action]').forEach(button => {
+        document.querySelectorAll('#table3d-section [data-table-action]').forEach(button => {
             const source = document.getElementById(button.dataset.tableAction);
             const disabled = !canAct() || state.currentPhase !== 'DAY' || (!!request && !request.preview) || !source || source.disabled ||
                 (button.dataset.tableAction === 'clear-selected-card' && client.state.selectedCard === null);
@@ -174,7 +186,7 @@ export function initialize() {
         client.actions.syncTable3D();
     }
     function schedule() { if (!scheduled) { scheduled = true; queueMicrotask(refresh); } }
-    panel.querySelectorAll('[data-table-action]').forEach(button => button.addEventListener('click', () => {
+    document.querySelectorAll('#table3d-section [data-table-action]').forEach(button => button.addEventListener('click', () => {
         if (!button.disabled) document.getElementById(button.dataset.tableAction)?.click();
     }));
     document.getElementById('table3d-details-toggle').addEventListener('click', event => {

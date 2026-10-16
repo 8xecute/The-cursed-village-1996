@@ -189,17 +189,13 @@
                         <button type="button" id="table3d-zoom-in" aria-label="ซูมเข้า">+</button>
                         <button type="button" id="table3d-reset">กลับที่นั่ง</button>
                     </div>
+                    <button type="button" class="table3d-end-turn" data-table-action="end-turn-button" disabled>จบเทิร์น</button>
                     <p id="table3d-loading" class="table3d-loading" role="status">กำลังเตรียมโต๊ะ 3D…</p>
-                    <p class="table3d-instructions">ลากหมุนโต๊ะ 360° · เลื่อนล้อเมาส์หรือจีบนิ้วเพื่อซูม · แตะการ์ดเพื่อเลือก · ยืนยัน action ที่ปุ่มด้านล่าง</p>
+                    <p class="table3d-instructions">ลากหมุนโต๊ะ 360° · เลื่อนล้อเมาส์หรือจีบนิ้วเพื่อซูม · แตะการ์ดเพื่อเลือก · แตะผู้เล่นเพื่อใช้การ์ด · แตะกองเรืองแสงเพื่อจั่ว</p>
                     <div id="table3d-play-panel" class="table3d-play-panel" hidden>
                         <strong id="table3d-action-hint" role="status"></strong>
                         <p id="table3d-card-description"></p>
-                        <div class="table3d-play-buttons">
-                            <button type="button" data-table-action="draw-card-button">จั่ว 2 ใบ</button>
-                            <button type="button" data-table-action="play-card-button">เลือกการ์ดก่อน</button>
-                            <button type="button" data-table-action="end-turn-button">จบเทิร์น</button>
-                            <button type="button" data-table-action="clear-selected-card">ยกเลิกเลือก</button>
-                        </div>
+
                         <details><summary>เลือกการ์ดในมือแบบรายการ</summary><div id="table3d-hand-options"></div></details>
                         <button id="table3d-details-toggle" type="button" aria-expanded="false">กระดานและข้อความ</button>
                         <button id="table3d-summary" type="button" hidden>ดูสรุปจบเกม</button>

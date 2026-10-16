@@ -59,3 +59,13 @@
     .table3d-play-buttons { gap: 6px; }
     .table3d-play-buttons button { flex-basis: 40%; padding: 9px; font-size: .85rem; }
 }
+
+.table3d-end-turn {
+    position: absolute; right: 14px; top: 64px; z-index: 5;
+    width: auto; min-height: 44px; padding: 9px 16px;
+    background: #873b32; color: #fff0dc; border: 1px solid #b16c55; border-radius: 8px;
+}
+.table3d-end-turn:disabled { opacity: .45; cursor: not-allowed; }
+.table3d-confirm { z-index: 10000 !important; }
+.table3d-confirm .select-player-modal-content { max-width: 340px !important; }
+@media (max-width: 600px) { .table3d-end-turn { top: 68px; right: 8px; } }

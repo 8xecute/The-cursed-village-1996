@@ -35,9 +35,14 @@ client.actions.syncTable3D = async function syncTable3D() {
                 onCard: index => {
                     if (!client.actions.canUseTable3DHand()) return;
                     const cards = document.querySelectorAll('#player-hand > .card');
-                    cards[index]?.click();
+                    const card = client.state.myCurrentHand?.[index];
+                    if (client.state.selectedCard === index && card &&
+                        ![...client.state.CARDS_NEED_TARGET, ...client.state.CARDS_NEED_TWO_TARGETS].includes(card.name)) {
+                        const play = document.getElementById('play-card-button');
+                        if (play && !play.disabled) play.click();
+                    } else cards[index]?.click();
                 },
-                onDraw: () => { if (client.actions.canUseTable3DHand()) document.getElementById('draw-card-button')?.click(); },
+                onDraw: () => { if (client.actions.canUseTable3DHand()) { const draw = document.getElementById('draw-card-button'); if (draw && !draw.disabled) draw.click(); } },
                 onPlayer: id => client.actions.handleTable3DPlayer(id),
                 onLife: (id, index) => client.actions.handleTable3DLife(id, index),
                 onEffect: (id, index) => client.actions.handleTable3DEffect(id, index),
@@ -53,7 +58,9 @@ client.actions.syncTable3D = async function syncTable3D() {
         client.state.table3D.setActive(true);
         client.state.table3D.update({ state: client.state.currentRoomState, me: client.state.myUniqueId, hand: client.state.myCurrentHand || [], selected: client.state.selectedCard,
             imageFor: name => name ? client.actions.createCardImage(name).src : null,
-            interaction: client.actions.getTable3DInteraction() });
+            interaction: client.actions.getTable3DInteraction(),
+            canDraw: client.actions.canUseTable3DHand() && !document.getElementById('draw-card-button')?.disabled,
+            drawConfirming: document.getElementById('draw-card-button')?.classList.contains('confirming') });
         client.actions.updateTable3DFocus();
     } catch (error) {
         document.body.classList.add('table3d-unavailable');

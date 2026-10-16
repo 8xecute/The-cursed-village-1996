@@ -191,9 +191,9 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
         targets = [];
     }
 
-    function update({ state, me, hand, selected, imageFor, interaction = null }) {
+    function update({ state, me, hand, selected, imageFor, interaction = null, canDraw = false, drawConfirming = false }) {
         if (!state) return;
-        const nextSignature = JSON.stringify([state.players, state.currentTurnPlayerUniqueId, state.deckCount, state.discardPileCount, state.witchNightState, hand, selected, me, interaction]);
+        const nextSignature = JSON.stringify([state.players, state.currentTurnPlayerUniqueId, state.deckCount, state.discardPileCount, state.witchNightState, hand, selected, me, interaction, canDraw, drawConfirming]);
         if (signature === nextSignature) return;
         signature = nextSignature;
         clearDynamic();
@@ -280,6 +280,16 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             const height = Math.max(.04, Math.min(.52, count * .01));
             const box = mesh(new THREE.BoxGeometry(.75, height, 1.1), new THREE.MeshStandardMaterial({ color: 0x9e8764 }), dynamic, [x, height / 2 + .04, 0]);
             const top = card(dynamic, [x, height + .045, 0], [-Math.PI / 2, 0, 0], back, { draw: clickable }, .74);
+            if (clickable && canDraw) {
+                box.material.emissive.set(0xe9a63b);
+                box.material.emissiveIntensity = 0.65;
+                top.material.emissive.set(0xe9a63b);
+                top.material.emissiveIntensity = 0.35;
+                const halo = mesh(new THREE.RingGeometry(.66, .78, 48),
+                    new THREE.MeshBasicMaterial({ color: 0xffcf72, transparent: true, opacity: .65, side: THREE.DoubleSide }), dynamic, [x, .035, 0]);
+                halo.rotation.x = -Math.PI / 2;
+                label(dynamic, drawConfirming ? 'แตะอีกครั้งเพื่อจั่ว' : 'แตะเพื่อจั่ว 2 ใบ', [x, 1.05, 0], '#ffdd95');
+            }
             box.userData = top.userData;
             if (clickable) targets.push(box);
             label(dynamic, `${title} ${count}`, [x, .65, -.7]);
