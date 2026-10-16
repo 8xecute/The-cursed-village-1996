@@ -233,8 +233,16 @@ module.exports = function registerHandlers(socket, game) {
               const spec = room.spectators[socket.uniqueId];
               game.handleSpectatorReconnection(socket, room, spec);
           } else {
+              // Registration may already have restored a different valid room.
+              const activeRoom = game.rooms[socket.currentRoom];
+              if (activeRoom?.players?.[socket.uniqueId]?.id === socket.id ||
+                  activeRoom?.spectators?.[socket.uniqueId]?.id === socket.id) {
+                  game.emitRoomState(activeRoom.name);
+                  return;
+              }
               game.io.to(socket.id).emit('room not found or not in room');
               socket.currentRoom = null;
+              game.io.to(socket.id).emit('room left');
           }
       });
 
@@ -415,6 +423,9 @@ module.exports = function registerHandlers(socket, game) {
                   game.deleteRoom(roomName, { broadcast: false });
               }
               game.broadcastActiveRooms();
+          } else {
+              socket.currentRoom = null;
+              game.io.to(socket.id).emit('room left');
           }
       });
 
