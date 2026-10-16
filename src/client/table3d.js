@@ -1,4 +1,3 @@
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
@@ -78,8 +77,8 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
     key.shadow.camera.right = key.shadow.camera.top = 8;
     key.shadow.normalBias = 0.035;
     scene.add(key);
-    const candleLight = new THREE.PointLight(0xff8f32, 15, 9, 2);
-    candleLight.position.set(0, 1.6, 0);
+    const candleLight = new THREE.PointLight(0xffa04c, 10, 9, 2);
+    candleLight.position.set(0, 1.1, 0);
     scene.add(candleLight);
     const moonFill = new THREE.DirectionalLight(0x9bb8d4, 0.85);
     moonFill.position.set(5, 6, -6);
@@ -126,17 +125,28 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
         new THREE.MeshStandardMaterial({ color: 0xb17b27, metalness: 0.6, roughness: 0.4 }), scene, [0, 0.08, 0]);
     mesh(new THREE.CylinderGeometry(0.17, 0.2, 0.65, 20),
         new THREE.MeshStandardMaterial({ color: 0xffe0a1, roughness: 0.9 }), scene, [0, 0.45, 0]);
-    const flame = mesh(new THREE.SphereGeometry(0.13, 12, 12),
-        new THREE.MeshBasicMaterial({ color: 0xffc34b }), scene, [0, 0.92, 0]);
-    flame.scale.set(0.7, 1.9, 0.7);
+    const flame = new THREE.Group(); flame.position.set(0,.79,0); scene.add(flame);
+    const profile = [[0,0],[.032,.02],[.065,.09],[.047,.18],[.015,.27],[0,.34]].map(([r,y]) => new THREE.Vector2(r,y));
+    const outerFlame = mesh(new THREE.LatheGeometry(profile,20),new THREE.MeshBasicMaterial({color:0xff8b26,transparent:true,opacity:.72,depthWrite:false,toneMapped:false}),flame,[0,0,0]);
+    outerFlame.castShadow = outerFlame.receiveShadow = false;
+    const innerFlame = mesh(new THREE.LatheGeometry(profile,16),new THREE.MeshBasicMaterial({color:0xffe5a0,toneMapped:false}),flame,[0,.008,0]);
+    innerFlame.scale.set(.57,.72,.57); innerFlame.castShadow = innerFlame.receiveShadow = false;
+    const core = mesh(new THREE.LatheGeometry(profile,12),new THREE.MeshBasicMaterial({color:0xfff6da,toneMapped:false}),flame,[0,.018,0]);
+    core.scale.set(.3,.4,.3); core.castShadow = core.receiveShadow = false;
+    mesh(new THREE.CylinderGeometry(.009,.012,.03,8),new THREE.MeshBasicMaterial({color:0x292019}),scene,[0,.787,0]);
+    const flameGlowTexture = canvasTexture(64,96,(ctx,w,h) => {
+        const glow = ctx.createRadialGradient(w/2,h/2,1,w/2,h/2,h/2);
+        glow.addColorStop(0,'rgba(255,184,79,.35)'); glow.addColorStop(.4,'rgba(255,137,42,.12)'); glow.addColorStop(1,'rgba(255,137,42,0)');
+        ctx.fillStyle=glow; ctx.fillRect(0,0,w,h);
+    });
+    const glow = new THREE.Sprite(new THREE.SpriteMaterial({map:flameGlowTexture,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,toneMapped:false}));
+    glow.position.set(0,.15,0); glow.scale.set(.33,.52,1); flame.add(glow);
     mesh(new THREE.PlaneGeometry(80, 80), new THREE.ShadowMaterial({ opacity: .22 }),
         scene, [0, -0.4, 0]).rotation.x = -Math.PI / 2;
 
     const dynamic = new THREE.Group();
     scene.add(dynamic);
     const textures = new Map();
-    let headGeometry = null;
-    let latestUpdate = null;
     const loader = new THREE.TextureLoader();
     const raycaster = new THREE.Raycaster();
     const pointer = new THREE.Vector2();
@@ -158,15 +168,17 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
     const seatPositions = new Map();
     let feedbackImageFor;
     const flights = [];
+    const cardFlightDuration = 1400;
+    const cardArrivalPause = 550;
     function stopFlight() {
         for (const flight of flights) { scene.remove(flight.mesh); flight.mesh.geometry.dispose(); flight.mesh.material.dispose(); }
         flights.length = 0;
     }
-    function addFlight(from, to, texture = back, delay = 0) {
+    function addFlight(from, to, texture = back, delay = 0, hold = 250) {
         if (!active || disposed || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
         const face = new THREE.Mesh(new THREE.PlaneGeometry(.65,.95), new THREE.MeshBasicMaterial({map:texture,transparent:true,side:THREE.DoubleSide}));
         face.quaternion.copy(camera.quaternion); face.position.copy(from); face.visible = false; scene.add(face);
-        flights.push({mesh:face,from:from.clone(),to:to.clone(),started:performance.now()+delay}); requestRender();
+        flights.push({mesh:face,from:from.clone(),to:to.clone(),started:performance.now()+delay,hold}); requestRender();
     }
 
     function requestRender() {
@@ -178,18 +190,21 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             moveCamera(now);
             if (!reducedMotion.matches) {
                 const time = now * .001;
-                flame.scale.set(.7 + Math.sin(time*5)*.035, 1.9 + Math.sin(time*7)*.12, .7);
+                flame.scale.set(1+Math.sin(time*5)*.04,1+Math.sin(time*7)*.07,1);
+                flame.rotation.z = Math.sin(time*4)*.045;
                 flame.position.x = Math.sin(time*4)*.018;
-                candleLight.intensity = 15 + Math.sin(time*6)*.65;
+                candleLight.intensity = 10 + Math.sin(time*6)*.45;
             }
             for (let index=flights.length-1;index>=0;index--) {
                 const flight = flights[index];
                 if (now < flight.started) continue;
-                const t = Math.min(1,(now-flight.started)/650);
+                const elapsed = now-flight.started;
+                const t = Math.min(1,elapsed/cardFlightDuration);
+                const eased = t*t*(3-2*t);
                 flight.mesh.visible = true;
-                flight.mesh.position.lerpVectors(flight.from,flight.to,t);
+                flight.mesh.position.lerpVectors(flight.from,flight.to,eased);
                 flight.mesh.position.y += Math.sin(Math.PI*t)*1.2;
-                if (t === 1) { scene.remove(flight.mesh); flight.mesh.geometry.dispose(); flight.mesh.material.dispose(); flights.splice(index,1); }
+                if (elapsed >= cardFlightDuration+flight.hold) { scene.remove(flight.mesh); flight.mesh.geometry.dispose(); flight.mesh.material.dispose(); flights.splice(index,1); }
             }
             renderer.render(scene, camera);
             if (flights.length || pressedKeys.size) requestRender();
@@ -291,7 +306,6 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
 
     function update({ state, me, hand, selected, imageFor, interaction = null, canDraw = false, drawConfirming = false, handLowered = false, artwork = 'new' }) {
         if (!state) return;
-        latestUpdate = { state, me, hand, selected, imageFor, interaction, canDraw, drawConfirming, handLowered, artwork };
         const nextSignature = JSON.stringify([state.players, state.currentTurnPlayerUniqueId, state.deckCount, state.discardPileCount, state.witchNightState, hand, selected, me, interaction, canDraw, drawConfirming, handLowered, artwork]);
         if (signature === nextSignature) return;
         signature = nextSignature;
@@ -311,16 +325,15 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             seat.rotation.y = angle;
             seatPositions.set(player.uniqueId, seat.position.clone().setY(1.3));
             dynamic.add(seat);
-            const material = new THREE.MeshStandardMaterial({ color: player.alive ? COLORS[index % COLORS.length] : 0x48423c, roughness: 0.6 });
+            const material = new THREE.MeshStandardMaterial({ color: player.alive ? new THREE.Color(COLORS[index % COLORS.length]).multiplyScalar(.55) : 0x302d29, roughness: 0.6 });
             const pawn = new THREE.Group(); pawn.position.z = 2.05; pawn.position.y = -.1; seat.add(pawn);
             if (!player.alive) { pawn.rotation.z = Math.PI / 2; pawn.position.y = 0.2; }
             const parts = [
                 mesh(new THREE.CylinderGeometry(.20,.25,.42,16),material.clone(),pawn,[0,.25,0]),
-                mesh(headGeometry || new THREE.SphereGeometry(.18,16,12),new THREE.MeshStandardMaterial({color:0xa48970,roughness:.95}),pawn,[0,.63,0]),
+                mesh(new THREE.SphereGeometry(.17,16,12),material.clone(),pawn,[0,.63,0]),
                 mesh(new THREE.CapsuleGeometry(.075,.28,4,10),material.clone(),pawn,[-.29,.25,0]),
                 mesh(new THREE.CapsuleGeometry(.075,.28,4,10),material.clone(),pawn,[.29,.25,0]),
             ];
-            if (headGeometry) parts[1].userData.sharedGeometry = true;
             parts.forEach(part => { part.userData = { ...part.userData, playerId: player.uniqueId }; targets.push(part); });
             if (state.currentTurnPlayerUniqueId === player.uniqueId && player.alive) {
                 const ring = mesh(new THREE.TorusGeometry(.52, .045, 8, 40),
@@ -475,27 +488,6 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
     }
     const resizeObserver = new ResizeObserver(resize);
     resizeObserver.observe(container);
-    new GLTFLoader().load('models/villager-head.glb', gltf => {
-        let source;
-        gltf.scene.updateMatrixWorld(true);
-        gltf.scene.traverse(object => { if (!source && object.isMesh) source = object; });
-        if (source && !disposed) {
-            headGeometry = source.geometry.clone().applyMatrix4(source.matrixWorld);
-            headGeometry.computeBoundingBox();
-            const box = headGeometry.boundingBox, center = box.getCenter(new THREE.Vector3());
-            const height = box.getSize(new THREE.Vector3()).y;
-            headGeometry.translate(-center.x,-center.y,-center.z);
-            headGeometry.scale(.38/height,.38/height,.38/height);
-            headGeometry.rotateY(Math.PI);
-            signature = '';
-            if (latestUpdate) update(latestUpdate);
-            requestRender();
-        }
-        gltf.scene.traverse(object => { object.geometry?.dispose(); if (object.material) {
-            const materials = Array.isArray(object.material) ? object.material : [object.material];
-            materials.forEach(material => { material.map?.dispose(); material.dispose(); });
-        } });
-    }, undefined, () => { /* Keep the lightweight fallback head. */ });
     resetCamera();
     return {
         update,
@@ -518,8 +510,8 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             const to = target ? target.clone().multiplyScalar(.63).setY(.18) : new THREE.Vector3(0,1.1,0);
             if (!from || !feedbackImageFor) return;
             const texture = cardTexture(feedbackImageFor(event.cardName));
-            addFlight(from,to,texture);
-            if (event.discard) addFlight(to,new THREE.Vector3(1.2,.3,0),texture,650);
+            addFlight(from,to,texture,0,cardArrivalPause);
+            if (event.discard) addFlight(to,new THREE.Vector3(1.2,.3,0),texture,cardFlightDuration+cardArrivalPause);
         },
         animateMovement(event) {
             if (event.kind === 'draw') {
@@ -560,7 +552,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             cancelAnimationFrame(renderFrame);
             resizeObserver.disconnect(); controls.dispose(); clearDynamic();
             scene.traverse(object => { object.geometry?.dispose(); object.material?.dispose(); });
-            headGeometry?.dispose(); wood.dispose(); back.dispose(); textures.forEach(texture => texture.dispose());
+            flameGlowTexture.dispose(); wood.dispose(); back.dispose(); textures.forEach(texture => texture.dispose());
             renderer.dispose(); renderer.domElement.remove();
         },
     };
