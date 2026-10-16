@@ -231,7 +231,7 @@ body > .tryal-selection-popup {
     font-size: 0.85em !important;
     margin: 4px !important;
   }
-  .select-player-popup, #select-player-popup, #must-play-night-popup, #card-description-popup, #night-action-popup, #assign-blackcat-popup {
+  .select-player-popup, #select-player-popup, #must-play-night-popup, #card-description-popup, #night-action-popup {
     width: 95vw !important;
     min-width: unset !important;
     max-width: 98vw !important;
@@ -243,7 +243,7 @@ body > .tryal-selection-popup {
     border-radius: 12px !important;
     box-sizing: border-box !important;
   }
-  .select-player-popup button, #select-player-popup button, #must-play-night-popup button, #night-action-popup button, #assign-blackcat-popup button {
+  .select-player-popup button, #select-player-popup button, #must-play-night-popup button, #night-action-popup button {
     width: 80vw !important;
     max-width: 90vw !important;
     min-width: 60vw !important;
