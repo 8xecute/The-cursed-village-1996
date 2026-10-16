@@ -1,0 +1,24 @@
+#card-inspect-overlay[hidden], #player-status-peek[hidden], #play-result-toast[hidden] { display:none !important; }
+#card-inspect-overlay { position:fixed; inset:0; z-index:13000; display:flex; align-items:center; justify-content:center; padding:16px; box-sizing:border-box; background:#000b; }
+#card-inspect-overlay section { position:relative; width:min(380px,100%); max-height:90dvh; overflow:auto; padding:20px; box-sizing:border-box; border:1px solid #a2875d; border-radius:12px; background:#241d17; color:#f1e2ca; text-align:center; }
+#card-inspect-overlay .inspect-close { position:absolute; top:8px; right:8px; width:40px; min-height:40px; margin:0; z-index:1; }
+#card-inspect-overlay .inspect-image img { width:auto !important; height:auto !important; max-width:100%; max-height:55dvh; object-fit:contain !important; }
+#card-inspect-overlay p { line-height:1.65; }
+#card-inspect-overlay small { color:#bdae97; }
+#player-status-peek { position:fixed; right:12px; top:150px; z-index:7500; width:min(290px,calc(100vw - 24px)); max-height:40dvh; overflow:auto; box-sizing:border-box; padding:14px; border:1px solid #8c7452; border-radius:10px; background:#211a15f5; color:#efdfc3; }
+#player-status-peek > button { float:right; width:34px; min-height:34px; margin:0; padding:4px; }
+#player-status-peek strong { display:block; padding-right:38px; }
+#player-status-peek p { line-height:1.6; font-size:.9rem; }
+#player-status-peek ul { padding:0; list-style:none; }
+#player-status-peek li button { width:auto; margin:3px 0; padding:6px 10px; min-height:40px; }
+#play-result-toast { position:fixed; top:18px; left:50%; transform:translateX(-50%); z-index:12500; max-width:calc(100vw - 32px); width:max-content; padding:12px 18px; box-sizing:border-box; border:1px solid #c2ab87; border-radius:10px; background:#2c231bf5; color:#f4e4c8; pointer-events:none; line-height:1.6; }
+.result-enter { animation:result-enter .3s ease-out; }
+@keyframes result-enter { from { opacity:0; transform:translate(-50%,-12px); } to { opacity:1; transform:translate(-50%,0); } }
+#game-sound-settings { position:fixed; right:10px; bottom:10px; z-index:12000; padding:8px 12px; border:1px solid #967b54; border-radius:8px; background:#241c16ed; color:#f0dfbd; font-size:.85rem; }
+#game-sound-settings summary { cursor:pointer; min-height:24px; }
+#game-sound-settings label { display:flex; align-items:center; gap:8px; margin-top:10px; }
+#game-sound-settings input[type=range] { width:110px; }
+@media (prefers-reduced-motion:reduce) { .result-enter { animation:none; } }
+@media (max-width:600px) { #player-status-peek { top:170px; max-height:30dvh; } }
+
+.flying-play-card { position:fixed; top:0; left:0; width:58px !important; height:80px !important; z-index:12600; pointer-events:none; object-fit:cover; }

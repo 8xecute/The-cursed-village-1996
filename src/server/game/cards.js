@@ -101,6 +101,25 @@ module.exports = function createServices(game) {
           return;
       }
 
+      // Public action information only: never include hands, life cards, or hidden roles.
+      function emitCardFeedback() {
+          const target = room.players[targetUniqueId];
+          const result = cardToPlay.name === 'Accusation' || cardToPlay.name === 'Evidence'
+              ? room.playerForcedToRevealTryal === targetUniqueId ? 'ครบ 7 แต้ม · เลือกเปิดการ์ดชีวิต'
+                  : `ข้อกล่าวหา +${cardToPlay.value || 1} · รวม ${target?.accusationPoints || 0}/7`
+              : ({ Witness: 'เลือกเปิดการ์ดชีวิต 1 ใบ', Stocks: 'ข้ามเทิร์นถัดไป',
+                  Arson: 'ทิ้งการ์ดในมือทั้งหมด', Robbery: 'ย้ายการ์ดในมือไปยังผู้รับ',
+                  Scapegoat: 'ย้ายการ์ดสถานะไปยังผู้รับ', Piety: 'ป้องกันการ์ดแดง',
+                  Asylum: 'ป้องกันการสังหารกลางคืน', Matchmaker: 'ผูกวิญญาณแล้ว',
+                  Alibi: 'นำข้อกล่าวหาออก', Curse: 'เลือกการ์ดสถานะที่จะทำลาย',
+                  Night: 'เข้าสู่กลางคืน', Conspiracy: 'เริ่มพิธีเซ่นไหว้' })[cardToPlay.name] || 'ใช้การ์ดแล้ว';
+          game.io.to(roomName).emit('card action feedback', {
+              actorId: playerUniqueId, actorName: player.name, cardName: cardToPlay.name,
+              targetId: targetUniqueId, targetName: target?.name || null,
+              secondTargetName: room.players[secondTargetUniqueId]?.name || null, result
+          });
+      }
+
       // Check if a target is required but not provided, or vice-versa
       const cardNeedsTarget = game.CARDS_NEED_TARGET.includes(cardToPlay.name);
       const cardNeedsTwoTargets = game.CARDS_NEED_TWO_TARGETS.includes(cardToPlay.name);
@@ -296,6 +315,7 @@ module.exports = function createServices(game) {
                           game.io.to(player.id).emit('update hand', player.hand);
                           game.io.to(player.id).emit('disable draw button');
                           game.io.to(player.id).emit('card played successfully');
+      emitCardFeedback();
                           game.io.to(player.id).emit('prompt select curse target', {
                               targetUniqueId,
                               blueCards: blueCards.map(card => ({ name: card.name }))
@@ -474,6 +494,7 @@ module.exports = function createServices(game) {
               player.hasPlayedCardsThisTurn = true;
               game.io.to(player.id).emit('disable draw button');
               game.io.to(player.id).emit('card played successfully');
+      emitCardFeedback();
               game.io.to(player.id).emit('update hand', player.hand);
               game.sendDeckInfo(roomName);
               if (player.hand.length === 0) {
@@ -498,6 +519,7 @@ module.exports = function createServices(game) {
       
       // Send card played event to client
       game.io.to(player.id).emit('card played successfully');
+      emitCardFeedback();
       
       // จบเทิร์นอัตโนมัติถ้าการ์ดในมือหมด (หลังจากลบการ์ดแล้ว)
       if (player.hand.length === 0) {

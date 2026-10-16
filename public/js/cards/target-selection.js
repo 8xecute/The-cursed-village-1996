@@ -215,7 +215,7 @@ client.actions.showSelectPlayerPopup = function showSelectPlayerPopup(title, pla
             btn.classList.add('selected');
             selectedId = player.uniqueId;
             confirmBtn.disabled = false;
-            targetHint.textContent = `เลือก: ${player.name}`;
+            targetHint.textContent = `เลือก: ${player.name} · ${client.actions.cardOutcomePreview?.(cardObj, player) || ''}`;
             confirmBtn.textContent = title.startsWith('1/2') ? 'เลือกต้นทางนี้ →'
                 : title.startsWith('2/2') ? `ยืนยันผู้รับ: ${player.name}`
                 : cardObj ? `ใช้${client.actions.displayCardName(cardObj.name)}กับ ${player.name}` : 'ยืนยันเป้าหมาย';

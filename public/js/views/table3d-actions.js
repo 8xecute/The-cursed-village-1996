@@ -44,15 +44,15 @@ client.actions.getTable3DInteraction = function getTable3DInteraction() {
         if (!client.state.isMyTurn || state.currentPhase !== 'DAY' || state.awaitingLeftTryalSelections ||
             state.playerForcedToRevealTryal || state.isAssigningBlackCat || !card ||
             ![...client.state.CARDS_NEED_TARGET, ...client.state.CARDS_NEED_TWO_TARGETS].includes(card.name)) return null;
-        const eligible = [], blocked = {};
+        const eligible = [], blocked = {}, outcomes = {};
         for (const player of Object.values(state.players)) {
             const protectedTarget = (card.color === 'Red' || ['Accusation', 'Evidence', 'Witness'].includes(card.name)) &&
                 player.inPlayCards?.some(effect => (effect.name || effect) === 'Piety');
             const reason = !player.alive ? 'เสียชีวิตแล้ว' : player.uniqueId === client.state.myUniqueId ? 'เลือกตัวเองไม่ได้'
                 : protectedTarget ? 'พลังศรัทธา · กันการ์ดแดง' : null;
-            if (reason) blocked[player.uniqueId] = reason; else eligible.push(player.uniqueId);
+            if (reason) blocked[player.uniqueId] = reason; else { eligible.push(player.uniqueId); outcomes[player.uniqueId] = client.actions.cardOutcomePreview?.(card, player) || 'แตะเพื่อเลือก'; }
         }
-        return { kind: 'player', preview: true, eligible, selected: [], blocked };
+        return { kind: 'player', preview: true, eligible, selected: [], blocked, outcomes };
     }
     const eligible = choice.select ? [...choice.select.options].filter(option => option.value && !option.disabled).map(option => option.value)
         : choice.rows.filter(row => row.getAttribute('aria-disabled') !== 'true').map(row => row.dataset.uniqueId);
@@ -70,6 +70,7 @@ client.actions.getTable3DInteraction = function getTable3DInteraction() {
 client.actions.handleTable3DPlayer = function handleTable3DPlayer(id) {
     client.state.table3DFocusedPlayer = id;
     client.actions.updateTable3DFocus();
+    client.actions.showPlayerStatus?.(id);
     if (!canAct()) return;
     let choice = picker();
     if (!choice) {

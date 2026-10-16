@@ -20,6 +20,7 @@ client.actions.updatePlayersBoardGrid = function updatePlayersBoardGrid(roomStat
     const knowsWitchTeam = !!roomState.players[myUniqueId]?.hasBeenWitch;
     playersInOrder.forEach(player => {
         const card = document.createElement('div');
+        card.dataset.playerId = player.uniqueId;
         card.className = 'player-board-card' + (!player.alive ? ' dead' : '') + (roomState.currentTurnPlayerUniqueId === player.uniqueId ? ' current-turn' : '');
         // Header
         let header = `<div class='player-board-header'>`;

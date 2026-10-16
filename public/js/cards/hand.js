@@ -222,6 +222,7 @@ client.actions.createCardImage = function createCardImage(cardName) {
     const imageFileName = cardImageMap[cardName] || 'accusation.png'; // fallback
     img.dataset.cardArtwork = imageFileName;
     img.src = cardArtworkUrl(imageFileName);
+    img.dataset.cardName = cardName;
     img.alt = client.actions.displayCardName(cardName);
     img.title = client.actions.displayCardDescription(cardName);
     

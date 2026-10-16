@@ -103,6 +103,7 @@ export function initialize() {
   });
 
   client.state.socket.on('card used on you', (senderName, cardName, cardDesc) => {
+      if (client.state.compactCardFeedback) return; // Public action feedback replaces the blocking popup.
       console.log('[DEBUG] card used on you', senderName, cardName, cardDesc);
       // Remove existing popup if any
       const old = document.getElementById('card-used-on-you-popup');

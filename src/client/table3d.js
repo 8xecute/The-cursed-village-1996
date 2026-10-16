@@ -14,7 +14,7 @@ function canvasTexture(width, height, draw) {
     return texture;
 }
 
-function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError }) {
+function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError, onInspect }) {
     const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'low-power' });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
     renderer.shadowMap.enabled = true;
@@ -124,13 +124,30 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
     let renderFrame = 0;
     let down = null;
     let moved = false;
+    let holdTimer;
+    let inspected = false;
+    const seatPositions = new Map();
+    let feedbackImageFor;
+    let flight = null;
+    function stopFlight() {
+        if (!flight) return;
+        scene.remove(flight.mesh); flight.mesh.geometry.dispose(); flight.mesh.material.dispose(); flight = null;
+    }
 
     function requestRender() {
         if (!active || disposed || renderFrame) return;
         renderFrame = requestAnimationFrame(() => {
             renderFrame = 0;
             controls.update();
+            if (flight) {
+                const t = Math.min(1, (performance.now()-flight.started)/650);
+                flight.mesh.position.lerpVectors(flight.from,flight.to,t);
+                flight.mesh.position.y += Math.sin(Math.PI*t)*1.2;
+                flight.mesh.material.opacity = 1-t*.5;
+                if (t === 1) stopFlight();
+            }
             renderer.render(scene, camera);
+            if (flight) requestRender();
         });
     }
     controls.addEventListener('change', requestRender);
@@ -197,6 +214,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
         if (signature === nextSignature) return;
         signature = nextSignature;
         clearDynamic();
+        seatPositions.clear(); feedbackImageFor = imageFor;
         const players = Object.values(state.players || {});
         const ownIndex = players.findIndex(player => player.uniqueId === me);
         function outline(face, color = 0xc2ab87) {
@@ -208,6 +226,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             const seat = new THREE.Group();
             seat.position.set(Math.sin(angle) * 4.65, 0.05, Math.cos(angle) * 4.65);
             seat.rotation.y = angle;
+            seatPositions.set(player.uniqueId, seat.position.clone().setY(1.3));
             dynamic.add(seat);
             const material = new THREE.MeshStandardMaterial({ color: player.alive ? COLORS[index % COLORS.length] : 0x48423c, roughness: 0.6 });
             const pawn = new THREE.Group(); seat.add(pawn);
@@ -228,7 +247,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             if (interaction?.kind === 'player') {
                 const eligible = interaction.eligible.includes(player.uniqueId);
                 const picked = interaction.selected.includes(player.uniqueId);
-                label(seat, picked ? '✓ เลือกแล้ว' : eligible ? 'แตะเพื่อเลือก' : interaction.blocked?.[player.uniqueId] || 'เลือกไม่ได้', [0, 2.15, 0], eligible ? '#d8c4a0' : '#ad9c8c');
+                label(seat, picked ? '✓ เลือกแล้ว' : eligible ? interaction.outcomes?.[player.uniqueId] || 'แตะเพื่อเลือก' : interaction.blocked?.[player.uniqueId] || 'เลือกไม่ได้', [0, 2.15, 0], eligible ? '#d8c4a0' : '#ad9c8c');
                 if (eligible) {
                     const marker = mesh(new THREE.TorusGeometry(.58, .025, 6, 32), new THREE.MeshBasicMaterial({ color: picked ? 0xc2ab87 : 0x879277 }), seat, [0, .09, 0]);
                     marker.rotation.x = Math.PI / 2;
@@ -307,10 +326,16 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
 
     function pointerDown(event) {
         if (!event.isPrimary) { down = null; return; }
-        down = { x: event.clientX, y: event.clientY, id: event.pointerId }; moved = false;
+        down = { x: event.clientX, y: event.clientY, id: event.pointerId }; moved = false; inspected = false;
+        clearTimeout(holdTimer);
+        if (event.button === 0 && event.pointerType !== 'mouse') holdTimer = setTimeout(() => {
+            if (down && !moved) { inspected = true; inspectAt(event.clientX, event.clientY); }
+        }, 550);
     }
-    function pointerMove(event) { if (down && Math.hypot(event.clientX - down.x, event.clientY - down.y) > 7) moved = true; }
+    function pointerMove(event) { if (down && Math.hypot(event.clientX - down.x, event.clientY - down.y) > 7) { moved = true; clearTimeout(holdTimer); } }
     function pointerUp(event) {
+        clearTimeout(holdTimer);
+        if (inspected || event.button !== 0) { down = null; return; }
         if (!down || moved || event.pointerId !== down.id) { down = null; return; }
         down = null;
         const rect = renderer.domElement.getBoundingClientRect();
@@ -325,10 +350,18 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
         else if (Number.isInteger(data.effectIndex) && onEffect) onEffect(data.playerId, data.effectIndex);
         else if (data.playerId) onPlayer(data.playerId);
     }
+    function inspectAt(x, y) {
+        const rect = renderer.domElement.getBoundingClientRect();
+        pointer.set((x-rect.left)/rect.width*2-1, -(y-rect.top)/rect.height*2+1);
+        raycaster.setFromCamera(pointer,camera);
+        const hit = raycaster.intersectObjects(targets,false)[0];
+        if (hit) onInspect?.(hit.object.userData);
+    }
+    renderer.domElement.addEventListener('contextmenu', event => { event.preventDefault(); inspectAt(event.clientX,event.clientY); });
     renderer.domElement.addEventListener('pointerdown', pointerDown);
     renderer.domElement.addEventListener('pointermove', pointerMove);
     renderer.domElement.addEventListener('pointerup', pointerUp);
-    renderer.domElement.addEventListener('pointercancel', () => { down = null; });
+    renderer.domElement.addEventListener('pointercancel', () => { down = null; clearTimeout(holdTimer); });
     renderer.domElement.addEventListener('webglcontextlost', event => {
         event.preventDefault();
         onError('อุปกรณ์หยุดแสดงภาพ 3D กรุณาสลับกลับ 2D');
@@ -358,6 +391,15 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             else { cancelAnimationFrame(renderFrame); renderFrame = 0; }
         },
         resetCamera,
+        animateCard(event) {
+            if (!active || disposed || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+            const from = seatPositions.get(event.actorId), to = seatPositions.get(event.targetId);
+            if (!from || !to || !feedbackImageFor) return;
+            stopFlight();
+            const face = new THREE.Mesh(new THREE.PlaneGeometry(.65,.95),new THREE.MeshBasicMaterial({map:cardTexture(feedbackImageFor(event.cardName)),transparent:true,side:THREE.DoubleSide}));
+            face.quaternion.copy(camera.quaternion); scene.add(face);
+            flight = { mesh:face, from:from.clone(), to:to.clone(), started:performance.now() }; requestRender();
+        },
         setCameraView(view) {
             const offset = camera.position.clone().sub(controls.target);
             const azimuth = Math.atan2(offset.x, offset.z);
@@ -376,7 +418,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             controls.update(); requestRender();
         },
         dispose() {
-            disposed = true;
+            disposed = true; clearTimeout(holdTimer); stopFlight();
             cancelAnimationFrame(renderFrame);
             resizeObserver.disconnect(); controls.dispose(); clearDynamic();
             scene.traverse(object => { object.geometry?.dispose(); object.material?.dispose(); });

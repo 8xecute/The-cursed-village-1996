@@ -45,6 +45,13 @@ client.actions.syncTable3D = async function syncTable3D() {
                     } else cards[index]?.click();
                 },
                 onDraw: () => { if (client.actions.canUseTable3DHand()) { const draw = document.getElementById('draw-card-button'); if (draw && !draw.disabled) draw.click(); } },
+                onInspect: data => {
+                    const state = client.state.currentRoomState;
+                    const name = Number.isInteger(data.cardIndex) ? client.state.myCurrentHand?.[data.cardIndex]?.name
+                        : Number.isInteger(data.effectIndex) ? state?.players?.[data.playerId]?.inPlayCards?.[data.effectIndex]?.name
+                        : Number.isInteger(data.lifeIndex) ? state?.players?.[data.playerId]?.tryalCards?.[data.lifeIndex]?.name : null;
+                    if (name) client.actions.inspectGameCard?.(name);
+                },
                 onPlayer: id => client.actions.handleTable3DPlayer(id),
                 onLife: (id, index) => client.actions.handleTable3DLife(id, index),
                 onEffect: (id, index) => client.actions.handleTable3DEffect(id, index),
