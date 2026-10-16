@@ -272,3 +272,8 @@ body.game-view-3d:not(.table3d-unavailable) #player-status-peek { display:none !
 #table3d-log-unread { display:inline-block; padding:1px 5px; margin-left:4px; border-radius:8px; background:#7d3c26; color:#ffdfae; }
 #table3d-log-unread[hidden] { display:none; }
 @media(max-width:600px) { .table3d-log[open] { width:min(250px,calc(100% - 16px)); } #table3d-log-messages { max-height:25dvh; } }
+
+.table3d-hand-controls { display:flex; align-items:center; justify-content:center; gap:6px; white-space:nowrap; }
+
+#table3d-seat-label { position:absolute; bottom:calc(100% + 5px); left:50%; transform:translateX(-50%); max-width:85vw; overflow:hidden; text-overflow:ellipsis; padding:3px 8px; border-radius:5px; background:#211b15e8; color:#e5d2b0; font-size:.75rem; pointer-events:none; }
+#table3d-seat-label:empty { display:none; }

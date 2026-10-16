@@ -43,7 +43,23 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
     controls.enableZoom = true;
     controls.zoomSpeed = 0.8;
 
+    let seatOrder = [];
+    let ownSeatId = null;
+    let focusedSeatId = null;
+    function focusSeat(id) {
+        const seat = seatPositions.get(id);
+        if (!seat) return;
+        focusedSeatId = id;
+        controls.enableRotate = false; controls.enablePan = false;
+        controls.target.set(seat.x*.68,.1,seat.z*.68);
+        camera.position.set(controls.target.x+seat.x*.5,9.5,controls.target.z+seat.z*.5);
+        controls.update(); requestRender();
+        onSeatFocus?.(seatOrder.find(player => player.uniqueId === id)?.name || 'ผู้เล่น');
+    }
     function resetCamera() {
+        focusedSeatId = null;
+        controls.enableRotate = true; controls.enablePan = true;
+        onSeatFocus?.('มุมของคุณ');
         camera.position.set(0, 11, 14.5);
         controls.target.set(0, 0.35, 0);
         controls.update();
@@ -239,6 +255,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
         clearDynamic();
         seatPositions.clear(); feedbackImageFor = imageFor;
         const players = Object.values(state.players || {});
+        seatOrder = players; ownSeatId = me;
         const ownIndex = players.findIndex(player => player.uniqueId === me);
         function outline(face, color = 0xc2ab87) {
             const edge = new THREE.LineSegments(new THREE.EdgesGeometry(face.geometry), new THREE.LineBasicMaterial({ color }));
@@ -423,6 +440,12 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             else { clearTimeout(flameTimer); cancelAnimationFrame(renderFrame); renderFrame = 0; }
         },
         resetCamera,
+        stepSeat(direction) {
+            if (!seatOrder.length) return;
+            const current = seatOrder.findIndex(player => player.uniqueId === (focusedSeatId || ownSeatId));
+            const index = (Math.max(0,current)+direction+seatOrder.length)%seatOrder.length;
+            focusSeat(seatOrder[index].uniqueId);
+        },
         animateCard(event) {
             const actor = seatPositions.get(event.actorId), target = seatPositions.get(event.targetId);
             const from = actor?.clone().multiplyScalar(1.15).setY(1);

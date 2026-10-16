@@ -177,6 +177,9 @@ export function initialize() {
   });
   client.state.socket.on('room left', () => client.actions.closeTable3DFullscreen());
 
+  document.getElementById('table3d-seat-left')?.addEventListener('click', () => client.state.table3D?.stepSeat(-1));
+  document.getElementById('table3d-seat-right')?.addEventListener('click', () => client.state.table3D?.stepSeat(1));
+
   document.getElementById('table3d-reset')?.addEventListener('click', () => client.state.table3D?.resetCamera());
 
   document.getElementById('table3d-overview')?.addEventListener('click', () => client.state.table3D?.setCameraView('overview'));

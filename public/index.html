@@ -190,12 +190,11 @@
                     </div>
                     <div class="table3d-camera-controls" aria-label="ควบคุมกล้อง 3D">
                         <button type="button" id="table3d-fullscreen" aria-pressed="false">เต็มจอ</button>
-                        <button type="button" id="table3d-reset">กลับที่นั่ง</button>
                     </div>
                     <div class="table3d-view-controls" aria-label="มุมมองโต๊ะ">
                     </div>
                     <button type="button" class="table3d-end-turn" data-table-action="end-turn-button" disabled>จบเทิร์น</button>
-                    <div class="table3d-hand-controls"><button type="button" id="table3d-hand-toggle" aria-pressed="false">วางไพ่</button></div>
+                    <div class="table3d-hand-controls"><span id="table3d-seat-label" role="status"></span><button type="button" id="table3d-seat-left" aria-label="ดูผู้เล่นทางซ้าย">◀</button><button type="button" id="table3d-hand-toggle" aria-pressed="false">วางไพ่</button><button type="button" id="table3d-reset" title="คืนกล้องไปยังมุมเริ่มต้น">กลับโต๊ะ</button><button type="button" id="table3d-seat-right" aria-label="ดูผู้เล่นทางขวา">▶</button></div>
                     <p id="table3d-loading" class="table3d-loading" role="status">กำลังเตรียมโต๊ะ 3D…</p>
                     <p class="table3d-instructions">ลากหมุน · ลากสองนิ้วหรือ Shift+ลากเพื่อเลื่อน · เลื่อนล้อเมาส์หรือจีบนิ้วเพื่อซูม · แตะการ์ดเพื่อเลือก · แตะผู้เล่นเพื่อใช้การ์ด · แตะกองเรืองแสงเพื่อจั่ว</p>
                     <div id="table3d-phase-panel" class="table3d-phase-panel" hidden aria-live="polite"></div>
