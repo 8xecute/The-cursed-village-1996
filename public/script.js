@@ -1,4 +1,5 @@
 import './js/views/popup-controls.js';
+import { initialize as initializeGuidance } from './js/views/action-guide.js';
 import { initialize as initializeStory } from './js/views/story.js';
 // Browser entry. Register all features, then initialize in dependency order.
 import { initialize as initialize0 } from './js/core/identity.js';
@@ -59,3 +60,4 @@ initialize24();
 initialize25();
 initialize26();
 initialize27();
+initializeGuidance();

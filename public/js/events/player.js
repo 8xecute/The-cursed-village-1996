@@ -8,7 +8,7 @@ export function initialize() {
       client.state.hasPlayedCardsThisTurn = false;
       client.state.hasDrawnCardThisTurn = false;
       client.actions.updateTurnUI();
-      client.actions.addGameMessage('นี่คือตาของคุณ!', 'blue', true);
+      if (window.innerWidth <= 768) client.actions.switchMobileGameTab('hand');
       // Reset forced reveal flag
       client.state.forcedRevealJustHappened = false;
       client.dom.drawCardButton.disabled = false;

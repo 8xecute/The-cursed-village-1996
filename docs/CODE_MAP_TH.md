@@ -51,6 +51,8 @@ Services รับ `game` ผ่าน factory โดย `game` มี `io`, `ro
 - `audio/`: เพลงและระดับเสียง
 - `views/`: มือถือ โต๊ะ 3D ข้อความและคู่มือ
 
+`views/action-guide.js` ดูสถานะห้องที่กรองแล้วและหน้าต่างของผู้เล่น เพื่อแสดงคำแนะนำสั้นและแจ้งเตือนเทิร์น โดยไม่แก้กติกาหรือส่ง action แทนผู้เล่น
+
 `core/client.js` มี namespace สามส่วน:
 
 - `client.state`: ข้อมูล session, state จาก server และสถานะ UI ชั่วคราว

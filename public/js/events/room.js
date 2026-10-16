@@ -250,7 +250,10 @@ export function initialize() {
           }
 
           // Update turn status
-          client.state.isMyTurn = roomState.currentTurnPlayerUniqueId === client.state.myUniqueId;
+          const wasMyTurn = client.state.isMyTurn;
+          client.state.isMyTurn = roomState.currentPhase === 'DAY' && !roomState.gameOver &&
+              !!roomState.players?.[client.state.myUniqueId]?.alive &&
+              roomState.currentTurnPlayerUniqueId === client.state.myUniqueId;
           if (!client.state.isMyTurn) {
               client.state.hasPlayedCardsThisTurn = false; // Reset when turn changes
           }
@@ -264,20 +267,11 @@ export function initialize() {
               const count = Object.keys(roomState.players).length;
               client.dom.tabPlayerCountBadge.textContent = `(${count})`;
           }
-          if (client.state.isMyTurn && window.innerWidth <= 768 && client.state.currentMobileGameTab !== 'hand') {
+          if (client.state.isMyTurn && !wasMyTurn && window.innerWidth <= 768 && client.state.currentMobileGameTab !== 'hand') {
               client.actions.switchMobileGameTab('hand');
           }
 
-          // Show waiting status for global card selection flow
-          if (client.dom.waitingStatusBanner) {
-              if (roomState.awaitingLeftTryalSelections) {
-                  client.dom.waitingStatusBanner.style.display = 'block';
-                  client.dom.waitingStatusBanner.textContent = `กำลังรอผู้เล่นเลือกการ์ดชีวิต ${roomState.leftTryalSelectedCount || 0}/${roomState.leftTryalTotalCount || 0}`;
-              } else {
-                  client.dom.waitingStatusBanner.style.display = 'none';
-                  client.dom.waitingStatusBanner.textContent = '';
-              }
-          }
+          // The action-guide feature owns the status banner.
 
           // --- Spectator handling ---
           client.state.isSpectatorMode = !!roomState.isSpectator;

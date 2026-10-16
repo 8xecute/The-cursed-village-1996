@@ -156,7 +156,14 @@
                     <span>กองการ์ด: <span id="deck-count-display">0</span></span>
                     <span>กองทิ้ง: <span id="discard-pile-count-display">0</span></span>
                 </div>
-                <div id="waiting-status-banner" class="waiting-status-banner" style="display:none;"></div>
+                <section id="waiting-status-banner" class="action-guide" hidden aria-label="สิ่งที่ต้องทำตอนนี้">
+                    <div class="action-guide-copy" role="status" aria-live="polite" aria-atomic="true">
+                        <strong id="action-guide-title"></strong>
+                        <p id="action-guide-detail"></p>
+                    </div>
+                    <button id="action-guide-button" type="button" hidden>ดูการ์ดของฉัน</button>
+                </section>
+                <div id="turn-notice" class="turn-notice" role="status" hidden>ถึงตาคุณแล้ว · ดูคำแนะนำด้านบน</div>
 
                 <section id="table3d-section" class="table3d-section" hidden aria-label="โต๊ะเกม 3D">
                     <div id="table3d-canvas" class="table3d-canvas"></div>
