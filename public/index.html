@@ -191,14 +191,19 @@
                     </div>
                     <button type="button" class="table3d-end-turn" data-table-action="end-turn-button" disabled>จบเทิร์น</button>
                     <div class="table3d-hand-controls"><button type="button" id="table3d-hand-toggle" aria-pressed="false">วางไพ่</button></div>
+                    <div id="table3d-hand-pages" hidden><button type="button" id="table3d-hand-prev" aria-label="ไพ่หน้าก่อน">‹</button><span id="table3d-hand-page-label"></span><button type="button" id="table3d-hand-next" aria-label="ไพ่หน้าถัดไป">›</button></div>
                     <p id="table3d-loading" class="table3d-loading" role="status">กำลังเตรียมโต๊ะ 3D…</p>
                     <p class="table3d-instructions">ลากหมุน · ลากสองนิ้วหรือ Shift+ลากเพื่อเลื่อน · เลื่อนล้อเมาส์หรือจีบนิ้วเพื่อซูม · แตะการ์ดเพื่อเลือก · แตะผู้เล่นเพื่อใช้การ์ด · แตะกองเรืองแสงเพื่อจั่ว</p>
-                    <div id="table3d-phase-panel" class="table3d-phase-panel" hidden aria-live="polite"></div>
+                    <details id="table3d-log" class="table3d-log">
+                        <summary>เหตุการณ์ <span id="table3d-log-unread" hidden></span></summary>
+                        <div id="table3d-log-messages" tabindex="0" aria-label="ประวัติเหตุการณ์เกม"></div>
+                    </details>
                     <div id="table3d-play-panel" class="table3d-play-panel" hidden>
+                        <div id="table3d-phase-panel" class="table3d-phase-panel" hidden aria-live="polite"></div>
                         <strong id="table3d-action-hint" role="status"></strong>
                         <p id="table3d-card-description"></p>
 
-                        <button id="table3d-details-toggle" type="button" aria-expanded="false">เปิดกระดาน 2D / ข้อความ</button>
+                        <button id="table3d-details-toggle" type="button" aria-expanded="false">เปิดกระดาน 2D</button>
                         <button id="table3d-summary" type="button" hidden>ดูสรุปจบเกม</button>
                     </div>
                 </section>

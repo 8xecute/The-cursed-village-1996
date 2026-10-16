@@ -257,3 +257,30 @@ body.game-view-3d:not(.table3d-unavailable) .select-player-modal.table3d-direct-
 
 body.game-view-3d:not(.table3d-unavailable) #alibi-redcard-select-popup.table3d-phase-source { display:none !important; }
 #table3d-canvas { background-position: center center; }
+
+/* Public log shares the existing message source; no duplicate socket listeners. */
+body.game-view-3d:not(.table3d-unavailable) #player-status-peek { display:none !important; }
+.table3d-log {
+    position:absolute; top:138px; right:8px; z-index:9;
+    width:auto; max-width:calc(100% - 16px); border:1px solid #806a4b;
+    border-radius:8px; background:#211b15f2; color:#ead8bc; font-size:.8rem;
+}
+.table3d-log > summary { cursor:pointer; padding:8px 10px; min-height:20px; }
+.table3d-log[open] { width:min(300px,calc(100% - 16px)); }
+#table3d-log-messages { max-height:32dvh; overflow:auto; padding:0 10px 10px; overscroll-behavior:contain; line-height:1.6; }
+#table3d-log-messages > div { padding:5px 0; border-top:1px solid #63513b55; overflow-wrap:anywhere; }
+#table3d-log-unread { display:inline-block; padding:1px 5px; margin-left:4px; border-radius:8px; background:#7d3c26; color:#ffdfae; }
+#table3d-log-unread[hidden] { display:none; }
+@media(max-width:600px) { .table3d-log[open] { width:min(250px,calc(100% - 16px)); } #table3d-log-messages { max-height:25dvh; } }
+
+/* One bottom action guide, shared by normal turns and special selections. */
+body.game-view-3d #table3d-play-panel #table3d-phase-panel {
+    position:static; inset:auto; width:100%; max-height:26dvh; padding:0; border:0;
+    border-radius:0; background:transparent; overflow:auto;
+}
+#table3d-play-panel.has-phase-action > :is(#table3d-action-hint,#table3d-card-description) { display:none; }
+body.game-view-3d .table3d-instructions { display:none; }
+#table3d-hand-pages { position:absolute; left:50%; transform:translateX(-50%); top:calc(var(--table3d-canvas-height,70vh) - 98px); z-index:7; display:flex; align-items:center; gap:8px; color:#efdfc3; background:#241c16e8; border-radius:8px; padding:3px 6px; font-size:.8rem; }
+#table3d-hand-pages button { width:30px !important; min-height:30px !important; padding:3px !important; margin:0 !important; }
+
+body.game-view-3d:not(.table3d-unavailable) .curse-target-modal.table3d-phase-source { display:none !important; }

@@ -2,6 +2,9 @@ import { cardArtworkUrl } from '../views/artwork.js';
 import { client } from '../core/client.js';
 
 client.actions.showDeathNoticeModal = function showDeathNoticeModal() {
+    if (document.body.classList.contains('game-view-3d') && client.actions.showCompactNotice) {
+        client.actions.showCompactNotice('คุณเสียชีวิตแล้ว · ดูเกมต่อได้ แต่ทำแอ็กชันไม่ได้'); return;
+    }
     const existing = document.getElementById('death-notice-overlay');
     if (existing) existing.remove();
 
@@ -65,6 +68,9 @@ client.actions.updateSpectatorUI = function updateSpectatorUI(isSpec) {
 };
 
 client.actions.showWitchPopup = function showWitchPopup(senderName) {
+    if (document.body.classList.contains('game-view-3d') && client.actions.showCompactNotice) {
+        client.actions.showCompactNotice('คุณเข้าร่วมทีมปอบแล้ว · ดูสมาชิกทีมเมื่อเข้ากลางคืน'); return;
+    }
     if (client.state.witchPopupAcknowledged) return;
     try { if (localStorage.getItem('witchPopupAcknowledged') === '1') return; } catch (_) {}
     const existing = document.getElementById('witch-popup');

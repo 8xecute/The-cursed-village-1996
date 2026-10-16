@@ -92,6 +92,7 @@ export function initialize() {
 
     const feedback = document.createElement('div'); feedback.id = 'play-result-toast'; feedback.hidden = true; feedback.setAttribute('role', 'status');
     document.body.appendChild(feedback); let feedbackTimer;
+    client.actions.showCompactNotice = text => showFeedback(text);
     function showFeedback(text) {
         feedback.textContent = text; feedback.hidden = false;
         feedback.classList.remove('result-enter'); void feedback.offsetWidth; feedback.classList.add('result-enter');

@@ -1,3 +1,4 @@
+import { initialize as initializeTable3DLog } from './js/views/table3d-log.js';
 import { initialize as initializePlayExperience } from './js/views/play-experience.js';
 import { initialize as initializeArtwork } from './js/views/artwork.js';
 import './js/views/popup-controls.js';
@@ -71,3 +72,5 @@ initializeTable3DActions();
 initializeArtwork();
 
 initializePlayExperience();
+
+initializeTable3DLog();

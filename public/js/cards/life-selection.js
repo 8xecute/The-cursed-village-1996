@@ -202,6 +202,9 @@ export function initialize() {
   client.state.forcedRevealNoticeTimeout = null;
 
   client.state.socket.on('forced reveal notice', ({ byPlayerName, reason, points }) => {
+      if (document.body.classList.contains('game-view-3d') && client.actions.showCompactNotice) {
+          client.actions.showCompactNotice('คุณกำลังถูกเปิดการ์ดชีวิต · รอผู้เล่นเลือกใบที่จะเปิด'); return;
+      }
       client.actions.closeForcedRevealNotice();
 
       const overlay = document.createElement('div');
