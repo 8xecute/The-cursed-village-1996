@@ -91,6 +91,7 @@ client.actions.showAssignBlackCatPopup = function showAssignBlackCatPopup(potent
     container.appendChild(select);
 
     const btn = document.createElement('button');
+    btn.dataset.assignBlackcatConfirm = 'true';
     btn.innerHTML = '✅ ยืนยันการมอบการ์ดเครื่องเซ่น';
     btn.style.width = '100%';
     btn.style.padding = '12px 20px';

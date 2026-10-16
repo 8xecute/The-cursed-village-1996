@@ -260,6 +260,32 @@ body.game-view-3d:not(.table3d-unavailable) #alibi-redcard-select-popup.table3d-
 
 /* Public log shares the existing message source; no duplicate socket listeners. */
 body.game-view-3d:not(.table3d-unavailable) #player-status-peek { display:none !important; }
+
+body.game-view-3d #table3d-section .table3d-instructions {
+    display: block; text-align: center; padding: 12px; font-size: 1rem;
+    color: #eddbb7; min-height: 44px; box-sizing: border-box;
+}
+body.game-view-3d #table3d-section .table3d-instructions.is-your-turn {
+    color: #ffe6a8; background: #513816; border-block: 1px solid #b38a43;
+    font-size: 1.1rem; text-shadow: 0 0 12px #c88c39; font-weight: bold;
+}
+body.game-view-3d #table3d-phase-panel {
+    top: auto; bottom: 165px; left: 12px;
+    width: min(320px, calc(100% - 24px)); max-height: 28dvh;
+}
+body.game-view-3d #table3d-phase-panel .table3d-phase-toggle,
+body.game-view-3d .table3d-docked .table3d-panel-toggle,
+body.game-view-3d .table3d-docked .popup-collapse-toggle { display: none !important; }
+#table3d-player-info {
+    position: absolute; z-index: 9; bottom: 165px; right: 12px;
+    width: min(300px, calc(100% - 24px)); box-sizing: border-box;
+    padding: 14px; border: 1px solid #907548; border-radius: 10px;
+    background: rgba(29,23,18,.96); color: #eddbb7;
+    max-height: 30dvh; overflow: auto; font-size: .85rem;
+}
+#table3d-player-info[hidden] { display: none; }
+#table3d-player-info > button { float: right; margin: 0 0 4px 8px; padding: 4px 10px; min-height: 32px; width: auto; }
+#table3d-player-info p { margin: 8px 0 0; }
 .table3d-log {
     position:absolute; top:138px; right:8px; z-index:9;
     width:auto; max-width:calc(100% - 16px); border:1px solid #806a4b;

@@ -68,6 +68,10 @@ client.actions.getTable3DInteraction = function getTable3DInteraction() {
     return { kind: 'player', eligible, selected, blocked };
 };
 client.actions.handleTable3DPlayer = function handleTable3DPlayer(id) {
+    if (!client.state.myCurrentHand?.[client.state.selectedCard] && !client.actions.getTable3DInteraction()) {
+        client.actions.showTable3DPlayerStatus?.(id);
+        return;
+    }
     if (!canAct()) return;
     let choice = picker();
     if (!choice) {
@@ -80,6 +84,11 @@ client.actions.handleTable3DPlayer = function handleTable3DPlayer(id) {
     }
     if (choice?.select) {
         if (![...choice.select.options].some(option => option.value === id && !option.disabled)) return;
+        if (choice.select.value === id) {
+            const confirm = choice.root.querySelector('[data-assign-blackcat-confirm]');
+            if (confirm && !confirm.disabled) confirm.click();
+            return;
+        }
         choice.select.value = id;
         choice.select.dispatchEvent(new Event('change', { bubbles: true }));
     } else {
@@ -155,6 +164,30 @@ export function initialize() {
     const panel = document.getElementById('table3d-play-panel');
     const hint = document.getElementById('table3d-action-hint');
     const description = document.getElementById('table3d-card-description');
+    const statusBar = document.querySelector('#table3d-section .table3d-instructions');
+    statusBar.replaceChildren(hint);
+    const statusPanel = document.createElement('aside');
+    statusPanel.id = 'table3d-player-info'; statusPanel.hidden = true;
+    const statusClose = document.createElement('button');
+    statusClose.type = 'button'; statusClose.textContent = '×'; statusClose.setAttribute('aria-label', 'ปิดสถานะผู้เล่น');
+    statusClose.onclick = () => { statusPanel.hidden = true; statusPlayerId = null; };
+    const statusText = document.createElement('div');
+    statusPanel.append(statusClose, statusText);
+    document.getElementById('table3d-section').appendChild(statusPanel);
+    let statusPlayerId = null;
+    function renderPlayerStatus() {
+        const player = client.state.currentRoomState?.players?.[statusPlayerId];
+        if (!player) { statusPanel.hidden = true; return; }
+        const name = document.createElement('strong'); name.textContent = player.name;
+        const points = document.createElement('p'); points.textContent = `ข้อกล่าวหา ${player.accusationPoints || 0}/7 · ${player.alive ? 'ยังมีชีวิต' : 'เสียชีวิตแล้ว'}`;
+        const effects = document.createElement('p'); effects.textContent = player.inPlayCards?.length
+            ? `การ์ดที่ได้รับ: ${player.inPlayCards.map(card => client.actions.displayCardName(card.name || card)).join(' · ')}` : 'ไม่มีการ์ดสถานะ';
+        statusText.replaceChildren(name, points, effects);
+    }
+    client.actions.showTable3DPlayerStatus = id => {
+        statusPlayerId = id; renderPlayerStatus();
+        statusPanel.hidden = !client.state.currentRoomState?.players?.[id];
+    };
     let scheduled = false;
     const phasePanel = document.getElementById('table3d-phase-panel');
     let phaseSignature = '';
@@ -211,20 +244,11 @@ export function initialize() {
             : night ? (client.state.nightActionState.actionType === 'witch' ? 'ปอบ · แตะผู้เล่นเพื่อมาร์ค' : 'หมอผี · แตะผู้เล่นเพื่อปกป้อง') : assign ? 'แตะผู้เล่นเพื่อมอบเครื่องเซ่น' : target ? target.querySelector('h3')?.textContent : alibi ? 'ข้อแก้ต่าง · เลือกการ์ดแดงบนโต๊ะ' : 'เล่นยามวิกาลเพื่อเข้าสู่กลางคืน';
         const header = document.createElement('div');
         header.className = 'table3d-phase-header';
-        const toggle = document.createElement('button');
-        toggle.type = 'button'; toggle.className = 'table3d-phase-toggle';
-        toggle.textContent = phaseCollapsed ? 'ขยาย' : 'ย่อ';
-        toggle.setAttribute('aria-expanded', String(!phaseCollapsed));
-        toggle.onclick = () => {
-            phaseCollapsed = !phaseCollapsed;
-            phasePanel.classList.toggle('is-minimized', phaseCollapsed);
-            if (phaseCollapsed) document.body.classList.remove('table3d-phase-details');
-            schedule();
-        };
-        header.append(heading, toggle);
+        header.append(heading);
         phasePanel.appendChild(header);
         const note = document.createElement('p');
         note.textContent = life ? choice?.root === life ? `เลือกใบที่ ${choice.index + 1} แล้ว · แตะใบเดิมอีกครั้งเพื่อยืนยัน` : 'แตะการ์ดชีวิตที่มีกรอบบนโต๊ะ'
+            : assign ? request?.selected?.length ? `เลือก: ${client.state.currentRoomState.players[request.selected[0]]?.name || ''} · แตะคนเดิมอีกครั้งเพื่อมอบเครื่องเซ่น` : 'แตะผู้เล่นเพื่อเลือก แล้วแตะคนเดิมอีกครั้งเพื่อมอบเครื่องเซ่น'
             : selectedId && night ? `เป้าหมาย: ${client.state.currentRoomState.players[selectedId]?.name || ''}${client.state.nightActionState.actionType === 'constable' ? ' · แตะคนเดิมอีกครั้งเพื่อปกป้อง' : ''}` : target ? request?.selected?.length ? `เลือก: ${client.state.currentRoomState.players[request.selected[0]]?.name || ''} · แตะคนเดิมอีกครั้งเพื่อยืนยัน` : 'แตะผู้เล่นเพื่อเลือก แล้วแตะคนเดิมอีกครั้งเพื่อยืนยัน' : alibi ? `เลือกแล้ว ${request?.selected?.length || 0} ใบ · เลือกชนิดเดียว แต้มรวมไม่เกิน 3` : 'เลือกเป้าหมายบนโต๊ะ แล้วกดยืนยัน';
         phasePanel.appendChild(note);
         function action(label, handler, disabled = false) {
@@ -267,7 +291,7 @@ export function initialize() {
                 if (play && !play.disabled) play.click();
             });
         } else if (assign) {
-            action('ยืนยันมอบเครื่องเซ่น', () => assign.querySelector('button')?.click(), !assign.querySelector('select')?.value);
+            action('ยืนยันมอบเครื่องเซ่น', () => assign.querySelector('[data-assign-blackcat-confirm]')?.click(), !assign.querySelector('select')?.value);
         }
         if (night && client.state.nightActionState.actionType === 'witch') action('แชททีม', () => document.body.classList.toggle('table3d-phase-details'));
         if (life) phasePanel.classList.add('table3d-direct-action'); else phasePanel.classList.remove('table3d-direct-action');
@@ -282,6 +306,9 @@ export function initialize() {
         const targetOpen = !!document.querySelector('.select-player-modal');
         if (layout && layout.inert !== (!enabled && targetOpen)) layout.inert = !enabled && targetOpen;
         const request = client.actions.getTable3DInteraction();
+        if (!enabled || request || client.state.myCurrentHand?.[client.state.selectedCard]) {
+            statusPanel.hidden = true; statusPlayerId = null;
+        } else if (statusPlayerId) renderPlayerStatus();
         updatePhasePanel(enabled, request);
         document.querySelectorAll(dockSelector).forEach(root => {
             if (root.classList.contains('table3d-docked') !== enabled) root.classList.toggle('table3d-docked', enabled);
@@ -310,6 +337,7 @@ export function initialize() {
                         : request?.kind === 'player' ? 'แตะผู้เล่นเพื่อเลือก → แตะคนเดิมอีกครั้งเพื่อใช้การ์ด'
                             : document.getElementById('action-guide-title')?.textContent || 'เลือกการ์ดจากมือเพื่อเริ่ม';
         if (hint.textContent !== title) hint.textContent = title;
+        statusBar.classList.toggle('is-your-turn', canAct() && client.state.isMyTurn && !request);
         const selected = client.state.myCurrentHand?.[client.state.selectedCard];
         const text = selected ? `${client.actions.displayCardName(selected.name)} · ${client.actions.displayCardDescription(selected.name)}` : 'แตะการ์ดเพื่อเลือก · แตะซ้ำเพื่อยกเลิก · การ์ดไม่ระบุเป้าหมายแตะซ้ำเพื่อใช้';
         if (description.textContent !== text) description.textContent = text;
