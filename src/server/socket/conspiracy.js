@@ -64,8 +64,7 @@ module.exports = function registerHandlers(socket, game) {
           // Continue Conspiracy effect
           game.promptTryalCardSelectionToLeft(roomName);
           
-          // รีเซ็ต blackCatHolderAlreadyActedThisDay เพื่อให้เริ่มเทิร์นปกติ
-          room.blackCatHolderAlreadyActedThisDay = false;
+          // Conspiracy continues this day; do not restart the Black Cat priority.
       });
 
   socket.on('select left tryal', (index) => {
@@ -180,8 +179,9 @@ module.exports = function registerHandlers(socket, game) {
               if (room.gameOver) return;
               // --- setNextTurn ต่อจากคนจั่ว ---
               if (room.conspiracyDrawer) {
-                  game.setNextTurn(room, room.conspiracyDrawer, true);
+                  const drawer = room.conspiracyDrawer;
                   room.conspiracyDrawer = null;
+                  game.setNextTurn(room, drawer, true);
               } else {
                   game.setNextTurn(room);
               }

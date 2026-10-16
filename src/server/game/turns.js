@@ -11,7 +11,7 @@ module.exports = function createServices(game) {
       let nextPlayerUniqueId = null;
 
       // Check for Black Cat holder starting first if it's the start of a DAY phase
-      if (room.currentPhase === 'DAY' && room.dayNumber > 0 && room.blackCatHolder && room.players[room.blackCatHolder]?.alive) {
+      if (!forceFromPlayer && room.currentPhase === 'DAY' && room.dayNumber > 0 && room.blackCatHolder && room.players[room.blackCatHolder]?.alive) {
           // If Black Cat holder exists and is alive, they start the day
           if (!room.blackCatHolderAlreadyActedThisDay) { // Ensure they only start once per day
               nextPlayerUniqueId = room.blackCatHolder;
@@ -26,6 +26,14 @@ module.exports = function createServices(game) {
               : room.currentTurnPlayerUniqueId;
           const currentTurnIndex = alivePlayers.findIndex(p => p.uniqueId === baseTurnUniqueId);
           let nextTurnIndex = (currentTurnIndex + 1) % alivePlayers.length;
+          if (forceFromPlayer && currentTurnIndex === -1) {
+              const order = Object.values(room.players);
+              const base = order.findIndex(player => player.uniqueId === baseTurnUniqueId);
+              if (base !== -1) {
+                  const nextAlive = [...order.slice(base + 1), ...order.slice(0, base)].find(player => player.alive);
+                  if (nextAlive) nextTurnIndex = alivePlayers.findIndex(player => player.uniqueId === nextAlive.uniqueId);
+              }
+          }
           let nextPlayer = alivePlayers[nextTurnIndex];
 
           // Skip eliminated or silenced players for regular turns
@@ -74,6 +82,7 @@ module.exports = function createServices(game) {
                       // Handle Event cards
                       switch (card.name) {
                           case 'Conspiracy':
+                              room.conspiracyDrawer = nextPlayerUniqueId;
                               if (room.blackCatHolder && room.players[room.blackCatHolder]?.alive) {
                                   const bcHolder = room.players[room.blackCatHolder];
                                   if (bcHolder.tryalCards.length > 0) {
@@ -123,6 +132,7 @@ module.exports = function createServices(game) {
                           // Handle Event cards (same as above)
                           switch (card.name) {
                               case 'Conspiracy':
+                              room.conspiracyDrawer = nextPlayerUniqueId;
                                   if (room.blackCatHolder && room.players[room.blackCatHolder]?.alive) {
                                       const bcHolder = room.players[room.blackCatHolder];
                                       if (bcHolder.tryalCards.length > 0) {

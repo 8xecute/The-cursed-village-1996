@@ -432,6 +432,7 @@ module.exports = function createServices(game) {
               }
               break;
           case 'Conspiracy':
+              room.conspiracyDrawer = playerUniqueId;
               game.updateBlackCatHolder(room); // เช็คสถานะล่าสุดก่อน
               if (room.blackCatHolder && room.players[room.blackCatHolder]?.alive) {
                   const bcHolder = room.players[room.blackCatHolder];
