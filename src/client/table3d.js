@@ -212,14 +212,15 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
     }
     controls.addEventListener('change', requestRender);
     const pressedKeys = new Set();
-    const movementKeys = new Set(['KeyW','KeyA','KeyS','KeyD','Space','KeyQ']);
+    const movementKeys = new Set(['KeyW','KeyA','KeyS','KeyD','Space','KeyQ','ControlLeft','ControlRight']);
+    let keyboardLocked = false;
     let previousMovementTime = 0;
     function clearMovement() { pressedKeys.clear(); previousMovementTime = 0; }
     function typing(target) { return !!target?.closest?.('input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="textbox"]'); }
     function keyDown(event) {
-        // Browser shortcuts such as Ctrl+W cannot reliably be cancelled by a page.
-        // Never use a browser modifier as a camera movement key.
-        if (event.ctrlKey || event.altKey || event.metaKey) { clearMovement(); return; }
+        const ctrlEnabled = keyboardLocked && !!document.fullscreenElement;
+        if ((event.ctrlKey && !ctrlEnabled) || event.altKey || event.metaKey) { clearMovement(); return; }
+        if (event.code.startsWith('Control') && !ctrlEnabled) return;
         if (!active || disposed || document.hidden || !movementKeys.has(event.code) || typing(event.target)) return;
         if (document.querySelector('#card-inspect-overlay:not([hidden])')) return;
         if (event.code === 'Space' && event.target?.closest?.('button, summary, a')) return;
@@ -243,6 +244,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
         if (pressedKeys.has('KeyA')) delta.sub(right);
         if (pressedKeys.has('Space')) delta.y += 1;
         if (pressedKeys.has('KeyQ')) delta.y -= 1;
+        if (keyboardLocked && document.fullscreenElement && (pressedKeys.has('ControlLeft') || pressedKeys.has('ControlRight'))) delta.y -= 1;
         if (delta.lengthSq()) { delta.normalize().multiplyScalar(4*dt); camera.position.add(delta); controls.target.add(delta); }
     }
     document.addEventListener('keydown',keyDown);
@@ -501,6 +503,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             else { clearMovement(); clearTimeout(flameTimer); cancelAnimationFrame(renderFrame); renderFrame = 0; }
         },
         resetCamera,
+        setKeyboardLocked(locked) { keyboardLocked = !!locked; clearMovement(); },
         stepSeat(direction) {
             if (!seatOrder.length) return;
             const current = seatOrder.findIndex(player => player.uniqueId === (focusedSeatId || ownSeatId));

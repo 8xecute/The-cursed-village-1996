@@ -110,6 +110,7 @@ client.actions.setGameViewMode = function setGameViewMode(mode) {
 };
 
 client.actions.closeTable3DFullscreen = function closeTable3DFullscreen() {
+    client.actions.releaseTable3DKeyboard?.();
     document.body.classList.remove('table3d-fullscreen');
     const button = document.getElementById('table3d-fullscreen');
     if (button) { button.textContent = 'เต็มจอ'; button.setAttribute('aria-pressed', 'false'); }
@@ -120,6 +121,29 @@ client.actions.closeTable3DFullscreen = function closeTable3DFullscreen() {
 };
 
 export function initialize() {
+  const keyboardStatus = document.createElement('span');
+  keyboardStatus.id = 'table3d-keyboard-status';
+  keyboardStatus.textContent = 'Space ขึ้น · Q ลง';
+  document.querySelector('#table3d-section .table3d-hand-controls')?.appendChild(keyboardStatus);
+  let keyboardRequest = 0;
+  client.actions.releaseTable3DKeyboard = () => {
+      keyboardRequest++;
+      client.state.table3D?.setKeyboardLocked(false);
+      navigator.keyboard?.unlock?.();
+      keyboardStatus.textContent = 'Space ขึ้น · Q ลง';
+  };
+  async function lockTableKeyboard() {
+      if (!document.fullscreenElement || !navigator.keyboard?.lock) return;
+      const request = ++keyboardRequest;
+      try {
+          await navigator.keyboard.lock(['KeyW','KeyA','KeyS','KeyD','Space','KeyQ','ControlLeft','ControlRight']);
+          if (request !== keyboardRequest || !document.fullscreenElement || !document.hasFocus() || !document.body.classList.contains('table3d-fullscreen')) {
+              navigator.keyboard.unlock(); return;
+          }
+          client.state.table3D?.setKeyboardLocked(true);
+          keyboardStatus.textContent = 'Space ขึ้น · Ctrl / Q ลง';
+      } catch (_) { client.actions.releaseTable3DKeyboard(); }
+  }
   client.state.socket = io();
 
   client.dom.gameViewToggle = document.getElementById('game-view-toggle');
@@ -172,14 +196,17 @@ export function initialize() {
               }
           } catch (_) { client.state.table3DNativeFullscreen = false; /* Keep the viewport fallback. */ }
       }
+      if (document.body.classList.contains('table3d-fullscreen')) await lockTableKeyboard();
   });
   document.addEventListener('fullscreenchange', () => {
+      if (!document.fullscreenElement) client.actions.releaseTable3DKeyboard();
       if (!document.fullscreenElement && client.state.table3DNativeFullscreen) client.actions.closeTable3DFullscreen();
   });
   document.addEventListener('keydown', event => {
       if (event.key === 'Escape' && document.body.classList.contains('table3d-fullscreen')) client.actions.closeTable3DFullscreen();
   });
   client.state.socket.on('room left', () => client.actions.closeTable3DFullscreen());
+  window.addEventListener('blur', () => client.actions.releaseTable3DKeyboard());
 
   document.getElementById('table3d-seat-left')?.addEventListener('click', () => client.state.table3D?.stepSeat(-1));
   document.getElementById('table3d-seat-right')?.addEventListener('click', () => client.state.table3D?.stepSeat(1));
