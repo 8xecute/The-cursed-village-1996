@@ -3,6 +3,7 @@ import { client } from '../core/client.js';
 client.actions.showCurseTargetSelection = function showCurseTargetSelection(targetUniqueId, blueCards) {
     const modal = document.createElement('div');
     modal.className = 'modal curse-target-modal';
+    modal.dataset.effectOwner = targetUniqueId;
     modal.style.position = 'fixed';
     modal.style.top = '0';
     modal.style.left = '0';
@@ -62,6 +63,7 @@ client.actions.showCurseTargetSelection = function showCurseTargetSelection(targ
         cardImage.style.borderRadius = '6px';
         cardDiv.appendChild(cardImage);
         
+        cardDiv.dataset.effectOrdinal = idx;
         cardDiv.addEventListener('mouseover', () => {
             cardDiv.style.transform = 'scale(1.08)';
             cardDiv.style.borderColor = '#ffd700';

@@ -57,6 +57,7 @@ export function initialize() {
 
       const popup = document.createElement('div');
       popup.id = 'select-blackcat-tryal-popup';
+      popup.dataset.lifeOwner = blackCatHolder;
       popup.className = 'tryal-selection-popup';
 
       const title = document.createElement('h3');
@@ -77,6 +78,7 @@ export function initialize() {
       for (let i = 0; i < tryalCount; i++) {
           const cardBtn = document.createElement('button');
           cardBtn.className = 'tryal-card-btn';
+          cardBtn.dataset.lifeIndex = i;
           cardBtn.innerHTML = `<span style="font-size:1.4em;margin-bottom:6px;">🎴</span><span>ใบที่ ${i + 1}</span>`;
           cardBtn.onclick = () => {
               client.state.socket.emit('select blackcat tryal', blackCatHolder, i);

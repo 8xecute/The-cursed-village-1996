@@ -1,4 +1,5 @@
 import './js/views/popup-controls.js';
+import { initialize as initializeTable3DActions } from './js/views/table3d-actions.js';
 import { initialize as initializeTraining } from './js/training/tutorial.js';
 import { initialize as initializeGuidance } from './js/views/action-guide.js';
 import { initialize as initializeStory } from './js/views/story.js';
@@ -63,3 +64,4 @@ initialize26();
 initialize27();
 initializeGuidance();
 initializeTraining();
+initializeTable3DActions();

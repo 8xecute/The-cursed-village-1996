@@ -1,0 +1,61 @@
+/* 3D uses the same action elements and handlers as the regular board. */
+.game-view-3d:not(.table3d-unavailable):not(.table3d-show-details) .game-layout,
+.game-view-3d:not(.table3d-unavailable):not(.table3d-show-details) #mobile-game-tabs { display: none !important; }
+.table3d-play-panel { padding: 14px; background: #25211c; border-top: 1px solid #756451; }
+.table3d-play-panel > strong { display: block; color: #e1cfac; line-height: 1.5; }
+.table3d-play-panel > p { margin: 6px 0 12px; font-size: .9rem; line-height: 1.6; color: #d3c7b7; }
+.table3d-play-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+.table3d-play-panel button { width: auto; min-height: 44px; margin: 4px 0; padding: 9px 14px; }
+.table3d-play-buttons button { flex: 1 1 120px; background: #31543c; }
+.table3d-play-buttons button[data-table-action="play-card-button"] { background: #294c6f; }
+.table3d-play-buttons button[data-table-action="end-turn-button"] { background: #65352e; }
+.table3d-play-panel details { margin: 12px 0; }
+.table3d-section .table3d-instructions { position: static; margin: 0; padding: 8px 12px; }
+.table3d-section .table3d-camera-controls { top: 8px; bottom: auto; right: 8px; }
+.table3d-section .table3d-hud { max-width: calc(100% - 160px); }
+.table3d-play-panel summary { cursor: pointer; padding: 8px 0; }
+#table3d-hand-options { display: flex; flex-wrap: wrap; gap: 8px; padding: 8px 0; }
+#table3d-hand-options [aria-pressed="true"] { outline: 2px solid #c2ab87; outline-offset: 2px; }
+.table3d-docked {
+    position: fixed !important; top: auto !important; left: auto !important;
+    right: 12px !important; bottom: 12px !important; transform: none !important;
+    width: min(420px, calc(100vw - 24px)) !important; height: auto !important;
+    max-height: 50vh !important; max-height: 50dvh !important;
+    padding: 0 !important; background: transparent !important;
+    backdrop-filter: none !important; pointer-events: none !important;
+    display: block !important; z-index: 7000 !important;
+}
+.table3d-docked > :first-child {
+    position: relative !important; inset: auto !important; transform: none !important;
+    width: 100% !important; max-width: none !important; box-sizing: border-box;
+    max-height: 50vh !important; max-height: 50dvh !important; overflow: auto !important;
+    pointer-events: auto; margin: 0 !important;
+}
+.table3d-docked > .tryal-selection-popup,
+.table3d-docked > .night-action-modal,
+.table3d-docked > div { padding: 14px !important; border: 1px solid #756451; border-radius: 12px; background: #241e19 !important; }
+/* These prompts are a standalone panel instead of an overlay wrapper. */
+#alibi-redcard-select-popup.table3d-docked,
+#must-play-night-popup.table3d-docked {
+    pointer-events: auto !important; overflow: auto !important;
+    padding: 14px !important; background: #241e19 !important;
+    border: 1px solid #756451;
+}
+.table3d-docked [data-life-index] { min-width: 44px; min-height: 60px; }
+.table3d-panel-toggle { display: none; }
+.table3d-docked > .table3d-panel-toggle {
+    display: block; position: absolute; right: 0; top: -38px;
+    width: auto; min-height: 34px; padding: 6px 12px; margin: 0;
+    pointer-events: auto; border: 1px solid #756451;
+}
+.table3d-docked.table3d-panel-minimized,
+.table3d-docked.is-collapsed { width: auto !important; overflow: visible !important; }
+.table3d-docked.table3d-panel-minimized > :not(.table3d-panel-toggle) { display: none !important; }
+.table3d-docked.is-collapsed > :first-child { width: auto !important; padding: 0 !important; background: transparent !important; border: 0; overflow: visible !important; }
+@media (max-width: 600px) {
+    .table3d-docked { right: 6px !important; bottom: 6px !important; width: min(360px, calc(100vw - 12px)) !important; max-height: 42dvh !important; }
+    .table3d-docked > :first-child { max-height: 42dvh !important; }
+    .table3d-play-panel { padding: 10px; }
+    .table3d-play-buttons { gap: 6px; }
+    .table3d-play-buttons button { flex-basis: 40%; padding: 9px; font-size: .85rem; }
+}

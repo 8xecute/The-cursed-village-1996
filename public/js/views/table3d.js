@@ -15,6 +15,7 @@ client.actions.syncTable3D = async function syncTable3D() {
     const visible = !document.hidden && document.body.classList.contains('game-view-3d') && !!client.state.currentRoomState?.gameStarted;
     section.hidden = !visible;
     if (!visible) { client.state.table3D?.setActive(false); return; }
+    if (document.body.classList.contains('table3d-unavailable')) return;
     const loading = document.getElementById('table3d-loading');
     try {
         if (!client.state.table3DBundle) {
@@ -32,12 +33,16 @@ client.actions.syncTable3D = async function syncTable3D() {
             client.state.table3D = window.VillageTable3D.create({
                 container: document.getElementById('table3d-canvas'),
                 onCard: index => {
+                    if (!client.actions.canUseTable3DHand()) return;
                     const cards = document.querySelectorAll('#player-hand > .card');
                     cards[index]?.click();
                 },
-                onDraw: () => document.getElementById('draw-card-button')?.click(),
-                onPlayer: id => { client.state.table3DFocusedPlayer = id; client.actions.updateTable3DFocus(); },
+                onDraw: () => { if (client.actions.canUseTable3DHand()) document.getElementById('draw-card-button')?.click(); },
+                onPlayer: id => client.actions.handleTable3DPlayer(id),
+                onLife: (id, index) => client.actions.handleTable3DLife(id, index),
+                onEffect: (id, index) => client.actions.handleTable3DEffect(id, index),
                 onError: message => {
+                    document.body.classList.add('table3d-unavailable');
                     loading.textContent = message;
                     loading.hidden = false;
                     client.state.table3D?.setActive(false);
@@ -47,9 +52,11 @@ client.actions.syncTable3D = async function syncTable3D() {
         loading.hidden = true;
         client.state.table3D.setActive(true);
         client.state.table3D.update({ state: client.state.currentRoomState, me: client.state.myUniqueId, hand: client.state.myCurrentHand || [], selected: client.state.selectedCard,
-            imageFor: name => name ? client.actions.createCardImage(name).src : null });
+            imageFor: name => name ? client.actions.createCardImage(name).src : null,
+            interaction: client.actions.getTable3DInteraction() });
         client.actions.updateTable3DFocus();
     } catch (error) {
+        document.body.classList.add('table3d-unavailable');
         loading.textContent = 'อุปกรณ์นี้ยังแสดงโต๊ะ 3D ไม่ได้ ใช้กระดานด้านล่างหรือสลับเป็น 2D ได้';
         loading.hidden = false;
         console.warn('3D table unavailable:', error);
@@ -58,6 +65,11 @@ client.actions.syncTable3D = async function syncTable3D() {
 
 client.actions.setGameViewMode = function setGameViewMode(mode) {
     const use3D = mode === '3d';
+    if (use3D && document.body.classList.contains('table3d-unavailable')) {
+        client.state.table3D?.dispose();
+        client.state.table3D = null;
+        document.body.classList.remove('table3d-unavailable');
+    }
     document.body.classList.toggle('game-view-3d', use3D);
     client.dom.gameViewToggle?.setAttribute('aria-checked', String(use3D));
     if (client.dom.gameViewDescription) client.dom.gameViewDescription.textContent = use3D ? 'มุมมองกระดาน 3D' : 'มุมมอง 2D';

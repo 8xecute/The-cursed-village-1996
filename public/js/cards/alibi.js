@@ -4,6 +4,7 @@ client.actions.showAlibiRedCardSelectionPopup = function showAlibiRedCardSelecti
     if (document.getElementById('alibi-redcard-select-popup')) return;
     const container = document.createElement('div');
     container.id = 'alibi-redcard-select-popup';
+    container.dataset.effectOwner = targetUniqueId;
     container.style.position = 'fixed';
     container.style.top = '50%';
     container.style.left = '50%';
@@ -50,6 +51,8 @@ client.actions.showAlibiRedCardSelectionPopup = function showAlibiRedCardSelecti
         // else if (selectedType === 'Witness') cardsToShow = witnessCards;
         cardsToShow.forEach((card, idx) => {
             const cardBtn = document.createElement('button');
+            cardBtn.dataset.effectIndex = card.index;
+            cardBtn.setAttribute('aria-pressed', String(selectedIndexes.includes(card.index)));
             cardBtn.textContent = `${client.actions.displayCardName(card.name)} (+${card.value})`;
             cardBtn.style.width = '90px';
             cardBtn.style.height = '120px';
@@ -102,6 +105,7 @@ client.actions.showAlibiRedCardSelectionPopup = function showAlibiRedCardSelecti
     accBtn.style.fontWeight = 'bold';
     accBtn.style.borderRadius = '8px';
     accBtn.style.padding = '8px 18px';
+    accBtn.dataset.effectType = 'Accusation';
     accBtn.onclick = () => {
         selectedType = 'Accusation';
         selectedIndexes = [];
@@ -119,6 +123,7 @@ client.actions.showAlibiRedCardSelectionPopup = function showAlibiRedCardSelecti
     evidenceBtn.style.fontWeight = 'bold';
     evidenceBtn.style.borderRadius = '8px';
     evidenceBtn.style.padding = '8px 18px';
+    evidenceBtn.dataset.effectType = 'Evidence';
     evidenceBtn.onclick = () => {
         selectedType = 'Evidence';
         selectedIndexes = [];

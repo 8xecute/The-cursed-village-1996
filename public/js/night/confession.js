@@ -15,6 +15,7 @@ client.actions.showConfessPopup = function showConfessPopup(tryalCards) {
 
     const popup = document.createElement('div');
     popup.id = 'confess-popup';
+    popup.dataset.lifeOwner = client.state.myUniqueId;
     popup.className = 'tryal-selection-popup';
 
     const title = document.createElement('h3');
@@ -32,6 +33,7 @@ client.actions.showConfessPopup = function showConfessPopup(tryalCards) {
     tryalCards.forEach((card, i) => {
         const btn = document.createElement('button');
         btn.className = 'tryal-card-btn';
+        btn.dataset.lifeIndex = i;
         btn.innerHTML = `<span style="font-size:1.4em;margin-bottom:6px;">🎴</span><span>ใบที่ ${i+1}</span>`;
         btn.onclick = () => {
             client.state.socket.emit('confess tryal card', i);

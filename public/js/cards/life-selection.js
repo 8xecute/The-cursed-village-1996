@@ -15,6 +15,7 @@ client.actions.showAccusedTryalSelection = function showAccusedTryalSelection(ac
 
     const container = document.createElement('div');
     container.id = 'accused-tryal-select-popup';
+    container.dataset.lifeOwner = accusedUniqueId;
     container.className = 'tryal-selection-popup';
 
     const title = document.createElement('h3');
@@ -32,6 +33,7 @@ client.actions.showAccusedTryalSelection = function showAccusedTryalSelection(ac
     for (let i = 0; i < tryalCount; i++) {
         const cardBtn = document.createElement('button');
         cardBtn.className = 'tryal-card-btn';
+        cardBtn.dataset.lifeIndex = i;
         cardBtn.innerHTML = `<span style="font-size:1.4em;margin-bottom:6px;">🎴</span><span>ใบที่ ${i+1}</span>`;
         cardBtn.onclick = () => {
             client.state.socket.emit('select tryal card for confession', accusedUniqueId, i);
@@ -73,6 +75,7 @@ client.actions.showBlackCatTryalSelection = function showBlackCatTryalSelection(
 
     const container = document.createElement('div');
     container.id = 'blackcat-tryal-select-popup';
+    container.dataset.lifeOwner = blackCatHolder;
     container.className = 'tryal-selection-popup';
 
     const title = document.createElement('h3');
@@ -87,6 +90,7 @@ client.actions.showBlackCatTryalSelection = function showBlackCatTryalSelection(
     for (let i = 0; i < tryalCount; i++) {
         const cardBtn = document.createElement('button');
         cardBtn.className = 'tryal-card-btn';
+        cardBtn.dataset.lifeIndex = i;
         cardBtn.innerHTML = `<span style="font-size:1.4em;margin-bottom:6px;">🎴</span><span>ใบที่ ${i+1}</span>`;
         cardBtn.onclick = () => {
             client.state.socket.emit('select blackcat tryal', blackCatHolder, i);

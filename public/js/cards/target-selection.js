@@ -8,9 +8,9 @@ client.actions.showSelectPlayerPopup = function showSelectPlayerPopup(title, pla
     const modal = document.createElement('div');
     modal.className = 'modal select-player-modal';
     const targetThemes = {
-        Red: { accent: '#bd8b7e', rgb: '189, 139, 126' },
-        Green: { accent: '#a8b398', rgb: '168, 179, 152' },
-        Blue: { accent: '#a0adbb', rgb: '160, 173, 187' },
+        Red: { accent: '#f87171', rgb: '248, 113, 113' },
+        Green: { accent: '#86efac', rgb: '134, 239, 172' },
+        Blue: { accent: '#7dd3fc', rgb: '125, 211, 252' },
     };
     const theme = actionType === 'witch'
         ? targetThemes.Red
@@ -119,6 +119,7 @@ client.actions.showSelectPlayerPopup = function showSelectPlayerPopup(title, pla
         const protectedTarget = isProtected(player);
         const btn = document.createElement('div');
         btn.className = 'player-select-card';
+        btn.dataset.uniqueId = player.uniqueId;
         btn.setAttribute('role', 'button');
         btn.setAttribute('aria-disabled', String(!!protectedTarget));
         btn.tabIndex = protectedTarget ? -1 : 0;
@@ -232,7 +233,7 @@ client.actions.showSelectPlayerPopup = function showSelectPlayerPopup(title, pla
     confirmBtn.className = 'target-confirm-btn';
     confirmBtn.textContent = 'ยืนยันเป้าหมาย';
     confirmBtn.style.background = `linear-gradient(90deg, ${theme.accent}, rgba(${theme.rgb},.72))`;
-    confirmBtn.style.color = '#fff';
+    confirmBtn.style.color = '#201812';
     confirmBtn.style.fontWeight = 'bold';
     confirmBtn.style.fontSize = '0.97em'; // เดิม 1.08em
     confirmBtn.style.padding = '8px 20px';

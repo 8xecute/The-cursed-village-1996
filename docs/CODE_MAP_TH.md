@@ -54,6 +54,8 @@ Services รับ `game` ผ่าน factory โดย `game` มี `io`, `ro
 
 `views/action-guide.js` ดูสถานะห้องที่กรองแล้วและหน้าต่างของผู้เล่น เพื่อแสดงคำแนะนำสั้นและแจ้งเตือนเทิร์น โดยไม่แก้กติกาหรือส่ง action แทนผู้เล่น
 
+`views/table3d-actions.js` เชื่อมการกดบนโต๊ะเข้าปุ่มและ handlers เดิมของหน้าเว็บ ผ่าน metadata `data-life-owner`, `data-life-index`, `data-effect-owner` และ `data-unique-id` เมื่อเพิ่มหน้าต่างเลือก action ใหม่ ให้เพิ่ม metadata/ตัวเลือกใน bridge นี้ แทนการเขียนกติกาหรือส่ง Socket events ซ้ำในฉาก Three.js
+
 `core/client.js` มี namespace สามส่วน:
 
 - `client.state`: ข้อมูล session, state จาก server และสถานะ UI ชั่วคราว

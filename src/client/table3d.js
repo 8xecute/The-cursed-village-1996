@@ -14,7 +14,7 @@ function canvasTexture(width, height, draw) {
     return texture;
 }
 
-function create({ container, onCard, onDraw, onPlayer, onError }) {
+function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError }) {
     const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'low-power' });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
     renderer.shadowMap.enabled = true;
@@ -178,14 +178,18 @@ function create({ container, onCard, onDraw, onPlayer, onError }) {
         targets = [];
     }
 
-    function update({ state, me, hand, selected, imageFor }) {
+    function update({ state, me, hand, selected, imageFor, interaction = null }) {
         if (!state) return;
-        const nextSignature = JSON.stringify([state.players, state.currentTurnPlayerUniqueId, state.deckCount, state.discardPileCount, state.witchNightState, hand, selected, me]);
+        const nextSignature = JSON.stringify([state.players, state.currentTurnPlayerUniqueId, state.deckCount, state.discardPileCount, state.witchNightState, hand, selected, me, interaction]);
         if (signature === nextSignature) return;
         signature = nextSignature;
         clearDynamic();
         const players = Object.values(state.players || {});
         const ownIndex = players.findIndex(player => player.uniqueId === me);
+        function outline(face, color = 0xc2ab87) {
+            const edge = new THREE.LineSegments(new THREE.EdgesGeometry(face.geometry), new THREE.LineBasicMaterial({ color }));
+            face.add(edge);
+        }
         players.forEach((player, index) => {
             const angle = (index - Math.max(0, ownIndex)) * Math.PI * 2 / Math.max(1, players.length);
             const seat = new THREE.Group();
@@ -208,6 +212,15 @@ function create({ container, onCard, onDraw, onPlayer, onError }) {
             }
             label(seat, `${player.name}${player.uniqueId === me ? ' (คุณ)' : ''}${!player.alive ? ' · เสียชีวิต' : ''}`, [0, 1.45, 0],
                 player.alive ? '#eddbb7' : '#a39b91');
+            if (interaction?.kind === 'player') {
+                const eligible = interaction.eligible.includes(player.uniqueId);
+                const picked = interaction.selected.includes(player.uniqueId);
+                label(seat, picked ? '✓ เลือกแล้ว' : eligible ? 'แตะเพื่อเลือก' : interaction.blocked?.[player.uniqueId] || 'เลือกไม่ได้', [0, 2.15, 0], eligible ? '#d8c4a0' : '#ad9c8c');
+                if (eligible) {
+                    const marker = mesh(new THREE.TorusGeometry(.58, .025, 6, 32), new THREE.MeshBasicMaterial({ color: picked ? 0xc2ab87 : 0x879277 }), seat, [0, .09, 0]);
+                    marker.rotation.x = Math.PI / 2;
+                }
+            }
             const witchNight = state.witchNightState;
             if (witchNight && !witchNight.committed) {
                 const memberNames = new Map((witchNight.members || []).map(member => [member.uniqueId, member.name]));
@@ -219,10 +232,14 @@ function create({ container, onCard, onDraw, onPlayer, onError }) {
                 }
             }
             const lives = Number(player.tryalCardCount) || 0;
+            if (interaction?.owner === player.uniqueId) {
+                label(seat, interaction.kind === 'life' ? 'เลือกการ์ดชีวิต 1 ใบ' : 'เลือกการ์ดที่วางอยู่', [0, 2.15, 0], '#d8c4a0');
+            }
             for (let life = 0; life < lives; life++) {
                 const revealedName = player.tryalCards?.[life]?.name;
-                card(seat, [(life - (lives - 1) / 2) * .42, .06, -.98], [-Math.PI / 2, 0, 0],
-                    revealedName ? cardTexture(imageFor(revealedName)) : back, { playerId: player.uniqueId }, .38);
+                const lifeCard = card(seat, [(life - (lives - 1) / 2) * .42, .06, -.98], [-Math.PI / 2, 0, 0],
+                    revealedName ? cardTexture(imageFor(revealedName)) : back, { playerId: player.uniqueId, lifeIndex: life }, .38);
+                if (interaction?.kind === 'life' && interaction.owner === player.uniqueId && interaction.eligible.includes(life)) outline(lifeCard);
             }
             const own = player.uniqueId === me;
             const count = own ? hand.length : Number(player.handSize) || 0;
@@ -240,8 +257,9 @@ function create({ container, onCard, onDraw, onPlayer, onError }) {
             const effects = player.inPlayCards || [];
             const effectSpacing = Math.min(.43, 2.1 / Math.max(1, effects.length));
             effects.forEach((effect, i) => {
-                card(seat, [(i - (effects.length - 1) / 2) * effectSpacing, .08 + i * .002, -1.75],
-                    [-Math.PI / 2, 0, 0], cardTexture(imageFor(effect.name)), { playerId: player.uniqueId }, .4);
+                const effectCard = card(seat, [(i - (effects.length - 1) / 2) * effectSpacing, .08 + i * .002, -1.75],
+                    [-Math.PI / 2, 0, 0], cardTexture(imageFor(effect.name)), { playerId: player.uniqueId, effectIndex: i }, .4);
+                if (interaction?.kind === 'effect' && interaction.owner === player.uniqueId && interaction.eligible.includes(i)) outline(effectCard, interaction.selected.includes(i) ? 0x879277 : 0xc2ab87);
             });
         });
 
@@ -274,6 +292,8 @@ function create({ container, onCard, onDraw, onPlayer, onError }) {
         const data = hit.object.userData;
         if (Number.isInteger(data.cardIndex)) onCard(data.cardIndex);
         else if (data.draw) onDraw();
+        else if (Number.isInteger(data.lifeIndex) && onLife) onLife(data.playerId, data.lifeIndex);
+        else if (Number.isInteger(data.effectIndex) && onEffect) onEffect(data.playerId, data.effectIndex);
         else if (data.playerId) onPlayer(data.playerId);
     }
     renderer.domElement.addEventListener('pointerdown', pointerDown);
