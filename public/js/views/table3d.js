@@ -46,7 +46,6 @@ client.actions.syncTable3D = async function syncTable3D() {
                     } else cards[index]?.click();
                 },
                 onDraw: () => { if (client.actions.canUseTable3DHand()) { const draw = document.getElementById('draw-card-button'); if (draw && !draw.disabled) draw.click(); } },
-                onEmpty: () => client.actions.cancelTable3DSelection?.(),
                 onInspect: data => {
                     const state = client.state.currentRoomState;
                     const name = Number.isInteger(data.cardIndex) ? client.state.myCurrentHand?.[data.cardIndex]?.name
@@ -75,19 +74,8 @@ client.actions.syncTable3D = async function syncTable3D() {
             interaction: client.actions.getTable3DInteraction(),
             canDraw: client.actions.canUseTable3DHand() && !document.getElementById('draw-card-button')?.disabled,
             handLowered: !!client.state.table3DHandLowered,
-            handPage: client.state.table3DHandPage || 0,
             artwork: client.state.cardArtwork,
             drawConfirming: document.getElementById('draw-card-button')?.classList.contains('confirming') });
-        const pages = Math.max(1, Math.ceil((client.state.myCurrentHand?.length || 0)/12));
-        const page = Math.min(client.state.table3DHandPage || 0,pages-1);
-        if (page !== (client.state.table3DHandPage || 0)) client.state.table3DHandPage = page;
-        const pageBar = document.getElementById('table3d-hand-pages');
-        if (pageBar.hidden !== (pages === 1)) pageBar.hidden = pages === 1;
-        const label = document.getElementById('table3d-hand-page-label');
-        const text = `ไพ่ ${page+1}/${pages}`;
-        if (label.textContent !== text) label.textContent = text;
-        document.getElementById('table3d-hand-prev').disabled = page === 0;
-        document.getElementById('table3d-hand-next').disabled = page === pages-1;
         client.actions.updateTable3DFocus();
     } catch (error) {
         client.actions.setGameViewMode('2d');
@@ -156,12 +144,6 @@ export function initialize() {
       try { localStorage.setItem('villageGameView', mode); } catch (_) { /* The toggle still works without storage. */ }
   });
 
-  for (const [id, delta] of [['table3d-hand-prev',-1],['table3d-hand-next',1]]) document.getElementById(id)?.addEventListener('click', () => {
-      const pages = Math.max(1,Math.ceil((client.state.myCurrentHand?.length || 0)/12));
-      client.state.table3DHandPage = Math.max(0,Math.min(pages-1,(client.state.table3DHandPage || 0)+delta));
-      client.actions.syncTable3D();
-  });
-
   document.getElementById('table3d-hand-toggle')?.addEventListener('click', event => {
       client.state.table3DHandLowered = !client.state.table3DHandLowered;
       event.currentTarget.textContent = client.state.table3DHandLowered ? 'ยกไพ่' : 'วางไพ่';
@@ -191,10 +173,7 @@ export function initialize() {
       if (!document.fullscreenElement && client.state.table3DNativeFullscreen) client.actions.closeTable3DFullscreen();
   });
   document.addEventListener('keydown', event => {
-      if (event.key === 'Escape') {
-          if (client.actions.cancelTable3DSelection?.()) { event.preventDefault(); event.stopImmediatePropagation(); return; }
-          if (document.body.classList.contains('table3d-fullscreen')) client.actions.closeTable3DFullscreen();
-      }
+      if (event.key === 'Escape' && document.body.classList.contains('table3d-fullscreen')) client.actions.closeTable3DFullscreen();
   });
   client.state.socket.on('room left', () => client.actions.closeTable3DFullscreen());
 

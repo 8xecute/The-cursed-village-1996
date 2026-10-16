@@ -151,25 +151,6 @@ client.actions.restoreTable3DDialogs = function restoreTable3DDialogs() {
     client.state.table3DLifeChoice = null;
 };
 
-client.actions.cancelTable3DSelection = function cancelTable3DSelection() {
-    if (!document.body.classList.contains('game-view-3d')) return false;
-    const kill = document.querySelector('#witch-kill-confirm-panel .witch-kill-cancel-btn');
-    if (kill) { kill.click(); return true; }
-    if (client.state.table3DLifeChoice) {
-        client.state.table3DLifeChoice = null;
-        document.dispatchEvent(new Event('table3d selection')); return true;
-    }
-    const target = document.querySelector('.select-player-modal .target-cancel-btn');
-    if (target) { target.click(); client.actions.clearCardSelection(); return true; }
-    const alibi = document.querySelector('[data-alibi-action=cancel]');
-    if (alibi) { alibi.click(); return true; }
-    if (client.actions.getTable3DInteraction() && !client.actions.getTable3DInteraction().preview) return false;
-    if (client.state.selectedCard !== null && client.state.selectedCard !== undefined) {
-        client.actions.clearCardSelection(); document.dispatchEvent(new Event('table3d selection')); return true;
-    }
-    return false;
-};
-
 export function initialize() {
     const panel = document.getElementById('table3d-play-panel');
     const hint = document.getElementById('table3d-action-hint');
@@ -186,10 +167,9 @@ export function initialize() {
         const event = document.getElementById('must-play-night-popup');
         const target = document.querySelector('.select-player-modal');
         const alibi = document.getElementById('alibi-redcard-select-popup');
-        const curse = document.querySelector('.curse-target-modal');
-        const root = life || night || assign || event || target || alibi || curse;
+        const root = life || night || assign || event || target || alibi;
         document.querySelectorAll('.table3d-phase-source').forEach(element => {
-            if (!enabled || ![life?.closest('.tryal-modal-overlay'), night, assign?.closest('.tryal-modal-overlay'), event, target, alibi, curse].includes(element)) element.classList.remove('table3d-phase-source');
+            if (!enabled || ![life?.closest('.tryal-modal-overlay'), night, assign?.closest('.tryal-modal-overlay'), event, target, alibi].includes(element)) element.classList.remove('table3d-phase-source');
         });
         if (root !== phaseRoot) {
             phaseRoot = root; phaseSignature = ''; phaseCollapsed = false;
@@ -197,7 +177,7 @@ export function initialize() {
             client.state.table3DLifeChoice = null;
             document.body.classList.remove('table3d-phase-details');
         }
-        const source = life?.closest('.tryal-modal-overlay') || night || assign?.closest('.tryal-modal-overlay') || event || target || alibi || curse;
+        const source = life?.closest('.tryal-modal-overlay') || night || assign?.closest('.tryal-modal-overlay') || event || target || alibi;
         source?.querySelectorAll('.table3d-panel-toggle').forEach(toggle => toggle.remove());
         if (enabled && source) {
             for (const element of [source, root]) {
@@ -221,7 +201,7 @@ export function initialize() {
         phasePanel.replaceChildren();
         const heading = document.createElement('strong');
         heading.textContent = life ? life.querySelector('h3')?.textContent || 'เลือกการ์ดชีวิต'
-            : night ? (client.state.nightActionState.actionType === 'witch' ? 'ปอบ · แตะผู้เล่นเพื่อมาร์ค' : 'หมอผี · แตะผู้เล่นเพื่อปกป้อง') : assign ? 'แตะผู้เล่นเพื่อมอบเครื่องเซ่น' : target ? target.querySelector('h3')?.textContent : alibi ? 'ข้อแก้ต่าง · เลือกการ์ดแดงบนโต๊ะ' : curse ? 'คำสาป · แตะการ์ดสีน้ำเงินที่จะทำลาย' : 'เล่นยามวิกาลเพื่อเข้าสู่กลางคืน';
+            : night ? (client.state.nightActionState.actionType === 'witch' ? 'ปอบ · แตะผู้เล่นเพื่อมาร์ค' : 'หมอผี · แตะผู้เล่นเพื่อปกป้อง') : assign ? 'แตะผู้เล่นเพื่อมอบเครื่องเซ่น' : target ? target.querySelector('h3')?.textContent : alibi ? 'ข้อแก้ต่าง · เลือกการ์ดแดงบนโต๊ะ' : 'เล่นยามวิกาลเพื่อเข้าสู่กลางคืน';
         const header = document.createElement('div');
         header.className = 'table3d-phase-header';
         const toggle = document.createElement('button');
@@ -311,8 +291,6 @@ export function initialize() {
             }
         });
         if (panel.hidden !== !enabled) panel.hidden = !enabled;
-        const phaseActive = enabled && !phasePanel.hidden;
-        if (panel.classList.contains('has-phase-action') !== phaseActive) panel.classList.toggle('has-phase-action', phaseActive);
         if (!enabled) return;
         const state = client.state.currentRoomState;
         const summary = document.getElementById('table3d-summary');
