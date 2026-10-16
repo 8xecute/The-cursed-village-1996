@@ -57,12 +57,14 @@ module.exports = function createServices(game) {
           message: message,
           color: color,
           daysSurvived: room.dayNumber,
+          initialWitchCardCount: room.initialWitchCardCount ?? null,
           players: playersArr.map(p => ({
               name: p.name,
               alive: !!p.alive,
               isHost: !!p.isHost,
               hasBeenWitch: !!p.hasBeenWitch,
               tryalCards: (p.tryalCards || []).map(c => c.name),
+              revealedTryalCards: (p.revealedTryalCards || []).map(c => c.name),
               revealedTryals: Array.from(p.revealedTryalCardIndexes || [])
           }))
       };

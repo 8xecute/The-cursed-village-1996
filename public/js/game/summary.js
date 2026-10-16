@@ -75,7 +75,9 @@ client.actions.showGameOverModal = function showGameOverModal(data) {
                 : '<span style="color:#e57373;font-weight:600;">เสียชีวิต</span>';
 
             const tryalCards = Array.isArray(p.tryalCards) ? p.tryalCards : [];
-            const tryalPills = tryalCards.map(tc => {
+            const opened = Array.isArray(p.revealedTryalCards) ? p.revealedTryalCards : [];
+            const allCards = [...tryalCards.map(card => ({ card, opened: false })), ...opened.map(card => ({ card, opened: true }))];
+            const tryalPills = allCards.map(({ card: tc, opened }) => {
                 const cardName = typeof tc === 'string' ? tc : tc.name;
                 let pillClass = 'not-witch';
                 let cardTh = client.actions.displayCardName(cardName);
@@ -86,7 +88,7 @@ client.actions.showGameOverModal = function showGameOverModal(data) {
                     pillClass = 'constable';
                     cardTh = 'หมอผี';
                 }
-                return `<span class="tryal-pill ${pillClass}">${cardTh}</span>`;
+                return `<span class="tryal-pill ${pillClass}${opened ? ' opened-tryal' : ''}" title="${opened ? 'เปิดระหว่างเกม' : 'ไพ่ที่เหลือตอนจบเกม'}">${cardTh}${opened ? ' · เปิดแล้ว' : ''}</span>`;
             }).join('');
 
             rowsHtml += `
@@ -99,6 +101,13 @@ client.actions.showGameOverModal = function showGameOverModal(data) {
             `;
         });
         rolesRevealTbody.innerHTML = rowsHtml;
+        let countNote = document.getElementById('summary-witch-card-count');
+        if (!countNote) { countNote = document.createElement('p'); countNote.id = 'summary-witch-card-count'; rolesRevealTbody.closest('table')?.before(countNote); }
+        const cardName = card => typeof card === 'string' ? card : card.name;
+        const remaining = playerList.reduce((n,p) => n+(p.tryalCards || []).filter(c=>cardName(c)==='Witch').length,0);
+        const opened = playerList.reduce((n,p) => n+(p.revealedTryalCards || []).filter(c=>cardName(c)==='Witch').length,0);
+        countNote.textContent = `${summary.initialWitchCardCount != null ? `ปอบเริ่มต้น ${summary.initialWitchCardCount} ใบ · ` : ''}เปิดระหว่างเกม ${opened} ใบ · อยู่ในไพ่ที่เหลือตอนจบ ${remaining} ใบ`;
+
     }
 
     // Rematch Actions

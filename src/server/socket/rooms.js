@@ -255,6 +255,18 @@ module.exports = function registerHandlers(socket, game) {
           game.emitRoomState(room.name);
       });
 
+  socket.on('set witch card count', count => {
+      const room = game.rooms[socket.currentRoom];
+      const host = room?.players?.[socket.uniqueId];
+      if (!room || room.gameStarted || !host?.isHost || host.id !== socket.id) return;
+      const max = Math.max(1, game.getAlivePlayers(room).length - 1);
+      if (count !== null && (!Number.isInteger(count) || count < 1 || count > max)) {
+          socket.emit('game message', `เลือกการ์ดปอบตั้งแต่ 1 ถึง ${max} ใบ หรืออัตโนมัติ`, 'orange'); return;
+      }
+      room.customWitchCardCount = count;
+      game.emitRoomState(room.name);
+  });
+
   socket.on('add bot', roomName => {
           const room = game.rooms[roomName || socket.currentRoom];
           if (!room || room.hostUniqueId !== socket.uniqueId) {

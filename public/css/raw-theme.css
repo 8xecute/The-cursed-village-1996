@@ -81,3 +81,8 @@ body .card-artwork-toggle {
 }
 body .card-artwork-toggle:hover, body .card-artwork-toggle:focus-visible { opacity: 1; }
 @media (pointer: coarse) { body .card-artwork-toggle { width: 44px; height: 44px; min-height: 44px; } }
+
+.lobby-witch-setting { padding:12px; margin:12px 0; border:1px solid #756451; border-radius:8px; background:#29231c; }
+.lobby-witch-setting label { display:block; margin-bottom:6px; }
+.lobby-witch-setting select { width:auto; min-height:40px; padding:6px 10px; background:#211b17; color:#efdfc3; border:1px solid #8b7350; border-radius:6px; }
+.lobby-witch-setting small { display:block; margin-top:8px; color:#c5b79e; line-height:1.5; }

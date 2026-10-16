@@ -192,6 +192,12 @@ module.exports = function createServices(game) {
           return;
       }
 
+      if (room.customWitchCardCount != null && (!Number.isInteger(room.customWitchCardCount) ||
+          room.customWitchCardCount < 1 || room.customWitchCardCount > alivePlayers.length - 1)) {
+          const host = Object.values(room.players).find(player => player.isHost);
+          if (host) game.io.to(host.id).emit('game message', 'จำนวนปอบที่ตั้งไว้เกินจำนวนผู้เล่น กรุณาตั้งใหม่ก่อนเริ่มเกม', 'orange');
+          return;
+      }
       room.gameStarted = true;
       room.dayNumber = 0; // Start at Day 0, will increment to Day 1
       room.currentPhase = 'LOBBY'; // Set to Lobby, next changePhase will move to DAY
@@ -218,6 +224,8 @@ module.exports = function createServices(game) {
           witchCount = 3;
       }
 
+      if (room.customWitchCardCount != null) witchCount = room.customWitchCardCount;
+      room.initialWitchCardCount = witchCount;
       // Add Witch cards
       for (let i = 0; i < witchCount; i++) {
           TRYAL_CARDS.push({ name: 'Witch', type: 'Role' });
