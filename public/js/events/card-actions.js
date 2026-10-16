@@ -7,6 +7,24 @@ client.actions.afterPlayCard = function afterPlayCard() {
 
 
 export function initialize() {
+  client.state.socket.on('room left', () => {
+      clearTimeout(client.state.cardPlayFeedbackTimer);
+      document.getElementById('card-play-feedback')?.remove();
+  });
+  client.state.socket.on('card play rejected', ({ message }) => {
+      client.actions.updateTurnUI();
+      let notice = document.getElementById('card-play-feedback');
+      if (!notice) {
+          notice = document.createElement('div');
+          notice.id = 'card-play-feedback';
+          notice.setAttribute('role', 'alert');
+          notice.style.cssText = 'position:fixed;top:72px;left:50%;transform:translateX(-50%);z-index:100000;width:max-content;max-width:calc(100vw - 32px);box-sizing:border-box;padding:14px 18px;border:1px solid #f5bc67;border-radius:12px;background:#352012;color:#ffe2ad;font-size:1rem;line-height:1.5;box-shadow:0 6px 24px #0009;';
+          document.body.appendChild(notice);
+      }
+      notice.textContent = message;
+      clearTimeout(client.state.cardPlayFeedbackTimer);
+      client.state.cardPlayFeedbackTimer = setTimeout(() => notice.remove(), 6000);
+  });
   client.state.hasDrawnCardThisTurn = false;
 
   client.state.socket.on('update hand', (hand) => {

@@ -146,7 +146,9 @@ module.exports = function createServices(game) {
           targetUniqueId &&
           room.players[targetUniqueId]?.inPlayCards.some(c => c.name === 'Piety')
       ) {
-          game.io.to(player.id).emit('game message', `${room.players[targetUniqueId].name} มีการ์ด Piety ไม่สามารถโจมตีด้วยการ์ดสีแดงได้!`, 'red');
+          const message = `${room.players[targetUniqueId].name} มีพลังศรัทธา ใช้การ์ดสีแดงใส่ไม่ได้ · การ์ดยังอยู่ในมือคุณ`;
+          game.io.to(player.id).emit('game message', message, 'red');
+          game.io.to(player.id).emit('card play rejected', { reason: 'piety', message });
           return;
       }
       

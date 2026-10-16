@@ -93,9 +93,25 @@ client.actions.showSelectPlayerPopup = function showSelectPlayerPopup(title, pla
     }
 
     let selectedId = null;
+    const isRedCard = cardObj && (cardObj.color === 'Red' || ['Accusation', 'Evidence', 'Witness'].includes(cardObj.name));
+    const isProtected = player => isRedCard && player?.inPlayCards?.some(card => (card.name || card) === 'Piety');
+    const targetHint = document.createElement('p');
+    targetHint.style.color = '#fcd34d';
+    targetHint.style.fontSize = '0.9em';
+    targetHint.setAttribute('role', 'status');
+    if (alivePlayers.some(isProtected)) {
+        targetHint.textContent = alivePlayers.every(isProtected)
+            ? 'ไม่มีเป้าหมายที่รับการ์ดสีแดงได้ · ยกเลิกแล้วเลือกการ์ดอื่น'
+            : 'พลังศรัทธาป้องกันการ์ดสีแดง · เลือกคนที่ไม่มีโล่';
+    }
+    content.appendChild(targetHint);
     alivePlayers.forEach(player => {
+        const protectedTarget = isProtected(player);
         const btn = document.createElement('div');
         btn.className = 'player-select-card';
+        btn.setAttribute('role', 'button');
+        btn.setAttribute('aria-disabled', String(!!protectedTarget));
+        btn.tabIndex = protectedTarget ? -1 : 0;
         btn.style.background = `linear-gradient(135deg, rgba(${theme.rgb},.16), #28231f)`;
         btn.style.color = '#f5eee4';
         btn.style.fontWeight = 'bold';
@@ -154,6 +170,20 @@ client.actions.showSelectPlayerPopup = function showSelectPlayerPopup(title, pla
         }
         info += `</div>`;
         btn.innerHTML += info;
+        if (protectedTarget) {
+            const reason = document.createElement('span');
+            reason.textContent = '🛡️ พลังศรัทธา · กันการ์ดแดง';
+            reason.style.cssText = 'display:block;color:#ffd57c;font-size:.84em;font-weight:bold;';
+            btn.lastElementChild?.appendChild(reason);
+            btn.style.cursor = 'not-allowed';
+            btn.style.background = '#24211e';
+            btn.style.borderColor = '#81705a';
+            btn.style.height = 'auto';
+            btn.style.minHeight = '65px';
+        }
+        btn.addEventListener('keydown', event => {
+            if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); btn.click(); }
+        });
         btn.addEventListener('mouseover', () => {
             // ไม่เปลี่ยนสีหรือขอบเมื่อ hover
         });
@@ -161,6 +191,10 @@ client.actions.showSelectPlayerPopup = function showSelectPlayerPopup(title, pla
             // ไม่เปลี่ยนสีหรือขอบเมื่อ mouseout
         });
         btn.addEventListener('click', () => {
+            if (protectedTarget || isProtected(client.state.currentRoomState?.players?.[player.uniqueId] || player)) {
+                targetHint.textContent = 'คนนี้มีพลังศรัทธา · ใช้การ์ดสีแดงใส่ไม่ได้';
+                return;
+            }
             // Remove highlight from all
             listDiv.querySelectorAll('.player-select-card').forEach(el => {
                 el.style.transform = '';
@@ -191,6 +225,12 @@ client.actions.showSelectPlayerPopup = function showSelectPlayerPopup(title, pla
     confirmBtn.style.marginTop = '6px';
     confirmBtn.disabled = true;
     confirmBtn.addEventListener('click', () => {
+        if (isProtected(client.state.currentRoomState?.players?.[selectedId])) {
+            targetHint.textContent = 'เป้าหมายได้รับพลังศรัทธาแล้ว · กรุณาเลือกคนอื่น';
+            selectedId = null;
+            confirmBtn.disabled = true;
+            return;
+        }
         if (selectedId) {
             if (document.body.contains(modal)) document.body.removeChild(modal);
             callback(selectedId);

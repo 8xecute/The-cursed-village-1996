@@ -239,6 +239,10 @@ client.actions.populateCardTargetSelect = function populateCardTargetSelect(play
                 const option = document.createElement('option');
                 option.value = player.uniqueId;
                 option.textContent = player.name;
+                if (selectedCardObj?.color === 'Red' && player.inPlayCards?.some(card => (card.name || card) === 'Piety')) {
+                    option.disabled = true;
+                    option.textContent += ' · พลังศรัทธา (กันการ์ดแดง)';
+                }
                 client.dom.cardTargetSelect.appendChild(option);
             }
         }

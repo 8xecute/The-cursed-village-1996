@@ -35,6 +35,10 @@
         <span class="top-nav-icon">⚖️</span>
         <span class="top-nav-text">คู่มือการเล่น</span>
       </button>
+      <button id="show-training-btn" class="top-nav-btn" type="button">
+        <span class="top-nav-icon">🎓</span>
+        <span class="top-nav-text">ฝึกเล่น 3–5 นาที</span>
+      </button>
     </div>
 
     
@@ -56,11 +60,20 @@
           </p>
           <div style="text-align:center; margin-top:24px;">
             <button id="enter-village-btn" class="enter-village-btn" style="font-size:1.1em; padding: 12px 36px;">เข้าสู่หมู่บ้านต้องสาป</button>
+            <button id="intro-training-btn" class="top-nav-btn" type="button">🎓 ฝึกเล่นก่อน · 3–5 นาที</button>
           </div>
         </div>
       </div>
     </div>
 
+
+    <dialog id="training-dialog" aria-labelledby="training-title">
+      <header class="training-header">
+        <h2 id="training-title">🎓 ฝึกเล่นหมู่บ้านต้องสาป</h2>
+        <button id="training-close" type="button" aria-label="ปิดโหมดฝึก">✕</button>
+      </header>
+      <div id="training-body"></div>
+    </dialog>
 
     <!-- Background Music Audio Element -->
     <audio id="background-music" loop preload="none"></audio>
