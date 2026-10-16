@@ -277,3 +277,5 @@ body.game-view-3d:not(.table3d-unavailable) #player-status-peek { display:none !
 
 #table3d-seat-label { position:absolute; bottom:calc(100% + 5px); left:50%; transform:translateX(-50%); max-width:85vw; overflow:hidden; text-overflow:ellipsis; padding:3px 8px; border-radius:5px; background:#211b15e8; color:#e5d2b0; font-size:.75rem; pointer-events:none; }
 #table3d-seat-label:empty { display:none; }
+
+.model-credit { display:block; text-align:center; padding:8px; font-size:.65rem; color:#a49783; }

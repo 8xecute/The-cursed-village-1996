@@ -1,3 +1,4 @@
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
@@ -25,6 +26,8 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
     container.appendChild(renderer.domElement);
     renderer.domElement.setAttribute('aria-label', 'โต๊ะเกม 3D ลากเพื่อหมุน เลื่อนล้อเมาส์หรือใช้ปุ่มเพื่อซูม');
     renderer.domElement.setAttribute('role', 'img');
+    renderer.domElement.tabIndex = 0;
+    renderer.domElement.setAttribute('aria-label', 'โต๊ะ 3D ลากหมุน ลากสองนิ้วเพื่อเลื่อน WASD เคลื่อนกล้อง Space ขึ้น Ctrl ลง');
 
     const scene = new THREE.Scene();
     scene.background = null;
@@ -50,7 +53,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
         const seat = seatPositions.get(id);
         if (!seat) return;
         focusedSeatId = id;
-        controls.enableRotate = false; controls.enablePan = false;
+        controls.enableRotate = true; controls.enablePan = true;
         controls.target.set(seat.x*.68,.1,seat.z*.68);
         camera.position.set(controls.target.x+seat.x*.5,9.5,controls.target.z+seat.z*.5);
         controls.update(); requestRender();
@@ -132,6 +135,8 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
     const dynamic = new THREE.Group();
     scene.add(dynamic);
     const textures = new Map();
+    let headGeometry = null;
+    let latestUpdate = null;
     const loader = new THREE.TextureLoader();
     const raycaster = new THREE.Raycaster();
     const pointer = new THREE.Vector2();
@@ -170,6 +175,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             renderFrame = 0;
             controls.update();
             const now = performance.now();
+            moveCamera(now);
             if (!reducedMotion.matches) {
                 const time = now * .001;
                 flame.scale.set(.7 + Math.sin(time*5)*.035, 1.9 + Math.sin(time*7)*.12, .7);
@@ -186,10 +192,46 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
                 if (t === 1) { scene.remove(flight.mesh); flight.mesh.geometry.dispose(); flight.mesh.material.dispose(); flights.splice(index,1); }
             }
             renderer.render(scene, camera);
-            if (flights.length) requestRender();
+            if (flights.length || pressedKeys.size) requestRender();
         });
     }
     controls.addEventListener('change', requestRender);
+    const pressedKeys = new Set();
+    const movementKeys = new Set(['KeyW','KeyA','KeyS','KeyD','Space','ControlLeft','ControlRight']);
+    let previousMovementTime = 0;
+    function clearMovement() { pressedKeys.clear(); previousMovementTime = 0; }
+    function typing(target) { return !!target?.closest?.('input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="textbox"]'); }
+    function keyDown(event) {
+        if (!active || disposed || document.hidden || !movementKeys.has(event.code) || typing(event.target)) return;
+        if (event.altKey || event.metaKey || document.querySelector('#card-inspect-overlay:not([hidden])')) return;
+        if (event.code === 'Space' && event.target?.closest?.('button, summary, a')) return;
+        event.preventDefault();
+        if (!pressedKeys.size) previousMovementTime = performance.now();
+        pressedKeys.add(event.code); requestRender();
+    }
+    function keyUp(event) { pressedKeys.delete(event.code); if (!pressedKeys.size) previousMovementTime = 0; }
+    function focusChanged(event) { if (typing(event.target) || document.querySelector('#card-inspect-overlay:not([hidden])')) clearMovement(); }
+    function visibilityChanged() { if (document.hidden) clearMovement(); }
+    function moveCamera(now) {
+        if (!pressedKeys.size) return;
+        const dt = Math.min(.05, Math.max(0,(now-previousMovementTime)/1000)); previousMovementTime = now;
+        const forward = camera.getWorldDirection(new THREE.Vector3()); forward.y = 0;
+        if (forward.lengthSq() < .001) forward.set(0,0,-1); else forward.normalize();
+        const right = new THREE.Vector3().crossVectors(forward,camera.up).normalize();
+        const delta = new THREE.Vector3();
+        if (pressedKeys.has('KeyW')) delta.add(forward);
+        if (pressedKeys.has('KeyS')) delta.sub(forward);
+        if (pressedKeys.has('KeyD')) delta.add(right);
+        if (pressedKeys.has('KeyA')) delta.sub(right);
+        if (pressedKeys.has('Space')) delta.y += 1;
+        if (pressedKeys.has('ControlLeft') || pressedKeys.has('ControlRight')) delta.y -= 1;
+        if (delta.lengthSq()) { delta.normalize().multiplyScalar(4*dt); camera.position.add(delta); controls.target.add(delta); }
+    }
+    document.addEventListener('keydown',keyDown);
+    document.addEventListener('keyup',keyUp);
+    document.addEventListener('focusin',focusChanged);
+    document.addEventListener('visibilitychange',visibilityChanged);
+    window.addEventListener('blur',clearMovement);
 
     function cardTexture(url) {
         if (!url) return back;
@@ -239,7 +281,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
 
     function clearDynamic() {
         dynamic.traverse(object => {
-            object.geometry?.dispose();
+            if (!object.userData.sharedGeometry) object.geometry?.dispose();
             if (object.material) object.material.dispose();
             object.userData.disposableTexture?.dispose();
         });
@@ -249,6 +291,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
 
     function update({ state, me, hand, selected, imageFor, interaction = null, canDraw = false, drawConfirming = false, handLowered = false, artwork = 'new' }) {
         if (!state) return;
+        latestUpdate = { state, me, hand, selected, imageFor, interaction, canDraw, drawConfirming, handLowered, artwork };
         const nextSignature = JSON.stringify([state.players, state.currentTurnPlayerUniqueId, state.deckCount, state.discardPileCount, state.witchNightState, hand, selected, me, interaction, canDraw, drawConfirming, handLowered, artwork]);
         if (signature === nextSignature) return;
         signature = nextSignature;
@@ -273,17 +316,18 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             if (!player.alive) { pawn.rotation.z = Math.PI / 2; pawn.position.y = 0.2; }
             const parts = [
                 mesh(new THREE.CylinderGeometry(.20,.25,.42,16),material.clone(),pawn,[0,.25,0]),
-                mesh(new THREE.SphereGeometry(.18,16,12),material.clone(),pawn,[0,.63,0]),
+                mesh(headGeometry || new THREE.SphereGeometry(.18,16,12),new THREE.MeshStandardMaterial({color:0xa48970,roughness:.95}),pawn,[0,.63,0]),
                 mesh(new THREE.CapsuleGeometry(.075,.28,4,10),material.clone(),pawn,[-.29,.25,0]),
                 mesh(new THREE.CapsuleGeometry(.075,.28,4,10),material.clone(),pawn,[.29,.25,0]),
             ];
-            parts.forEach(part => { part.userData = { playerId: player.uniqueId }; targets.push(part); });
+            if (headGeometry) parts[1].userData.sharedGeometry = true;
+            parts.forEach(part => { part.userData = { ...part.userData, playerId: player.uniqueId }; targets.push(part); });
             if (state.currentTurnPlayerUniqueId === player.uniqueId && player.alive) {
                 const ring = mesh(new THREE.TorusGeometry(.52, .045, 8, 40),
                     new THREE.MeshBasicMaterial({ color: 0xffd359 }), seat, [0, .07, 0]);
                 ring.rotation.x = Math.PI / 2;
             }
-            label(seat, `${player.name}${player.uniqueId === me ? ' (คุณ)' : ''}${state.players?.[me]?.hasBeenWitch && player.hasBeenWitch ? ' · ทีมปอบ' : ''}${!player.alive ? ' · เสียชีวิต' : ''}`, [0, 1.45, 0],
+            label(seat, `${player.name}${player.uniqueId === me ? ' (คุณ)' : ''}${state.players?.[me]?.hasBeenWitch && player.hasBeenWitch ? ' · ทีมปอบ' : ''}${!player.alive ? ' · เสียชีวิต' : ''}`, [0, 1.0, 2.05],
                 player.alive ? '#eddbb7' : '#a39b91');
             if (interaction?.kind === 'player') {
                 const eligible = interaction.eligible.includes(player.uniqueId);
@@ -331,7 +375,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             for (let i = 0; i < count; i++) {
                 const offset = i - (count - 1) / 2;
                 const lowered = handLowered;
-                const position = lowered ? [offset * spacing, .08 + (own && selected === i ? .12 : 0), 1.35 + Math.abs(offset) * .025]
+                const position = lowered ? [offset * spacing, .08 + (own && selected === i ? .12 : 0), .38 + Math.abs(offset) * .025]
                     : [offset * spacing, 1 + (own && selected === i ? .24 : 0), .7 + Math.abs(offset) * .025];
                 const rotation = lowered ? [-Math.PI / 2, 0, 0] : [-.12, 0, -offset * Math.min(.045, .35 / Math.max(1, count))];
                 const face = card(seat, position, rotation,
@@ -373,6 +417,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
     }
 
     function pointerDown(event) {
+        if (event.button === 0) renderer.domElement.focus({ preventScroll: true });
         if (!event.isPrimary) { down = null; return; }
         down = { x: event.clientX, y: event.clientY, id: event.pointerId }; moved = false; inspected = false;
         clearTimeout(holdTimer);
@@ -430,6 +475,27 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
     }
     const resizeObserver = new ResizeObserver(resize);
     resizeObserver.observe(container);
+    new GLTFLoader().load('models/villager-head.glb', gltf => {
+        let source;
+        gltf.scene.updateMatrixWorld(true);
+        gltf.scene.traverse(object => { if (!source && object.isMesh) source = object; });
+        if (source && !disposed) {
+            headGeometry = source.geometry.clone().applyMatrix4(source.matrixWorld);
+            headGeometry.computeBoundingBox();
+            const box = headGeometry.boundingBox, center = box.getCenter(new THREE.Vector3());
+            const height = box.getSize(new THREE.Vector3()).y;
+            headGeometry.translate(-center.x,-center.y,-center.z);
+            headGeometry.scale(.38/height,.38/height,.38/height);
+            headGeometry.rotateY(Math.PI);
+            signature = '';
+            if (latestUpdate) update(latestUpdate);
+            requestRender();
+        }
+        gltf.scene.traverse(object => { object.geometry?.dispose(); if (object.material) {
+            const materials = Array.isArray(object.material) ? object.material : [object.material];
+            materials.forEach(material => { material.map?.dispose(); material.dispose(); });
+        } });
+    }, undefined, () => { /* Keep the lightweight fallback head. */ });
     resetCamera();
     return {
         update,
@@ -437,7 +503,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             if (active === value) return;
             active = value; controls.enabled = value;
             if (value) { resize(); requestRender(); clearTimeout(flameTimer); tickFlame(); }
-            else { clearTimeout(flameTimer); cancelAnimationFrame(renderFrame); renderFrame = 0; }
+            else { clearMovement(); clearTimeout(flameTimer); cancelAnimationFrame(renderFrame); renderFrame = 0; }
         },
         resetCamera,
         stepSeat(direction) {
@@ -484,11 +550,17 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             controls.update(); requestRender();
         },
         dispose() {
+            clearMovement();
+            document.removeEventListener('keydown',keyDown);
+            document.removeEventListener('keyup',keyUp);
+            document.removeEventListener('focusin',focusChanged);
+            document.removeEventListener('visibilitychange',visibilityChanged);
+            window.removeEventListener('blur',clearMovement);
             disposed = true; clearTimeout(holdTimer); clearTimeout(flameTimer); stopFlight();
             cancelAnimationFrame(renderFrame);
             resizeObserver.disconnect(); controls.dispose(); clearDynamic();
             scene.traverse(object => { object.geometry?.dispose(); object.material?.dispose(); });
-            wood.dispose(); back.dispose(); textures.forEach(texture => texture.dispose());
+            headGeometry?.dispose(); wood.dispose(); back.dispose(); textures.forEach(texture => texture.dispose());
             renderer.dispose(); renderer.domElement.remove();
         },
     };

@@ -18,7 +18,7 @@ body button:focus-visible, [role="button"]:focus-visible { outline: 2px solid va
 body .game-title { color: #b99470; }
 body h2, body h3, .night-action-title, .witch-night .night-action-title, .constable-night .night-action-title { color: var(--raw-paper) !important; }
 input[type="range"] { accent-color: #a68b68; }
-.card, .tryal-card { border-width: 2px !important; }
+.card, .tryal-card { border-width: 1px !important; border-style: solid !important; }
 .card-red { background: #44302b !important; border-color: var(--raw-red) !important; }
 .card-green { background: #30372c !important; border-color: var(--raw-green) !important; }
 .card-blue { background: #2d343b !important; border-color: var(--raw-blue) !important; }
