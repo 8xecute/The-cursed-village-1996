@@ -25,7 +25,7 @@ function createGameServer() {
   app.use(compression());
   const server = http.createServer(app);
   const io = new Server(server, { pingTimeout: 30000, pingInterval: 25000 });
-  app.use(express.static(path.resolve(__dirname, '../../..', 'public'), {
+  app.use(express.static(path.resolve(__dirname, '../..', 'public'), {
     maxAge: 0,
     setHeaders: (res, filePath) => {
         if (filePath.endsWith('.html') || filePath.match(/\.(css|js)$/)) {
