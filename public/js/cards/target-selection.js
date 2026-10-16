@@ -8,15 +8,15 @@ client.actions.showSelectPlayerPopup = function showSelectPlayerPopup(title, pla
     const modal = document.createElement('div');
     modal.className = 'modal select-player-modal';
     const targetThemes = {
-        Red: { accent: '#f87171', rgb: '248, 113, 113' },
-        Green: { accent: '#86efac', rgb: '134, 239, 172' },
-        Blue: { accent: '#7dd3fc', rgb: '125, 211, 252' },
+        Red: { accent: '#bd8b7e', rgb: '189, 139, 126' },
+        Green: { accent: '#a8b398', rgb: '168, 179, 152' },
+        Blue: { accent: '#a0adbb', rgb: '160, 173, 187' },
     };
     const theme = actionType === 'witch'
         ? targetThemes.Red
         : actionType === 'constable'
             ? targetThemes.Blue
-            : (targetThemes[cardObj?.color] || { accent: '#fbbf24', rgb: '251, 191, 36' });
+            : (targetThemes[cardObj?.color] || { accent: '#c1a37b', rgb: '193, 163, 123' });
     modal.style.setProperty('--target-accent', theme.accent);
     modal.style.setProperty('--target-accent-rgb', theme.rgb);
     modal.style.position = 'fixed';
@@ -70,6 +70,16 @@ client.actions.showSelectPlayerPopup = function showSelectPlayerPopup(title, pla
     titleElem.style.marginBottom = '10px';
     titleElem.style.fontSize = '1.02em'; // เดิม 1.13em ลดลง 10%
     content.appendChild(titleElem);
+    if (cardObj) {
+        const overview = document.createElement('div');
+        overview.className = 'target-card-overview';
+        const name = document.createElement('strong');
+        name.textContent = client.actions.displayCardName(cardObj.name);
+        const description = document.createElement('p');
+        description.textContent = client.actions.displayCardDescription(cardObj.name);
+        overview.append(name, description);
+        content.appendChild(overview);
+    }
 
     const listDiv = document.createElement('div');
     listDiv.style.display = 'flex';
@@ -204,12 +214,20 @@ client.actions.showSelectPlayerPopup = function showSelectPlayerPopup(title, pla
             btn.classList.add('selected');
             selectedId = player.uniqueId;
             confirmBtn.disabled = false;
+            targetHint.textContent = `เลือก: ${player.name}`;
+            confirmBtn.textContent = title.startsWith('1/2') ? 'เลือกต้นทางนี้ →'
+                : title.startsWith('2/2') ? `ยืนยันผู้รับ: ${player.name}`
+                : cardObj ? `ใช้${client.actions.displayCardName(cardObj.name)}กับ ${player.name}` : 'ยืนยันเป้าหมาย';
         });
         listDiv.appendChild(btn);
     });
     content.appendChild(listDiv);
 
     // Confirm button
+    const footer = document.createElement('div');
+    footer.className = 'target-selection-footer';
+    footer.setAttribute('role', 'group');
+    footer.setAttribute('aria-label', 'ยืนยันการเลือกเป้าหมาย');
     const confirmBtn = document.createElement('button');
     confirmBtn.className = 'target-confirm-btn';
     confirmBtn.textContent = 'ยืนยันเป้าหมาย';
@@ -236,7 +254,7 @@ client.actions.showSelectPlayerPopup = function showSelectPlayerPopup(title, pla
             callback(selectedId);
         }
     });
-    content.appendChild(confirmBtn);
+    footer.appendChild(confirmBtn);
 
     // Cancel button
     const cancelBtn = document.createElement('button');
@@ -255,7 +273,8 @@ client.actions.showSelectPlayerPopup = function showSelectPlayerPopup(title, pla
     cancelBtn.addEventListener('click', () => {
         if (document.body.contains(modal)) document.body.removeChild(modal);
     });
-    content.appendChild(cancelBtn);
+    footer.appendChild(cancelBtn);
+    content.appendChild(footer);
 
     modal.appendChild(content);
     document.body.appendChild(modal);

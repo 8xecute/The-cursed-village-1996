@@ -122,7 +122,7 @@ export function initialize() {
         element.dataset.trainingNext = 'true';
         const coach = body.querySelector('.training-coach');
         const label = element.querySelector('strong')?.textContent || element.textContent;
-        if (coach) coach.textContent = `👇 กดตรงที่มีกรอบเรืองแสง: ${label.trim()}`;
+        if (coach) coach.textContent = `กดตรงที่มีกรอบเน้น: ${label.trim()}`;
         if (!dialog.open) return;
         element.focus({ preventScroll: true });
         const bounds = element.getBoundingClientRect();

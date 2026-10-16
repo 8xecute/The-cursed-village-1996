@@ -234,7 +234,7 @@ function create({ container, onCard, onDraw, onPlayer, onError }) {
                     [-.12, 0, -offset * Math.min(.045, .35 / Math.max(1, count))],
                     own ? cardTexture(imageFor(hand[i].name)) : back,
                     own ? { cardIndex: i } : { playerId: player.uniqueId }, own ? .68 : .47);
-                if (own && selected === i) face.material.emissive.set(0x4b330c);
+                if (own && selected === i) face.material.color.set(0xb9a687);
             }
             // Public effects form a row toward the table centre, above life cards.
             const effects = player.inPlayCards || [];

@@ -1,10 +1,36 @@
 import { client } from '../core/client.js';
 
+client.actions.updateCardSelectionSummary = function updateCardSelectionSummary() {
+    const summary = document.getElementById('selected-card-summary');
+    const card = client.state.myCurrentHand?.[client.state.selectedCard];
+    if (!summary) return;
+    summary.hidden = !card;
+    if (!card) {
+        if (client.dom.playCardButton) client.dom.playCardButton.disabled = true;
+        return;
+    }
+    document.getElementById('selected-card-name').textContent = client.actions.displayCardName(card.name);
+    document.getElementById('selected-card-description').textContent = client.actions.displayCardDescription(card.name);
+    const two = client.state.CARDS_NEED_TWO_TARGETS.includes(card.name);
+    const target = two || client.state.CARDS_NEED_TARGET.includes(card.name);
+    document.getElementById('selected-card-next').textContent = two
+        ? 'ขั้นต่อไป: เลือกต้นทาง แล้วเลือกผู้รับ'
+        : target ? 'ขั้นต่อไป: เลือกผู้เล่น แล้วกดยืนยัน' : 'ขั้นต่อไป: กดใช้การ์ด';
+    if (client.dom.playCardButton && client.state.isMyTurn) {
+        client.dom.playCardButton.textContent = two ? 'เลือกต้นทาง → ผู้รับ' : target ? 'เลือกเป้าหมาย' : `ใช้${client.actions.displayCardName(card.name)}`;
+        const state = client.state.currentRoomState;
+        client.dom.playCardButton.disabled = !state?.players?.[client.state.myUniqueId]?.alive ||
+            state.currentPhase !== 'DAY' || state.gameOver || state.awaitingLeftTryalSelections ||
+            !!state.playerForcedToRevealTryal || state.isAssigningBlackCat;
+    }
+};
+
 client.actions.clearCardSelection = function clearCardSelection() {
     client.state.selectedCard = null;
     if (client.dom.playerHandDiv) {
         client.dom.playerHandDiv.querySelectorAll('.card').forEach(card => {
             card.classList.remove('selected');
+            card.setAttribute('aria-pressed', 'false');
         });
     }
     if (client.dom.cardTargetSelect) {
@@ -18,9 +44,11 @@ client.actions.clearCardSelection = function clearCardSelection() {
     if (client.dom.playCardButton) {
         client.dom.playCardButton.classList.remove('can-play');
         client.dom.playCardButton.innerHTML = '⚡ เล่นการ์ดที่เลือก';
+        client.dom.playCardButton.disabled = true;
     }
     client.actions.resetEndTurnButton();
     client.actions.resetDrawCardButton();
+    client.actions.updateCardSelectionSummary();
 };
 
 client.actions.showCardDescription = function showCardDescription(card, cardElement) {
@@ -54,6 +82,10 @@ client.actions.updateHandDisplay = function updateHandDisplay(hand) {
     client.state.myCurrentHand = hand;
     client.dom.playerHandDiv.innerHTML = '';
     client.dom.handCardCount.textContent = hand.length;
+    const originalIndex = client.state.selectedCard;
+    const matching = card => selectedCardData && card?.name === selectedCardData.name && card?.color === selectedCardData.color;
+    const selectedIndex = matching(hand[originalIndex]) ? originalIndex : hand.findIndex(matching);
+    client.state.selectedCard = selectedIndex >= 0 ? selectedIndex : null;
 
     hand.forEach((card, index) => {
         const cardElement = document.createElement('div');
@@ -114,6 +146,13 @@ client.actions.updateHandDisplay = function updateHandDisplay(hand) {
         cardElement.setAttribute('title', client.actions.displayCardDescription(card.name));
         
         // --- Click to select ---
+        cardElement.setAttribute('role', 'button');
+        cardElement.tabIndex = 0;
+        cardElement.setAttribute('aria-label', `${client.actions.displayCardName(card.name)}: ${client.actions.displayCardDescription(card.name)}`);
+        cardElement.setAttribute('aria-pressed', 'false');
+        cardElement.addEventListener('keydown', event => {
+            if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); cardElement.click(); }
+        });
         cardElement.addEventListener('click', () => {
             if (!client.state.isMyTurn) {
                 client.actions.addGameMessage('ไม่ใช่ตาของคุณ.', 'red');
@@ -127,6 +166,7 @@ client.actions.updateHandDisplay = function updateHandDisplay(hand) {
             client.actions.clearCardSelection();
             client.state.selectedCard = index;
             cardElement.classList.add('selected');
+            cardElement.setAttribute('aria-pressed', 'true');
             client.dom.cardTargetSelect.style.display = 'none';
             client.dom.cardTargetSelect.value = '';
             client.dom.cardSecondTargetSelect.style.display = 'none';
@@ -138,17 +178,19 @@ client.actions.updateHandDisplay = function updateHandDisplay(hand) {
                 const cardNameTH = (typeof client.actions.displayCardName === 'function') ? client.actions.displayCardName(card.name) : card.name;
                 client.dom.playCardButton.innerHTML = `⚡ เล่น: <b>${cardNameTH}</b>`;
             }
+            client.actions.updateCardSelectionSummary();
         });
         
         // ถ้าการ์ดนี้เป็นการ์ดที่เลือกไว้ ให้เพิ่ม selected class
-        if (selectedCardData && card.name === selectedCardData.name && 
-            card.color === selectedCardData.color) {
+        if (index === client.state.selectedCard) {
             cardElement.classList.add('selected');
+            cardElement.setAttribute('aria-pressed', 'true');
             client.state.selectedCard = index;
         }
         
         client.dom.playerHandDiv.appendChild(cardElement);
     });
+    client.actions.updateCardSelectionSummary();
 };
 
 client.actions.createCardImage = function createCardImage(cardName) {
@@ -251,5 +293,8 @@ client.actions.populateCardTargetSelect = function populateCardTargetSelect(play
 };
 
 export function initialize() {
-
+    document.getElementById('clear-selected-card')?.addEventListener('click', () => {
+        client.actions.clearCardSelection();
+        client.actions.updateDrawCardButton();
+    });
 }

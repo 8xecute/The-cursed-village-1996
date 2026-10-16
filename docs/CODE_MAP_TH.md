@@ -71,6 +71,7 @@ Services รับ `game` ผ่าน factory โดย `game` มี `io`, `ro
 ready, summary, card-help, navigation, profile, rules, night, action-overlays, death และ spectator
 ส่วน page-music, page-intro และ page-help เป็นสไตล์ที่ย้ายออกจาก HTML และยัง override หลังสไตล์หลักตามเดิม
 แก้ไฟล์ตามหน้าที่ก่อนเพิ่ม override; ห้ามสลับ import โดยไม่ตรวจ cascade
+`raw-theme.css` เป็นธีมด้านที่โหลดท้ายสุด เก็บสีหลักและรูปแบบเลือกการ์ด/เป้าหมาย โดยใช้กรอบแทนแสงเรือง
 URL ใน CSS อ้างอิงจากตำแหน่งไฟล์ CSS นั้น เช่น `../Background/background.jpg`
 
 ## บอทและโค้ดเก่า

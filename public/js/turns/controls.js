@@ -27,7 +27,7 @@ client.actions.resetEndTurnButton = function resetEndTurnButton() {
 client.actions.updateTurnUI = function updateTurnUI() {
     const me = client.state.currentRoomState && client.state.currentRoomState.players && client.state.currentRoomState.players[client.state.myUniqueId];
     client.dom.drawCardButton.disabled = !client.state.isMyTurn || client.state.drawButtonDisabled;
-    client.dom.playCardButton.disabled = !client.state.isMyTurn;
+    client.dom.playCardButton.disabled = !client.state.isMyTurn || !me?.alive || client.state.selectedCard === null;
     client.dom.endTurnButton.disabled = !client.state.isMyTurn || !me || !me.alive || !me.hasPlayedCardsThisTurn;
     if (client.dom.gameActionsDiv) {
         client.dom.gameActionsDiv.style.display = me?.alive && !client.state.currentRoomState?.gameOver ? '' : 'none';
@@ -121,21 +121,23 @@ export function initialize() {
           return;
       }
       const card = client.state.myCurrentHand[client.state.selectedCard];
+      if (!card) { client.actions.clearCardSelection(); return; }
       let targetUniqueId = null;
       let secondTargetUniqueId = null;
       if (client.state.CARDS_NEED_TWO_TARGETS.includes(card.name)) {
           // --- Popup เลือกเป้าหมายแรก ---
           const playerList = Object.values(client.state.currentRoomState.players).filter(p => p.alive && p.uniqueId !== client.state.myUniqueId);
-          client.actions.showSelectPlayerPopup('เลือกเป้าหมายแรก (ผู้ที่จะถูกย้าย/ถูกขโมย)', playerList, (firstId) => {
+          client.actions.showSelectPlayerPopup('1/2 · เลือกต้นทาง', playerList, (firstId) => {
               // --- Popup เลือกเป้าหมายที่สอง ---
               const secondList = playerList.filter(p => p.uniqueId !== firstId);
-              client.actions.showSelectPlayerPopup('เลือกเป้าหมายที่สอง (ผู้รับการ์ด)', secondList, (secondId) => {
+              const sourceName = client.state.currentRoomState.players[firstId]?.name || 'ต้นทาง';
+              client.actions.showSelectPlayerPopup(`2/2 · รับการ์ดจาก ${sourceName}`, secondList, (secondId) => {
                   client.state.socket.emit('play card', client.state.selectedCard, firstId, secondId);
                   client.actions.clearCardSelection();
                   // --- Disable draw after playing card ---
                   client.dom.drawCardButton.disabled = true;
-              });
-          });
+              }, card);
+          }, card);
           return;
       }
       if (client.state.CARDS_NEED_TARGET.includes(card.name)) {

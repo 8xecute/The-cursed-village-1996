@@ -227,6 +227,10 @@
                     <div class="main-game-content" id="game-main-content">
                         <h3 style="color: #ff7f50;">การ์ดเล่นในมือ (<span id="hand-card-count">0</span> cards)</h3>
                         <div id="player-hand"></div>
+                        <section id="selected-card-summary" class="selected-card-summary" hidden aria-label="การ์ดที่เลือก">
+                            <div><strong id="selected-card-name"></strong><p id="selected-card-description"></p><small id="selected-card-next"></small></div>
+                            <button id="clear-selected-card" type="button">ยกเลิกเลือก</button>
+                        </section>
                         <div class="hand-action-buttons">
                             <div class="targets-container">
                                 <select id="card-target-select" style="display: none;">
