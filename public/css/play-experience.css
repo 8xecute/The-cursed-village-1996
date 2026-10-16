@@ -57,3 +57,7 @@ body .music-controls:has(#game-preferences[open]) { z-index: 14000 !important; }
 #game-preferences[open] { z-index: 14001; }
 #game-preferences-content { background: #241c16; }
 @media (min-width: 769px) { body .music-controls { position: fixed !important; } }
+
+#game-preferences-content .music-setting-row { display:flex; align-items:center; gap:8px; margin:0 0 12px; font-size:.85rem; }
+#game-preferences-content .music-slider { width:110px; min-width:0; }
+#game-preferences-content .music-volume-label { min-width:32px; font-size:.85rem; }

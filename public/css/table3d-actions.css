@@ -252,3 +252,5 @@ body.game-view-3d:not(.table3d-unavailable) :is(#waiting-status-banner, #turn-no
 @keyframes phase-night { 35% { filter:brightness(.55) saturate(.6); } }
 @keyframes phase-conspiracy { 35% { filter:sepia(.45) brightness(1.2); } }
 @media(prefers-reduced-motion:reduce) { .table-phase-cue-night #table3d-canvas, .table-phase-cue-conspiracy #table3d-canvas { animation:none; } }
+
+body.game-view-3d:not(.table3d-unavailable) .select-player-modal.table3d-direct-target { display: none !important; }

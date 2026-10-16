@@ -7,6 +7,7 @@ client.actions.showSelectPlayerPopup = function showSelectPlayerPopup(title, pla
 
     const modal = document.createElement('div');
     modal.className = 'modal select-player-modal';
+    if (document.body.classList.contains('game-view-3d') && !document.body.classList.contains('table3d-unavailable')) modal.classList.add('table3d-direct-target');
     const targetThemes = {
         Red: { accent: '#f87171', rgb: '248, 113, 113' },
         Green: { accent: '#86efac', rgb: '134, 239, 172' },

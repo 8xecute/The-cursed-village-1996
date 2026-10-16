@@ -17,9 +17,7 @@
     
     <!-- Background Music Controls -->
     <div class="music-controls">
-        <input id="music-volume-slider" type="range" min="0" max="100" value="20" step="1" class="music-slider">
-        <span id="music-volume-label" class="music-volume-label">20%</span>
-        <details id="game-preferences"><summary aria-label="ตั้งค่าภาพและเสียง" title="ตั้งค่าภาพและเสียง">⚙</summary><div id="game-preferences-content"><button id="card-artwork-toggle" class="card-artwork-toggle" type="button" aria-pressed="false" aria-label="สลับภาพการ์ดเก่าและใหม่" title="สลับภาพการ์ดเก่าและใหม่">▧</button></div></details>
+        <details id="game-preferences"><summary aria-label="ตั้งค่าภาพและเสียง" title="ตั้งค่าภาพและเสียง">⚙</summary><div id="game-preferences-content"><label class="music-setting-row">เพลง <input id="music-volume-slider" type="range" min="0" max="100" value="20" step="1" class="music-slider"><span id="music-volume-label" class="music-volume-label">20%</span></label><button id="card-artwork-toggle" class="card-artwork-toggle" type="button" aria-pressed="false" aria-label="สลับภาพการ์ดเก่าและใหม่" title="สลับภาพการ์ดเก่าและใหม่">▧</button></div></details>
     </div>
     
     <!-- Top Navigation Buttons (Salem Themed) -->

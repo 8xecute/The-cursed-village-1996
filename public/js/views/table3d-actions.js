@@ -95,22 +95,12 @@ client.actions.handleTable3DPlayer = function handleTable3DPlayer(id) {
             client.actions.submitNightAction('constable');
             return;
         }
-        row.click();
-        if (choice.root.classList.contains('select-player-modal')) {
-            choice.root.classList.remove('table3d-docked', 'table3d-panel-minimized');
-            choice.root.classList.add('table3d-confirm');
-            choice.root.querySelector('.table3d-panel-toggle')?.remove();
-            if (!choice.root.dataset.originalTargetTitle) choice.root.dataset.originalTargetTitle = choice.root.querySelector('h3').textContent;
-            choice.rows.forEach(item => {
-                if (item.dataset.table3dOriginalDisplay === undefined) {
-                    item.dataset.table3dOriginalDisplay = item.style.display;
-                    item.dataset.table3dOriginalHidden = String(item.hidden);
-                }
-                item.hidden = item !== row; item.style.display = item === row ? 'flex' : 'none';
-            });
-            choice.root.querySelector('h3').textContent = 'ยืนยันการเลือกเป้าหมาย';
-            choice.root.querySelector('.target-confirm-btn')?.focus();
+        if (choice.root.classList.contains('select-player-modal') && row.classList.contains('selected')) {
+            const confirm = choice.root.querySelector('.target-confirm-btn');
+            if (confirm && !confirm.disabled) confirm.click();
+            return;
         }
+        row.click();
     }
 };
 client.actions.handleTable3DLife = function handleTable3DLife(id, index) {
@@ -146,8 +136,8 @@ client.actions.handleTable3DEffect = function handleTable3DEffect(id, index) {
 };
 
 client.actions.restoreTable3DDialogs = function restoreTable3DDialogs() {
-    document.querySelectorAll('.table3d-confirm').forEach(modal => {
-        modal.classList.remove('table3d-confirm');
+    document.querySelectorAll('.table3d-confirm, .table3d-direct-target').forEach(modal => {
+        modal.classList.remove('table3d-confirm', 'table3d-direct-target');
         const title = modal.querySelector('h3');
         if (title && modal.dataset.originalTargetTitle) title.textContent = modal.dataset.originalTargetTitle;
         delete modal.dataset.originalTargetTitle;
@@ -179,9 +169,10 @@ export function initialize() {
         const night = document.getElementById('night-action-popup');
         const assign = document.querySelector('[data-player-select]');
         const event = document.getElementById('must-play-night-popup');
-        const root = life || night || assign || event;
+        const target = document.querySelector('.select-player-modal');
+        const root = life || night || assign || event || target;
         document.querySelectorAll('.table3d-phase-source').forEach(element => {
-            if (!enabled || ![life?.closest('.tryal-modal-overlay'), night, assign?.closest('.tryal-modal-overlay'), event].includes(element)) element.classList.remove('table3d-phase-source');
+            if (!enabled || ![life?.closest('.tryal-modal-overlay'), night, assign?.closest('.tryal-modal-overlay'), event, target].includes(element)) element.classList.remove('table3d-phase-source');
         });
         if (root !== phaseRoot) {
             phaseRoot = root; phaseSignature = ''; phaseCollapsed = false;
@@ -189,7 +180,7 @@ export function initialize() {
             client.state.table3DLifeChoice = null;
             document.body.classList.remove('table3d-phase-details');
         }
-        const source = life?.closest('.tryal-modal-overlay') || night || assign?.closest('.tryal-modal-overlay') || event;
+        const source = life?.closest('.tryal-modal-overlay') || night || assign?.closest('.tryal-modal-overlay') || event || target;
         source?.querySelectorAll('.table3d-panel-toggle').forEach(toggle => toggle.remove());
         if (enabled && source) {
             for (const element of [source, root]) {
@@ -213,7 +204,7 @@ export function initialize() {
         phasePanel.replaceChildren();
         const heading = document.createElement('strong');
         heading.textContent = life ? life.querySelector('h3')?.textContent || 'เลือกการ์ดชีวิต'
-            : night ? (client.state.nightActionState.actionType === 'witch' ? 'ปอบ · แตะผู้เล่นเพื่อมาร์ค' : 'หมอผี · แตะผู้เล่นเพื่อปกป้อง') : assign ? 'แตะผู้เล่นเพื่อมอบเครื่องเซ่น' : 'เล่นยามวิกาลเพื่อเข้าสู่กลางคืน';
+            : night ? (client.state.nightActionState.actionType === 'witch' ? 'ปอบ · แตะผู้เล่นเพื่อมาร์ค' : 'หมอผี · แตะผู้เล่นเพื่อปกป้อง') : assign ? 'แตะผู้เล่นเพื่อมอบเครื่องเซ่น' : target ? target.querySelector('h3')?.textContent : 'เล่นยามวิกาลเพื่อเข้าสู่กลางคืน';
         const header = document.createElement('div');
         header.className = 'table3d-phase-header';
         const toggle = document.createElement('button');
@@ -230,7 +221,7 @@ export function initialize() {
         phasePanel.appendChild(header);
         const note = document.createElement('p');
         note.textContent = life ? choice?.root === life ? `เลือกใบที่ ${choice.index + 1} แล้ว · แตะใบเดิมอีกครั้งเพื่อยืนยัน` : 'แตะการ์ดชีวิตที่มีกรอบบนโต๊ะ'
-            : selectedId && night ? `เป้าหมาย: ${client.state.currentRoomState.players[selectedId]?.name || ''}${client.state.nightActionState.actionType === 'constable' ? ' · แตะคนเดิมอีกครั้งเพื่อปกป้อง' : ''}` : 'เลือกเป้าหมายบนโต๊ะ แล้วกดยืนยัน';
+            : selectedId && night ? `เป้าหมาย: ${client.state.currentRoomState.players[selectedId]?.name || ''}${client.state.nightActionState.actionType === 'constable' ? ' · แตะคนเดิมอีกครั้งเพื่อปกป้อง' : ''}` : target ? request?.selected?.length ? `เลือก: ${client.state.currentRoomState.players[request.selected[0]]?.name || ''} · แตะคนเดิมอีกครั้งเพื่อยืนยัน` : 'แตะผู้เล่นเพื่อเลือก แล้วแตะคนเดิมอีกครั้งเพื่อยืนยัน' : 'เลือกเป้าหมายบนโต๊ะ แล้วกดยืนยัน';
         phasePanel.appendChild(note);
         function action(label, handler, disabled = false) {
             const button = document.createElement('button');
@@ -239,6 +230,7 @@ export function initialize() {
             phasePanel.appendChild(button);
             return button;
         }
+        if (target) action('ยกเลิกการเล่น', () => target.querySelector('.target-cancel-btn')?.click());
         if (life) {
             const skip = life.querySelector('#skip-confess-button');
             if (skip) action('ข้ามการสารภาพ', () => skip.click(), skip.disabled);
@@ -306,7 +298,7 @@ export function initialize() {
                 : request?.kind === 'life' ? 'แตะการ์ดชีวิตที่มีกรอบ → แตะใบเดิมอีกครั้งเพื่อยืนยัน'
                     : request?.kind === 'effect' ? 'แตะการ์ดที่วางหน้าผู้เล่นเพื่อเลือก · ยืนยันในแผงข้างโต๊ะ'
                         : request?.kind === 'event' ? 'ยืนยันเล่นยามวิกาลในแผงข้างโต๊ะ'
-                        : request?.kind === 'player' ? 'แตะผู้เล่นที่เลือกได้ → ยืนยันในป๊อปอัป'
+                        : request?.kind === 'player' ? 'แตะผู้เล่นเพื่อเลือก → แตะคนเดิมอีกครั้งเพื่อใช้การ์ด'
                             : document.getElementById('action-guide-title')?.textContent || 'เลือกการ์ดจากมือเพื่อเริ่ม';
         if (hint.textContent !== title) hint.textContent = title;
         const selected = client.state.myCurrentHand?.[client.state.selectedCard];

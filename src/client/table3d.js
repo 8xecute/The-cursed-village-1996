@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-const COLORS = [0x357a9b, 0xb94742, 0xd39430, 0x46804b, 0x865a9e, 0xb0a17d,
-    0xa26336, 0x607a91, 0xa34670, 0x798448, 0x508b85, 0x7b6b60];
+const COLORS = [0x526774, 0x795551, 0x88744e, 0x596b55, 0x716275, 0x8a806b,
+    0x7e634e, 0x5c6974, 0x785d69, 0x727354, 0x56716d, 0x72675e];
 
 function canvasTexture(width, height, draw) {
     const canvas = document.createElement('canvas');
@@ -122,6 +122,12 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
     let active = false;
     let disposed = false;
     let renderFrame = 0;
+    let flameTimer;
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    function tickFlame() {
+        if (!active || disposed || reducedMotion.matches) return;
+        requestRender(); flameTimer = setTimeout(tickFlame, 65);
+    }
     let down = null;
     let moved = false;
     let holdTimer;
@@ -146,6 +152,12 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             renderFrame = 0;
             controls.update();
             const now = performance.now();
+            if (!reducedMotion.matches) {
+                const time = now * .001;
+                flame.scale.set(.7 + Math.sin(time*5)*.035, 1.9 + Math.sin(time*7)*.12, .7);
+                flame.position.x = Math.sin(time*4)*.018;
+                candleLight.intensity = 15 + Math.sin(time*6)*.65;
+            }
             for (let index=flights.length-1;index>=0;index--) {
                 const flight = flights[index];
                 if (now < flight.started) continue;
@@ -238,7 +250,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             seatPositions.set(player.uniqueId, seat.position.clone().setY(1.3));
             dynamic.add(seat);
             const material = new THREE.MeshStandardMaterial({ color: player.alive ? COLORS[index % COLORS.length] : 0x48423c, roughness: 0.6 });
-            const pawn = new THREE.Group(); pawn.position.z = .55; seat.add(pawn);
+            const pawn = new THREE.Group(); pawn.position.z = 2.05; pawn.position.y = -.45; seat.add(pawn);
             if (!player.alive) { pawn.rotation.z = Math.PI / 2; pawn.position.y = 0.2; }
             const parts = [
                 mesh(new THREE.CapsuleGeometry(.10,.30,4,10),material,pawn,[-.13,.25,0]),
@@ -399,8 +411,8 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
         setActive(value) {
             if (active === value) return;
             active = value; controls.enabled = value;
-            if (value) { resize(); requestRender(); }
-            else { cancelAnimationFrame(renderFrame); renderFrame = 0; }
+            if (value) { resize(); requestRender(); clearTimeout(flameTimer); tickFlame(); }
+            else { clearTimeout(flameTimer); cancelAnimationFrame(renderFrame); renderFrame = 0; }
         },
         resetCamera,
         animateCard(event) {
@@ -441,7 +453,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             controls.update(); requestRender();
         },
         dispose() {
-            disposed = true; clearTimeout(holdTimer); stopFlight();
+            disposed = true; clearTimeout(holdTimer); clearTimeout(flameTimer); stopFlight();
             cancelAnimationFrame(renderFrame);
             resizeObserver.disconnect(); controls.dispose(); clearDynamic();
             scene.traverse(object => { object.geometry?.dispose(); object.material?.dispose(); });
