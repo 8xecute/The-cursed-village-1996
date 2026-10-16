@@ -1,5 +1,5 @@
 import { client } from '../core/client.js';
-import { lessons, cardNames, createScene, applyTrainingCard } from './lessons.js';
+import { lessons, cardNames, getTrainingCardCategory, createScene, applyTrainingCard } from './lessons.js';
 
 const storageKey = 'village-training-v1';
 const actionLabels = {
@@ -72,7 +72,7 @@ export function initialize() {
     }
     function cardButton(name, onClick, parent, label) {
         const element = button('', onClick, parent);
-        element.classList.add('training-card');
+        element.classList.add('training-card', getTrainingCardCategory(name).className);
         element.dataset.trainingAction = 'card';
         const image = client.actions.createCardImage(name);
         image.removeAttribute('title');
@@ -247,6 +247,16 @@ export function initialize() {
         const heading = node('h3', lesson.title); heading.tabIndex = -1; body.appendChild(heading);
         body.appendChild(node('p', `คุณเป็น: ${scene.role} · ช่วง: ${scene.phase} · จั่ว ${scene.deck} / ทิ้ง ${scene.discard}`, 'training-meta'));
         body.appendChild(node('p', finished ? '✓ ทำสำเร็จแล้ว' : lesson.prompt, 'training-instruction'));
+        if (lesson.card) {
+            const category = getTrainingCardCategory(lesson.card);
+            const explanation = node('section', '', `training-card-explanation ${category.className}`);
+            explanation.setAttribute('aria-label', 'ความสามารถของการ์ด');
+            explanation.append(
+                node('strong', `${cardNames[lesson.card]} · ${category.label}`),
+                node('p', client.actions.displayCardDescription(lesson.card))
+            );
+            body.appendChild(explanation);
+        }
         const coach = node('p', '', 'training-coach'); coach.setAttribute('role', 'status'); body.appendChild(coach);
         const board = node('div', '', 'training-board');
         scene.players.forEach(player => {

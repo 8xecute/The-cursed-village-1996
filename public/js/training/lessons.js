@@ -7,6 +7,14 @@ export const cardNames = {
     'Not A Witch': 'ชาวบ้าน', Constable: 'หมอผี',
 };
 
+export function getTrainingCardCategory(name) {
+    if (['Accusation', 'Evidence', 'Witness'].includes(name)) return { className: 'card-red', label: 'สีแดง · ข้อกล่าวหา' };
+    if (['Scapegoat', 'Curse', 'Alibi', 'Robbery', 'Stocks', 'Arson'].includes(name)) return { className: 'card-green', label: 'สีเขียว · การ์ดพิเศษ' };
+    if (['Black Cat', 'Asylum', 'Piety', 'Matchmaker'].includes(name)) return { className: 'card-blue', label: 'สีน้ำเงิน · สถานะ' };
+    if (['Conspiracy', 'Night'].includes(name)) return { className: 'card-black', label: 'สีดำ · เหตุการณ์' };
+    return { className: 'training-life-card', label: 'การ์ดชีวิต · บทบาท' };
+}
+
 const card = (name, prompt, result, extra = {}) => ({
     id: name, chapter: 'ชาวบ้าน · ใช้การ์ด', role: 'ชาวบ้าน', phase: 'กลางวัน',
     kind: 'card', card: name, title: cardNames[name], prompt, result, ...extra,

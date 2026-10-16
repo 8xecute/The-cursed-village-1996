@@ -19,6 +19,17 @@
 .training-card-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-start; }
 #training-dialog .training-card { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 94px; padding: 6px; font-size: .8rem; }
 #training-dialog .training-card img { width: 64px !important; height: 96px !important; object-fit: cover; }
+#training-dialog .training-card.card-red { border: 2px solid #ff4444; }
+#training-dialog .training-card.card-green { border: 2px solid #32cd32; }
+#training-dialog .training-card.card-blue { border: 2px solid #4169e1; }
+#training-dialog .training-card.card-black { border: 2px solid #666666; }
+#training-dialog .training-card.training-life-card { border: 2px solid #777; }
+#training-dialog .training-card-explanation { padding: 10px 12px; margin: 10px 0; border: 1px solid #665240; border-left-width: 4px; border-radius: 8px; background: #29231e; color: #eee3d4; }
+#training-dialog .training-card-explanation p { margin: 5px 0 0; font-size: .9rem; }
+#training-dialog .training-card-explanation.card-red { border-left-color: #ff4444; }
+#training-dialog .training-card-explanation.card-green { border-left-color: #32cd32; }
+#training-dialog .training-card-explanation.card-blue { border-left-color: #4169e1; }
+#training-dialog .training-card-explanation.card-black { border-left-color: #666666; }
 .training-feedback { min-height: 1.6em; color: #ffdc99; }
 .training-footer { display: flex; justify-content: space-between; gap: 8px; padding-top: 12px; border-top: 1px solid #65472e; }
 #training-dialog button:focus-visible { outline: 3px solid #ffe0a3; outline-offset: 3px; }
