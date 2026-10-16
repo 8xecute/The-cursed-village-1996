@@ -56,6 +56,7 @@ client.actions.showConfessPopup = function showConfessPopup(tryalCards) {
     };
     popup.appendChild(skipBtn);
 
+    client.actions.addTryalPopupCollapseControl(popup, overlay, title);
     overlay.appendChild(popup);
     document.body.appendChild(overlay);
 };

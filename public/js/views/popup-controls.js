@@ -12,6 +12,7 @@ client.actions.wirePopupCollapseControl = function wirePopupCollapseControl(togg
 };
 
 client.actions.addTryalPopupCollapseControl = function addTryalPopupCollapseControl(popup, overlay, title) {
+    if (popup.querySelector('.popup-collapse-toggle')) return;
     const header = document.createElement('div');
     header.className = 'popup-collapse-header night-action-title-row';
     title.classList.add('night-action-title');

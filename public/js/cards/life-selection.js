@@ -43,6 +43,7 @@ client.actions.showAccusedTryalSelection = function showAccusedTryalSelection(ac
         cardsDiv.appendChild(cardBtn);
     }
     container.appendChild(cardsDiv);
+    client.actions.addTryalPopupCollapseControl(container, overlay, title);
     overlay.appendChild(container);
     document.body.appendChild(overlay);
 };
@@ -100,6 +101,7 @@ client.actions.showBlackCatTryalSelection = function showBlackCatTryalSelection(
         cardsDiv.appendChild(cardBtn);
     }
     container.appendChild(cardsDiv);
+    client.actions.addTryalPopupCollapseControl(container, overlay, title);
     overlay.appendChild(container);
     document.body.appendChild(overlay);
 };

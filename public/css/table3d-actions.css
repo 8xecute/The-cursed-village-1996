@@ -140,3 +140,30 @@ body.game-view-3d #night-action-popup.table3d-phase-source .popup-collapse-toggl
 body.game-view-3d #night-action-popup.table3d-phase-source .night-action-header { padding: 0 !important; border: 0; background: transparent !important; }
 body.game-view-3d #night-action-popup.table3d-phase-source .night-action-content { padding: 0 !important; border: 0; background: transparent !important; }
 body.game-view-3d #night-action-popup.table3d-phase-source > .night-action-header { max-height: none !important; }
+
+.table3d-view-controls {
+    position: absolute; top: 62px; right: 12px; z-index: 6; display: flex; gap: 6px;
+}
+.table3d-view-controls button {
+    width: auto; min-height: 40px; margin: 0; padding: 7px 12px;
+    border: 1px solid #87653c; border-radius: 8px; background: #261c12ed; color: #ffe1aa;
+}
+.table3d-view-controls button[aria-pressed="true"] { border-color: #d2b478; background: #4b3924; }
+.table3d-section .table3d-end-turn { top: 112px; }
+body.table3d-fullscreen { overflow: hidden; }
+body.table3d-fullscreen #table3d-section {
+    position: fixed; inset: 0; z-index: 6000; width: 100%; height: 100vh; height: 100dvh;
+    margin: 0; border: 0; border-radius: 0; display: flex; flex-direction: column;
+}
+body.table3d-fullscreen #table3d-canvas { flex: 1 1 0; min-height: 0; height: auto; }
+body.table3d-fullscreen #table3d-play-panel { flex: none; max-height: 20dvh; overflow: auto; padding: 8px 12px; }
+body.table3d-fullscreen .table3d-instructions { flex: none; font-size: .8rem; }
+body.table3d-fullscreen #table3d-phase-panel { z-index: 8; }
+@media (max-width: 600px) {
+    .table3d-view-controls { right: 8px; }
+    .table3d-view-controls button { padding: 6px 9px; font-size: .85rem; }
+    .table3d-section .table3d-hud { max-width: calc(100% - 180px); padding: 8px; }
+    body.table3d-fullscreen .table3d-instructions { display: none; }
+}
+
+body.table3d-fullscreen #turn-notice { z-index: 11000; }

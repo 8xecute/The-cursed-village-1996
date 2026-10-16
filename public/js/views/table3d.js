@@ -62,6 +62,7 @@ client.actions.syncTable3D = async function syncTable3D() {
             imageFor: name => name ? client.actions.createCardImage(name).src : null,
             interaction: client.actions.getTable3DInteraction(),
             canDraw: client.actions.canUseTable3DHand() && !document.getElementById('draw-card-button')?.disabled,
+            handLowered: !!client.state.table3DHandLowered,
             drawConfirming: document.getElementById('draw-card-button')?.classList.contains('confirming') });
         client.actions.updateTable3DFocus();
     } catch (error) {
@@ -74,6 +75,7 @@ client.actions.syncTable3D = async function syncTable3D() {
 
 client.actions.setGameViewMode = function setGameViewMode(mode) {
     const use3D = mode === '3d';
+    if (!use3D) client.actions.closeTable3DFullscreen?.();
     if (use3D && document.body.classList.contains('table3d-unavailable')) {
         client.state.table3D?.dispose();
         client.state.table3D = null;
@@ -82,6 +84,16 @@ client.actions.setGameViewMode = function setGameViewMode(mode) {
     document.body.classList.toggle('game-view-3d', use3D);
     client.dom.gameViewToggle?.setAttribute('aria-checked', String(use3D));
     if (client.dom.gameViewDescription) client.dom.gameViewDescription.textContent = use3D ? 'มุมมองกระดาน 3D' : 'มุมมอง 2D';
+};
+
+client.actions.closeTable3DFullscreen = function closeTable3DFullscreen() {
+    document.body.classList.remove('table3d-fullscreen');
+    const button = document.getElementById('table3d-fullscreen');
+    if (button) { button.textContent = 'เต็มจอ'; button.setAttribute('aria-pressed', 'false'); }
+    if (client.state.table3DNativeFullscreen && document.fullscreenElement && document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {});
+    }
+    client.state.table3DNativeFullscreen = false;
 };
 
 export function initialize() {
@@ -96,6 +108,7 @@ export function initialize() {
   client.state.table3DBundle = null;
 
   client.state.table3DFocusedPlayer = null;
+  client.state.table3DHandLowered = false;
 
   client.state.savedGameViewMode = '2d';
 
@@ -111,6 +124,39 @@ export function initialize() {
       client.actions.syncTable3D();
       try { localStorage.setItem('villageGameView', mode); } catch (_) { /* The toggle still works without storage. */ }
   });
+
+  document.getElementById('table3d-hand-toggle')?.addEventListener('click', event => {
+      client.state.table3DHandLowered = !client.state.table3DHandLowered;
+      event.currentTarget.textContent = client.state.table3DHandLowered ? 'ยกไพ่' : 'วางไพ่';
+      event.currentTarget.setAttribute('aria-pressed', String(client.state.table3DHandLowered));
+      client.actions.syncTable3D();
+  });
+  document.getElementById('table3d-fullscreen')?.addEventListener('click', async event => {
+      if (document.body.classList.contains('table3d-fullscreen')) {
+          client.actions.closeTable3DFullscreen(); return;
+      }
+      document.body.classList.add('table3d-fullscreen');
+      event.currentTarget.textContent = 'ออกเต็มจอ';
+      event.currentTarget.setAttribute('aria-pressed', 'true');
+      // Fullscreen the document so action dialogs appended to body stay accessible.
+      if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+          try {
+              client.state.table3DNativeFullscreen = true;
+              await document.documentElement.requestFullscreen();
+              if (!document.body.classList.contains('table3d-fullscreen') && document.fullscreenElement) {
+                  await document.exitFullscreen();
+                  client.state.table3DNativeFullscreen = false;
+              }
+          } catch (_) { client.state.table3DNativeFullscreen = false; /* Keep the viewport fallback. */ }
+      }
+  });
+  document.addEventListener('fullscreenchange', () => {
+      if (!document.fullscreenElement && client.state.table3DNativeFullscreen) client.actions.closeTable3DFullscreen();
+  });
+  document.addEventListener('keydown', event => {
+      if (event.key === 'Escape' && document.body.classList.contains('table3d-fullscreen')) client.actions.closeTable3DFullscreen();
+  });
+  client.state.socket.on('room left', () => client.actions.closeTable3DFullscreen());
 
   document.getElementById('table3d-reset')?.addEventListener('click', () => client.state.table3D?.resetCamera());
 

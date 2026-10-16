@@ -295,3 +295,27 @@ body > .tryal-selection-popup {
   }
 }
 
+
+/* In 2D a minimized life prompt occupies only its restore button. */
+:is(body:not(.game-view-3d), body.table3d-unavailable) :is(
+  #confess-overlay, #select-left-tryal-overlay, #select-blackcat-overlay,
+  #blackcat-tryal-overlay, #accused-tryal-select-overlay
+).is-collapsed {
+  background: transparent !important; backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important; pointer-events: none !important;
+  overflow: visible !important;
+}
+:is(body:not(.game-view-3d), body.table3d-unavailable) :is(
+  #confess-popup, #select-left-tryal-popup, #select-blackcat-tryal-popup,
+  #blackcat-tryal-select-popup, #accused-tryal-select-popup
+).is-collapsed {
+  position: fixed !important; inset: auto 12px 12px auto !important;
+  width: auto !important; min-width: 0 !important; max-width: none !important;
+  height: auto !important; max-height: none !important; margin: 0 !important;
+  padding: 0 !important; transform: none !important; background: transparent !important;
+  border: 0 !important; overflow: visible !important; pointer-events: auto !important;
+}
+:is(body:not(.game-view-3d), body.table3d-unavailable) .tryal-selection-popup.is-collapsed :is(h3, .popup-collapsible-content) { display: none !important; }
+:is(body:not(.game-view-3d), body.table3d-unavailable) .tryal-selection-popup.is-collapsed .popup-collapse-header {
+  display: flex !important; width: auto !important; padding: 0 !important; margin: 0 !important; gap: 0 !important;
+}

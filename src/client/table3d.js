@@ -191,9 +191,9 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
         targets = [];
     }
 
-    function update({ state, me, hand, selected, imageFor, interaction = null, canDraw = false, drawConfirming = false }) {
+    function update({ state, me, hand, selected, imageFor, interaction = null, canDraw = false, drawConfirming = false, handLowered = false }) {
         if (!state) return;
-        const nextSignature = JSON.stringify([state.players, state.currentTurnPlayerUniqueId, state.deckCount, state.discardPileCount, state.witchNightState, hand, selected, me, interaction, canDraw, drawConfirming]);
+        const nextSignature = JSON.stringify([state.players, state.currentTurnPlayerUniqueId, state.deckCount, state.discardPileCount, state.witchNightState, hand, selected, me, interaction, canDraw, drawConfirming, handLowered]);
         if (signature === nextSignature) return;
         signature = nextSignature;
         clearDynamic();
@@ -263,10 +263,13 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             const spacing = Math.min(.43, 2.4 / Math.max(1, count));
             for (let i = 0; i < count; i++) {
                 const offset = i - (count - 1) / 2;
-                const face = card(seat, [offset * spacing, 1 + (own && selected === i ? .24 : 0), .7 + Math.abs(offset) * .025],
-                    [-.12, 0, -offset * Math.min(.045, .35 / Math.max(1, count))],
+                const lowered = own && handLowered;
+                const position = lowered ? [offset * spacing, .08 + (selected === i ? .12 : 0), 1.35 + Math.abs(offset) * .025]
+                    : [offset * spacing, 1 + (own && selected === i ? .24 : 0), .7 + Math.abs(offset) * .025];
+                const rotation = lowered ? [-Math.PI / 2, 0, 0] : [-.12, 0, -offset * Math.min(.045, .35 / Math.max(1, count))];
+                const face = card(seat, position, rotation,
                     own ? cardTexture(imageFor(hand[i].name)) : back,
-                    own ? { cardIndex: i, category: hand[i].color } : { playerId: player.uniqueId }, own ? .68 : .47);
+                    own ? { cardIndex: i, category: hand[i].color } : { playerId: player.uniqueId }, own ? (lowered ? .52 : .68) : .47);
                 if (own && selected === i) face.material.color.set(0xb9a687);
             }
             // Public effects form a row toward the table centre, above life cards.

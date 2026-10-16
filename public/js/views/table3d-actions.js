@@ -104,7 +104,11 @@ client.actions.handleTable3DLife = function handleTable3DLife(id, index) {
     if (root?.dataset.lifeOwner === id) {
         const button = [...root.querySelectorAll('[data-life-index]')].find(button => Number(button.dataset.lifeIndex) === index);
         if (button && !button.disabled) {
-            client.state.table3DLifeChoice = { root, index, button };
+            const previous = client.state.table3DLifeChoice;
+            if (previous?.root === root && previous.index === index && previous.button === button) {
+                client.state.table3DLifeChoice = null;
+                button.click();
+            } else client.state.table3DLifeChoice = { root, index, button };
             document.dispatchEvent(new Event('table3d selection'));
         }
     } else client.actions.handleTable3DPlayer(id);
@@ -190,7 +194,7 @@ export function initialize() {
         header.append(heading, toggle);
         phasePanel.appendChild(header);
         const note = document.createElement('p');
-        note.textContent = life ? choice?.root === life ? `เลือกใบที่ ${choice.index + 1} แล้ว · กดยืนยัน` : 'แตะการ์ดชีวิตที่มีกรอบบนโต๊ะ'
+        note.textContent = life ? choice?.root === life ? `เลือกใบที่ ${choice.index + 1} แล้ว · แตะใบเดิมอีกครั้งเพื่อยืนยัน` : 'แตะการ์ดชีวิตที่มีกรอบบนโต๊ะ'
             : selectedId && night ? `เป้าหมาย: ${client.state.currentRoomState.players[selectedId]?.name || ''}` : 'เลือกเป้าหมายบนโต๊ะ แล้วกดยืนยัน';
         phasePanel.appendChild(note);
         function action(label, handler, disabled = false) {
@@ -201,13 +205,6 @@ export function initialize() {
             return button;
         }
         if (life) {
-            action('ยืนยันการ์ดชีวิต', () => {
-                const current = client.state.table3DLifeChoice;
-                if (current?.root === life && current.button.isConnected && !current.button.disabled) {
-                    client.state.table3DLifeChoice = null;
-                    current.button.click();
-                }
-            }, choice?.root !== life);
             const skip = life.querySelector('#skip-confess-button');
             if (skip) action('ข้ามการสารภาพ', () => skip.click(), skip.disabled);
         } else if (night) {
@@ -264,7 +261,7 @@ export function initialize() {
         if (summary.hidden === !!state.gameOver) summary.hidden = !state.gameOver;
         const title = state.gameOver ? 'จบเกม · เปิดเผยการ์ดชีวิตบนโต๊ะแล้ว'
             : !canAct() ? 'ดูเกมต่อได้ · ไม่สามารถทำแอ็กชัน'
-                : request?.kind === 'life' ? 'แตะการ์ดชีวิตที่มีกรอบ → ยืนยันในแผงบนโต๊ะ'
+                : request?.kind === 'life' ? 'แตะการ์ดชีวิตที่มีกรอบ → แตะใบเดิมอีกครั้งเพื่อยืนยัน'
                     : request?.kind === 'effect' ? 'แตะการ์ดที่วางหน้าผู้เล่นเพื่อเลือก · ยืนยันในแผงข้างโต๊ะ'
                         : request?.kind === 'event' ? 'ยืนยันเล่นยามวิกาลในแผงข้างโต๊ะ'
                         : request?.kind === 'player' ? 'แตะผู้เล่นที่เลือกได้ → ยืนยันในป๊อปอัป'
