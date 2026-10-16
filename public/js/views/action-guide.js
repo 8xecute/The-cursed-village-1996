@@ -56,7 +56,7 @@ export function initialize() {
         queued = false;
         const state = client.state.currentRoomState;
         const visible = !!state?.gameStarted;
-        banner.hidden = !visible;
+        if (banner.hidden !== !visible) banner.hidden = !visible;
         const me = state?.players?.[client.state.myUniqueId];
         const myTurn = visible && client.state.socket.connected && !state.gameOver && !state.isSpectator && !!me?.alive &&
             state.currentPhase === 'DAY' && state.currentTurnPlayerUniqueId === me.uniqueId;
@@ -105,7 +105,7 @@ export function initialize() {
     document.addEventListener('click', schedule);
     // Refresh when an action popup is added/removed, including automatic closure.
     new MutationObserver(records => {
-        if (records.some(record => !banner.contains(record.target) && record.target !== notice)) schedule();
+        if (records.some(record => !banner.contains(record.target) && record.target !== notice && !record.target.closest?.('#table3d-section'))) schedule();
     }).observe(document.body, { childList: true, subtree: true });
     update();
 }

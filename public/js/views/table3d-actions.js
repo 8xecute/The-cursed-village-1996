@@ -146,7 +146,7 @@ export function initialize() {
                 root.appendChild(toggle);
             }
         });
-        panel.hidden = !enabled;
+        if (panel.hidden !== !enabled) panel.hidden = !enabled;
         if (!enabled) return;
         const request = client.actions.getTable3DInteraction();
         const state = client.state.currentRoomState;
@@ -185,7 +185,7 @@ export function initialize() {
         }
         client.actions.syncTable3D();
     }
-    function schedule() { if (!scheduled) { scheduled = true; queueMicrotask(refresh); } }
+    function schedule() { if (!scheduled) { scheduled = true; requestAnimationFrame(refresh); } }
     document.querySelectorAll('#table3d-section [data-table-action]').forEach(button => button.addEventListener('click', () => {
         if (!button.disabled) document.getElementById(button.dataset.tableAction)?.click();
     }));

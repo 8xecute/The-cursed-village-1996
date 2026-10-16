@@ -5,15 +5,17 @@ client.actions.updateTable3DFocus = function updateTable3DFocus() {
     if (!player) return;
     const name = document.getElementById('table3d-player-name');
     const status = document.getElementById('table3d-player-status');
-    name.textContent = `${player.name}${player.uniqueId === client.state.myUniqueId ? ' (คุณ)' : ''}`;
+    const nextName = `${player.name}${player.uniqueId === client.state.myUniqueId ? ' (คุณ)' : ''}`;
+    if (name.textContent !== nextName) name.textContent = nextName;
     const team = player.hasBeenWitch ? ' · ทีมปอบ' : '';
-    status.textContent = `${player.alive ? 'ยังมีชีวิต' : 'เสียชีวิตแล้ว'} · ชีวิต ${player.tryalCardCount} · การ์ด ${player.handSize} · ข้อกล่าวหา ${player.accusationPoints || 0}${team}`;
+    const nextStatus = `${player.alive ? 'ยังมีชีวิต' : 'เสียชีวิตแล้ว'} · ชีวิต ${player.tryalCardCount} · การ์ด ${player.handSize} · ข้อกล่าวหา ${player.accusationPoints || 0}${team}`;
+    if (status.textContent !== nextStatus) status.textContent = nextStatus;
 };
 
 client.actions.syncTable3D = async function syncTable3D() {
     const section = document.getElementById('table3d-section');
     const visible = !document.hidden && document.body.classList.contains('game-view-3d') && !!client.state.currentRoomState?.gameStarted;
-    section.hidden = !visible;
+    if (section.hidden !== !visible) section.hidden = !visible;
     if (!visible) { client.state.table3D?.setActive(false); return; }
     if (document.body.classList.contains('table3d-unavailable')) return;
     const loading = document.getElementById('table3d-loading');
@@ -54,7 +56,7 @@ client.actions.syncTable3D = async function syncTable3D() {
                 },
             });
         }
-        loading.hidden = true;
+        if (!loading.hidden) loading.hidden = true;
         client.state.table3D.setActive(true);
         client.state.table3D.update({ state: client.state.currentRoomState, me: client.state.myUniqueId, hand: client.state.myCurrentHand || [], selected: client.state.selectedCard,
             imageFor: name => name ? client.actions.createCardImage(name).src : null,

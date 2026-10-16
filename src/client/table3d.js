@@ -328,10 +328,12 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
         onError('อุปกรณ์หยุดแสดงภาพ 3D กรุณาสลับกลับ 2D');
     });
 
+    let canvasWidth = 0, canvasHeight = 0;
     function resize() {
         const width = container.clientWidth;
         const height = container.clientHeight;
-        if (!width || !height) return;
+        if (!width || !height || (width === canvasWidth && height === canvasHeight)) return;
+        canvasWidth = width; canvasHeight = height;
         renderer.setSize(width, height);
         camera.aspect = width / height;
         camera.updateProjectionMatrix();
@@ -342,7 +344,12 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
     resetCamera();
     return {
         update,
-        setActive(value) { active = value; controls.enabled = value; if (value) { resize(); requestRender(); } },
+        setActive(value) {
+            if (active === value) return;
+            active = value; controls.enabled = value;
+            if (value) { resize(); requestRender(); }
+            else { cancelAnimationFrame(renderFrame); renderFrame = 0; }
+        },
         resetCamera,
         zoom(direction) {
             const offset = camera.position.clone().sub(controls.target);
