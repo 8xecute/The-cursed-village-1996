@@ -236,3 +236,10 @@
   }
 }
 
+
+#night-action-popup.confirming-kill .night-action-content > :not(#witch-kill-confirm-panel) { display: none !important; }
+#witch-kill-confirm-panel { padding: 18px; border: 1px solid #ac5661; border-radius: 12px; background: #301b1d; text-align: left; }
+#witch-kill-confirm-panel p { font-size: 1.2rem; font-weight: bold; line-height: 1.6; margin: 0 0 8px; }
+#witch-kill-confirm-panel small { display: block; color: #d5bdab; line-height: 1.6; margin-bottom: 16px; }
+#witch-kill-confirm-panel button { display: block; width: 100%; min-height: 48px; margin: 8px 0 0; }
+#witch-kill-confirm-panel .night-confirm-btn { background: #a22b3c; color: #fff0dc; }

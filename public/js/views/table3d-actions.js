@@ -134,6 +134,7 @@ export function initialize() {
     const phasePanel = document.getElementById('table3d-phase-panel');
     let phaseSignature = '';
     let phaseRoot = null;
+    let phaseCollapsed = false;
     function updatePhasePanel(enabled, request) {
         const life = last('[data-life-owner]');
         const night = document.getElementById('night-action-popup');
@@ -144,11 +145,22 @@ export function initialize() {
             if (!enabled || ![life?.closest('.tryal-modal-overlay'), night, assign?.closest('.tryal-modal-overlay'), event].includes(element)) element.classList.remove('table3d-phase-source');
         });
         if (root !== phaseRoot) {
-            phaseRoot = root; phaseSignature = '';
+            phaseRoot = root; phaseSignature = ''; phaseCollapsed = false;
+            phasePanel.classList.remove('is-minimized');
             client.state.table3DLifeChoice = null;
             document.body.classList.remove('table3d-phase-details');
         }
         const source = life?.closest('.tryal-modal-overlay') || night || assign?.closest('.tryal-modal-overlay') || event;
+        source?.querySelectorAll('.table3d-panel-toggle').forEach(toggle => toggle.remove());
+        if (enabled && source) {
+            for (const element of [source, root]) {
+                if (element.classList.contains('is-collapsed')) element.classList.remove('is-collapsed');
+            }
+            const toggle = root.querySelector('.popup-collapse-toggle');
+            if (toggle && toggle.getAttribute('aria-expanded') !== 'true') {
+                toggle.textContent = 'ย่อ'; toggle.setAttribute('aria-expanded', 'true');
+            }
+        }
         if (source && source.classList.contains('table3d-phase-source') !== enabled) source.classList.toggle('table3d-phase-source', enabled);
         const show = enabled && canAct() && !!root;
         if (phasePanel.hidden !== !show) phasePanel.hidden = !show;
@@ -156,14 +168,27 @@ export function initialize() {
         const kill = document.getElementById('witch-kill-confirm-panel');
         const selectedId = client.state.nightActionState?.selectedTargetId;
         const choice = client.state.table3DLifeChoice;
-        const signature = JSON.stringify([request, selectedId, !!kill, kill?.textContent, assign?.querySelector('select')?.value]);
+        const signature = JSON.stringify([request, selectedId, !!kill, kill?.textContent, kill?.querySelector('.night-confirm-btn')?.disabled, phaseCollapsed, assign?.querySelector('select')?.value]);
         if (signature === phaseSignature) return;
         phaseSignature = signature;
         phasePanel.replaceChildren();
         const heading = document.createElement('strong');
         heading.textContent = life ? life.querySelector('h3')?.textContent || 'เลือกการ์ดชีวิต'
             : night ? (client.state.nightActionState.actionType === 'witch' ? 'ปอบ · แตะผู้เล่นเพื่อมาร์ค' : 'หมอผี · แตะผู้เล่นเพื่อปกป้อง') : assign ? 'แตะผู้เล่นเพื่อมอบเครื่องเซ่น' : 'เล่นยามวิกาลเพื่อเข้าสู่กลางคืน';
-        phasePanel.appendChild(heading);
+        const header = document.createElement('div');
+        header.className = 'table3d-phase-header';
+        const toggle = document.createElement('button');
+        toggle.type = 'button'; toggle.className = 'table3d-phase-toggle';
+        toggle.textContent = phaseCollapsed ? 'ขยาย' : 'ย่อ';
+        toggle.setAttribute('aria-expanded', String(!phaseCollapsed));
+        toggle.onclick = () => {
+            phaseCollapsed = !phaseCollapsed;
+            phasePanel.classList.toggle('is-minimized', phaseCollapsed);
+            if (phaseCollapsed) document.body.classList.remove('table3d-phase-details');
+            schedule();
+        };
+        header.append(heading, toggle);
+        phasePanel.appendChild(header);
         const note = document.createElement('p');
         note.textContent = life ? choice?.root === life ? `เลือกใบที่ ${choice.index + 1} แล้ว · กดยืนยัน` : 'แตะการ์ดชีวิตที่มีกรอบบนโต๊ะ'
             : selectedId && night ? `เป้าหมาย: ${client.state.currentRoomState.players[selectedId]?.name || ''}` : 'เลือกเป้าหมายบนโต๊ะ แล้วกดยืนยัน';
@@ -173,6 +198,7 @@ export function initialize() {
             button.type = 'button'; button.textContent = label; button.disabled = disabled;
             button.onclick = () => { if (canAct() && root.isConnected) { handler(); schedule(); } };
             phasePanel.appendChild(button);
+            return button;
         }
         if (life) {
             action('ยืนยันการ์ดชีวิต', () => {
@@ -188,11 +214,15 @@ export function initialize() {
             if (kill) {
                 const text = document.createElement('p'); text.textContent = kill.querySelector('p')?.textContent;
                 phasePanel.appendChild(text);
-                action('ยืนยันคำตัดสิน', () => kill.querySelector('.night-confirm-btn')?.click());
+                const confirm = kill.querySelector('.night-confirm-btn');
+                action(confirm?.textContent || 'ยืนยันฆ่าจริง', () => { confirm?.click(); phaseSignature = ''; }, !!confirm?.disabled).className = 'table3d-kill-confirm';
+                const warning = document.createElement('small');
+                warning.textContent = 'ยืนยันแทนทั้งทีม · เปลี่ยนไม่ได้';
+                phasePanel.appendChild(warning);
                 action('กลับไปเลือก', () => kill.querySelector('.witch-kill-cancel-btn')?.click());
             } else {
                 const witch = client.state.nightActionState.actionType === 'witch';
-                action(witch ? 'สังหารเป้าหมาย…' : 'ยืนยันปกป้อง', () => document.getElementById('confirm-night-action')?.click(), !selectedId);
+                action(witch ? 'เลือกฆ่าคนนี้ →' : 'ยืนยันปกป้อง', () => client.actions.submitNightAction(client.state.nightActionState.actionType), !selectedId || !!client.state.currentRoomState?.witchNightState?.committed).className = witch ? 'table3d-kill-select' : 'table3d-protect';
                 if (witch && !request?.eligible?.length) action('ไม่สังหารคืนนี้…', () => client.actions.showWitchKillConfirmation(null));
             }
         } else if (event) {
@@ -211,9 +241,11 @@ export function initialize() {
     function refresh() {
         scheduled = false;
         const enabled = document.body.classList.contains('game-view-3d') && !document.body.classList.contains('table3d-unavailable') && !!client.state.currentRoomState?.gameStarted;
+        const request = client.actions.getTable3DInteraction();
+        updatePhasePanel(enabled, request);
         document.querySelectorAll(dockSelector).forEach(root => {
             if (root.classList.contains('table3d-docked') !== enabled) root.classList.toggle('table3d-docked', enabled);
-            if (enabled && !root.querySelector('.popup-collapse-toggle, .table3d-panel-toggle')) {
+            if (enabled && !root.classList.contains('table3d-phase-source') && !root.querySelector('.popup-collapse-toggle, .table3d-panel-toggle')) {
                 const toggle = document.createElement('button');
                 toggle.type = 'button'; toggle.className = 'table3d-panel-toggle';
                 toggle.textContent = 'ย่อแผง'; toggle.setAttribute('aria-expanded', 'true');
@@ -226,8 +258,6 @@ export function initialize() {
             }
         });
         if (panel.hidden !== !enabled) panel.hidden = !enabled;
-        const request = client.actions.getTable3DInteraction();
-        updatePhasePanel(enabled, request);
         if (!enabled) return;
         const state = client.state.currentRoomState;
         const summary = document.getElementById('table3d-summary');
@@ -264,7 +294,7 @@ export function initialize() {
     new MutationObserver(records => {
         // Our own rendered HUD must not recursively trigger itself.
         if (records.some(record => !record.target.closest?.('#table3d-section'))) schedule();
-    }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'disabled', 'aria-disabled', 'aria-pressed', 'value'] });
+    }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'disabled', 'aria-disabled', 'aria-pressed', 'value', 'data-life-owner'] });
     document.addEventListener('click', schedule);
     document.addEventListener('change', schedule);
     document.addEventListener('table3d selection', schedule);

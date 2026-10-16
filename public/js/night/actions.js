@@ -178,7 +178,6 @@ client.actions.createNightActionPopup = function createNightActionPopup(actionTy
             </div>
             ` : ''}
             <div class="night-action-footer">
-                ${actionType === 'witch' ? `<button type="button" id="propose-night-action-btn" class="btn btn-secondary btn-sm" style="display: none; margin-right: 8px;">💡 เสนอชื่อในแชท</button>` : ''}
                 <button id="confirm-night-action" class="night-confirm-btn" style="display: none;">
                     ${actionType === 'witch' ? '🩸 ฆ่าเป้าหมายที่เลือก…' : 'ยืนยันการเลือก'}
                 </button>
@@ -283,8 +282,9 @@ client.actions.showWitchKillConfirmation = function showWitchKillConfirmation(ta
     panel.id = 'witch-kill-confirm-panel';
     panel.className = 'witch-kill-confirm-panel';
     const text = document.createElement('p');
-    text.textContent = targetId === null ? 'ยืนยันไม่สังหารใครคืนนี้? การยืนยันของคุณจะเป็นคำตัดสินของทั้งทีม'
-        : `ยืนยันสังหาร ${target.name} คืนนี้? การยืนยันของคุณจะเป็นคำตัดสินของทั้งทีม`;
+    text.textContent = targetId === null ? 'ยืนยันไม่สังหารใครคืนนี้?' : `ยืนยันสังหาร ${target.name} คืนนี้?`;
+    const warning = document.createElement('small');
+    warning.textContent = 'การยืนยันนี้เป็นคำตัดสินของทั้งทีม และเปลี่ยนไม่ได้';
     const confirm = document.createElement('button');
     confirm.type = 'button';
     confirm.className = 'night-confirm-btn';
@@ -292,8 +292,8 @@ client.actions.showWitchKillConfirmation = function showWitchKillConfirmation(ta
     const cancel = document.createElement('button');
     cancel.type = 'button';
     cancel.className = 'witch-kill-cancel-btn';
-    cancel.textContent = 'กลับไปปรึกษา';
-    cancel.onclick = () => { panel.remove(); popup.querySelector('#confirm-night-action')?.focus(); };
+    cancel.textContent = 'กลับไปเลือกเป้าหมาย';
+    cancel.onclick = () => { popup.classList.remove('confirming-kill'); panel.remove(); popup.querySelector('#confirm-night-action')?.focus(); };
     const nightId = state.nightId;
     confirm.onclick = () => {
         const latest = client.state.currentRoomState?.witchNightState;
@@ -302,10 +302,13 @@ client.actions.showWitchKillConfirmation = function showWitchKillConfirmation(ta
             client.actions.addGameMessage('เป้าหมายหรือช่วงกลางคืนเปลี่ยนแล้ว กรุณาเลือกใหม่', 'orange');
             return;
         }
+        confirm.disabled = true;
+        confirm.textContent = 'กำลังยืนยัน…';
         client.state.socket.emit('witch kill target', targetId, { confirmed: true, nightId });
     };
-    panel.append(text, confirm, cancel);
-    popup.querySelector('.night-action-content').appendChild(panel);
+    panel.append(text, warning, confirm, cancel);
+    popup.classList.add('confirming-kill');
+    popup.querySelector('.night-action-content').prepend(panel);
     confirm.focus();
 };
 

@@ -78,6 +78,7 @@ client.actions.populateNightActionPlayersList = function populateNightActionPlay
             client.state.nightActionState.selectedTargetId = player.uniqueId;
             if (actionType === 'witch') {
                 document.getElementById('witch-kill-confirm-panel')?.remove();
+                document.getElementById('night-action-popup')?.classList.remove('confirming-kill');
                 client.state.socket.emit('witch mark target', player.uniqueId, client.state.currentRoomState?.witchNightState?.nightId);
                 client.actions.updateWitchNightMarks();
             }
@@ -89,16 +90,7 @@ client.actions.populateNightActionPlayersList = function populateNightActionPlay
                 confirmBtn.style.display = 'inline-block';
             }
 
-            // Show propose to witch chat button
-            const proposeBtn = document.getElementById('propose-night-action-btn');
-            if (proposeBtn && actionType === 'witch') {
-                proposeBtn.style.display = 'inline-block';
-                proposeBtn.onclick = () => {
-                    if (client.state.currentRoomName) {
-                        client.state.socket.emit('send witch chat message', client.state.currentRoomName, `💡 ขอเสนอเป้าหมาย: "${player.name}"`);
-                    }
-                };
-            }
+
         });
         
         playersList.appendChild(playerDiv);

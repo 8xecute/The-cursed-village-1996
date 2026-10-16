@@ -86,3 +86,57 @@
 @media (max-width: 600px) {
     .table3d-phase-panel { top: 112px; left: 6px; width: min(250px, calc(100% - 12px)); max-height: 30vh; padding: 8px; }
 }
+
+/* IDs in the legacy modal theme must not override the 3D docking geometry. */
+body.game-view-3d:not(.table3d-unavailable) :is(
+    #confess-overlay, #select-left-tryal-overlay, #select-blackcat-overlay,
+    #blackcat-tryal-overlay, #accused-tryal-select-overlay, #forced-reveal-notice-overlay,
+    #assign-blackcat-overlay, #night-action-popup, #must-play-night-popup,
+    #alibi-redcard-select-popup, .tryal-modal-overlay
+).table3d-docked {
+    position: fixed !important; inset: auto 12px 12px auto !important;
+    width: min(420px, calc(100vw - 24px)) !important; height: auto !important;
+    max-height: 50dvh !important; min-height: 0 !important;
+    background: transparent !important; backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important; overflow: visible !important;
+    padding: 0 !important; display: block !important; pointer-events: none !important;
+}
+body.game-view-3d:not(.table3d-unavailable):not(.table3d-phase-details) :is(
+    #confess-overlay, #select-left-tryal-overlay, #select-blackcat-overlay,
+    #blackcat-tryal-overlay, #accused-tryal-select-overlay, #assign-blackcat-overlay,
+    #night-action-popup, #must-play-night-popup, .tryal-modal-overlay
+).table3d-phase-source { display: none !important; }
+body.game-view-3d .table3d-phase-source :is(.popup-collapse-toggle, .table3d-panel-toggle) { display: none !important; }
+body.game-view-3d .table3d-phase-source :is(.popup-collapsible-content, .night-action-content),
+body.game-view-3d .table3d-phase-source :is(.night-action-title, .popup-collapse-header h3) { display: block !important; }
+body.game-view-3d .table3d-docked > :is(
+    #confess-popup, #select-left-tryal-popup, #select-blackcat-tryal-popup,
+    #blackcat-tryal-select-popup, #accused-tryal-select-popup,
+    #forced-reveal-notice-popup, #assign-blackcat-popup
+) {
+    position: relative !important; inset: auto !important; transform: none !important;
+    width: 100% !important; max-width: none !important; max-height: 50dvh !important;
+    overflow: auto !important; margin: 0 !important; pointer-events: auto !important;
+    padding: 14px !important;
+}
+body.game-view-3d #night-action-popup.table3d-docked {
+    pointer-events: auto !important; overflow: auto !important; padding: 14px !important;
+    background: #241e19 !important;
+}
+.table3d-phase-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.table3d-phase-header strong { flex: 1; min-width: 0; }
+.table3d-phase-panel .table3d-phase-toggle { flex: none; min-height: 34px; margin: 0; padding: 5px 10px; }
+.table3d-phase-panel.is-minimized { width: auto; max-width: calc(100% - 24px); overflow: visible; }
+.table3d-phase-panel.is-minimized > :not(.table3d-phase-header),
+.table3d-phase-panel.is-minimized .table3d-phase-header strong { display: none; }
+.table3d-phase-panel .table3d-kill-select,
+.table3d-phase-panel .table3d-kill-confirm { display: block; width: 100%; margin: 8px 0; background: #9a2936; color: #fff1df; }
+.table3d-phase-panel small { display: block; color: #d5bdab; line-height: 1.5; }
+/* Defensive removal for older cached HTML. */
+#table3d-hand-options, #table3d-play-panel details:has(#table3d-hand-options) { display: none !important; }
+
+body.game-view-3d #night-action-popup.table3d-phase-source :is(.night-action-content, .night-action-title) { display: block !important; }
+body.game-view-3d #night-action-popup.table3d-phase-source .popup-collapse-toggle { display: none !important; }
+body.game-view-3d #night-action-popup.table3d-phase-source .night-action-header { padding: 0 !important; border: 0; background: transparent !important; }
+body.game-view-3d #night-action-popup.table3d-phase-source .night-action-content { padding: 0 !important; border: 0; background: transparent !important; }
+body.game-view-3d #night-action-popup.table3d-phase-source > .night-action-header { max-height: none !important; }
