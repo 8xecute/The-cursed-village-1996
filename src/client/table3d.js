@@ -26,7 +26,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
     renderer.domElement.setAttribute('aria-label', 'โต๊ะเกม 3D ลากเพื่อหมุน เลื่อนล้อเมาส์หรือใช้ปุ่มเพื่อซูม');
     renderer.domElement.setAttribute('role', 'img');
     renderer.domElement.tabIndex = 0;
-    renderer.domElement.setAttribute('aria-label', 'โต๊ะ 3D ลากหมุน ลากสองนิ้วเพื่อเลื่อน WASD เคลื่อนกล้อง Space ขึ้น Ctrl ลง');
+    renderer.domElement.setAttribute('aria-label', 'โต๊ะ 3D ลากหมุน ลากสองนิ้วเพื่อเลื่อน WASD เคลื่อนกล้อง Space ขึ้น Q ลง');
 
     const scene = new THREE.Scene();
     scene.background = null;
@@ -62,7 +62,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
         focusedSeatId = null;
         controls.enableRotate = true; controls.enablePan = true;
         onSeatFocus?.('มุมของคุณ');
-        camera.position.set(0, 11, 14.5);
+        camera.position.set(0, 17, 5.5);
         controls.target.set(0, 0.35, 0);
         controls.update();
         requestRender();
@@ -212,13 +212,16 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
     }
     controls.addEventListener('change', requestRender);
     const pressedKeys = new Set();
-    const movementKeys = new Set(['KeyW','KeyA','KeyS','KeyD','Space','ControlLeft','ControlRight']);
+    const movementKeys = new Set(['KeyW','KeyA','KeyS','KeyD','Space','KeyQ']);
     let previousMovementTime = 0;
     function clearMovement() { pressedKeys.clear(); previousMovementTime = 0; }
     function typing(target) { return !!target?.closest?.('input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="textbox"]'); }
     function keyDown(event) {
+        // Browser shortcuts such as Ctrl+W cannot reliably be cancelled by a page.
+        // Never use a browser modifier as a camera movement key.
+        if (event.ctrlKey || event.altKey || event.metaKey) { clearMovement(); return; }
         if (!active || disposed || document.hidden || !movementKeys.has(event.code) || typing(event.target)) return;
-        if (event.altKey || event.metaKey || document.querySelector('#card-inspect-overlay:not([hidden])')) return;
+        if (document.querySelector('#card-inspect-overlay:not([hidden])')) return;
         if (event.code === 'Space' && event.target?.closest?.('button, summary, a')) return;
         event.preventDefault();
         if (!pressedKeys.size) previousMovementTime = performance.now();
@@ -239,7 +242,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
         if (pressedKeys.has('KeyD')) delta.add(right);
         if (pressedKeys.has('KeyA')) delta.sub(right);
         if (pressedKeys.has('Space')) delta.y += 1;
-        if (pressedKeys.has('ControlLeft') || pressedKeys.has('ControlRight')) delta.y -= 1;
+        if (pressedKeys.has('KeyQ')) delta.y -= 1;
         if (delta.lengthSq()) { delta.normalize().multiplyScalar(4*dt); camera.position.add(delta); controls.target.add(delta); }
     }
     document.addEventListener('keydown',keyDown);
@@ -292,6 +295,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
         sprite.position.set(...position);
         sprite.scale.set(width / height * 0.23, 0.23, 1);
         parent.add(sprite);
+        return sprite;
     }
 
     function clearDynamic() {
@@ -335,21 +339,20 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
                 mesh(new THREE.CapsuleGeometry(.075,.28,4,10),material.clone(),pawn,[.29,.25,0]),
             ];
             parts.forEach(part => { part.userData = { ...part.userData, playerId: player.uniqueId }; targets.push(part); });
-            if (state.currentTurnPlayerUniqueId === player.uniqueId && player.alive) {
-                const ring = mesh(new THREE.TorusGeometry(.52, .045, 8, 40),
-                    new THREE.MeshBasicMaterial({ color: 0xffd359 }), seat, [0, .07, 0]);
-                ring.rotation.x = Math.PI / 2;
-            }
-            label(seat, `${player.name}${player.uniqueId === me ? ' (คุณ)' : ''}${state.players?.[me]?.hasBeenWitch && player.hasBeenWitch ? ' · ทีมปอบ' : ''}${!player.alive ? ' · เสียชีวิต' : ''}`, [0, 1.0, 2.05],
-                player.alive ? '#eddbb7' : '#a39b91');
+            const eligibleTarget = interaction?.kind === 'player' && interaction.eligible.includes(player.uniqueId);
+            const selectedTarget = eligibleTarget && interaction.selected.includes(player.uniqueId);
+            if (eligibleTarget) parts.forEach(part => {
+                part.material.emissive.set(selectedTarget ? 0xb47e34 : 0x597b70);
+                part.material.emissiveIntensity = selectedTarget ? .9 : .55;
+            });
+            const nameLabel = label(seat, `${selectedTarget ? '✓ ' : ''}${player.name}${player.uniqueId === me ? ' (คุณ)' : ''}${state.players?.[me]?.hasBeenWitch && player.hasBeenWitch ? ' · ทีมปอบ' : ''}${!player.alive ? ' · เสียชีวิต' : ''}`, [0, 1.0, 2.05],
+                eligibleTarget ? selectedTarget ? '#ffe1a0' : '#a9e0c9' : player.alive ? '#eddbb7' : '#a39b91');
+            nameLabel.userData.playerId = player.uniqueId;
+            targets.push(nameLabel);
             if (interaction?.kind === 'player') {
                 const eligible = interaction.eligible.includes(player.uniqueId);
                 const picked = interaction.selected.includes(player.uniqueId);
                 label(seat, picked ? '✓ เลือกแล้ว' : eligible ? interaction.outcomes?.[player.uniqueId] || 'แตะเพื่อเลือก' : interaction.blocked?.[player.uniqueId] || 'เลือกไม่ได้', [0, 2.15, 0], eligible ? '#d8c4a0' : '#ad9c8c');
-                if (eligible) {
-                    const marker = mesh(new THREE.TorusGeometry(.58, .025, 6, 32), new THREE.MeshBasicMaterial({ color: picked ? 0xc2ab87 : 0x879277 }), seat, [0, .09, 0]);
-                    marker.rotation.x = Math.PI / 2;
-                }
             }
             const witchNight = state.witchNightState;
             if (witchNight && !witchNight.committed) {

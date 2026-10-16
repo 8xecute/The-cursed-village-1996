@@ -9,6 +9,13 @@ client.actions.showConfessPopup = function showConfessPopup(tryalCards) {
     
     if (!tryalCards || tryalCards.length === 0) return; // ไม่เด้ง popup ถ้าไม่มีไพ่
 
+    // Confession starts a new life-selection step; previous reveal/pick dialogs
+    // must not survive and become actionable again after confession closes.
+    document.querySelectorAll('[data-life-owner]').forEach(popup => {
+        (popup.closest('.tryal-modal-overlay') || popup).remove();
+    });
+    client.state.table3DLifeChoice = null;
+
     const overlay = document.createElement('div');
     overlay.id = 'confess-overlay';
     overlay.className = 'tryal-modal-overlay';

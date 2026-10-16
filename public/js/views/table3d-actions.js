@@ -168,8 +168,15 @@ export function initialize() {
         const target = document.querySelector('.select-player-modal');
         const alibi = document.getElementById('alibi-redcard-select-popup');
         const root = life || night || assign || event || target || alibi;
+        const sources = new Set([
+            ...[...document.querySelectorAll('[data-life-owner]')].map(element => element.closest('.tryal-modal-overlay')),
+            night, assign?.closest('.tryal-modal-overlay'), event, target, alibi
+        ].filter(Boolean));
         document.querySelectorAll('.table3d-phase-source').forEach(element => {
-            if (!enabled || ![life?.closest('.tryal-modal-overlay'), night, assign?.closest('.tryal-modal-overlay'), event, target, alibi].includes(element)) element.classList.remove('table3d-phase-source');
+            if (!enabled || !sources.has(element)) element.classList.remove('table3d-phase-source');
+        });
+        if (enabled) sources.forEach(element => {
+            if (!element.classList.contains('table3d-phase-source')) element.classList.add('table3d-phase-source');
         });
         if (root !== phaseRoot) {
             phaseRoot = root; phaseSignature = ''; phaseCollapsed = false;
