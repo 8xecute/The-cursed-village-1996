@@ -219,7 +219,7 @@ client.actions.createCardImage = function createCardImage(cardName) {
     };
     
     const imageFileName = cardImageMap[cardName] || 'accusation.png'; // fallback
-    img.src = `cards/${imageFileName}`;
+    img.src = `cards/${imageFileName}?v=${cardName === 'Accusation' ? 'art-v3' : 'art-v2'}`;
     img.alt = client.actions.displayCardName(cardName);
     img.title = client.actions.displayCardDescription(cardName);
     

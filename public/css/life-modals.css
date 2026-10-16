@@ -319,3 +319,9 @@ body > .tryal-selection-popup {
 :is(body:not(.game-view-3d), body.table3d-unavailable) .tryal-selection-popup.is-collapsed .popup-collapse-header {
   display: flex !important; width: auto !important; padding: 0 !important; margin: 0 !important; gap: 0 !important;
 }
+
+/* Override the old ID + nth-child card-grid rules after wrapping collapsible content. */
+:is(body:not(.game-view-3d), body.table3d-unavailable) :is(
+  #confess-popup, #select-left-tryal-popup, #select-blackcat-tryal-popup,
+  #blackcat-tryal-select-popup, #accused-tryal-select-popup
+).is-collapsed > .popup-collapsible-content { display: none !important; }

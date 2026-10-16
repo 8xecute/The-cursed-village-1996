@@ -42,7 +42,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
     controls.zoomSpeed = 0.8;
 
     function resetCamera() {
-        camera.position.set(0, 9.5, 12.8);
+        camera.position.set(0, 11, 14.5);
         controls.target.set(0, 0.35, 0);
         controls.update();
         requestRender();
@@ -263,8 +263,8 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             const spacing = Math.min(.43, 2.4 / Math.max(1, count));
             for (let i = 0; i < count; i++) {
                 const offset = i - (count - 1) / 2;
-                const lowered = own && handLowered;
-                const position = lowered ? [offset * spacing, .08 + (selected === i ? .12 : 0), 1.35 + Math.abs(offset) * .025]
+                const lowered = handLowered;
+                const position = lowered ? [offset * spacing, .08 + (own && selected === i ? .12 : 0), 1.35 + Math.abs(offset) * .025]
                     : [offset * spacing, 1 + (own && selected === i ? .24 : 0), .7 + Math.abs(offset) * .025];
                 const rotation = lowered ? [-Math.PI / 2, 0, 0] : [-.12, 0, -offset * Math.min(.045, .35 / Math.max(1, count))];
                 const face = card(seat, position, rotation,
@@ -340,6 +340,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
         const height = container.clientHeight;
         if (!width || !height || (width === canvasWidth && height === canvasHeight)) return;
         canvasWidth = width; canvasHeight = height;
+        container.parentElement.style.setProperty('--table3d-canvas-height', `${height}px`);
         renderer.setSize(width, height);
         camera.aspect = width / height;
         camera.updateProjectionMatrix();
@@ -357,6 +358,16 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             else { cancelAnimationFrame(renderFrame); renderFrame = 0; }
         },
         resetCamera,
+        setCameraView(view) {
+            const offset = camera.position.clone().sub(controls.target);
+            const azimuth = Math.atan2(offset.x, offset.z);
+            const distance = view === 'top' ? 17 : 18;
+            const polar = view === 'top' ? .22 : .68;
+            controls.target.set(0, .2, 0);
+            camera.position.set(Math.sin(azimuth) * Math.sin(polar) * distance,
+                .2 + Math.cos(polar) * distance, Math.cos(azimuth) * Math.sin(polar) * distance);
+            controls.update(); requestRender();
+        },
         zoom(direction) {
             const offset = camera.position.clone().sub(controls.target);
             offset.multiplyScalar(direction === 'in' ? .86 : 1.16);

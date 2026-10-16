@@ -92,7 +92,14 @@ client.actions.handleTable3DPlayer = function handleTable3DPlayer(id) {
             choice.root.classList.remove('table3d-docked', 'table3d-panel-minimized');
             choice.root.classList.add('table3d-confirm');
             choice.root.querySelector('.table3d-panel-toggle')?.remove();
-            choice.rows.forEach(item => { item.hidden = item !== row; item.style.display = item === row ? 'flex' : 'none'; });
+            if (!choice.root.dataset.originalTargetTitle) choice.root.dataset.originalTargetTitle = choice.root.querySelector('h3').textContent;
+            choice.rows.forEach(item => {
+                if (item.dataset.table3dOriginalDisplay === undefined) {
+                    item.dataset.table3dOriginalDisplay = item.style.display;
+                    item.dataset.table3dOriginalHidden = String(item.hidden);
+                }
+                item.hidden = item !== row; item.style.display = item === row ? 'flex' : 'none';
+            });
             choice.root.querySelector('h3').textContent = 'ยืนยันการเลือกเป้าหมาย';
             choice.root.querySelector('.target-confirm-btn')?.focus();
         }
@@ -128,6 +135,26 @@ client.actions.handleTable3DEffect = function handleTable3DEffect(id, index) {
         if (!button) { root.querySelector(`[data-effect-type="${effect.name}"]`)?.click(); button = root.querySelector(`[data-effect-index="${index}"]`); }
         if (button && !button.disabled) button.click();
     }
+};
+
+client.actions.restoreTable3DDialogs = function restoreTable3DDialogs() {
+    document.querySelectorAll('.table3d-confirm').forEach(modal => {
+        modal.classList.remove('table3d-confirm');
+        const title = modal.querySelector('h3');
+        if (title && modal.dataset.originalTargetTitle) title.textContent = modal.dataset.originalTargetTitle;
+        delete modal.dataset.originalTargetTitle;
+        modal.querySelectorAll('[data-table3d-original-display]').forEach(row => {
+            row.style.display = row.dataset.table3dOriginalDisplay;
+            row.hidden = row.dataset.table3dOriginalHidden === 'true';
+            delete row.dataset.table3dOriginalDisplay; delete row.dataset.table3dOriginalHidden;
+        });
+    });
+    document.querySelectorAll('.table3d-docked, .table3d-phase-source, .table3d-panel-minimized').forEach(root => {
+        root.classList.remove('table3d-docked', 'table3d-phase-source', 'table3d-panel-minimized');
+        root.querySelectorAll('.table3d-panel-toggle').forEach(toggle => toggle.remove());
+    });
+    document.body.classList.remove('table3d-phase-details', 'table3d-show-details');
+    client.state.table3DLifeChoice = null;
 };
 
 export function initialize() {
@@ -286,6 +313,11 @@ export function initialize() {
     document.getElementById('table3d-details-toggle').addEventListener('click', event => {
         const open = document.body.classList.toggle('table3d-show-details');
         event.currentTarget.setAttribute('aria-expanded', String(open));
+        if (open) {
+            client.actions.closeTable3DFullscreen();
+            client.actions.switchMobileGameTab('players');
+            requestAnimationFrame(() => document.querySelector('.game-layout')?.scrollIntoView({ block: 'start', behavior: 'smooth' }));
+        }
     });
     document.getElementById('table3d-summary').addEventListener('click', () => document.getElementById('reopen-game-summary-btn')?.click());
     new MutationObserver(records => {

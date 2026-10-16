@@ -49,6 +49,8 @@ client.actions.syncTable3D = async function syncTable3D() {
                 onLife: (id, index) => client.actions.handleTable3DLife(id, index),
                 onEffect: (id, index) => client.actions.handleTable3DEffect(id, index),
                 onError: message => {
+                    client.actions.setGameViewMode('2d');
+                    section.hidden = true;
                     document.body.classList.add('table3d-unavailable');
                     loading.textContent = message;
                     loading.hidden = false;
@@ -66,6 +68,9 @@ client.actions.syncTable3D = async function syncTable3D() {
             drawConfirming: document.getElementById('draw-card-button')?.classList.contains('confirming') });
         client.actions.updateTable3DFocus();
     } catch (error) {
+        client.actions.setGameViewMode('2d');
+        section.hidden = true;
+        client.state.table3D?.setActive(false);
         document.body.classList.add('table3d-unavailable');
         loading.textContent = 'อุปกรณ์นี้ยังแสดงโต๊ะ 3D ไม่ได้ ใช้กระดานด้านล่างหรือสลับเป็น 2D ได้';
         loading.hidden = false;
@@ -75,7 +80,11 @@ client.actions.syncTable3D = async function syncTable3D() {
 
 client.actions.setGameViewMode = function setGameViewMode(mode) {
     const use3D = mode === '3d';
-    if (!use3D) client.actions.closeTable3DFullscreen?.();
+    if (!use3D) {
+        client.actions.closeTable3DFullscreen?.();
+        client.actions.restoreTable3DDialogs?.();
+        client.state.table3D?.setActive(false);
+    }
     if (use3D && document.body.classList.contains('table3d-unavailable')) {
         client.state.table3D?.dispose();
         client.state.table3D = null;
@@ -127,7 +136,7 @@ export function initialize() {
 
   document.getElementById('table3d-hand-toggle')?.addEventListener('click', event => {
       client.state.table3DHandLowered = !client.state.table3DHandLowered;
-      event.currentTarget.textContent = client.state.table3DHandLowered ? 'ยกไพ่' : 'วางไพ่';
+      event.currentTarget.textContent = client.state.table3DHandLowered ? 'ยกไพ่ทุกคน' : 'วางไพ่ทุกคน';
       event.currentTarget.setAttribute('aria-pressed', String(client.state.table3DHandLowered));
       client.actions.syncTable3D();
   });
@@ -159,6 +168,9 @@ export function initialize() {
   client.state.socket.on('room left', () => client.actions.closeTable3DFullscreen());
 
   document.getElementById('table3d-reset')?.addEventListener('click', () => client.state.table3D?.resetCamera());
+
+  document.getElementById('table3d-overview')?.addEventListener('click', () => client.state.table3D?.setCameraView('overview'));
+  document.getElementById('table3d-top-view')?.addEventListener('click', () => client.state.table3D?.setCameraView('top'));
 
   document.getElementById('table3d-zoom-in')?.addEventListener('click', () => client.state.table3D?.zoom('in'));
 

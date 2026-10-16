@@ -167,3 +167,17 @@ body.table3d-fullscreen #table3d-phase-panel { z-index: 8; }
 }
 
 body.table3d-fullscreen #turn-notice { z-index: 11000; }
+
+.table3d-hand-controls {
+    position: absolute; top: calc(var(--table3d-canvas-height, clamp(380px, 62vh, 700px)) - 56px);
+    left: 50%; transform: translateX(-50%); z-index: 6;
+}
+.table3d-hand-controls button { width: auto; margin: 0; min-height: 44px; padding: 8px 18px; border: 1px solid #b79964; border-radius: 10px; background: #302519ed; color: #ffe1aa; }
+body.table3d-fullscreen .table3d-hand-controls { top: calc(var(--table3d-canvas-height, 75dvh) - 56px); bottom: auto; }
+.table3d-section .table3d-camera-controls { flex-wrap: wrap; justify-content: flex-end; max-width: 280px; }
+@media (max-width: 600px) {
+    .table3d-hand-controls { top: calc(var(--table3d-canvas-height, clamp(330px, 52vh, 490px)) - 54px); }
+    .table3d-section .table3d-camera-controls { max-width: 220px; gap: 4px; }
+    .table3d-section .table3d-camera-controls button { min-width: 30px; padding: 6px 8px; font-size: .8rem; }
+    body.table3d-fullscreen .table3d-hand-controls { top: calc(var(--table3d-canvas-height, 75dvh) - 54px); bottom: auto; }
+}
