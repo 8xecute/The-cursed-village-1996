@@ -99,16 +99,16 @@ export function initialize() {
     }
     // Sound is synthesized locally; no downloads, and no autoplay before a gesture.
     const audioControls = document.createElement('div'); audioControls.id = 'game-sound-settings';
-    audioControls.innerHTML = '<strong>เสียงเกม</strong><label>เอฟเฟกต์ <input type="range" min="0" max="100" step="5"></label><label><input type="checkbox"> เสียงบรรยากาศกลางคืน</label>';
+    audioControls.innerHTML = '<strong>เสียงเกม</strong><label>เอฟเฟกต์ <input type="range" min="0" max="100" step="5"></label>';
     document.getElementById('game-preferences-content').appendChild(audioControls);
     const preferences = document.getElementById('game-preferences');
     document.addEventListener('click', event => { if (preferences.open && !preferences.contains(event.target)) preferences.open = false; });
     document.addEventListener('keydown', event => { if (event.key === 'Escape') preferences.open = false; });
-    const volume = audioControls.querySelector('input[type=range]'); const ambience = audioControls.querySelector('input[type=checkbox]');
+    const volume = audioControls.querySelector('input[type=range]');
     let saved = .35;
-    try { const value = localStorage.getItem('villageSfxVolume'); if (value !== null && Number.isFinite(Number(value))) saved = Math.max(0,Math.min(1,Number(value))); ambience.checked = localStorage.getItem('villageAmbience') === 'true'; } catch (_) {}
+    try { const value = localStorage.getItem('villageSfxVolume'); if (value !== null && Number.isFinite(Number(value))) saved = Math.max(0,Math.min(1,Number(value))); } catch (_) {}
     volume.value = saved * 100;
-    let audio, wind, windGain;
+    let audio;
     function sound(kind) {
         if (!audio || audio.state !== 'running' || !saved || document.hidden) return;
         const osc = audio.createOscillator(), gain = audio.createGain();
@@ -119,30 +119,18 @@ export function initialize() {
         osc.connect(gain); gain.connect(audio.destination); osc.start(); osc.stop(audio.currentTime+.2);
         osc.onended = () => { osc.disconnect(); gain.disconnect(); };
     }
-    function updateWind() {
-        if (!audio) return;
-        const night = client.state.currentRoomState?.currentPhase === 'NIGHT';
-        const active = ambience.checked && night && !document.hidden && !client.state.currentRoomState?.gameOver;
-        windGain?.gain.setTargetAtTime(active ? saved*.035 : 0, audio.currentTime, .5);
-    }
     document.addEventListener('pointerdown', () => {
         if (!audio) {
             const Audio = window.AudioContext || window.webkitAudioContext; if (!Audio) return;
             audio = new Audio();
-            const buffer = audio.createBuffer(1,audio.sampleRate*2,audio.sampleRate), data = buffer.getChannelData(0);
-            let low = 0; for(let i=0;i<data.length;i++) { low = .98*low+.02*(Math.random()*2-1); data[i]=low*3; }
-            wind = audio.createBufferSource(); wind.buffer = buffer; wind.loop = true;
-            windGain = audio.createGain(); windGain.gain.value = 0; wind.connect(windGain); windGain.connect(audio.destination); wind.start();
+
         }
         if (audio.state === 'suspended') audio.resume().catch(() => {});
-        updateWind();
     });
-    volume.oninput = () => { saved = Number(volume.value)/100; try { localStorage.setItem('villageSfxVolume',String(saved)); } catch (_) {} updateWind(); };
-    ambience.onchange = () => { try { localStorage.setItem('villageAmbience',String(ambience.checked)); } catch (_) {} updateWind(); };
-    document.addEventListener('visibilitychange', updateWind);
+    volume.oninput = () => { saved = Number(volume.value)/100; try { localStorage.setItem('villageSfxVolume',String(saved)); } catch (_) {} };
     let previousPhase, previousTurn;
     client.state.socket.on('room state update', state => {
-        renderStatus(); updateWind();
+        renderStatus();
         if (previousPhase && state.currentPhase !== previousPhase) sound('flip');
         if (previousTurn && state.currentTurnPlayerUniqueId !== previousTurn && state.currentTurnPlayerUniqueId === client.state.myUniqueId) sound('turn');
         previousPhase = state.currentPhase; previousTurn = state.currentTurnPlayerUniqueId;
@@ -168,8 +156,20 @@ export function initialize() {
         const target = document.querySelector(`.player-board-card[data-player-id="${CSS.escape(event.targetId || '')}"]`);
         if (target && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) target.animate([{outline:'2px solid #c2ab87'},{outline:'2px solid transparent'}],{duration:1000});
     });
+    client.state.socket.on('table card movement', event => {
+        if (document.body.classList.contains('game-view-3d')) client.state.table3D?.animateMovement?.(event);
+        if (event.kind === 'conspiracy') { showFeedback('พิธีเซ่นไหว้ · ทุกคนส่งการ์ดชีวิตพร้อมกัน'); sound('flip'); }
+    });
+    client.state.socket.on('table phase cue', ({cardName}) => {
+        showFeedback(cardName === 'Night' ? 'ยามวิกาล · เตรียมเข้าสู่กลางคืน' : 'พิธีเซ่นไหว้ · เตรียมเปิดการ์ดเครื่องเซ่นและส่งการ์ดชีวิต');
+        document.body.classList.remove('table-phase-cue-night','table-phase-cue-conspiracy');
+        const cueClass = cardName === 'Night' ? 'table-phase-cue-night' : 'table-phase-cue-conspiracy';
+        document.body.classList.add(cueClass);
+        setTimeout(() => document.body.classList.remove(cueClass),2400);
+        sound('flip');
+    });
     client.state.socket.on('update hand', () => sound('flip'));
     client.state.socket.on('card play rejected', ({message}) => { showFeedback(message); sound('flip'); });
-    client.state.socket.on('room left', () => { focused=null; status.hidden=true; closeInspect(); feedback.hidden=true; clearTimeout(feedbackTimer); previousPhase=previousTurn=null; if (audio && windGain) windGain.gain.setTargetAtTime(0,audio.currentTime,.2); });
+    client.state.socket.on('room left', () => { focused=null; status.hidden=true; closeInspect(); feedback.hidden=true; clearTimeout(feedbackTimer); previousPhase=previousTurn=null; });
     window.addEventListener('pagehide', () => { audio?.suspend().catch(() => {}); });
 }

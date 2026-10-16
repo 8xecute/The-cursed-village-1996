@@ -117,6 +117,13 @@ module.exports = function registerHandlers(socket, game) {
                       takenCards[player.uniqueId] = leftPlayer.tryalCards[selIndex];
                   }
               });
+              game.io.to(roomName).emit('table card movement', {
+                  kind: 'conspiracy',
+                  routes: alivePlayers.flatMap((recipient, idx) => takenCards[recipient.uniqueId] ? [{
+                      actorId: alivePlayers[(idx + alivePlayers.length - 1) % alivePlayers.length].uniqueId,
+                      targetId: recipient.uniqueId
+                  }] : [])
+              });
               // 3. ลบไพ่ที่ถูกเลือกออกจากซ้ายมือ (จากหลังไปหน้าเพื่อไม่ให้ index เพี้ยน)
               alivePlayers.forEach((player, idx) => {
                   const leftIdx = (idx + alivePlayers.length - 1) % alivePlayers.length;

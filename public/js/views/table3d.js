@@ -145,7 +145,7 @@ export function initialize() {
 
   document.getElementById('table3d-hand-toggle')?.addEventListener('click', event => {
       client.state.table3DHandLowered = !client.state.table3DHandLowered;
-      event.currentTarget.textContent = client.state.table3DHandLowered ? 'ยกไพ่ทุกคน' : 'วางไพ่ทุกคน';
+      event.currentTarget.textContent = client.state.table3DHandLowered ? 'ยกไพ่' : 'วางไพ่';
       event.currentTarget.setAttribute('aria-pressed', String(client.state.table3DHandLowered));
       client.actions.syncTable3D();
   });

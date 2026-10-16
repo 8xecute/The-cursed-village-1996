@@ -116,7 +116,8 @@ module.exports = function createServices(game) {
           game.io.to(roomName).emit('card action feedback', {
               actorId: playerUniqueId, actorName: player.name, cardName: cardToPlay.name,
               targetId: targetUniqueId, targetName: target?.name || null,
-              secondTargetName: room.players[secondTargetUniqueId]?.name || null, result
+              secondTargetName: room.players[secondTargetUniqueId]?.name || null,
+              discard: cardToPlay.type === 'Action' || cardToPlay.type === 'Event' || cardToPlay.name === 'Witness', result
           });
       }
 
@@ -588,6 +589,8 @@ module.exports = function createServices(game) {
       for (let i = 0; i < count; i++) {
           if (room.gameDeck.length > 0) {
               const card = room.gameDeck.shift();
+              game.io.to(roomName).emit('table card movement', { kind: 'draw', targetId: playerUniqueId, delay: i * 160 });
+              if (card.type === 'Event') game.io.to(roomName).emit('table phase cue', { cardName: card.name });
               // If an Event card is drawn, resolve it immediately (กลางวันหรือกลางคืน)
               if (card.type === 'Event') {
                   switch (card.name) {
@@ -641,6 +644,8 @@ module.exports = function createServices(game) {
               // Try drawing again
               if (room.gameDeck.length > 0) {
                   const card = room.gameDeck.shift();
+              game.io.to(roomName).emit('table card movement', { kind: 'draw', targetId: playerUniqueId, delay: i * 160 });
+              if (card.type === 'Event') game.io.to(roomName).emit('table phase cue', { cardName: card.name });
                   if (card.type === 'Event') {
                       // resolve event ทันที (เหมือนข้างบน)
                       switch (card.name) {

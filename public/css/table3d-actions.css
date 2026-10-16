@@ -243,3 +243,12 @@ body.game-view-3d .table3d-confirm .target-selection-footer button { min-height:
     body.game-view-3d #table3d-section .table3d-end-turn,
     body.game-view-3d #table3d-phase-panel button { min-height: 36px !important; height: auto !important; }
 }
+
+/* The table uses the same village artwork as the page. */
+#table3d-canvas { background: linear-gradient(#0d0b0980,#0d0b0930), url('../Background/background.jpg') center / cover no-repeat; }
+body.game-view-3d:not(.table3d-unavailable) :is(#waiting-status-banner, #turn-notice) { display:none !important; }
+.table-phase-cue-night #table3d-canvas { animation:phase-night 2.4s ease-out; }
+.table-phase-cue-conspiracy #table3d-canvas { animation:phase-conspiracy 2.4s ease-out; }
+@keyframes phase-night { 35% { filter:brightness(.55) saturate(.6); } }
+@keyframes phase-conspiracy { 35% { filter:sepia(.45) brightness(1.2); } }
+@media(prefers-reduced-motion:reduce) { .table-phase-cue-night #table3d-canvas, .table-phase-cue-conspiracy #table3d-canvas { animation:none; } }

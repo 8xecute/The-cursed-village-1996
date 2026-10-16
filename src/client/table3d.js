@@ -15,7 +15,7 @@ function canvasTexture(width, height, draw) {
 }
 
 function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError, onInspect }) {
-    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'low-power' });
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'low-power' });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -27,7 +27,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
     renderer.domElement.setAttribute('role', 'img');
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x110d0a);
+    scene.background = null;
     scene.fog = new THREE.Fog(0x110d0a, 20, 42);
     const camera = new THREE.PerspectiveCamera(43, 1, 0.1, 60);
     const controls = new OrbitControls(camera, renderer.domElement);
@@ -128,10 +128,16 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
     let inspected = false;
     const seatPositions = new Map();
     let feedbackImageFor;
-    let flight = null;
+    const flights = [];
     function stopFlight() {
-        if (!flight) return;
-        scene.remove(flight.mesh); flight.mesh.geometry.dispose(); flight.mesh.material.dispose(); flight = null;
+        for (const flight of flights) { scene.remove(flight.mesh); flight.mesh.geometry.dispose(); flight.mesh.material.dispose(); }
+        flights.length = 0;
+    }
+    function addFlight(from, to, texture = back, delay = 0) {
+        if (!active || disposed || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        const face = new THREE.Mesh(new THREE.PlaneGeometry(.65,.95), new THREE.MeshBasicMaterial({map:texture,transparent:true,side:THREE.DoubleSide}));
+        face.quaternion.copy(camera.quaternion); face.position.copy(from); face.visible = false; scene.add(face);
+        flights.push({mesh:face,from:from.clone(),to:to.clone(),started:performance.now()+delay}); requestRender();
     }
 
     function requestRender() {
@@ -139,15 +145,18 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
         renderFrame = requestAnimationFrame(() => {
             renderFrame = 0;
             controls.update();
-            if (flight) {
-                const t = Math.min(1, (performance.now()-flight.started)/650);
+            const now = performance.now();
+            for (let index=flights.length-1;index>=0;index--) {
+                const flight = flights[index];
+                if (now < flight.started) continue;
+                const t = Math.min(1,(now-flight.started)/650);
+                flight.mesh.visible = true;
                 flight.mesh.position.lerpVectors(flight.from,flight.to,t);
                 flight.mesh.position.y += Math.sin(Math.PI*t)*1.2;
-                flight.mesh.material.opacity = 1-t*.5;
-                if (t === 1) stopFlight();
+                if (t === 1) { scene.remove(flight.mesh); flight.mesh.geometry.dispose(); flight.mesh.material.dispose(); flights.splice(index,1); }
             }
             renderer.render(scene, camera);
-            if (flight) requestRender();
+            if (flights.length) requestRender();
         });
     }
     controls.addEventListener('change', requestRender);
@@ -229,12 +238,15 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             seatPositions.set(player.uniqueId, seat.position.clone().setY(1.3));
             dynamic.add(seat);
             const material = new THREE.MeshStandardMaterial({ color: player.alive ? COLORS[index % COLORS.length] : 0x48423c, roughness: 0.6 });
-            const pawn = new THREE.Group(); seat.add(pawn);
+            const pawn = new THREE.Group(); pawn.position.z = .55; seat.add(pawn);
             if (!player.alive) { pawn.rotation.z = Math.PI / 2; pawn.position.y = 0.2; }
             const parts = [
-                mesh(new THREE.CylinderGeometry(.29, .38, .14, 24), material, pawn, [0, .08, 0]),
-                mesh(new THREE.CylinderGeometry(.12, .29, .55, 24), material.clone(), pawn, [0, .41, 0]),
-                mesh(new THREE.SphereGeometry(.2, 20, 16), material.clone(), pawn, [0, .82, 0]),
+                mesh(new THREE.CapsuleGeometry(.10,.30,4,10),material,pawn,[-.13,.25,0]),
+                mesh(new THREE.CapsuleGeometry(.10,.30,4,10),material.clone(),pawn,[.13,.25,0]),
+                mesh(new THREE.CylinderGeometry(.20,.25,.42,16),material.clone(),pawn,[0,.65,0]),
+                mesh(new THREE.SphereGeometry(.18,16,12),material.clone(),pawn,[0,1.03,0]),
+                mesh(new THREE.CapsuleGeometry(.075,.28,4,10),material.clone(),pawn,[-.29,.63,0]),
+                mesh(new THREE.CapsuleGeometry(.075,.28,4,10),material.clone(),pawn,[.29,.63,0]),
             ];
             parts.forEach(part => { part.userData = { playerId: player.uniqueId }; targets.push(part); });
             if (state.currentTurnPlayerUniqueId === player.uniqueId && player.alive) {
@@ -392,13 +404,24 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
         },
         resetCamera,
         animateCard(event) {
-            if (!active || disposed || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-            const from = seatPositions.get(event.actorId), to = seatPositions.get(event.targetId);
-            if (!from || !to || !feedbackImageFor) return;
-            stopFlight();
-            const face = new THREE.Mesh(new THREE.PlaneGeometry(.65,.95),new THREE.MeshBasicMaterial({map:cardTexture(feedbackImageFor(event.cardName)),transparent:true,side:THREE.DoubleSide}));
-            face.quaternion.copy(camera.quaternion); scene.add(face);
-            flight = { mesh:face, from:from.clone(), to:to.clone(), started:performance.now() }; requestRender();
+            const actor = seatPositions.get(event.actorId), target = seatPositions.get(event.targetId);
+            const from = actor?.clone().multiplyScalar(1.15).setY(1);
+            const to = target ? target.clone().multiplyScalar(.63).setY(.18) : new THREE.Vector3(0,1.1,0);
+            if (!from || !feedbackImageFor) return;
+            const texture = cardTexture(feedbackImageFor(event.cardName));
+            addFlight(from,to,texture);
+            if (event.discard) addFlight(to,new THREE.Vector3(1.2,.3,0),texture,650);
+        },
+        animateMovement(event) {
+            if (event.kind === 'draw') {
+                const to = seatPositions.get(event.targetId);
+                if (to) addFlight(new THREE.Vector3(-1.2,.4,0),to.clone().multiplyScalar(1.15).setY(1),back,event.delay || 0);
+            } else if (event.kind === 'conspiracy') {
+                for (const route of event.routes || []) {
+                    const from = seatPositions.get(route.actorId), to = seatPositions.get(route.targetId);
+                    if (from && to) addFlight(from.clone().multiplyScalar(.79).setY(.18),to.clone().multiplyScalar(.79).setY(.18),back);
+                }
+            }
         },
         setCameraView(view) {
             const offset = camera.position.clone().sub(controls.target);
