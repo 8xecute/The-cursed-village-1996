@@ -266,7 +266,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
                     new THREE.MeshBasicMaterial({ color: 0xffd359 }), seat, [0, .07, 0]);
                 ring.rotation.x = Math.PI / 2;
             }
-            label(seat, `${player.name}${player.uniqueId === me ? ' (คุณ)' : ''}${!player.alive ? ' · เสียชีวิต' : ''}`, [0, 1.45, 0],
+            label(seat, `${player.name}${player.uniqueId === me ? ' (คุณ)' : ''}${state.players?.[me]?.hasBeenWitch && player.hasBeenWitch ? ' · ทีมปอบ' : ''}${!player.alive ? ' · เสียชีวิต' : ''}`, [0, 1.45, 0],
                 player.alive ? '#eddbb7' : '#a39b91');
             if (interaction?.kind === 'player') {
                 const eligible = interaction.eligible.includes(player.uniqueId);

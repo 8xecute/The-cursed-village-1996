@@ -24,10 +24,8 @@ module.exports = function createServices(game) {
       const room = game.rooms[roomName];
       if (!room) return;
 
-      // Meet the entire team on entering night; knowledge persists after cards move.
-      if (room.currentPhase === 'NIGHT') {
-          game.rememberWitchTeammates(room);
-      }
+      // Team members know one another immediately, including daytime infections.
+      game.rememberWitchTeammates(room);
 
       const buildPlayersStateFor = (viewer) => {
         const playersState = {};
@@ -35,7 +33,7 @@ module.exports = function createServices(game) {
           const player = room.players[uniqueId];
           const isSelf = !viewer?.isSpectator && viewer?.uniqueId === uniqueId;
           const viewerKnowsWitchTeam = !!(room.gameOver || (isSelf && !viewer?.isSpectator) ||
-              (!viewer?.isSpectator && viewer?.hasBeenWitch && viewer.knownWitchTeammates?.has(uniqueId)));
+              (!viewer?.isSpectator && viewer?.hasBeenWitch));
           const revealedIndexes = new Set(player.revealedTryalCardIndexes || []);
           playersState[uniqueId] = {
               id: player.id, // socket id
