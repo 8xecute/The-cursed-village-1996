@@ -181,3 +181,18 @@ body.table3d-fullscreen .table3d-hand-controls { top: calc(var(--table3d-canvas-
     .table3d-section .table3d-camera-controls button { min-width: 30px; padding: 6px 8px; font-size: .8rem; }
     body.table3d-fullscreen .table3d-hand-controls { top: calc(var(--table3d-canvas-height, 75dvh) - 54px); bottom: auto; }
 }
+
+/* The regular board always opens target selection as a centered modal. */
+:is(body:not(.game-view-3d), body.table3d-unavailable) .select-player-modal {
+    position: fixed !important; inset: 0 !important; transform: none !important;
+    width: 100vw !important; height: 100dvh !important; max-height: none !important;
+    display: flex !important; align-items: center !important; justify-content: center !important;
+    padding: 16px !important; box-sizing: border-box;
+    background: #000a !important; pointer-events: auto !important; z-index: 10000 !important;
+}
+:is(body:not(.game-view-3d), body.table3d-unavailable) .select-player-modal > .select-player-modal-content {
+    width: min(420px, 100%) !important; max-width: 420px !important; max-height: 85dvh !important;
+    position: relative !important; inset: auto !important; transform: none !important;
+    overflow-y: auto !important; margin: 0 !important; padding: 16px !important;
+}
+:is(body:not(.game-view-3d), body.table3d-unavailable) .select-player-modal .table3d-panel-toggle { display: none !important; }

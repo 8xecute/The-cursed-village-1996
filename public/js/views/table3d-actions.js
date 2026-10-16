@@ -265,6 +265,12 @@ export function initialize() {
     function refresh() {
         scheduled = false;
         const enabled = document.body.classList.contains('game-view-3d') && !document.body.classList.contains('table3d-unavailable') && !!client.state.currentRoomState?.gameStarted;
+        if (!enabled && document.querySelector('.table3d-docked, .table3d-confirm, .table3d-panel-toggle, .table3d-phase-source')) {
+            client.actions.restoreTable3DDialogs();
+        }
+        const layout = document.querySelector('.game-layout');
+        const targetOpen = !!document.querySelector('.select-player-modal');
+        if (layout && layout.inert !== (!enabled && targetOpen)) layout.inert = !enabled && targetOpen;
         const request = client.actions.getTable3DInteraction();
         updatePhasePanel(enabled, request);
         document.querySelectorAll(dockSelector).forEach(root => {
@@ -311,13 +317,12 @@ export function initialize() {
         if (!button.disabled) document.getElementById(button.dataset.tableAction)?.click();
     }));
     document.getElementById('table3d-details-toggle').addEventListener('click', event => {
-        const open = document.body.classList.toggle('table3d-show-details');
-        event.currentTarget.setAttribute('aria-expanded', String(open));
-        if (open) {
-            client.actions.closeTable3DFullscreen();
-            client.actions.switchMobileGameTab('players');
-            requestAnimationFrame(() => document.querySelector('.game-layout')?.scrollIntoView({ block: 'start', behavior: 'smooth' }));
-        }
+        // Open the regular board as a complete view, with its own action UI.
+        client.actions.setGameViewMode('2d');
+        client.actions.syncTable3D();
+        event.currentTarget.setAttribute('aria-expanded', 'false');
+        client.actions.switchMobileGameTab('players');
+        requestAnimationFrame(() => document.querySelector('.game-layout')?.scrollIntoView({ block: 'start', behavior: 'smooth' }));
     });
     document.getElementById('table3d-summary').addEventListener('click', () => document.getElementById('reopen-game-summary-btn')?.click());
     new MutationObserver(records => {

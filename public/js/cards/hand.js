@@ -1,3 +1,4 @@
+import { cardArtworkUrl } from '../views/artwork.js';
 import { client } from '../core/client.js';
 
 client.actions.updateCardSelectionSummary = function updateCardSelectionSummary() {
@@ -219,7 +220,8 @@ client.actions.createCardImage = function createCardImage(cardName) {
     };
     
     const imageFileName = cardImageMap[cardName] || 'accusation.png'; // fallback
-    img.src = `cards/${imageFileName}?v=${cardName === 'Accusation' ? 'art-v3' : 'art-v2'}`;
+    img.dataset.cardArtwork = imageFileName;
+    img.src = cardArtworkUrl(imageFileName);
     img.alt = client.actions.displayCardName(cardName);
     img.title = client.actions.displayCardDescription(cardName);
     

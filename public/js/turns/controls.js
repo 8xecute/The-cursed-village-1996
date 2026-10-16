@@ -107,6 +107,7 @@ export function initialize() {
   });
 
   client.dom.playCardButton.addEventListener('click', () => {
+      if (document.querySelector('.select-player-modal')) return;
       const me = client.state.currentRoomState && client.state.currentRoomState.players && client.state.currentRoomState.players[client.state.myUniqueId];
       if (me && !me.alive) {
           client.actions.addGameMessage('คุณตายแล้ว ไม่สามารถทำแอ็กชันได้', 'red');

@@ -1,3 +1,4 @@
+import { cardArtworkUrl } from '../views/artwork.js';
 import { client } from '../core/client.js';
 
 client.actions.showDeathNoticeModal = function showDeathNoticeModal() {
@@ -86,7 +87,8 @@ client.actions.showWitchPopup = function showWitchPopup(senderName) {
     overlay.style.justifyContent = 'center';
 
     const cardImg = document.createElement('img');
-    cardImg.src = 'cards/witch.png';
+    cardImg.dataset.cardArtwork = 'witch.png';
+    cardImg.src = cardArtworkUrl('witch.png');
     cardImg.alt = 'ปอบ';
     cardImg.style.width = '160px';
     cardImg.style.height = '220px';

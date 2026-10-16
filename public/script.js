@@ -1,3 +1,4 @@
+import { initialize as initializeArtwork } from './js/views/artwork.js';
 import './js/views/popup-controls.js';
 import { initialize as initializeTable3DActions } from './js/views/table3d-actions.js';
 import { initialize as initializeTraining } from './js/training/tutorial.js';
@@ -65,3 +66,5 @@ initialize27();
 initializeGuidance();
 initializeTraining();
 initializeTable3DActions();
+
+initializeArtwork();

@@ -65,6 +65,7 @@ client.actions.syncTable3D = async function syncTable3D() {
             interaction: client.actions.getTable3DInteraction(),
             canDraw: client.actions.canUseTable3DHand() && !document.getElementById('draw-card-button')?.disabled,
             handLowered: !!client.state.table3DHandLowered,
+            artwork: client.state.cardArtwork,
             drawConfirming: document.getElementById('draw-card-button')?.classList.contains('confirming') });
         client.actions.updateTable3DFocus();
     } catch (error) {
