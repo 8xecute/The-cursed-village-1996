@@ -28,3 +28,18 @@
     .turn-notice { font-size: .9rem; text-align: center; }
 }
 @media (prefers-reduced-motion: reduce) { .turn-notice { animation: none; } }
+
+/* Finite, gentle attention cue; no glow or continuous animation. */
+.turn-attention .action-guide,
+.turn-attention #table3d-action-hint {
+    animation: turn-guidance-pulse 1.5s ease-in-out 4;
+}
+@keyframes turn-guidance-pulse {
+    0%, 100% { background-color: #382713; color: #f6e4bf; }
+    50% { background-color: #70502b; color: #fff3d9; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .turn-attention .action-guide, .turn-attention #table3d-action-hint {
+        animation: none; outline: 2px solid #d5ae68;
+    }
+}

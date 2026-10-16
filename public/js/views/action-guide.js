@@ -35,7 +35,7 @@ function getGuide(state) {
     if (state.playerForcedToRevealTryal) return guide('รอเปิดการ์ดชีวิต', 'รอผู้เล่นเลือกการ์ดก่อนเล่นต่อ');
     if (state.currentTurnPlayerUniqueId !== me.uniqueId) return guide(`ตาของ ${state.currentTurnPlayerName || 'ผู้เล่นอื่น'}`, 'รอเทิร์นของคุณ · ดูกระดานหรือข้อความได้');
     const card = client.state.myCurrentHand?.[client.state.selectedCard];
-    if (card) return guide('เลือกเป้าหมายแล้วเล่นการ์ด', 'กดปุ่มเล่นใต้การ์ด → เลือกเป้าหมายตามที่หน้าต่างบอก', true, true);
+    if (card) return guide('เลือกเป้าหมายแล้วเล่นการ์ด', document.body.classList.contains('game-view-3d') ? 'แตะตัวผู้เล่นบนโต๊ะ → ยืนยันในแผงข้างโต๊ะ' : 'กดปุ่มเล่นใต้การ์ด → เลือกเป้าหมายตามที่หน้าต่างบอก', true, true);
     if (me.hasPlayedCardsThisTurn) return guide('เล่นแล้ว · จบเทิร์นได้', 'เล่นการ์ดต่อได้ หรือแตะจบเทิร์น 2 ครั้ง', true, true);
     return guide('ถึงตาคุณแล้ว', 'เลือกอย่างใดอย่างหนึ่ง: จั่ว 2 ใบ หรือเลือกการ์ดเพื่อเล่น', true, true);
 }
@@ -63,10 +63,12 @@ export function initialize() {
         if (myTurn && !previousTurn) {
             clearTimeout(noticeTimer);
             notice.hidden = false;
-            noticeTimer = setTimeout(() => { notice.hidden = true; }, 5000);
+            document.body.classList.add('turn-attention');
+            noticeTimer = setTimeout(() => { notice.hidden = true; document.body.classList.remove('turn-attention'); }, 6000);
         } else if (!myTurn) {
             clearTimeout(noticeTimer);
             notice.hidden = true;
+            document.body.classList.remove('turn-attention');
         }
         previousTurn = myTurn;
         document.title = myTurn ? `ถึงตาคุณแล้ว • ${originalTitle}` : originalTitle;
@@ -96,6 +98,7 @@ export function initialize() {
     client.state.socket.on('room left', () => {
         clearTimeout(noticeTimer);
         previousTurn = false;
+        document.body.classList.remove('turn-attention');
         banner.hidden = notice.hidden = true;
         document.title = originalTitle;
     });

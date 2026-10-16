@@ -19,7 +19,7 @@ client.actions.canUseTable3DHand = function canUseTable3DHand() {
     const state = client.state.currentRoomState;
     return canAct() && client.state.isMyTurn && state.currentPhase === 'DAY' &&
         !state.awaitingLeftTryalSelections && !state.playerForcedToRevealTryal && !state.isAssigningBlackCat &&
-        !client.actions.getTable3DInteraction();
+        (!client.actions.getTable3DInteraction() || client.actions.getTable3DInteraction().preview);
 };
 client.actions.getTable3DInteraction = function getTable3DInteraction() {
     if (!canAct()) return null;
@@ -37,7 +37,22 @@ client.actions.getTable3DInteraction = function getTable3DInteraction() {
     }
     if (document.getElementById('must-play-night-popup')) return { kind: 'event', event: 'night' };
     const choice = picker();
-    if (!choice) return null;
+    if (!choice) {
+        const card = client.state.myCurrentHand?.[client.state.selectedCard];
+        const state = client.state.currentRoomState;
+        if (!client.state.isMyTurn || state.currentPhase !== 'DAY' || state.awaitingLeftTryalSelections ||
+            state.playerForcedToRevealTryal || state.isAssigningBlackCat || !card ||
+            ![...client.state.CARDS_NEED_TARGET, ...client.state.CARDS_NEED_TWO_TARGETS].includes(card.name)) return null;
+        const eligible = [], blocked = {};
+        for (const player of Object.values(state.players)) {
+            const protectedTarget = (card.color === 'Red' || ['Accusation', 'Evidence', 'Witness'].includes(card.name)) &&
+                player.inPlayCards?.some(effect => (effect.name || effect) === 'Piety');
+            const reason = !player.alive ? 'เสียชีวิตแล้ว' : player.uniqueId === client.state.myUniqueId ? 'เลือกตัวเองไม่ได้'
+                : protectedTarget ? 'พลังศรัทธา · กันการ์ดแดง' : null;
+            if (reason) blocked[player.uniqueId] = reason; else eligible.push(player.uniqueId);
+        }
+        return { kind: 'player', preview: true, eligible, selected: [], blocked };
+    }
     const eligible = choice.select ? [...choice.select.options].filter(option => option.value && !option.disabled).map(option => option.value)
         : choice.rows.filter(row => row.getAttribute('aria-disabled') !== 'true').map(row => row.dataset.uniqueId);
     const selected = choice.select ? [choice.select.value].filter(Boolean)
@@ -55,7 +70,15 @@ client.actions.handleTable3DPlayer = function handleTable3DPlayer(id) {
     client.state.table3DFocusedPlayer = id;
     client.actions.updateTable3DFocus();
     if (!canAct()) return;
-    const choice = picker();
+    let choice = picker();
+    if (!choice) {
+        const preview = client.actions.getTable3DInteraction();
+        if (!preview?.preview || !preview.eligible.includes(id)) return;
+        const play = document.getElementById('play-card-button');
+        if (!play || play.disabled) return;
+        play.click();
+        choice = picker();
+    }
     if (choice?.select) {
         if (![...choice.select.options].some(option => option.value === id && !option.disabled)) return;
         choice.select.value = id;
@@ -130,7 +153,7 @@ export function initialize() {
         if (description.textContent !== text) description.textContent = text;
         panel.querySelectorAll('[data-table-action]').forEach(button => {
             const source = document.getElementById(button.dataset.tableAction);
-            const disabled = !canAct() || state.currentPhase !== 'DAY' || !!request || !source || source.disabled ||
+            const disabled = !canAct() || state.currentPhase !== 'DAY' || (!!request && !request.preview) || !source || source.disabled ||
                 (button.dataset.tableAction === 'clear-selected-card' && client.state.selectedCard === null);
             if (button.disabled !== disabled) button.disabled = disabled;
             if (source && button.textContent !== source.textContent) button.textContent = source.textContent;
@@ -143,7 +166,7 @@ export function initialize() {
                 const button = document.createElement('button');
                 button.type = 'button'; button.textContent = client.actions.displayCardName(card.name);
                 button.setAttribute('aria-pressed', String(client.state.selectedCard === index));
-                button.disabled = !canAct() || !client.state.isMyTurn || !!request;
+                button.disabled = !canAct() || !client.state.isMyTurn || (!!request && !request.preview);
                 button.onclick = () => document.querySelectorAll('#player-hand > .card')[index]?.click();
                 hand.appendChild(button);
             });

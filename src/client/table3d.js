@@ -18,7 +18,9 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
     const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'low-power' });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
     renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFShadowMap;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.15;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     container.appendChild(renderer.domElement);
     renderer.domElement.setAttribute('aria-label', 'โต๊ะเกม 3D ลากเพื่อหมุน เลื่อนล้อเมาส์หรือใช้ปุ่มเพื่อซูม');
@@ -46,8 +48,8 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
         requestRender();
     }
 
-    scene.add(new THREE.HemisphereLight(0xe7c5a3, 0x261811, 2.1));
-    const key = new THREE.DirectionalLight(0xffd2a1, 3.4);
+    scene.add(new THREE.HemisphereLight(0xc0ceda, 0x302016, 1.25));
+    const key = new THREE.DirectionalLight(0xffd9b0, 2.4);
     key.position.set(-4, 10, 5);
     key.castShadow = true;
     key.shadow.mapSize.set(1024, 1024);
@@ -58,6 +60,10 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
     const candleLight = new THREE.PointLight(0xff8f32, 15, 9, 2);
     candleLight.position.set(0, 1.6, 0);
     scene.add(candleLight);
+    const moonFill = new THREE.DirectionalLight(0x9bb8d4, 0.85);
+    moonFill.position.set(5, 6, -6);
+    scene.add(moonFill);
+    key.shadow.bias = -0.0002;
 
     const wood = canvasTexture(512, 512, (ctx, w, h) => {
         ctx.fillStyle = '#593017'; ctx.fillRect(0, 0, w, h);
@@ -145,6 +151,13 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
         face.rotation.set(...rotation);
         face.userData = data;
         targets.push(face);
+        const categoryColor = { Red: 0xc94d45, Green: 0x549560, Blue: 0x4a8dc0, Black: 0x77716b }[data.category];
+        if (categoryColor !== undefined) {
+            const border = new THREE.LineSegments(new THREE.EdgesGeometry(face.geometry),
+                new THREE.LineBasicMaterial({ color: categoryColor, toneMapped: false }));
+            border.position.z = 0.002;
+            face.add(border);
+        }
         return face;
     }
 
@@ -250,7 +263,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
                 const face = card(seat, [offset * spacing, 1 + (own && selected === i ? .24 : 0), .7 + Math.abs(offset) * .025],
                     [-.12, 0, -offset * Math.min(.045, .35 / Math.max(1, count))],
                     own ? cardTexture(imageFor(hand[i].name)) : back,
-                    own ? { cardIndex: i } : { playerId: player.uniqueId }, own ? .68 : .47);
+                    own ? { cardIndex: i, category: hand[i].color } : { playerId: player.uniqueId }, own ? .68 : .47);
                 if (own && selected === i) face.material.color.set(0xb9a687);
             }
             // Public effects form a row toward the table centre, above life cards.
@@ -258,7 +271,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             const effectSpacing = Math.min(.43, 2.1 / Math.max(1, effects.length));
             effects.forEach((effect, i) => {
                 const effectCard = card(seat, [(i - (effects.length - 1) / 2) * effectSpacing, .08 + i * .002, -1.75],
-                    [-Math.PI / 2, 0, 0], cardTexture(imageFor(effect.name)), { playerId: player.uniqueId, effectIndex: i }, .4);
+                    [-Math.PI / 2, 0, 0], cardTexture(imageFor(effect.name)), { playerId: player.uniqueId, effectIndex: i, category: effect.color }, .4);
                 if (interaction?.kind === 'effect' && interaction.owner === player.uniqueId && interaction.eligible.includes(i)) outline(effectCard, interaction.selected.includes(i) ? 0x879277 : 0xc2ab87);
             });
         });
