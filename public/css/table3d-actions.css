@@ -308,7 +308,20 @@ body.game-view-3d .table3d-docked .popup-collapse-toggle { display: none !import
     border-radius: 6px; background: #571f29; color: #ffe0df; font-size: .95rem;
 }
 #table3d-role-badge[hidden] { display: none; }
+body:not(.game-view-3d) #game-messages {
+    max-height: 55dvh; min-height: 240px; padding: 10px;
+    background: #181512; border: 1px solid #584b3c; border-radius: 10px;
+    font-size: .95rem; line-height: 1.7; overflow-y: auto; overflow-wrap: anywhere;
+    scrollbar-gutter: stable;
+}
+body:not(.game-view-3d) #game-messages > div {
+    padding: 10px 12px; margin: 0 0 7px; border-radius: 6px;
+    background: #26211c; border-left: 3px solid currentColor;
+    font-weight: normal !important;
+}
+body:not(.game-view-3d) #game-messages > div b { font-weight: 700; }
 body.game-view-3d.table3d-phase-details #night-action-popup.table3d-phase-source {
+    pointer-events: auto !important;
     top: auto !important; bottom: 155px !important; right: 12px !important; left: auto !important;
     transform: none !important; width: min(360px, calc(100vw - 24px)) !important;
     max-height: 48dvh !important; overflow: auto !important;
@@ -320,6 +333,8 @@ body.game-view-3d.table3d-phase-details #night-action-popup .modal-witch-chat-se
 body.game-view-3d #modal-witch-chat-messages { height: 24dvh; min-height: 100px; max-height: 260px; overflow-y: auto; }
 .modal-witch-chat-input-bar { display: flex; gap: 6px; }
 .modal-witch-chat-input-bar input { min-width: 0; flex: 1; font-size: 16px; }
+body.game-view-3d.table3d-phase-details #night-action-popup.table3d-docked .modal-witch-chat-section,
+body.game-view-3d.table3d-phase-details #night-action-popup.table3d-docked .modal-witch-chat-input-bar :is(input, button) { pointer-events: auto !important; }
 .modal-witch-chat-input-bar button { flex: 0 0 auto; width: auto; }
 .witch-chat-message { padding: 8px 10px; margin: 6px 0; background: #302826; border-radius: 6px; color: #f0e1d3; overflow-wrap: anywhere; }
 .witch-chat-message .sender { color: #f2bd99; }

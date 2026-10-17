@@ -339,6 +339,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             dynamic.add(seat);
             const material = new THREE.MeshStandardMaterial({ color: player.alive ? new THREE.Color(COLORS[index % COLORS.length]).multiplyScalar(.55) : 0x302d29, roughness: 0.6 });
             const pawn = new THREE.Group(); pawn.position.z = 2.05; pawn.position.y = -.1; seat.add(pawn);
+            pawn.scale.setScalar(1.4);
             if (!player.alive) { pawn.rotation.z = Math.PI / 2; pawn.position.y = 0.2; }
             const parts = [
                 mesh(new THREE.CylinderGeometry(.20,.25,.42,16),material.clone(),pawn,[0,.25,0]),
@@ -353,7 +354,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
                 part.material.emissive.set(selectedTarget ? 0xb47e34 : 0x597b70);
                 part.material.emissiveIntensity = selectedTarget ? .9 : .55;
             });
-            const nameLabel = label(seat, `${selectedTarget ? '✓ ' : ''}${player.name}${player.uniqueId === me ? ' (คุณ)' : ''}${state.players?.[me]?.hasBeenWitch && player.hasBeenWitch ? ' · ทีมปอบ' : ''}${!player.alive ? ' · เสียชีวิต' : ''}`, [0, 1.0, 2.05],
+            const nameLabel = label(seat, `${selectedTarget ? '✓ ' : ''}${player.name}${player.uniqueId === me ? ' (คุณ)' : ''}${state.players?.[me]?.hasBeenWitch && player.hasBeenWitch ? ' · ทีมปอบ' : ''}${!player.alive ? ' · เสียชีวิต' : ''}`, [0, 1.3, 2.05],
                 eligibleTarget ? selectedTarget ? '#ffe1a0' : '#a9e0c9' : player.alive ? '#eddbb7' : '#a39b91');
             nameLabel.userData.playerId = player.uniqueId;
             targets.push(nameLabel);
@@ -394,17 +395,20 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             if (revealed.length) label(seat, 'เปิดแล้ว', [0,.3,-.38], '#cbb58b');
             const own = player.uniqueId === me;
             const count = own ? hand.length : Number(player.handSize) || 0;
-            // All cards stay selectable; compress the fan for larger hands.
-            const spacing = Math.min(.43, 2.4 / Math.max(1, count));
+            // Own hand uses separate rows so every title remains visible.
+            const columns = own ? Math.min(6, count) : count;
+            const spacing = own ? .61 : Math.min(.43, 2.4 / Math.max(1, count));
             for (let i = 0; i < count; i++) {
-                const offset = i - (count - 1) / 2;
+                const row = own ? Math.floor(i / Math.max(1, columns)) : 0;
+                const rowCount = Math.min(columns, count - row * columns);
+                const offset = (own ? i % columns : i) - (rowCount - 1) / 2;
                 const lowered = handLowered;
-                const position = lowered ? [offset * spacing, .08 + (own && selected === i ? .12 : 0), .38 + Math.abs(offset) * .025]
-                    : [offset * spacing, 1 + (own && selected === i ? .24 : 0), .7 + Math.abs(offset) * .025];
-                const rotation = lowered ? [-Math.PI / 2, 0, 0] : [-.12, 0, -offset * Math.min(.045, .35 / Math.max(1, count))];
+                const position = lowered ? [offset * spacing, .08 + (own && selected === i ? .12 : 0), .38 + row * .88 + Math.abs(offset) * .025]
+                    : [offset * spacing, 1 + row * .98 + (own && selected === i ? .16 : 0), .7 + Math.abs(offset) * .025];
+                const rotation = lowered ? [-Math.PI / 2, 0, 0] : [-.12, 0, own ? 0 : -offset * Math.min(.045, .35 / Math.max(1, count))];
                 const face = card(seat, position, rotation,
                     own ? cardTexture(imageFor(hand[i].name)) : back,
-                    own ? { cardIndex: i, category: hand[i].color } : { playerId: player.uniqueId }, own ? (lowered ? .52 : .68) : .47);
+                    own ? { cardIndex: i, category: hand[i].color } : { playerId: player.uniqueId }, own ? .56 : .47);
                 if (own && selected === i) face.material.color.set(0xb9a687);
             }
             // Public effects form a row toward the table centre, above life cards.

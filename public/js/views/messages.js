@@ -18,12 +18,16 @@ client.actions.addGameMessage = function addGameMessage(message, color, bold = f
     let useColor = colorMap[color] || colorMap.black;
 
     const messageDiv = document.createElement('div');
+    messageDiv.className = 'game-event-entry';
     if (bold) messageDiv.style.fontWeight = 'bold';
     messageDiv.style.color = useColor;
     messageDiv.innerHTML = message;
     const gameMessages = document.getElementById('game-messages');
-    if (gameMessages) gameMessages.appendChild(messageDiv);
-    gameMessages.scrollTop = gameMessages.scrollHeight;
+    if (gameMessages) {
+        const nearBottom = gameMessages.scrollHeight - gameMessages.scrollTop - gameMessages.clientHeight < 60;
+        gameMessages.appendChild(messageDiv);
+        if (nearBottom) gameMessages.scrollTop = gameMessages.scrollHeight;
+    }
     if (client.state.currentMobileGameTab !== 'chat' && client.dom.tabChatBadge) {
         client.dom.tabChatBadge.style.display = 'inline-block';
     }
