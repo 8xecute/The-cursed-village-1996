@@ -303,6 +303,11 @@ body.game-view-3d .table3d-docked .popup-collapse-toggle { display: none !import
 
 #table3d-seat-label { position:absolute; bottom:calc(100% + 5px); left:50%; transform:translateX(-50%); max-width:85vw; overflow:hidden; text-overflow:ellipsis; padding:3px 8px; border-radius:5px; background:#211b15e8; color:#e5d2b0; font-size:.75rem; pointer-events:none; }
 #table3d-seat-label:empty { display:none; }
+#table3d-role-badge {
+    display: block; margin-top: 8px; padding: 6px 10px; border: 1px solid #cb555c;
+    border-radius: 6px; background: #571f29; color: #ffe0df; font-size: .95rem;
+}
+#table3d-role-badge[hidden] { display: none; }
 #table3d-keyboard-status {
     position: absolute; top: calc(100% + 3px); left: 50%; transform: translateX(-50%);
     font-size: .65rem; color: #d4c5ab; background: #211b15e8; padding: 2px 6px;

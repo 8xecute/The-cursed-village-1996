@@ -10,6 +10,14 @@ client.actions.updateTable3DFocus = function updateTable3DFocus() {
     const team = player.hasBeenWitch ? ' · ทีมปอบ' : '';
     const nextStatus = `${player.alive ? 'ยังมีชีวิต' : 'เสียชีวิตแล้ว'} · ชีวิต ${player.tryalCardCount} · การ์ด ${player.handSize} · ข้อกล่าวหา ${player.accusationPoints || 0}${team}`;
     if (status.textContent !== nextStatus) status.textContent = nextStatus;
+    let role = document.getElementById('table3d-role-badge');
+    if (!role) {
+        role = document.createElement('strong'); role.id = 'table3d-role-badge';
+        status.parentElement.appendChild(role);
+    }
+    const showRole = !!player.hasBeenWitch && !client.state.currentRoomState?.isSpectator && !client.state.isSpectatorMode;
+    role.hidden = !showRole;
+    if (showRole && role.textContent !== 'คุณเป็นปอบ · ทีมปอบ') role.textContent = 'คุณเป็นปอบ · ทีมปอบ';
 };
 
 client.actions.syncTable3D = async function syncTable3D() {

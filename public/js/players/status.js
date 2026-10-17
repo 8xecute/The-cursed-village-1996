@@ -66,7 +66,6 @@ client.actions.updateSpectatorUI = function updateSpectatorUI(isSpec) {
 
 client.actions.showWitchPopup = function showWitchPopup(senderName) {
     if (client.state.witchPopupAcknowledged) return;
-    try { if (localStorage.getItem('witchPopupAcknowledged') === '1') return; } catch (_) {}
     const existing = document.getElementById('witch-popup');
     if (existing && existing.dataset.activeWitchPopup === 'true') return;
     if (existing) existing.remove();
@@ -85,6 +84,11 @@ client.actions.showWitchPopup = function showWitchPopup(senderName) {
     overlay.style.flexDirection = 'column';
     overlay.style.alignItems = 'center';
     overlay.style.justifyContent = 'center';
+    overlay.style.boxSizing = 'border-box';
+    overlay.style.padding = '24px';
+    overlay.style.overflowY = 'auto';
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-label', 'คุณเป็นทีมปอบ');
 
     const cardImg = document.createElement('img');
     cardImg.dataset.cardArtwork = 'witch.png';
@@ -97,7 +101,7 @@ client.actions.showWitchPopup = function showWitchPopup(senderName) {
     overlay.appendChild(cardImg);
 
     const title = document.createElement('div');
-    title.textContent = 'คุณได้รับการ์ดปอบ!';
+    title.textContent = 'คุณเป็นปอบ!';
     title.style.color = '#ff1744';
     title.style.fontWeight = 'bold';
     title.style.fontSize = '2em';
@@ -136,7 +140,6 @@ client.actions.showWitchPopup = function showWitchPopup(senderName) {
     btn.style.cursor = 'pointer';
     btn.onclick = () => {
         client.state.witchPopupAcknowledged = true;
-        try { localStorage.setItem('witchPopupAcknowledged', '1'); } catch (_) {}
         overlay.remove();
     };
     overlay.appendChild(btn);
@@ -151,6 +154,16 @@ client.actions.resetWitchPopup = function resetWitchPopup() {
 };
 
 export function initialize() {
+  client.state.socket.on('room state update', state => {
+      if (!state.gameStarted) {
+          if (client.state.witchPopupAcknowledged) client.actions.resetWitchPopup();
+          return;
+      }
+      const me = state.players?.[client.state.myUniqueId];
+      if (!state.gameOver && me?.alive && me.hasBeenWitch && !state.isSpectator && !client.state.isSpectatorMode) {
+          client.actions.showWitchPopup();
+      }
+  });
   client.state.socket.on('room joined', client.actions.resetWitchPopup);
   client.state.socket.on('game restarted', client.actions.resetWitchPopup);
   client.state.socket.on('room left', client.actions.resetWitchPopup);
