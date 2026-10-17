@@ -81,7 +81,7 @@ module.exports = function registerHandlers(socket, game) {
                                           game.sendGameMessage(room.name, `<b>${player.name}</b> เลือกให้<b>${targetPlayer.name}</b> ทิ้งการ์ด ${game.getCardNameWithColor(cardToDiscard.name)} เนื่องจากโดนคำสาป.`, 'red');
                   // Clean up
                   delete room.awaitingCurseSelection;
-                  if (player.hand.length === 0) {
+                  if (game.canAutoEndTurn(room, player)) {
                       game.sendGameMessage(room.name, `<b>${player.name}</b> การ์ดในมือหมดแล้ว จบเทิร์นอัตโนมัติ`, 'orange', true);
                       game.setNextTurn(room);
                   } else {
@@ -132,17 +132,15 @@ module.exports = function registerHandlers(socket, game) {
           // การ์ด Alibi ถูกลบออกจากมือแล้วใน playCard function
           // ไม่ต้องลบอีกครั้ง
           game.io.to(player.id).emit('update hand', player.hand);
-          if (player.hand.length === 0) {
+          delete room.awaitingAlibiSelection;
+          player.hasPlayedCardsThisTurn = true;
+          game.io.to(player.id).emit('disable draw button');
+          if (game.canAutoEndTurn(room, player)) {
               game.sendGameMessage(room.name, `<b>${player.name}</b> การ์ดในมือหมดแล้ว จบเทิร์นอัตโนมัติ`, 'orange', true);
               game.setNextTurn(room);
           } else {
               game.emitRoomState(room.name);
           }
-          // mark ว่าเล่นการ์ดแล้ว
-          player.hasPlayedCardsThisTurn = true;
-          game.io.to(player.id).emit('disable draw button');
-          // ไม่จบเทิร์นอัตโนมัติ - ให้ผู้เล่นจบเทิร์นเอง
-          delete room.awaitingAlibiSelection;
       });
 
   socket.on('cancel alibi selection', () => {

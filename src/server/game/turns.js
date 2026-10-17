@@ -192,6 +192,25 @@ module.exports = function createServices(game) {
 
   }
 
+  function hasPendingCardAction(room) {
+      return !!(room.playerForcedToRevealTryal || room.awaitingCurseSelection ||
+          room.awaitingAlibiSelection || room.awaitingConspiracySelection ||
+          room.awaitingLeftTryalSelections || room.isAssigningBlackCat);
+  }
+
+  function canAutoEndTurn(room, player) {
+      return !room.gameOver && room.currentPhase === 'DAY' && player?.alive &&
+          room.currentTurnPlayerUniqueId === player.uniqueId && player.hasPlayedCardsThisTurn &&
+          player.hand.length === 0 && !hasPendingCardAction(room);
+  }
+
+  function finishEmptyHandTurn(room) {
+      const player = room.players[room.currentTurnPlayerUniqueId];
+      if (!canAutoEndTurn(room, player)) return;
+      game.sendGameMessage(room.name, `<b>${player.name}</b> การ์ดในมือหมดแล้ว จบเทิร์นอัตโนมัติ`, 'orange', true);
+      game.setNextTurn(room);
+  }
+
   function endTurn(roomName, playerUniqueId) {
       const room = game.rooms[roomName];
       if (!room || room.gameOver) return;
@@ -213,8 +232,8 @@ module.exports = function createServices(game) {
           return;
       }
 
-      if (room.awaitingCurseSelection?.selector === playerUniqueId) {
-          game.io.to(player.id).emit('game message', 'กรุณาเลือกการ์ดจาก Curse ให้เสร็จก่อนจบเทิร์น.', 'orange');
+      if (hasPendingCardAction(room)) {
+          game.io.to(player.id).emit('game message', 'กรุณาทำแอ็กชันการ์ดให้เสร็จก่อนจบเทิร์น', 'orange');
           return;
       }
 
@@ -226,5 +245,5 @@ module.exports = function createServices(game) {
       game.setNextTurn(room); // Now advance to next player's turn
   }
 
-  return { setNextTurn, endTurn };
+  return { setNextTurn, endTurn, hasPendingCardAction, canAutoEndTurn, finishEmptyHandTurn };
 };

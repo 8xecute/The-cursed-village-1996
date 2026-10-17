@@ -152,6 +152,7 @@ module.exports = function registerHandlers(socket, game) {
                       room.playerForcedToRevealSelector = null;
                       game.emitRoomState(room.name);
                       game.checkWinCondition(room);
+                      game.finishEmptyHandTurn(room);
                       return;
                   } else if (selectedCard.name === 'Constable') {
                       targetPlayer.isConstable = true;
@@ -177,6 +178,7 @@ module.exports = function registerHandlers(socket, game) {
                   
                   game.emitRoomState(room.name);
                   game.checkWinCondition(room);
+                  game.finishEmptyHandTurn(room);
               }
           }
       });

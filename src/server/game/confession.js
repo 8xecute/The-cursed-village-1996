@@ -339,6 +339,7 @@ module.exports = function createServices(game) {
           room.playerForcedToRevealSelector = null;
               game.emitRoomState(room.name);
               game.checkWinCondition(room);
+              game.finishEmptyHandTurn(room);
               return;
       } else if (revealedCard.name === 'Constable') {
           player.isConstable = true; // Confirm Constable status
@@ -353,6 +354,7 @@ module.exports = function createServices(game) {
 
       game.emitRoomState(room.name); // Update all players
       game.checkWinCondition(room); // Check win condition after revealing Tryal Card
+      game.finishEmptyHandTurn(room);
   }
 
   return { confessTryalCard, confessDuringNight, clearConfessionTimer, markConfessionAction, startConfessionTimer, revealTryalCard };

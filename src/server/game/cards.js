@@ -499,7 +499,7 @@ module.exports = function createServices(game) {
       emitCardFeedback();
               game.io.to(player.id).emit('update hand', player.hand);
               game.sendDeckInfo(roomName);
-              if (player.hand.length === 0) {
+              if (game.canAutoEndTurn(room, player)) {
                   game.sendGameMessage(room.name, `<b>${player.name}</b> การ์ดในมือหมดแล้ว จบเทิร์นอัตโนมัติ`, 'orange', true);
                   game.setNextTurn(room);
               } else {
@@ -524,7 +524,7 @@ module.exports = function createServices(game) {
       emitCardFeedback();
       
       // จบเทิร์นอัตโนมัติถ้าการ์ดในมือหมด (หลังจากลบการ์ดแล้ว)
-      if (player.hand.length === 0) {
+      if (game.canAutoEndTurn(room, player)) {
           game.sendGameMessage(room.name, `<b>${player.name}</b> การ์ดในมือหมดแล้ว จบเทิร์นอัตโนมัติ`, 'orange', true);
           game.setNextTurn(room);
       }
