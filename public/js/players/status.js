@@ -169,6 +169,9 @@ export function initialize() {
   client.state.socket.on('room left', client.actions.resetWitchPopup);
   client.state.socket.on('joined as spectator', ({ roomName, name }) => {
       client.state.isSpectatorMode = true;
+      client.state.myPlayerName = name;
+      client.dom.playerNameDisplay.textContent = name;
+      client.dom.nameInput.value = name;
       client.actions.addGameMessage(`👁️ คุณเข้าร่วมในฐานะผู้ชมของห้อง ${roomName}`, 'gray', true);
       client.actions.updateSpectatorUI(true);
   });

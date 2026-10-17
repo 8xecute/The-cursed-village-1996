@@ -40,11 +40,13 @@ module.exports = function createServices(game) {
 
   function getPublicRoomsList() {
       return Object.values(game.rooms)
-          .filter(room => room && room.currentPhase === 'LOBBY' && !room.gameStarted)
+          .filter(room => room && Object.keys(room.players || {}).length > 0)
           .map(room => ({
               name: room.name,
               playerCount: Object.keys(room.players || {}).length,
               maxPlayers: game.PLAYER_LIMIT,
+              gameStarted: !!room.gameStarted,
+              gameOver: !!room.gameOver,
               hostName: room.players?.[room.hostUniqueId]?.name || 'Unknown'
           }))
           .sort((a, b) => a.name.localeCompare(b.name));

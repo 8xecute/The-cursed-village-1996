@@ -15,16 +15,18 @@ client.actions.renderActiveRooms = function renderActiveRooms(rooms) {
 
         const info = document.createElement('div');
         info.className = 'active-room-info';
-        info.innerHTML = `<div class="active-room-name">${room.name}</div><div class="active-room-meta">โฮสต์: ${room.hostName} | ผู้เล่น ${room.playerCount}/${room.maxPlayers}</div>`;
+        const roomTitle = document.createElement('div'); roomTitle.className = 'active-room-name'; roomTitle.textContent = room.name;
+        const meta = document.createElement('div'); meta.className = 'active-room-meta';
+        meta.textContent = `โฮสต์: ${room.hostName} | ผู้เล่น ${room.playerCount}/${room.maxPlayers} · ${room.gameStarted ? room.gameOver ? 'จบเกมแล้ว · เข้าชมได้' : 'กำลังเล่น · เข้าร่วมเป็นผู้ชม' : 'รอเริ่มเกม'}`;
+        info.append(roomTitle, meta);
 
         const joinBtn = document.createElement('button');
         joinBtn.className = 'active-room-join-btn';
-        joinBtn.textContent = 'เข้าร่วม';
-        joinBtn.disabled = !client.state.myPlayerName || room.playerCount >= room.maxPlayers;
+        joinBtn.textContent = room.gameStarted ? 'เข้าชม' : room.playerCount >= room.maxPlayers ? 'ห้องเต็ม' : 'เข้าร่วม';
+        joinBtn.disabled = !room.gameStarted && room.playerCount >= room.maxPlayers;
         joinBtn.addEventListener('click', () => {
             if (!client.state.myPlayerName) {
-                client.actions.addGameMessage('โปรดตั้งชื่อก่อนเข้าร่วมห้อง.', 'red');
-                return;
+                client.state.myPlayerName = `ผู้เล่น-${client.state.myUniqueId.slice(-4)}`;
             }
             client.state.socket.emit('join room', room.name, client.state.myPlayerName);
         });
@@ -46,8 +48,8 @@ export function initialize() {
       // If player was in a room before disconnecting, try to rejoin
       if (client.state.currentRoomName) {
           client.state.socket.emit('join existing room', client.state.currentRoomName);
-      } else if (client.state.roomFromUrl && client.state.myPlayerName) {
-          // Automatically join room from invite URL if player already has a name
+      } else if (client.state.roomFromUrl) {
+          if (!client.state.myPlayerName) client.state.myPlayerName = `ผู้เล่น-${client.state.myUniqueId.slice(-4)}`;
           client.state.socket.emit('join room', client.state.roomFromUrl, client.state.myPlayerName);
       } else {
           // Otherwise, request active rooms to display in lobby

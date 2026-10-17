@@ -272,11 +272,6 @@ export function initialize() {
           client.state.socket.emit('set player name', client.state.myPlayerName);
           client.state.socket.emit('request rooms list');
 
-          // Auto-join invited room if available
-          const pendingRoom = (client.dom.joinRoomNameInput && client.dom.joinRoomNameInput.value.trim()) || client.state.roomFromUrl;
-          if (pendingRoom) {
-              client.state.socket.emit('join room', pendingRoom, client.state.myPlayerName);
-          }
       }
   });
 }

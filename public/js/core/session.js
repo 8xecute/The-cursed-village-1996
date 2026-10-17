@@ -9,7 +9,6 @@ export function initialize() {
   try { localStorage.removeItem('playerName'); } catch (_) { /* Storage may be disabled. */ }
   client.dom.nameInput.value = '';
   client.dom.newRoomNameInput.value = '';
-  client.dom.joinRoomNameInput.value = '';
 
   client.state.currentRoomName = (function() { try { return sessionStorage.getItem('currentRoomName'); } catch(e) { return null; } })();
 

@@ -68,14 +68,6 @@ export function initialize() {
       }
   });
 
-  client.dom.joinRoomButton.addEventListener('click', () => {
-      const roomName = client.dom.joinRoomNameInput.value.trim();
-      if (roomName && client.state.myPlayerName) {
-          client.state.socket.emit('join room', roomName, client.state.myPlayerName);
-      } else {
-          client.actions.addGameMessage('โปรดป้อนชื่อห้องและชื่อผู้เล่นของคุณ.', 'red');
-      }
-  });
 
   client.dom.leaveRoomButton.addEventListener('click', (e) => {
     e.preventDefault();
