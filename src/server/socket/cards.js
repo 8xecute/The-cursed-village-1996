@@ -20,6 +20,18 @@ module.exports = function registerHandlers(socket, game) {
           }
       });
 
+  socket.on('cancel curse selection', () => {
+      const room = game.rooms[socket.currentRoom];
+      const player = room?.players[socket.uniqueId];
+      if (!room || room.gameOver || room.currentPhase !== 'DAY' || !player?.alive ||
+          player.id !== socket.id || room.currentTurnPlayerUniqueId !== socket.uniqueId ||
+          room.awaitingCurseSelection?.selector !== socket.uniqueId) return;
+      delete room.awaitingCurseSelection;
+      game.sendGameMessage(room.name, `${player.name} ข้ามการเลือกทำลายการ์ดด้วยคำสาป`, 'orange');
+      game.finishEmptyHandTurn(room);
+      game.emitRoomState(room.name);
+  });
+
   socket.on('select curse target', (targetPlayerUniqueId, cardIndex) => {
           const roomName = socket.currentRoom;
           if (!roomName) return;
@@ -39,6 +51,7 @@ module.exports = function registerHandlers(socket, game) {
               if (blueCards.length === 0) {
                   delete room.awaitingCurseSelection;
                   game.io.to(player.id).emit('game message', 'เป้าหมายไม่มีการ์ดสีน้ำเงินให้เลือกแล้ว.', 'orange');
+                  game.finishEmptyHandTurn(room);
                   game.emitRoomState(room.name);
                   return;
               }
@@ -150,7 +163,7 @@ module.exports = function registerHandlers(socket, game) {
           if (!room || room.gameOver) return;
           const player = room.players[socket.uniqueId];
           if (!player || !player.alive || !room.awaitingAlibiSelection) return;
-          const { selector, cardIndex } = room.awaitingAlibiSelection;
+          const { selector, card: originalCard } = room.awaitingAlibiSelection;
           if (selector !== socket.uniqueId) return;
           
           // คืนการ์ด Alibi กลับไปในมือ (เพราะถูกลบออกไปแล้วใน playCard function)
@@ -161,7 +174,10 @@ module.exports = function registerHandlers(socket, game) {
               value: 1,
               description: 'ลบข้อกล่าวหาของผู้เล่นได้สูงสุด 3 ใบ'
           };
-          player.hand.push(alibiCard);
+          const returnedCard = originalCard || alibiCard;
+          const discardedIndex = room.discardPile.lastIndexOf(returnedCard);
+          if (discardedIndex >= 0) room.discardPile.splice(discardedIndex, 1);
+          player.hand.push(returnedCard);
           player.handSize = player.hand.length; // อัปเดต handSize
           game.io.to(player.id).emit('update hand', player.hand);
           

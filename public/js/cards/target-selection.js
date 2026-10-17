@@ -46,6 +46,13 @@ client.actions.showSelectPlayerPopup = function showSelectPlayerPopup(title, pla
         }
     }
     document.addEventListener('keydown', escListener);
+    const removalObserver = new MutationObserver(() => {
+        if (!modal.isConnected) {
+            document.removeEventListener('keydown', escListener);
+            removalObserver.disconnect();
+        }
+    });
+    removalObserver.observe(document.body, { childList: true });
 
     const content = document.createElement('div');
     content.className = 'select-player-modal-content';

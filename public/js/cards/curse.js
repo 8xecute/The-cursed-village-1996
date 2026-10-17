@@ -1,6 +1,7 @@
 import { client } from '../core/client.js';
 
 client.actions.showCurseTargetSelection = function showCurseTargetSelection(targetUniqueId, blueCards) {
+    document.querySelectorAll('.curse-target-modal').forEach(element => element.remove());
     const modal = document.createElement('div');
     modal.className = 'modal curse-target-modal';
     modal.dataset.effectOwner = targetUniqueId;
@@ -74,14 +75,14 @@ client.actions.showCurseTargetSelection = function showCurseTargetSelection(targ
         });
         cardDiv.addEventListener('click', () => {
             client.state.socket.emit('select curse target', targetUniqueId, idx);
-            document.body.removeChild(modal);
+            modal.remove();
         });
         cardList.appendChild(cardDiv);
     });
     content.appendChild(cardList);
 
     const cancelBtn = document.createElement('button');
-    cancelBtn.textContent = 'ยกเลิก';
+    cancelBtn.textContent = 'ข้ามการทำลาย (ใช้คำสาปแล้ว)';
     cancelBtn.style.marginTop = '24px';
     cancelBtn.style.background = '#ff4500';
     cancelBtn.style.color = '#fff';
@@ -90,7 +91,8 @@ client.actions.showCurseTargetSelection = function showCurseTargetSelection(targ
     cancelBtn.style.padding = '10px 28px';
     cancelBtn.style.borderRadius = '8px';
     cancelBtn.addEventListener('click', () => {
-        document.body.removeChild(modal);
+        client.state.socket.emit('cancel curse selection');
+        modal.remove();
     });
     content.appendChild(cancelBtn);
 

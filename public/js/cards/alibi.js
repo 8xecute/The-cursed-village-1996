@@ -1,7 +1,7 @@
 import { client } from '../core/client.js';
 
 client.actions.showAlibiRedCardSelectionPopup = function showAlibiRedCardSelectionPopup(targetUniqueId, redCards) {
-    if (document.getElementById('alibi-redcard-select-popup')) return;
+    document.getElementById('alibi-redcard-select-popup')?.remove();
     const container = document.createElement('div');
     container.id = 'alibi-redcard-select-popup';
     container.dataset.effectOwner = targetUniqueId;
@@ -37,6 +37,7 @@ client.actions.showAlibiRedCardSelectionPopup = function showAlibiRedCardSelecti
     // Card list section
     const cardListDiv = document.createElement('div');
     cardListDiv.style.display = 'flex';
+    cardListDiv.style.flexWrap = 'wrap';
     cardListDiv.style.justifyContent = 'center';
     cardListDiv.style.gap = '18px';
     cardListDiv.style.margin = '18px 0';
@@ -94,6 +95,7 @@ client.actions.showAlibiRedCardSelectionPopup = function showAlibiRedCardSelecti
     // Type selector
     const typeSelectorDiv = document.createElement('div');
     typeSelectorDiv.style.display = 'flex';
+    typeSelectorDiv.style.flexWrap = 'wrap';
     typeSelectorDiv.style.justifyContent = 'center';
     typeSelectorDiv.style.gap = '24px';
     typeSelectorDiv.style.marginBottom = '10px';
@@ -151,7 +153,7 @@ client.actions.showAlibiRedCardSelectionPopup = function showAlibiRedCardSelecti
     confirmBtn.onclick = () => {
         if (selectedIndexes.length > 0) {
             client.state.socket.emit('select alibi removal', { targetUniqueId, selectedIndexes });
-            document.body.removeChild(container);
+            container.remove();
         }
     };
     container.appendChild(confirmBtn);
@@ -171,7 +173,7 @@ client.actions.showAlibiRedCardSelectionPopup = function showAlibiRedCardSelecti
     cancelBtn.onclick = () => {
         // ส่ง event ยกเลิกไปยัง server
         client.state.socket.emit('cancel alibi selection');
-        document.body.removeChild(container);
+        container.remove();
     };
     container.appendChild(cancelBtn);
 

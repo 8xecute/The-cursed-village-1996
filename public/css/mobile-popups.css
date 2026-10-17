@@ -1,5 +1,14 @@
 /* Modal children are positioned by their overlay, never centered a second time. */
 @media (max-width: 768px), (max-height: 520px) {
+    body:not(.game-view-3d) .curse-target-modal {
+        box-sizing: border-box; height: 100dvh !important; padding: 12px;
+        overflow: auto; align-items: flex-start !important;
+    }
+    body:not(.game-view-3d) .curse-target-modal > div {
+        box-sizing: border-box; width: 100%; max-width: 520px;
+        max-height: calc(100dvh - 24px); overflow: auto;
+        padding: 16px !important; margin: auto;
+    }
     body #assign-blackcat-overlay:not(.table3d-docked),
     body .tryal-modal-overlay:not(.table3d-docked):not(.is-collapsed) {
         box-sizing: border-box !important; padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom)) !important;

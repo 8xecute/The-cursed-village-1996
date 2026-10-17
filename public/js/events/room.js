@@ -502,14 +502,26 @@ export function initialize() {
           client.actions.removeNightActionPopup();
       }
       client.actions.updateWitchNightMarks();
+      const closeLifeDialog = id => {
+          const popup = document.getElementById(id);
+          if (popup) (popup.closest('.tryal-modal-overlay') || popup).remove();
+      };
+      if (roomState.gameOver || !roomState.players?.[client.state.myUniqueId]?.alive) {
+          ['confess-popup', 'accused-tryal-select-popup', 'select-left-tryal-popup'].forEach(closeLifeDialog);
+          document.querySelectorAll('.select-player-modal, .curse-target-modal, #alibi-redcard-select-popup').forEach(element => element.remove());
+      }
+      if (!roomState.playerForcedToRevealTryal) closeLifeDialog('accused-tryal-select-popup');
+      if (!roomState.awaitingLeftTryalSelections) closeLifeDialog('select-left-tryal-popup');
+      if (roomState.currentPhase !== 'PRE_DAWN' || roomState.confessionActions?.includes(client.state.myUniqueId)) closeLifeDialog('confess-popup');
       // ปิด popup เลือกวางแมวดำ (assign-blackcat-popup) ถ้าไม่ได้อยู่ในสถานะ assign แล้ว
       if (document.getElementById('assign-blackcat-popup') && !roomState.isAssigningBlackCat) {
-          document.getElementById('assign-blackcat-popup').remove();
+          document.getElementById('assign-blackcat-overlay')?.remove();
+          document.getElementById('assign-blackcat-popup')?.remove();
       }
       // --- ปิด popup เลือกการ์ดชีวิตพิธีเซ่นไหว้ ถ้า phase ไม่ใช่ BLACKCAT_TRYAL หรือผู้เล่นตาย ---
       const blackcatTryalPopup = document.getElementById('blackcat-tryal-select-popup');
       if (blackcatTryalPopup && (roomState.currentPhase !== 'BLACKCAT_TRYAL' || (myPlayer && !myPlayer.alive))) {
-          blackcatTryalPopup.remove();
+          (blackcatTryalPopup.closest('.tryal-modal-overlay') || blackcatTryalPopup).remove();
       }
   });
 
@@ -546,6 +558,10 @@ export function initialize() {
   });
 
   client.state.socket.on('room left', () => {
+      document.querySelectorAll('.tryal-modal-overlay, .select-player-modal, .curse-target-modal, #alibi-redcard-select-popup, #night-action-popup, #night-action-overlay, #must-play-night-popup, #forced-reveal-notice-popup').forEach(element => element.remove());
+      client.actions.closeForcedRevealNotice?.();
+      client.actions.removeNightActionPopup?.();
+      client.actions.restoreTable3DDialogs?.();
       client.state.table3D?.setActive(false);
       client.state.table3DFocusedPlayer = null;
       document.getElementById('table3d-section').hidden = true;

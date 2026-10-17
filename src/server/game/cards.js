@@ -345,6 +345,7 @@ module.exports = function createServices(game) {
                           redCards: redCards.map(c => ({ name: c.name, value: c.value, index: c.index }))
                       });
                       room.awaitingAlibiSelection = {
+                          card: cardToPlay,
                           selector: playerUniqueId,
                           target: targetUniqueId,
                           cardIndex: cardIndex // เก็บ index ของ Alibi ในมือผู้ใช้
@@ -491,7 +492,6 @@ module.exports = function createServices(game) {
               // ไม่ว่า target จะถูกหรือไม่ ให้ลบการ์ดออกจากมือและทิ้งลงกองทิ้งเสมอ
               if (cardIndex >= 0 && cardIndex < player.hand.length) {
                   player.hand.splice(cardIndex, 1);
-                  room.discardPile.push(cardToPlay);
               }
               player.hasPlayedCardsThisTurn = true;
               game.io.to(player.id).emit('disable draw button');
@@ -539,10 +539,6 @@ module.exports = function createServices(game) {
       function emitCardUsedOnYou(targetId, cardObj) {
           if (!room.players[targetId] || !room.players[targetId].alive) return;
           game.io.to(room.players[targetId].id).emit('card used on you', player.name, cardObj.name, game.CARD_DESCRIPTION_THAI?.[cardObj.name] || cardObj.description || '');
-      }
-      // นำการ์ดไปกองทิ้งถ้าเป็น Witness
-      if (cardToPlay.name === 'Witness') {
-          room.discardPile.push(cardToPlay);
       }
   }
 
