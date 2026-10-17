@@ -3,13 +3,11 @@ import { client } from '../core/client.js';
 client.actions.addWitchChatMessage = function addWitchChatMessage(senderName, message, timestamp) {
     const msgDiv = document.createElement('div');
     msgDiv.className = 'witch-chat-message';
-    if (senderName === 'SYSTEM') {
-        msgDiv.style.color = '#ff1744';
-        msgDiv.style.fontWeight = 'bold';
-        msgDiv.innerHTML = `<span style='color:#ff1744;font-weight:bold;'>SYSTEM</span><br>${message}<br><span style='font-size:0.85em;color:#fff;'>${client.actions.formatTime(timestamp)}</span>`;
-    } else {
-        msgDiv.innerHTML = `<span class='sender'>${senderName}</span>: <span class='message'>${message}</span><br><span class='timestamp'>${client.actions.formatTime(timestamp)}</span>`;
-    }
+    msgDiv.classList.toggle('is-system', senderName === 'SYSTEM');
+    const sender = document.createElement('strong'); sender.className = 'sender'; sender.textContent = senderName === 'SYSTEM' ? 'ระบบ' : senderName;
+    const body = document.createElement('div'); body.className = 'message'; body.textContent = senderName === 'SYSTEM' ? String(message).replace(/<\/?b>/g, '') : message;
+    const time = document.createElement('small'); time.className = 'timestamp'; time.textContent = client.actions.formatTime(timestamp);
+    msgDiv.append(sender, body, time);
     if (client.dom.witchChatMessages) {
         client.dom.witchChatMessages.appendChild(msgDiv);
         client.dom.witchChatMessages.scrollTop = client.dom.witchChatMessages.scrollHeight;
@@ -47,7 +45,11 @@ client.actions.updateWitchChatVisibility = function updateWitchChatVisibility(is
     const isNight = client.state.currentRoomState && client.state.currentRoomState.currentPhase === 'NIGHT';
     if (isWitch && client.state.currentRoomName && isNight) {
         client.dom.witchChatSection.style.display = 'block';
-        client.state.socket.emit('request witch chat history', client.state.currentRoomName);
+        const historyKey = `${client.state.currentRoomName}:${client.state.currentRoomState.dayNumber}`;
+        if (client.state.witchChatHistoryKey !== historyKey) {
+            client.state.witchChatHistoryKey = historyKey;
+            client.state.socket.emit('request witch chat history', client.state.currentRoomName);
+        }
         // ปรับปุ่มส่งข้อความและ input: ปล่อยให้ใช้งานได้เฉพาะถ้ายังมีชีวิต
         if (myPlayer && myPlayer.alive) {
         client.dom.witchChatInput.disabled = false;
@@ -75,6 +77,12 @@ client.actions.updateWitchChatTeamList = function updateWitchChatTeamList() {
 };
 
 export function initialize() {
+  client.state.socket.on('connect', () => { client.state.witchChatHistoryKey = null; });
+  client.state.socket.on('room left', () => {
+      client.state.witchChatHistoryKey = null;
+      client.dom.witchChatMessages.replaceChildren();
+      client.dom.witchChatInput.value = '';
+  });
   client.dom.witchChatSendButton.addEventListener('click', client.actions.sendWitchChatMessage);
 
   client.dom.witchChatInput.addEventListener('keypress', (e) => {

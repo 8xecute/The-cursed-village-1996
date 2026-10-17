@@ -114,6 +114,7 @@ export function initialize() {
   client.state.socket.on('witch chat history', (messages) => {
       // ลบข้อความเก่าก่อน append ใหม่
       client.dom.witchChatMessages.innerHTML = '';
+      document.getElementById('modal-witch-chat-messages')?.replaceChildren();
       messages.forEach(msg => {
           client.actions.addWitchChatMessage(msg.senderName, msg.message, msg.timestamp);
       });

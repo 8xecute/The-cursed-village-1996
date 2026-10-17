@@ -1,9 +1,12 @@
 module.exports = function registerHandlers(socket, game) {
   socket.on('send witch chat message', (roomName, message) => {
+          if (roomName !== socket.currentRoom || typeof message !== 'string') return;
+          message = message.trim().slice(0, 100);
+          if (!message) return;
           const room = game.rooms[roomName];
           if (!room) return;
           const player = room.players[socket.uniqueId];
-          if (!player || !player.hasBeenWitch || !player.alive) return; // เฉพาะปอบที่ยังมีชีวิตเท่านั้น
+          if (!player || player.id !== socket.id || !player.hasBeenWitch || !player.alive) return; // เฉพาะปอบที่ยังมีชีวิตเท่านั้น
           if (room.currentPhase !== 'NIGHT') return; // ใช้งานได้เฉพาะกลางคืน
           const timestamp = Date.now();
           const entry = { senderName: player.name, message, timestamp };

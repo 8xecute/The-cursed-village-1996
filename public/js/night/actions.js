@@ -116,6 +116,7 @@ client.actions.showAssignBlackCatPopup = function showAssignBlackCatPopup(potent
     };
     container.appendChild(btn);
 
+    client.actions.addTryalPopupCollapseControl(container, overlay, title);
     overlay.appendChild(container);
     document.body.appendChild(overlay);
 };
@@ -217,6 +218,9 @@ client.actions.createNightActionPopup = function createNightActionPopup(actionTy
 
         const sendFromModal = () => {
             if (!modalChatInput) return;
+            const state = client.state.currentRoomState;
+            const me = state?.players?.[client.state.myUniqueId];
+            if (!client.state.socket.connected || state?.currentPhase !== 'NIGHT' || !me?.alive || !me.hasBeenWitch) return;
             const msg = modalChatInput.value.trim();
             if (msg && client.state.currentRoomName) {
                 client.state.socket.emit('send witch chat message', client.state.currentRoomName, msg);
@@ -227,7 +231,7 @@ client.actions.createNightActionPopup = function createNightActionPopup(actionTy
         if (modalChatSend) modalChatSend.onclick = sendFromModal;
         if (modalChatInput) {
             modalChatInput.onkeydown = (e) => {
-                if (e.key === 'Enter') {
+                if (e.key === 'Enter' && !e.isComposing) {
                     e.preventDefault();
                     sendFromModal();
                 }

@@ -308,6 +308,24 @@ body.game-view-3d .table3d-docked .popup-collapse-toggle { display: none !import
     border-radius: 6px; background: #571f29; color: #ffe0df; font-size: .95rem;
 }
 #table3d-role-badge[hidden] { display: none; }
+body.game-view-3d.table3d-phase-details #night-action-popup.table3d-phase-source {
+    top: auto !important; bottom: 155px !important; right: 12px !important; left: auto !important;
+    transform: none !important; width: min(360px, calc(100vw - 24px)) !important;
+    max-height: 48dvh !important; overflow: auto !important;
+    padding: 12px !important; background: #211a18fa !important;
+}
+body.game-view-3d.table3d-phase-details #night-action-popup > .night-action-header,
+body.game-view-3d.table3d-phase-details #night-action-popup .night-action-content > :not(.modal-witch-chat-section) { display: none !important; }
+body.game-view-3d.table3d-phase-details #night-action-popup .modal-witch-chat-section { margin: 0; padding: 0; }
+body.game-view-3d #modal-witch-chat-messages { height: 24dvh; min-height: 100px; max-height: 260px; overflow-y: auto; }
+.modal-witch-chat-input-bar { display: flex; gap: 6px; }
+.modal-witch-chat-input-bar input { min-width: 0; flex: 1; font-size: 16px; }
+.modal-witch-chat-input-bar button { flex: 0 0 auto; width: auto; }
+.witch-chat-message { padding: 8px 10px; margin: 6px 0; background: #302826; border-radius: 6px; color: #f0e1d3; overflow-wrap: anywhere; }
+.witch-chat-message .sender { color: #f2bd99; }
+.witch-chat-message .message { color: #f0e1d3; line-height: 1.5; white-space: pre-wrap; }
+.witch-chat-message .timestamp { display: block; color: #b8aaa0; font-size: .72rem; margin-top: 3px; }
+.witch-chat-message.is-system { background: #332125; border-left: 2px solid #a46d74; font-size: .8rem; }
 #table3d-keyboard-status {
     position: absolute; top: calc(100% + 3px); left: 50%; transform: translateX(-50%);
     font-size: .65rem; color: #d4c5ab; background: #211b15e8; padding: 2px 6px;

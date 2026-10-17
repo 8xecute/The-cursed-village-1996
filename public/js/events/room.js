@@ -532,8 +532,7 @@ export function initialize() {
       // ปิด popup เลือกเป้าหมายปอบถ้าได้รับแจ้งเตือนทีมปอบเลือกเป้าหมายแล้ว
       if (message.startsWith('คืนนี้ทีมปอบ:')) {
           client.actions.disableNightTargetSelection();
-          // แสดงใน witch chat ด้วย
-          client.actions.addWitchChatMessage('SYSTEM', message, Date.now());
+          // The dedicated witch-chat event supplies this message once.
       }
       // Special handling for duplicate room or join-not-found
       if (message.includes('ชื่อห้องนี้ถูกใช้แล้ว')) {
