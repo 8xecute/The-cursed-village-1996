@@ -47,12 +47,21 @@ module.exports = function registerHandlers(socket, game) {
               console.error('Unique ID not registered before setting name.');
               return;
           }
-          // Check if this uniqueId already exists with a different name in an active room
+          if (typeof playerName !== 'string' || !playerName.trim()) return;
+          const name = playerName.trim();
           for (const roomName in game.rooms) {
-              if (game.rooms[roomName].players[socket.uniqueId] && game.rooms[roomName].players[socket.uniqueId].name !== playerName) {
-                  game.io.to(socket.id).emit('game message', 'ไม่สามารถเปลี่ยนชื่อขณะอยู่ในห้องได้.', 'red');
+              const room = game.rooms[roomName];
+              const player = room.players[socket.uniqueId];
+              if (!player) continue;
+              if (player.id !== socket.id) return;
+              if (room.gameStarted) {
+                  game.io.to(socket.id).emit('game message', 'เปลี่ยนชื่อได้ในล็อบบี้ก่อนเริ่มเกมเท่านั้น', 'red');
                   return;
               }
+              player.name = name;
+              game.emitRoomState(roomName);
+              game.broadcastActiveRooms();
+              return;
           }
 
           // If player already has a name set (e.g., from localStorage on new connection)

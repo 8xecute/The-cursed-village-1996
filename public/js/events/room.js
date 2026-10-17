@@ -89,13 +89,12 @@ export function initialize() {
       console.log('Room state updated:', roomState);
       client.state.currentRoomState = roomState; // Store room state for night actions
       client.actions.syncTable3D();
-      if (client.dom.nameInputContainer) client.dom.nameInputContainer.style.display = 'none';
+      if (client.dom.nameInputContainer) client.dom.nameInputContainer.style.display = roomState.gameStarted ? 'none' : 'flex';
       const registeredName = roomState.players?.[client.state.myUniqueId]?.name;
       if (registeredName) {
           client.state.myPlayerName = registeredName;
           client.dom.playerNameDisplay.textContent = registeredName;
           client.dom.nameInput.value = registeredName;
-          localStorage.setItem('playerName', registeredName);
       }
       client.actions.updateTryalCardDisplay(); // Always update tryal card display on room state update
       

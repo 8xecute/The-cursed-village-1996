@@ -312,9 +312,15 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
 
     function update({ state, me, hand, selected, imageFor, interaction = null, canDraw = false, drawConfirming = false, handLowered = false, artwork = 'new' }) {
         if (!state) return;
-        const nextSignature = JSON.stringify([state.players, state.currentTurnPlayerUniqueId, state.deckCount, state.discardPileCount, state.witchNightState, hand, selected, me, interaction, canDraw, drawConfirming, handLowered, artwork]);
+        const nextSignature = JSON.stringify([state.currentPhase, state.players, state.currentTurnPlayerUniqueId, state.deckCount, state.discardPileCount, state.witchNightState, hand, selected, me, interaction, canDraw, drawConfirming, handLowered, artwork]);
         if (signature === nextSignature) return;
         signature = nextSignature;
+        const night = state.currentPhase === 'NIGHT';
+        outerFlame.material.color.set(night ? 0xe82028 : 0xff8b26);
+        innerFlame.material.color.set(night ? 0xff5750 : 0xffe5a0);
+        core.material.color.set(night ? 0xffb5a3 : 0xfff6da);
+        glow.material.color.set(night ? 0xff3028 : 0xffffff);
+        candleLight.color.set(night ? 0xff3038 : 0xffa04c);
         clearDynamic();
         seatPositions.clear(); feedbackImageFor = imageFor;
         const players = Object.values(state.players || {});

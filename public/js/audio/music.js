@@ -102,7 +102,7 @@ export function initialize() {
 
   client.state.socket.on('room joined', (roomName) => {
       client.state.currentRoomName = roomName;
-      if (client.dom.nameInputContainer) client.dom.nameInputContainer.style.display = 'none';
+      if (client.dom.nameInputContainer) client.dom.nameInputContainer.style.display = 'flex';
       client.dom.currentRoomDisplay.textContent = roomName || 'ไม่มี';
       client.dom.roomManagementSection.style.display = 'none';
       client.dom.roomLobbySection.style.display = 'block';

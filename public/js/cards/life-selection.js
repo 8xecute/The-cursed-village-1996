@@ -256,17 +256,19 @@ export function initialize() {
   });
 
   client.dom.setNameButton.addEventListener('click', () => {
-      if (client.state.currentRoomName) {
-          client.dom.nameInputContainer.style.display = 'none';
-          client.actions.addGameMessage('เปลี่ยนชื่อได้ก่อนเข้าห้องเท่านั้น', 'orange');
+      if (client.state.currentRoomName && client.state.currentRoomState?.gameStarted) {
+          client.actions.addGameMessage('เปลี่ยนชื่อได้ในล็อบบี้ก่อนเริ่มเกมเท่านั้น', 'orange');
           return;
       }
       const name = client.dom.nameInput.value.trim();
       if (name) {
+          if (client.state.currentRoomName) {
+              client.state.socket.emit('set player name', name);
+              return;
+          }
           client.state.myPlayerName = name;
-          localStorage.setItem('playerName', client.state.myPlayerName);
           client.dom.playerNameDisplay.textContent = client.state.myPlayerName;
-          client.dom.nameInputContainer.style.display = 'none';
+          client.dom.nameInputContainer.style.display = 'flex';
           client.state.socket.emit('set player name', client.state.myPlayerName);
           client.state.socket.emit('request rooms list');
 
