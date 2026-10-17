@@ -9,12 +9,12 @@
         max-height: calc(100dvh - 24px); overflow: auto;
         padding: 16px !important; margin: auto;
     }
-    body #assign-blackcat-overlay:not(.table3d-docked),
+    body #assign-blackcat-overlay:not(.table3d-docked):not(.is-collapsed),
     body .tryal-modal-overlay:not(.table3d-docked):not(.is-collapsed) {
         box-sizing: border-box !important; padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom)) !important;
         height: 100dvh !important; overflow-y: auto !important; overflow-x: hidden !important;
     }
-    body #assign-blackcat-overlay:not(.table3d-docked) > #assign-blackcat-popup,
+    body #assign-blackcat-overlay:not(.table3d-docked) > #assign-blackcat-popup:not(.is-collapsed),
     body .tryal-modal-overlay:not(.table3d-docked) > .tryal-selection-popup:not(.is-collapsed) {
         position: relative !important; inset: auto !important; transform: none !important;
         box-sizing: border-box !important; width: 100% !important; min-width: 0 !important;

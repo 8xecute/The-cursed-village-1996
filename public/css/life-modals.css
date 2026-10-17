@@ -299,7 +299,7 @@ body > .tryal-selection-popup {
 /* In 2D a minimized life prompt occupies only its restore button. */
 :is(body:not(.game-view-3d), body.table3d-unavailable) :is(
   #confess-overlay, #select-left-tryal-overlay, #select-blackcat-overlay,
-  #blackcat-tryal-overlay, #accused-tryal-select-overlay
+  #blackcat-tryal-overlay, #accused-tryal-select-overlay, #assign-blackcat-overlay
 ).is-collapsed {
   background: transparent !important; backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important; pointer-events: none !important;
@@ -307,7 +307,7 @@ body > .tryal-selection-popup {
 }
 :is(body:not(.game-view-3d), body.table3d-unavailable) :is(
   #confess-popup, #select-left-tryal-popup, #select-blackcat-tryal-popup,
-  #blackcat-tryal-select-popup, #accused-tryal-select-popup
+  #blackcat-tryal-select-popup, #accused-tryal-select-popup, #assign-blackcat-popup
 ).is-collapsed {
   position: fixed !important; inset: auto 12px 12px auto !important;
   width: auto !important; min-width: 0 !important; max-width: none !important;
@@ -323,5 +323,5 @@ body > .tryal-selection-popup {
 /* Override the old ID + nth-child card-grid rules after wrapping collapsible content. */
 :is(body:not(.game-view-3d), body.table3d-unavailable) :is(
   #confess-popup, #select-left-tryal-popup, #select-blackcat-tryal-popup,
-  #blackcat-tryal-select-popup, #accused-tryal-select-popup
+  #blackcat-tryal-select-popup, #accused-tryal-select-popup, #assign-blackcat-popup
 ).is-collapsed > .popup-collapsible-content { display: none !important; }

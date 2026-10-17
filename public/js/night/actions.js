@@ -23,6 +23,7 @@ client.actions.showAssignBlackCatPopup = function showAssignBlackCatPopup(potent
 
     const container = document.createElement('div');
     container.id = 'assign-blackcat-popup';
+    container.className = 'tryal-selection-popup';
     container.dataset.playerSelect = 'true';
     container.style.background = 'radial-gradient(circle at top, #2b1f1a 0%, #171210 60%, #0d0a09 100%)';
     container.style.border = '2px solid #8d6e63';
