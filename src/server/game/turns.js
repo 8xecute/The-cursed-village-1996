@@ -193,7 +193,7 @@ module.exports = function createServices(game) {
   }
 
   function hasPendingCardAction(room) {
-      return !!(room.playerForcedToRevealTryal || room.awaitingCurseSelection ||
+      return !!(room.prankShot || room.playerForcedToRevealTryal || room.awaitingCurseSelection ||
           room.awaitingAlibiSelection || room.awaitingConspiracySelection ||
           room.awaitingLeftTryalSelections || room.isAssigningBlackCat);
   }

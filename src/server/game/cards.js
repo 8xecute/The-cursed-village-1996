@@ -66,6 +66,7 @@ module.exports = function createServices(game) {
 
   function playCard(roomName, playerUniqueId, cardIndex, targetUniqueId = null, secondTargetUniqueId = null) {
       const room = game.rooms[roomName];
+      if (room?.prankShot) return;
       if (!room || room.gameOver) return;
       if (!room || !room.gameStarted || room.currentPhase !== 'DAY') {
           const player = room?.players[playerUniqueId];
@@ -543,6 +544,7 @@ module.exports = function createServices(game) {
 
   function drawCards(roomName, playerUniqueId, count = 2) {
       const room = game.rooms[roomName];
+      if (room?.prankShot) return;
       if (!room || room.gameOver) return;
       if (!room || !room.gameStarted || room.currentPhase !== 'DAY') {
           const player = room?.players[playerUniqueId];

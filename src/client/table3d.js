@@ -204,12 +204,12 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
                 const flight = flights[index];
                 if (now < flight.started) continue;
                 const elapsed = now-flight.started;
-                const t = Math.min(1,elapsed/cardFlightDuration);
+                const t = Math.min(1,elapsed/(flight.duration || cardFlightDuration));
                 const eased = t*t*(3-2*t);
                 flight.mesh.visible = true;
                 flight.mesh.position.lerpVectors(flight.from,flight.to,eased);
-                flight.mesh.position.y += Math.sin(Math.PI*t)*1.2;
-                if (elapsed >= cardFlightDuration+flight.hold) { scene.remove(flight.mesh); flight.mesh.geometry.dispose(); flight.mesh.material.dispose(); flights.splice(index,1); }
+                flight.mesh.position.y += Math.sin(Math.PI*t)*(flight.arc ?? 1.2);
+                if (elapsed >= (flight.duration || cardFlightDuration)+flight.hold) { scene.remove(flight.mesh); flight.mesh.geometry.dispose(); flight.mesh.material.dispose(); flights.splice(index,1); }
             }
             renderer.render(scene, camera);
             if (flights.length || pressedKeys.size) requestRender();
@@ -526,6 +526,17 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             else { clearMovement(); clearTimeout(flameTimer); cancelAnimationFrame(renderFrame); renderFrame = 0; }
         },
         resetCamera,
+        animateShot(event) {
+            if (!active || disposed || reducedMotion.matches) return;
+            const from = seatPositions.get(event.actorId)?.clone();
+            const to = seatPositions.get(event.targetId)?.clone();
+            if (!from || !to) return;
+            from.multiplyScalar(1.35).setY(.7); to.multiplyScalar(1.35).setY(.7);
+            const bullet = new THREE.Mesh(new THREE.SphereGeometry(.085, 12, 8), new THREE.MeshBasicMaterial({ color: 0xffd27a, toneMapped: false }));
+            bullet.position.copy(from); scene.add(bullet);
+            flights.push({ mesh: bullet, from, to, started: performance.now(), duration: event.duration, hold: 0, arc: .12 });
+            requestRender();
+        },
         setKeyboardLocked(locked) { keyboardLocked = !!locked; clearMovement(); },
         stepSeat(direction) {
             if (!seatOrder.length) return;
