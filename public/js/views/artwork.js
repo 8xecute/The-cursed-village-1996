@@ -2,7 +2,7 @@ import { client } from '../core/client.js';
 
 export function cardArtworkUrl(file) {
     const classic = client.state.cardArtwork === 'classic';
-    return `cards/${classic ? 'classic/' : ''}${file}?v=${classic ? 'classic-v1' : 'new-v3'}`;
+    return `cards/${classic ? 'classic/' : ''}${file}?v=${classic ? 'classic-v1' : 'new-v4'}`;
 }
 
 export function initialize() {
