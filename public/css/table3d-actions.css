@@ -303,6 +303,26 @@ body.game-view-3d .table3d-docked .popup-collapse-toggle { display: none !import
 
 #table3d-seat-label { position:absolute; bottom:calc(100% + 5px); left:50%; transform:translateX(-50%); max-width:85vw; overflow:hidden; text-overflow:ellipsis; padding:3px 8px; border-radius:5px; background:#211b15e8; color:#e5d2b0; font-size:.75rem; pointer-events:none; }
 #table3d-seat-label:empty { display:none; }
+/* Keep mobile camera controls and phase actions in separate layout rows. */
+@media (max-width: 768px) {
+    body.game-view-3d #table3d-section { display: flex; flex-direction: column; }
+    body.game-view-3d #table3d-section #table3d-canvas { order: 0; }
+    body.game-view-3d #table3d-section .table3d-hand-controls {
+        position: relative; top: auto; bottom: auto; left: auto; transform: none;
+        order: 1; flex: none; margin: 0; padding: 24px 8px 8px;
+        background: #211a15; z-index: 7; min-height: 44px;
+    }
+    body.game-view-3d #table3d-section #table3d-seat-label { top: 3px; bottom: auto; }
+    body.game-view-3d #table3d-section .table3d-instructions { order: 2; flex: none; padding: 8px; font-size: .85rem; }
+    body.game-view-3d #table3d-section #table3d-phase-panel {
+        position: relative; inset: auto; order: 3; flex: none;
+        width: auto; max-width: none; margin: 6px 8px; padding: 8px 10px;
+        max-height: 22dvh; overflow: auto; box-sizing: border-box;
+    }
+    body.game-view-3d #table3d-section #table3d-play-panel { order: 4; flex: none; }
+    body.game-view-3d.table3d-fullscreen #table3d-section #table3d-play-panel { max-height: 12dvh; }
+    body.game-view-3d #table3d-section .table3d-hand-controls button { min-height: 40px !important; }
+}
 #table3d-role-badge {
     display: block; margin-top: 8px; padding: 6px 10px; border: 1px solid #cb555c;
     border-radius: 6px; background: #571f29; color: #ffe0df; font-size: .95rem;

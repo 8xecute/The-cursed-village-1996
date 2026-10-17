@@ -407,7 +407,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             });
             if (revealed.length) label(seat, 'เปิดแล้ว', [0,.3,-.38], '#cbb58b');
             const own = player.uniqueId === me;
-            const count = own ? hand.length : Number(player.handSize) || 0;
+            const count = interaction?.kind === 'life' ? 0 : own ? hand.length : Number(player.handSize) || 0;
             // Own hand uses separate rows so every title remains visible.
             const columns = own ? Math.min(6, count) : count;
             const spacing = own ? .61 : Math.min(.43, 2.4 / Math.max(1, count));
