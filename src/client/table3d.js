@@ -171,9 +171,15 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
     const seatPositions = new Map();
     let feedbackImageFor;
     const flights = [];
+    const gunShots = [];
+    function removeGunShot(shot) {
+        scene.remove(shot.group);
+        shot.group.traverse(part => { part.geometry?.dispose(); part.material?.dispose(); });
+    }
     const cardFlightDuration = 1400;
     const cardArrivalPause = 550;
     function stopFlight() {
+        gunShots.forEach(removeGunShot); gunShots.length = 0;
         for (const flight of flights) { scene.remove(flight.mesh); flight.mesh.geometry.dispose(); flight.mesh.material.dispose(); }
         flights.length = 0;
     }
@@ -211,8 +217,26 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
                 flight.mesh.position.y += Math.sin(Math.PI*t)*(flight.arc ?? 1.2);
                 if (elapsed >= (flight.duration || cardFlightDuration)+flight.hold) { scene.remove(flight.mesh); flight.mesh.geometry.dispose(); flight.mesh.material.dispose(); flights.splice(index,1); }
             }
+            for (let index = gunShots.length - 1; index >= 0; index--) {
+                const shot = gunShots[index];
+                const elapsed = now - shot.started;
+                const lift = Math.min(1, elapsed / shot.raiseDuration);
+                shot.gun.position.copy(shot.from);
+                shot.gun.position.y += -.45 + .45 * lift * lift * (3 - 2 * lift);
+                shot.gun.lookAt(shot.to);
+                shot.gun.rotateX((1 - lift) * .8);
+                const travel = Math.max(0, Math.min(1, (elapsed - shot.raiseDuration) / shot.bulletDuration));
+                shot.bullet.visible = elapsed >= shot.raiseDuration;
+                shot.bullet.position.lerpVectors(shot.muzzle, shot.to, travel);
+                shot.flash.visible = elapsed >= shot.raiseDuration && elapsed < shot.raiseDuration + 130;
+                if (elapsed >= shot.raiseDuration) {
+                    const recoil = Math.max(0, 1 - (elapsed - shot.raiseDuration) / 260);
+                    shot.gun.translateZ(-recoil * .12);
+                }
+                if (elapsed >= shot.raiseDuration + shot.bulletDuration) { removeGunShot(shot); gunShots.splice(index, 1); }
+            }
             renderer.render(scene, camera);
-            if (flights.length || pressedKeys.size) requestRender();
+            if (flights.length || gunShots.length || pressedKeys.size) requestRender();
         });
     }
     controls.addEventListener('change', requestRender);
@@ -531,10 +555,21 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             const from = seatPositions.get(event.actorId)?.clone();
             const to = seatPositions.get(event.targetId)?.clone();
             if (!from || !to) return;
-            from.multiplyScalar(1.35).setY(.7); to.multiplyScalar(1.35).setY(.7);
+            from.multiplyScalar(1.35).setY(.9); to.multiplyScalar(1.35).setY(.7);
+            const direction = to.clone().sub(from).normalize();
+            const side = new THREE.Vector3().crossVectors(direction, new THREE.Vector3(0,1,0)).normalize();
+            from.addScaledVector(side, .32);
+            const group = new THREE.Group(); scene.add(group);
+            const gun = new THREE.Group(); group.add(gun); gun.position.copy(from); gun.lookAt(to);
+            mesh(new THREE.BoxGeometry(.14,.17,.4), new THREE.MeshStandardMaterial({color:0x302b25,metalness:.8,roughness:.3}),gun,[0,0,.12]);
+            mesh(new THREE.BoxGeometry(.09,.09,.38), new THREE.MeshStandardMaterial({color:0xb99346,metalness:.85,roughness:.25}),gun,[0,.025,.43]);
+            mesh(new THREE.BoxGeometry(.1,.26,.14), new THREE.MeshStandardMaterial({color:0x211913,roughness:.8}),gun,[0,-.17,.02]);
+            const flash = mesh(new THREE.SphereGeometry(.16,8,6), new THREE.MeshBasicMaterial({color:0xffe6a1,toneMapped:false}),gun,[0,.025,.66]);
+            flash.visible = false;
+            const muzzle = new THREE.Vector3(0,.025,.66).applyQuaternion(gun.quaternion).add(from);
             const bullet = new THREE.Mesh(new THREE.SphereGeometry(.085, 12, 8), new THREE.MeshBasicMaterial({ color: 0xffd27a, toneMapped: false }));
-            bullet.position.copy(from); scene.add(bullet);
-            flights.push({ mesh: bullet, from, to, started: performance.now(), duration: event.duration, hold: 0, arc: .12 });
+            bullet.visible = false; group.add(bullet);
+            gunShots.push({ group, gun, flash, bullet, from, to, muzzle, started: performance.now(), raiseDuration: event.raiseDuration || 900, bulletDuration: event.bulletDuration || 4200 });
             requestRender();
         },
         setKeyboardLocked(locked) { keyboardLocked = !!locked; clearMovement(); },

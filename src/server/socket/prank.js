@@ -18,7 +18,7 @@ module.exports = function registerPrank(socket, game) {
         const target = room.players[id];
         if (!target?.alive || id === player.uniqueId) return;
         player.prankGun = false;
-        const shot = { actorId: player.uniqueId, targetId: id, actorName: player.name, targetName: target.name, duration: 2200 };
+        const shot = { actorId: player.uniqueId, targetId: id, actorName: player.name, targetName: target.name, raiseDuration: 900, bulletDuration: 4200, duration: 5100 };
         room.prankShot = shot;
         game.io.to(room.name).emit('prank gun shot', shot);
         game.emitRoomState(room.name);
@@ -28,7 +28,7 @@ module.exports = function registerPrank(socket, game) {
             if (!room.gameStarted || room.gameOver || room.currentPhase !== 'DAY') return;
             const previousTurn = room.currentTurnPlayerUniqueId;
             if (target.alive) {
-                game.sendGameMessage(room.name, `${player.name} ยิงปืนแกล้งใส่ ${target.name}!`, 'orange');
+                game.sendGameMessage(room.name, `${player.name} ยิงปืนเทพทรูใส่ ${target.name}!`, 'orange');
                 game.handlePlayerDeath(room, target, { cause: 'prank_gun', byPlayerName: player.name });
             }
             game.checkWinCondition(room);
