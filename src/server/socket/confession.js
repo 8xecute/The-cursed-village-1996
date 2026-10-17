@@ -139,7 +139,7 @@ module.exports = function registerHandlers(socket, game) {
                   targetPlayer.revealedTryalCardIndexes.add(selectedCard.name);
                   
                   // เปลี่ยนข้อความให้ถูกต้องและระบุชื่อการ์ดที่ถูกเปิด
-                                      game.sendGameMessage(room.name, `ผู้เล่น<b>${targetPlayer.name}</b> ถูกบังคับเปิดการ์ดชีวิตเพราะข้อกล่าวหา 7 แต้ม! การ์ดที่ถูกเปิดคือ: ${game.getCardNameWithColor(selectedCard.name)}` , 'orange', true);
+                  game.sendGameMessage(room.name, `<b>${targetPlayer.name}</b> เปิดการ์ดชีวิตจากข้อกล่าวหาครบ 7 แต้ม: ${game.getCardNameWithColor(selectedCard.name)}`, 'orange', true);
                   
                   if (selectedCard.name === 'Witch') {
                       targetPlayer.isWitch = true;

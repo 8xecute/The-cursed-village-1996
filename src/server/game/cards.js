@@ -477,7 +477,6 @@ module.exports = function createServices(game) {
                   // บังคับเปิดการ์ดชีวิต 1 ใบทันที
                   room.playerForcedToRevealTryal = targetUniqueId;
                   room.playerForcedToRevealSelector = player.uniqueId;
-                  game.sendGameMessage(room.name, `<b>${targetPlayer.name}</b> ถูกบังคับเปิดการ์ดชีวิตเพราะข้อกล่าวหา 7 แต้ม! การ์ดที่ถูกบังคับเปิดคือ: ชาวบ้าน`, 'gold', true);
                   game.io.to(player.id).emit('prompt select accused tryal', {
                       accusedUniqueId: targetUniqueId,
                       tryalCount: targetPlayer.tryalCards.length

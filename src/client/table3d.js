@@ -68,7 +68,8 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
         requestRender();
     }
 
-    scene.add(new THREE.HemisphereLight(0xc0ceda, 0x302016, 1.25));
+    const ambient = new THREE.HemisphereLight(0xc0ceda, 0x302016, 1.25);
+    scene.add(ambient);
     const key = new THREE.DirectionalLight(0xffd9b0, 2.4);
     key.position.set(-4, 10, 5);
     key.castShadow = true;
@@ -156,6 +157,8 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
     let disposed = false;
     let renderFrame = 0;
     let flameTimer;
+    let ritualActive = false;
+    let candleBaseIntensity = 10;
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
     function tickFlame() {
         if (!active || disposed || reducedMotion.matches) return;
@@ -193,7 +196,9 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
                 flame.scale.set(1+Math.sin(time*5)*.04,1+Math.sin(time*7)*.07,1);
                 flame.rotation.z = Math.sin(time*4)*.045;
                 flame.position.x = Math.sin(time*4)*.018;
-                candleLight.intensity = 10 + Math.sin(time*6)*.45;
+                const ritualPulse = ritualActive ? (Math.sin(time * Math.PI * 2) + 1) * 2 : 0;
+                candleLight.intensity = candleBaseIntensity + Math.sin(time*6)*.45 + ritualPulse;
+                if (ritualActive) flame.scale.multiplyScalar(1 + ritualPulse * .035);
             }
             for (let index=flights.length-1;index>=0;index--) {
                 const flight = flights[index];
@@ -312,10 +317,16 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
 
     function update({ state, me, hand, selected, imageFor, interaction = null, canDraw = false, drawConfirming = false, handLowered = false, artwork = 'new' }) {
         if (!state) return;
-        const nextSignature = JSON.stringify([state.currentPhase, state.players, state.currentTurnPlayerUniqueId, state.deckCount, state.discardPileCount, state.witchNightState, hand, selected, me, interaction, canDraw, drawConfirming, handLowered, artwork]);
+        const nextSignature = JSON.stringify([state.currentPhase, state.awaitingLeftTryalSelections, state.playerForcedToRevealTryal, state.players, state.currentTurnPlayerUniqueId, state.deckCount, state.discardPileCount, state.witchNightState, hand, selected, me, interaction, canDraw, drawConfirming, handLowered, artwork]);
         if (signature === nextSignature) return;
         signature = nextSignature;
         const night = state.currentPhase === 'NIGHT';
+        ritualActive = state.currentPhase === 'BLACKCAT_TRYAL' || !!state.awaitingLeftTryalSelections;
+        const choosingLife = ritualActive || !!state.playerForcedToRevealTryal || state.currentPhase === 'PRE_DAWN' || interaction?.kind === 'life';
+        ambient.intensity = choosingLife ? 1.8 : 1.25;
+        key.intensity = choosingLife ? 3 : 2.4;
+        candleBaseIntensity = choosingLife ? 12 : 10;
+        candleLight.intensity = candleBaseIntensity;
         outerFlame.material.color.set(night ? 0xe82028 : 0xff8b26);
         innerFlame.material.color.set(night ? 0xff5750 : 0xffe5a0);
         core.material.color.set(night ? 0xffb5a3 : 0xfff6da);
@@ -330,6 +341,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             const edge = new THREE.LineSegments(new THREE.EdgesGeometry(face.geometry), new THREE.LineBasicMaterial({ color }));
             face.add(edge);
         }
+        const lifeBorder = name => name === 'Witch' ? 0xffe066 : name === 'Constable' ? 0xe0e0e0 : 0x666666;
         players.forEach((player, index) => {
             const angle = (index - Math.max(0, ownIndex)) * Math.PI * 2 / Math.max(1, players.length);
             const seat = new THREE.Group();
@@ -381,6 +393,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
                 const revealedName = player.tryalCards?.[life]?.name;
                 const lifeCard = card(seat, [(life - (lives - 1) / 2) * .42, .06, -.98], [-Math.PI / 2, 0, 0],
                     revealedName ? cardTexture(imageFor(revealedName)) : back, { playerId: player.uniqueId, lifeIndex: life }, .38);
+                outline(lifeCard, revealedName ? lifeBorder(revealedName) : 0x8d7658);
                 if (interaction?.kind === 'life' && interaction.owner === player.uniqueId && interaction.eligible.includes(life)) outline(lifeCard, interaction.selected?.includes(life) ? 0xffd359 : 0xc2ab87);
                 if (interaction?.kind === 'life' && interaction.owner === player.uniqueId && interaction.eligible.includes(life)) {
                     label(seat, `${interaction.selected?.includes(life) ? '✓ ' : ''}${life + 1}`, [(life - (lives - 1) / 2) * .42, .24, -.98], '#ffe2a0');
@@ -390,7 +403,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             revealed.forEach((revealedCard, i) => {
                 const face = card(seat, [(i-(revealed.length-1)/2)*.42, .075, -.38], [-Math.PI/2,0,0],
                     cardTexture(imageFor(revealedCard.name)), { playerId: player.uniqueId, revealedIndex: i }, .38);
-                outline(face,0xb69a6b);
+                outline(face,lifeBorder(revealedCard.name));
             });
             if (revealed.length) label(seat, 'เปิดแล้ว', [0,.3,-.38], '#cbb58b');
             const own = player.uniqueId === me;
