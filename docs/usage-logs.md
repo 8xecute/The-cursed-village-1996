@@ -6,6 +6,8 @@ or an event name, player name, player ID, or room name.
 
 ## Events
 
+- `server_started`: confirms the usage logger is enabled after startup, with deployment commit when available.
+
 - `connection_opened`: connection ID, transport, coarse device category.
 - `player_registered`: persistent browser player ID associated with this connection.
 - `player_name_set`: accepted name before joining a room.
