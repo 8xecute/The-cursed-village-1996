@@ -1,4 +1,5 @@
 // outcome: game services. Dependencies are injected through game.
+const { usageLog } = require('../usage-log');
 module.exports = function createServices(game) {
   function checkWinCondition(room) {
       if (room.gameOver) return;
@@ -45,6 +46,8 @@ module.exports = function createServices(game) {
       room.gameOver = true;
       room.currentPhase = 'GAME_OVER';
       room.winner = winner;
+      usageLog('game_finished', { roomName: room.name, roundId: room.usageRoundId || null,
+          winner, days: room.dayNumber, durationSeconds: room.gameStartTime ? Math.round((Date.now() - room.gameStartTime) / 1000) : null });
       clearInterval(room.phaseInterval);
       clearTimeout(room.nightActionTimeout);
       clearTimeout(room.confessionTimer);

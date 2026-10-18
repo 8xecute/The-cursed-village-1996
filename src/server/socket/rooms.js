@@ -1,3 +1,4 @@
+const { usageLog } = require('../usage-log');
 module.exports = function registerHandlers(socket, game) {
   socket.on('register uniqueId', (uniqueId, playerName) => {
           const existingRoom = Object.values(game.rooms).find(room => room && room.players && room.players[uniqueId]);
@@ -7,6 +8,7 @@ module.exports = function registerHandlers(socket, game) {
               return;
           }
           socket.uniqueId = uniqueId;
+          usageLog('player_registered', { connectionId: socket.id, playerId: uniqueId });
           console.log(`Socket ${socket.id} registered with uniqueId: ${uniqueId}`);
           if (playerName && playerName !== '') {
               console.log(`Player connected: ${playerName}`);
@@ -58,7 +60,10 @@ module.exports = function registerHandlers(socket, game) {
                   game.io.to(socket.id).emit('game message', 'เปลี่ยนชื่อได้ในล็อบบี้ก่อนเริ่มเกมเท่านั้น', 'red');
                   return;
               }
+              const previousName = player.name;
               player.name = name;
+              socket.data.usageName = name;
+              usageLog('player_name_changed', { connectionId: socket.id, playerId: socket.uniqueId, roomName, previousName, playerName: name });
               game.emitRoomState(roomName);
               game.broadcastActiveRooms();
               return;
@@ -67,7 +72,8 @@ module.exports = function registerHandlers(socket, game) {
           // If player already has a name set (e.g., from localStorage on new connection)
           // update it on the server side or ensure consistency.
           // This scenario handles a fresh connection where client sends stored name.
-          console.log(`Player ${socket.uniqueId} set name to: ${playerName}`);
+          socket.data.usageName = name;
+          usageLog('player_name_set', { connectionId: socket.id, playerId: socket.uniqueId, playerName: name });
           // No direct player object exists here yet until they join a room
       });
 
@@ -140,6 +146,7 @@ module.exports = function registerHandlers(socket, game) {
           game.rooms[roomName].players[socket.uniqueId] = newPlayer;
           socket.join(roomName);
           socket.currentRoom = roomName; // Store current room on socket
+          usageLog('room_created', { connectionId: socket.id, playerId: socket.uniqueId, playerName: newPlayer.name, roomName });
           game.io.to(socket.id).emit('room joined', roomName);
           game.sendGameMessage(roomName, `${playerName} สร้างห้อง ${roomName} แล้ว.`, 'green');
           game.sendGameMessage(roomName, 'คุณคือผู้ดูแลห้อง.', 'blue', true);

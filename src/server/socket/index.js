@@ -1,4 +1,5 @@
 const registrars = [
+  require('./usage'),
   require('./rooms'),
   require('./phases'),
   require('./cards'),

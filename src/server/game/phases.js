@@ -1,4 +1,5 @@
 // phases: game services. Dependencies are injected through game.
+const { usageLog } = require('../usage-log');
 module.exports = function createServices(game) {
   function startPhaseTimer(roomName, duration) {
       const room = game.rooms[roomName];
@@ -199,6 +200,9 @@ module.exports = function createServices(game) {
           return;
       }
       room.gameStarted = true;
+      room.usageRoundId = game.uuidv4();
+      usageLog('game_started', { roomName, roundId: room.usageRoundId, playerCount: alivePlayers.length,
+          humanCount: alivePlayers.filter(player => !player.isBot).length, hostId: room.hostUniqueId });
       room.dayNumber = 0; // Start at Day 0, will increment to Day 1
       room.currentPhase = 'LOBBY'; // Set to Lobby, next changePhase will move to DAY
       room.blackCatHolder = null; // Will be assigned the first Black Cat drawn
