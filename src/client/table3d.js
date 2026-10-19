@@ -415,7 +415,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
                 part.material.emissive.set(selectedTarget ? 0xb47e34 : 0x597b70);
                 part.material.emissiveIntensity = selectedTarget ? .9 : .55;
             });
-            const nameLabel = label(seat, `${selectedTarget ? '✓ ' : ''}${player.name}${player.uniqueId === me ? ' (คุณ)' : ''}${state.players?.[me]?.hasBeenWitch && player.hasBeenWitch ? ' · ทีมปอบ' : ''}${player.isReplacementBot ? ' · บอทเล่นแทน' : player.reconnectDeadline ? ' · รอเชื่อมต่อ' : ''}${!player.alive ? ' · เสียชีวิต' : ''}`, [0, 1.78, 2.05],
+            const nameLabel = label(seat, `${selectedTarget ? '✓ ' : ''}${player.name}${player.uniqueId === me ? ' (คุณ)' : ''}${state.players?.[me]?.hasBeenWitch && player.hasBeenWitch ? ' · ทีมปอบ' : ''}${player.isReplacementBot ? ' · บอทเล่นแทน' : player.reconnectDeadline ? ' · รอเชื่อมต่อ' : ''}${!player.alive ? ' · เสียชีวิต' : ''}`, [0, 1.55, 2.05],
                 eligibleTarget ? selectedTarget ? '#ffe1a0' : '#a9e0c9' : player.alive ? '#eddbb7' : '#a39b91');
             nameLabel.userData.playerId = player.uniqueId;
             targets.push(nameLabel);

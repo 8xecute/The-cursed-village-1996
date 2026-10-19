@@ -47,38 +47,40 @@ export function buildCeremonialRoom(scene, wood) {
     const bronze = new THREE.MeshStandardMaterial({color:0x77603b,roughness:.6,metalness:.65});
     const add=(geometry,mat,position)=>{const part=new THREE.Mesh(geometry,mat);part.position.set(...position);part.receiveShadow=true;scene.add(part);return part;};
     const beam=(size,position)=>add(new THREE.BoxGeometry(...size),dark,position);
-    // No front wall or ceiling: cards stay visible from the overhead camera.
-    add(new THREE.PlaneGeometry(38,38),material,[0,-1.35,0]).rotation.x=-Math.PI/2;
-    add(new THREE.PlaneGeometry(25,9),material,[0,3,-11.5]);
-    const left=add(new THREE.PlaneGeometry(23,9),material,[-12.5,3,0]);left.rotation.y=Math.PI/2;
-    const right=add(new THREE.PlaneGeometry(23,9),material,[12.5,3,0]);right.rotation.y=-Math.PI/2;
-    for(const x of [-11.5,-7.5,-3.8,3.8,7.5,11.5]) {
-        beam([.22,7,.28],[x,2,-11.25]);
-        beam([.3,.22,.35],[x,5.45,-11.15]);
-    }
-    beam([25,.3,.4],[0,5.6,-11.25]);beam([25,.18,.22],[0,.6,-11.25]);
-    for(const x of [-10.8,10.8]) {
-        beam([.34,6,.34],[x,1.65,-5]);
-        // Carved window frames and thin moonlit slats.
-        beam([2.7,.18,.18],[x,3.8,-11.03]);beam([2.7,.18,.18],[x,1.1,-11.03]);
-        for(let i=0;i<7;i++) beam([.15,2.7,.16],[x-1.2+i*.4,2.45,-11.03]);
-        add(new THREE.PlaneGeometry(2.5,2.55),new THREE.MeshBasicMaterial({color:0x151e25}),[x,2.45,-11.12]);
-    }
-    // Low shelves, ceramic vessels, and a hanging lantern behind the play area.
-    beam([3,.15,1.1],[0,.1,-10.4]);
-    for(const x of [-1.2,1.2]) beam([.12,1.4,.12],[x,-.65,-10.4]);
+    add(new THREE.PlaneGeometry(48,48),material,[0,-1.35,0]).rotation.x=-Math.PI/2;
+    // Repeat the same inward-facing room wall on all four sides. Leaving the
+    // ceiling open preserves overhead play; walls disappear when viewed outside.
     const pottery=new THREE.MeshStandardMaterial({color:0x3b3930,roughness:.98});
-    for(const [x,size] of [[-1,.25],[.8,.34]]) {
-        const profile=[[0,0],[size*.65,0],[size,.18],[size*.8,.42],[size*.38,.5],[size*.4,.6]].map(([r,y])=>new THREE.Vector2(r,y));
-        add(new THREE.LatheGeometry(profile,16),pottery,[x,.17,-10.4]);
-    }
-    for(const x of [-7.5,7.5]) {
-        const light=new THREE.PointLight(0xdf9e59,9,8,2);light.position.set(x,2.3,-10.1);scene.add(light);
-        const lantern=add(new THREE.CylinderGeometry(.25,.21,.58,8),new THREE.MeshStandardMaterial({color:0x9c733e,emissive:0xffa345,emissiveIntensity:.8,roughness:.8}),[x,2.3,-10.3]);
-        lantern.castShadow=false;
-        for(let i=0;i<6;i++) {const a=i*Math.PI/3;beam([.025,.7,.025],[x+Math.sin(a)*.25,2.3,-10.3+Math.cos(a)*.25]);}
-        add(new THREE.CylinderGeometry(.3,.3,.06,12),bronze,[x,2.64,-10.3]);
-        beam([.025,2.6,.025],[x,4,-10.3]);
+    const windowMaterial=new THREE.MeshBasicMaterial({color:0x151e25});
+    const paper=new THREE.MeshStandardMaterial({color:0x9c733e,emissive:0xffa345,emissiveIntensity:.6,roughness:.8});
+    for(let side=0;side<4;side++) {
+        const angle=side*Math.PI/2;
+        const group=new THREE.Group();group.rotation.y=angle;scene.add(group);
+        const wallAdd=(geometry,mat,position)=>{
+            const part=new THREE.Mesh(geometry,mat);part.position.set(...position);part.receiveShadow=true;group.add(part);return part;
+        };
+        const wallBeam=(size,position)=>wallAdd(new THREE.BoxGeometry(...size),dark,position);
+        wallAdd(new THREE.PlaneGeometry(24,12),material,[0,4.65,-12]);
+        for(const x of [-11.8,-7.8,-3.9,3.9,7.8,11.8]) wallBeam([.22,10,.28],[x,3.5,-11.85]);
+        wallBeam([24,.3,.4],[0,6.1,-11.8]);wallBeam([24,.18,.22],[0,.6,-11.8]);
+        for(const x of [-5.9,5.9]) {
+            wallBeam([2.7,.18,.18],[x,3.8,-11.55]);wallBeam([2.7,.18,.18],[x,1.1,-11.55]);
+            for(let i=0;i<7;i++)wallBeam([.12,2.7,.16],[x-1.2+i*.4,2.45,-11.55]);
+            wallAdd(new THREE.PlaneGeometry(2.5,2.55),windowMaterial,[x,2.45,-11.65]);
+        }
+        wallBeam([3,.15,.9],[0,.1,-11.1]);
+        for(const x of [-1.2,1.2])wallBeam([.12,1.4,.12],[x,-.65,-11.1]);
+        for(const [x,size] of [[-.8,.25],[.8,.32]]) {
+            const profile=[[0,0],[size*.65,0],[size,.18],[size*.8,.42],[size*.38,.5],[size*.4,.6]].map(([r,y])=>new THREE.Vector2(r,y));
+            wallAdd(new THREE.LatheGeometry(profile,16),pottery,[x,.17,-11.1]);
+        }
+        for(const x of [-8,8]) {
+            // Emissive lanterns everywhere, one restrained light per wall for mobile.
+            wallAdd(new THREE.CylinderGeometry(.25,.21,.58,8),paper,[x,2.3,-11.3]);
+            for(let i=0;i<6;i++){const a=i*Math.PI/3;wallBeam([.025,.7,.025],[x+Math.sin(a)*.25,2.3,-11.3+Math.cos(a)*.25]);}
+            wallAdd(new THREE.CylinderGeometry(.3,.3,.06,12),bronze,[x,2.64,-11.3]);wallBeam([.025,3.1,.025],[x,4.2,-11.3]);
+        }
+        const light=new THREE.PointLight(0xdf9e59,7,10,2);light.position.set(0,3,-10.4);group.add(light);
     }
     // Table legs and cross braces visible when looking across the table.
     for(const x of [-3.3,3.3]) for(const z of [-3.3,3.3]) {
@@ -123,14 +125,42 @@ export function createRitualBust(parent, color, alive, variant = 0, headGeometry
         collar.moveTo(side*.018,.635);collar.lineTo(side*.12,.585);collar.lineTo(side*.075,.49);collar.lineTo(side*.005,.568);collar.closePath();
         add(new THREE.ExtrudeGeometry(collar,{depth:.012,bevelEnabled:true,bevelSegments:1,steps:1,bevelSize:.004,bevelThickness:.003}),body,[0,0,-.118]);
     }
-    add(new THREE.CylinderGeometry(.073,.086,.17,20),skin,[0,.688,.008]);
+    add(new THREE.CylinderGeometry(.064,.082,.12,20),skin,[0,.65,.008]);
     for(let button=0;button<4;button++) add(new THREE.SphereGeometry(.009,8,6),recess,[0,.44-button*.09,-.145],[1,1,.45]);
     for(let i=-2;i<=2;i++) {
         const fold=segment([i*.055,.07,-.13],[i*.067,.3,-.146],.006,body);
         fold.rotation.z+=i*.035;
     }
     // A scanned head provides coherent facial anatomy instead of separate primitive features.
-    if (headGeometry) add(headGeometry.clone(),skin,[0,.67,0]);
+    if (headGeometry) {
+        const head=headGeometry.clone();
+        // The scan has closed lids. Open only the forward eye apertures and
+        // insert matte eyeballs; do not paint white eyes over closed eyelids.
+        if (alive && head.index) {
+            const vertices=head.attributes.position,indices=head.index.array,kept=[];
+            const inside=(index)=>{
+                const x=vertices.getX(index),y=vertices.getY(index),z=vertices.getZ(index);
+                return z<-.103 && ((Math.abs(x)-.061)/.024)**2+((y-.231)/.011)**2<1;
+            };
+            for(let i=0;i<indices.length;i+=3) {
+                if (inside(indices[i]) || inside(indices[i+1]) || inside(indices[i+2])) continue;
+                kept.push(indices[i],indices[i+1],indices[i+2]);
+            }
+            head.setIndex(kept);head.computeVertexNormals();
+        }
+        add(head,skin,[0,.66,0],[.82,.82,.82]);
+        if (alive) {
+            const sclera=new THREE.MeshStandardMaterial({color:0xaaa394,roughness:.7});
+            const iris=new THREE.MeshStandardMaterial({color:0x42382c,roughness:.7});
+            for(const side of [-1,1]) {
+                const x=side*.061*.82,y=.66+.231*.82;
+                add(new THREE.SphereGeometry(.023,20,12),sclera,[x,y,-.145*.82],[.82,.36,.4]);
+                add(new THREE.SphereGeometry(.009,16,10),iris,[x,y,-.156*.82],[.85,.9,.25]);
+                add(new THREE.SphereGeometry(.0045,12,8),recess,[x,y,-.159*.82],[1,1,.25]);
+            }
+            sclera.dispose();iris.dispose();
+        }
+    }
     else add(new THREE.SphereGeometry(.145,24,18),skin,[0,.88,0],[.93,1.4,1]);
     // Full seated body. Hips, knees and feet remain present when orbiting behind.
     const trousers = new THREE.MeshStandardMaterial({color:alive?0x302f2b:0x292826,roughness:.98});
