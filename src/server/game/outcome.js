@@ -104,35 +104,21 @@ module.exports = function createServices(game) {
           room.discardPile.push(...player.hand);
           player.hand = [];
       }
-      // ทิ้งการ์ด inPlayCards (Permanent/Blue)
-      if (player.inPlayCards && player.inPlayCards.length > 0) {
-          const blueCards = player.inPlayCards.filter(card => card.color === 'Blue');
-          const otherCards = player.inPlayCards;
-          if (otherCards.length > 0) {
-              room.discardPile.push(...otherCards);
-          }
-          // All cards enter discard; the final-two rule removes excluded cards afterward.
-          // Reset Black Cat holder if needed
-          if (blueCards.some(card => card.name === 'Black Cat')) {
-              room.blackCatHolder = null;
-          }
-          // --- Matchmaker: ถ้าตายและมีการ์ดนี้ ให้ฆ่าคู่ผูกวิญญาณด้วย ---
-          if (blueCards.some(card => card.name === 'Matchmaker')) {
-              const otherMatchmaker = Object.values(room.players).find(p => p.uniqueId !== player.uniqueId && p.alive && p.inPlayCards && p.inPlayCards.some(c => c.name === 'Matchmaker'));
-              if (otherMatchmaker) {
-                  game.sendGameMessage(room.name, `${otherMatchmaker.name} ตายพร้อมกับ <b>${player.name}</b> เนื่องจาก Matchmaker!`, 'red', true);
-                  game.handlePlayerDeath(room, otherMatchmaker, {
-                      byPlayerName: player.name,
-                      cause: 'matchmaker_link',
-                  });
-              }
-          }
-          player.inPlayCards = [];
-      }
+      const linkedPlayer = player.inPlayCards?.some(card => card.name === 'Matchmaker')
+          ? Object.values(room.players).find(other => other.uniqueId !== player.uniqueId && other.alive &&
+              other.inPlayCards?.some(card => card.name === 'Matchmaker')) : null;
+      room.discardPile.push(...(player.inPlayCards || []));
+      player.inPlayCards = [];
       game.updateBlackCatHolder(room);
+      game.checkWinCondition(room);
+      if (room.gameOver) return;
+      if (linkedPlayer?.alive) {
+          game.sendGameMessage(room.name, `${linkedPlayer.name} ตายตาม ${player.name} เพราะผูกวิญญาณ`, 'red', true);
+          game.handlePlayerDeath(room, linkedPlayer, { byPlayerName: player.name, cause: 'matchmaker_link' });
+          if (room.gameOver) return;
+      }
       game.applyTwoPlayerRules(room);
-      game.emitRoomState(room.name); // อัปเดตสถานะผู้เล่น
-      game.checkWinCondition(room); // เช็คปอบชนะทันทีหลังมีผู้เล่นตาย
+      game.emitRoomState(room.name);
   }
 
   function eliminatePlayerWithoutLifeCards(room, player) {

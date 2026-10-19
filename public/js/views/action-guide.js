@@ -27,9 +27,9 @@ function getGuide(state) {
         return guide('รอสรุปการเลือกกลางคืน', 'ยังไม่ต้องทำอะไร');
     }
     if (state.currentPhase === 'PRE_DAWN') {
-        const id = state.confessionOrder?.[state.currentConfessionIndex];
+        const id = me.uniqueId;
         if (id === me.uniqueId && !state.confessionActions?.includes(id)) return guide('เลือกสารภาพหรือข้าม', 'สารภาพ: เปิดการ์ดชีวิต 1 ใบ · ข้าม: ไม่เปิดการ์ด', true);
-        return guide('รอช่วงสารภาพจบ', 'คุณยังไม่ต้องทำอะไร');
+        return guide('รอทุกคนตัดสินใจ', `ตัดสินใจแล้ว ${state.confessionActions?.length || 0}/${state.confessionOrder?.length || 0} คน · เฉลยเมื่อครบทุกคน`);
     }
     if (state.currentPhase !== 'DAY') return guide('กำลังเตรียมเกม', 'รอระบบเริ่มช่วงถัดไป');
     if (state.playerForcedToRevealTryal) return guide('รอเปิดการ์ดชีวิต', 'รอผู้เล่นเลือกการ์ดก่อนเล่นต่อ');

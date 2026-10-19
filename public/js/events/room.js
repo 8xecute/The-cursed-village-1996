@@ -333,29 +333,12 @@ export function initialize() {
               (!roomState.confessionActions || !roomState.confessionActions.includes(client.state.myUniqueId)) &&
               (!roomState.nightConfessors || !roomState.nightConfessors.includes(client.state.myUniqueId)) &&
               roomState.confessionOrder &&
-              roomState.confessionOrder[roomState.currentConfessionIndex] === client.state.myUniqueId &&
+              roomState.confessionOrder.includes(client.state.myUniqueId) &&
               !client.state.confessPopupShownForThisPreDawn
           ) {
-              // ตรวจสอบว่าผู้เล่นได้รับการปกป้องจากหมอผีหรือมีการ์ด Asylum หรือไม่
-              const isProtectedByConstable = roomState.playersWhoActedAtNight && 
-                  roomState.playersWhoActedAtNight['constableSave'] === client.state.myUniqueId;
-              const hasAsylum = myPlayer.inPlayCards && 
-                  myPlayer.inPlayCards.some(card => card.name === 'Asylum');
-              
-              if (isProtectedByConstable || hasAsylum) {
-                  // ข้ามการสารภาพอัตโนมัติ
-                  client.state.socket.emit('skip confession');
+              if (client.state.myTryalCards?.length > 0) {
+                  client.actions.showConfessPopup(client.state.myTryalCards);
                   client.state.confessPopupShownForThisPreDawn = true;
-                  if (isProtectedByConstable) {
-                      client.actions.addGameMessage('คุณได้รับการปกป้องจากหมอผี ข้ามการสารภาพ', 'green', true);
-                  } else if (hasAsylum) {
-                      client.actions.addGameMessage('คุณมีการ์ดที่หลบภัย ข้ามการสารภาพ', 'green', true);
-                  }
-              } else {
-                  if (client.state.myTryalCards && client.state.myTryalCards.length > 0) {
-                      client.actions.showConfessPopup(client.state.myTryalCards);
-                      client.state.confessPopupShownForThisPreDawn = true;
-                  }
               }
           } else if (roomState.currentPhase === 'DAY' && myPlayer && myPlayer.alive && roomState.playerForcedToRevealTryal === client.state.myUniqueId) {
               // ซ่อน confess section เมื่อถูกบังคับเปิดการ์ดชีวิต

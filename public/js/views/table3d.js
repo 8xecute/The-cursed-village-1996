@@ -10,6 +10,16 @@ client.actions.updateTable3DFocus = function updateTable3DFocus() {
     const team = player.hasBeenWitch ? ' · ทีมปอบ' : '';
     const nextStatus = `${player.alive ? 'ยังมีชีวิต' : 'เสียชีวิตแล้ว'} · ชีวิต ${player.tryalCardCount} · การ์ด ${player.handSize} · ข้อกล่าวหา ${player.accusationPoints || 0}${team}`;
     if (status.textContent !== nextStatus) status.textContent = nextStatus;
+    let connections = document.getElementById('table3d-connection-status');
+    if (!connections) {
+        connections = document.createElement('small');
+        connections.id = 'table3d-connection-status';
+        connections.style.display = 'block';
+        status.parentElement.appendChild(connections);
+    }
+    const waiting = Object.values(client.state.currentRoomState?.players || {}).filter(other => other.reconnectDeadline && !other.isReplacementBot);
+    connections.textContent = waiting.map(other => `${other.name}: รอเชื่อมต่อ ${Math.max(0, Math.ceil((other.reconnectDeadline - Date.now()) / 1000))} วินาที`).join(' · ');
+    connections.hidden = waiting.length === 0;
     let role = document.getElementById('table3d-role-badge');
     if (!role) {
         role = document.createElement('strong'); role.id = 'table3d-role-badge';

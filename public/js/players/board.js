@@ -29,6 +29,8 @@ client.actions.updatePlayersBoardGrid = function updatePlayersBoardGrid(roomStat
         }
         header += `${player.name}`;
         if (knowsWitchTeam && player.hasBeenWitch) header += ' <span style="color:#ff1744;font-weight:bold;">(ทีมปอบ)</span>';
+        if (player.isReplacementBot) header += ' <span>· บอทเล่นแทน</span>';
+        else if (player.reconnectDeadline) header += `<span class="reconnect-countdown" data-deadline="${Number(player.reconnectDeadline)}"></span>`;
         if (player.isHost) header += ' <span style="color:#ff4500;">(Host)</span>';
         if (player.isBlackCatHolder) header += ' <span style="color:#ffd700;">(เครื่องเซ่น)</span>';
         if (!player.alive) header += ' <span class="player-dead-badge">💀 เสียชีวิตแล้ว</span>';
@@ -123,3 +125,14 @@ client.actions.updatePlayersBoardGrid = function updatePlayersBoardGrid(roomStat
 export function initialize() {
 
 }
+
+// Update only countdown text; do not rebuild cards or steal focus from dialogs.
+setInterval(() => {
+    if (document.body.classList.contains('game-view-3d') && Object.values(client.state.currentRoomState?.players || {}).some(player => player.reconnectDeadline)) {
+        client.actions.updateTable3DFocus?.();
+    }
+    document.querySelectorAll('.reconnect-countdown[data-deadline]').forEach(element => {
+        const seconds = Math.max(0, Math.ceil((Number(element.dataset.deadline) - Date.now()) / 1000));
+        element.textContent = ` · รอเชื่อมต่อ ${seconds} วินาที`;
+    });
+}, 1000);

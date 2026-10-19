@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { timberTexture, ceremonialCloth, buildCeremonialRoom, createRitualBust } from './ritual-scene.mjs';
 
 const COLORS = [0x526774, 0x795551, 0x88744e, 0x596b55, 0x716275, 0x8a806b,
     0x7e634e, 0x5c6974, 0x785d69, 0x727354, 0x56716d, 0x72675e];
@@ -30,7 +31,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
 
     const scene = new THREE.Scene();
     scene.background = null;
-    scene.fog = new THREE.Fog(0x110d0a, 20, 42);
+    scene.fog = new THREE.Fog(0x151713, 17, 36);
     const camera = new THREE.PerspectiveCamera(43, 1, 0.1, 60);
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enablePan = true;
@@ -86,19 +87,8 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
     scene.add(moonFill);
     key.shadow.bias = -0.0002;
 
-    const wood = canvasTexture(512, 512, (ctx, w, h) => {
-        ctx.fillStyle = '#593017'; ctx.fillRect(0, 0, w, h);
-        for (let i = 0; i < 150; i++) {
-            ctx.strokeStyle = i % 3 ? 'rgba(19,9,3,.12)' : 'rgba(205,127,62,.12)';
-            ctx.lineWidth = 1 + i % 3;
-            ctx.beginPath();
-            for (let x = 0; x <= w; x += 8) {
-                const y = i * h / 150 + Math.sin(x * .025 + i) * 2;
-                if (!x) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-            }
-            ctx.stroke();
-        }
-    });
+    const wood = timberTexture();
+    const cloth = ceremonialCloth();
     const back = canvasTexture(192, 288, (ctx, w, h) => {
         ctx.fillStyle = '#29170e'; ctx.fillRect(0, 0, w, h);
         ctx.strokeStyle = '#b87736'; ctx.lineWidth = 5; ctx.strokeRect(8, 8, w - 16, h - 16);
@@ -115,17 +105,18 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
         parent.add(object);
         return object;
     }
-    const tableMaterial = new THREE.MeshStandardMaterial({ map: wood, roughness: 0.88 });
+    buildCeremonialRoom(scene, wood);
+    const tableMaterial = new THREE.MeshStandardMaterial({ map: wood, bumpMap: wood, bumpScale: .035, roughness: .78, color: 0xb4a38b });
     mesh(new THREE.CylinderGeometry(6.2, 6.2, 0.35, 80), tableMaterial, scene, [0, -0.2, 0]);
     const rim = mesh(new THREE.TorusGeometry(6.12, 0.12, 8, 96),
         new THREE.MeshStandardMaterial({ color: 0x331b0c, roughness: 0.7 }), scene, [0, 0.01, 0]);
     rim.rotation.x = Math.PI / 2;
     mesh(new THREE.CylinderGeometry(2.35, 2.35, 0.02, 64),
-        new THREE.MeshStandardMaterial({ color: 0x73401e, roughness: 1 }), scene, [0, 0.006, 0]);
+        new THREE.MeshStandardMaterial({ map: cloth, bumpMap: cloth, bumpScale: .008, roughness: 1 }), scene, [0, 0.006, 0]);
     mesh(new THREE.CylinderGeometry(0.4, 0.45, 0.11, 24),
-        new THREE.MeshStandardMaterial({ color: 0xb17b27, metalness: 0.6, roughness: 0.4 }), scene, [0, 0.08, 0]);
+        new THREE.MeshStandardMaterial({ color: 0x8d7446, metalness: 0.72, roughness: 0.52 }), scene, [0, 0.08, 0]);
     mesh(new THREE.CylinderGeometry(0.17, 0.2, 0.65, 20),
-        new THREE.MeshStandardMaterial({ color: 0xffe0a1, roughness: 0.9 }), scene, [0, 0.45, 0]);
+        new THREE.MeshStandardMaterial({ color: 0xc4b58d, roughness: 0.96 }), scene, [0, 0.45, 0]);
     const flame = new THREE.Group(); flame.position.set(0,.79,0); scene.add(flame);
     const profile = [[0,0],[.032,.02],[.065,.09],[.047,.18],[.015,.27],[0,.34]].map(([r,y]) => new THREE.Vector2(r,y));
     const outerFlame = mesh(new THREE.LatheGeometry(profile,20),new THREE.MeshBasicMaterial({color:0xff8b26,transparent:true,opacity:.72,depthWrite:false,toneMapped:false}),flame,[0,0,0]);
@@ -142,8 +133,26 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
     });
     const glow = new THREE.Sprite(new THREE.SpriteMaterial({map:flameGlowTexture,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,toneMapped:false}));
     glow.position.set(0,.15,0); glow.scale.set(.33,.52,1); flame.add(glow);
-    mesh(new THREE.PlaneGeometry(80, 80), new THREE.ShadowMaterial({ opacity: .22 }),
-        scene, [0, -0.4, 0]).rotation.x = -Math.PI / 2;
+    // Aged bronze rims and pooled wax catch the candlelight.
+    for (const radius of [5.98, 6.18]) {
+        const ring = mesh(new THREE.TorusGeometry(radius,.018,5,96),new THREE.MeshStandardMaterial({color:0x685432,metalness:.7,roughness:.65}),scene,[0,.015,0]);
+        ring.rotation.x = Math.PI/2;
+    }
+    const waxMaterial = new THREE.MeshStandardMaterial({color:0xc4b58d,roughness:.96});
+    for(let i=0;i<7;i++) {
+        const angle=i*2.4;
+        const drip=mesh(new THREE.SphereGeometry(.025,8,6),waxMaterial,scene,[Math.sin(angle)*.175,.37+(i%3)*.12,Math.cos(angle)*.175]);
+        drip.scale.set(.8,2.4,.7);
+    }
+    const pool=mesh(new THREE.SphereGeometry(.24,16,8),waxMaterial,scene,[0,.15,0]);pool.scale.y=.08;
+    const bowlMaterial=new THREE.MeshStandardMaterial({color:0x78613a,metalness:.7,roughness:.58});
+    const incenseBowl=mesh(new THREE.CylinderGeometry(.16,.12,.09,20),bowlMaterial,scene,[0,.08,-.85]);
+    mesh(new THREE.CylinderGeometry(.145,.145,.008,20),new THREE.MeshStandardMaterial({color:0x50473b,roughness:1}),scene,[0,.13,-.85]);
+    for(let i=-1;i<=1;i++) {
+        const stick=mesh(new THREE.CylinderGeometry(.006,.006,.3,5),new THREE.MeshStandardMaterial({color:0x63503a,roughness:1}),scene,[i*.035,.28,-.85]);
+        stick.rotation.z=i*.1;
+        mesh(new THREE.SphereGeometry(.009,6,5),new THREE.MeshBasicMaterial({color:0xc15c29,toneMapped:false}),scene,[i*.05,.43,-.85]);
+    }
 
     const dynamic = new THREE.Group();
     scene.add(dynamic);
@@ -297,6 +306,10 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
         const face = mesh(new THREE.PlaneGeometry(size, size * 1.48), material, parent, position);
         face.rotation.set(...rotation);
         face.userData = data;
+        // A thin paper edge adds depth without changing the clickable face.
+        const edge = mesh(new THREE.BoxGeometry(size, size * 1.48, .012),
+            new THREE.MeshStandardMaterial({color:0x574533,roughness:.95}), face, [0,0,-.009]);
+        edge.castShadow = false;
         targets.push(face);
         const categoryColor = { Red: 0xc94d45, Green: 0x549560, Blue: 0x4a8dc0, Black: 0x77716b }[data.category];
         if (categoryColor !== undefined) {
@@ -373,16 +386,10 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             seat.rotation.y = angle;
             seatPositions.set(player.uniqueId, seat.position.clone().setY(1.3));
             dynamic.add(seat);
-            const material = new THREE.MeshStandardMaterial({ color: player.alive ? new THREE.Color(COLORS[index % COLORS.length]).multiplyScalar(.55) : 0x302d29, roughness: 0.6 });
             const pawn = new THREE.Group(); pawn.position.z = 2.05; pawn.position.y = -.1; seat.add(pawn);
             pawn.scale.setScalar(1.4);
             if (!player.alive) { pawn.rotation.z = Math.PI / 2; pawn.position.y = 0.2; }
-            const parts = [
-                mesh(new THREE.CylinderGeometry(.20,.25,.42,16),material.clone(),pawn,[0,.25,0]),
-                mesh(new THREE.SphereGeometry(.17,16,12),material.clone(),pawn,[0,.63,0]),
-                mesh(new THREE.CapsuleGeometry(.075,.28,4,10),material.clone(),pawn,[-.29,.25,0]),
-                mesh(new THREE.CapsuleGeometry(.075,.28,4,10),material.clone(),pawn,[.29,.25,0]),
-            ];
+            const parts = createRitualBust(pawn, COLORS[index % COLORS.length], player.alive);
             parts.forEach(part => { part.userData = { ...part.userData, playerId: player.uniqueId }; targets.push(part); });
             const eligibleTarget = interaction?.kind === 'player' && interaction.eligible.includes(player.uniqueId);
             const selectedTarget = eligibleTarget && interaction.selected.includes(player.uniqueId);
@@ -390,7 +397,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
                 part.material.emissive.set(selectedTarget ? 0xb47e34 : 0x597b70);
                 part.material.emissiveIntensity = selectedTarget ? .9 : .55;
             });
-            const nameLabel = label(seat, `${selectedTarget ? '✓ ' : ''}${player.name}${player.uniqueId === me ? ' (คุณ)' : ''}${state.players?.[me]?.hasBeenWitch && player.hasBeenWitch ? ' · ทีมปอบ' : ''}${!player.alive ? ' · เสียชีวิต' : ''}`, [0, 1.3, 2.05],
+            const nameLabel = label(seat, `${selectedTarget ? '✓ ' : ''}${player.name}${player.uniqueId === me ? ' (คุณ)' : ''}${state.players?.[me]?.hasBeenWitch && player.hasBeenWitch ? ' · ทีมปอบ' : ''}${player.isReplacementBot ? ' · บอทเล่นแทน' : player.reconnectDeadline ? ' · รอเชื่อมต่อ' : ''}${!player.alive ? ' · เสียชีวิต' : ''}`, [0, 1.65, 2.05],
                 eligibleTarget ? selectedTarget ? '#ffe1a0' : '#a9e0c9' : player.alive ? '#eddbb7' : '#a39b91');
             nameLabel.userData.playerId = player.uniqueId;
             targets.push(nameLabel);
@@ -627,7 +634,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             cancelAnimationFrame(renderFrame);
             resizeObserver.disconnect(); controls.dispose(); clearDynamic();
             scene.traverse(object => { object.geometry?.dispose(); object.material?.dispose(); });
-            flameGlowTexture.dispose(); wood.dispose(); back.dispose(); textures.forEach(texture => texture.dispose());
+            flameGlowTexture.dispose(); wood.dispose(); cloth.dispose(); back.dispose(); textures.forEach(texture => texture.dispose());
             renderer.dispose(); renderer.domElement.remove();
         },
     };

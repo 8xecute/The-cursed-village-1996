@@ -48,7 +48,8 @@ function createGameServer() {
     const now = Date.now();
     for (const roomName in game.rooms) {
         const room = game.rooms[roomName];
-        const playerCount = Object.keys(room.players).filter(uid => room.players[uid].connected).length;
+        const playerCount = Object.values(room.players).filter(player =>
+            (!player.isBot && player.connected) || game.io.sockets.sockets.get(player.returnSocketId)?.connected).length;
         if (playerCount === 0) {
             if (!roomLastActive[roomName]) {
                 roomLastActive[roomName] = now;

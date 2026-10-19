@@ -3,8 +3,18 @@ module.exports = function registerHandlers(socket, game) {
   socket.on('register uniqueId', (uniqueId, playerName) => {
           const existingRoom = Object.values(game.rooms).find(room => room && room.players && room.players[uniqueId]);
           const existingPlayer = existingRoom?.players?.[uniqueId];
-          if (existingPlayer?.isBot && socket.handshake.auth?.botToken !== existingPlayer.botToken) {
+          const botToken = socket.handshake.auth?.botToken;
+          if ((botToken && botToken !== existingPlayer?.botToken) ||
+              (existingPlayer?.isBot && !existingPlayer.isReplacementBot && botToken !== existingPlayer.botToken)) {
               socket.disconnect(true);
+              return;
+          }
+          if (existingPlayer?.isReplacementBot && botToken !== existingPlayer.botToken) {
+              socket.uniqueId = uniqueId;
+              socket.pendingReturnRoom = existingRoom.name;
+              existingPlayer.returnSocketId = socket.id;
+              game.io.to(socket.id).emit('game message', 'กำลังรอบอททำแอ็กชันปัจจุบันให้เสร็จ แล้วคืนการควบคุมให้คุณ', 'orange');
+              game.restoreReplacementPlayers(existingRoom);
               return;
           }
           socket.uniqueId = uniqueId;
@@ -388,6 +398,7 @@ module.exports = function registerHandlers(socket, game) {
           room.nightConfessors = [];
           room.nightCardDrawer = null;
           room.conspiracyDrawer = null;
+          room.pendingDraw = null;
           room.blackCatHolder = null;
           room.currentTurnIndex = 0;
           room.dayNumber = 0;
@@ -421,6 +432,13 @@ module.exports = function registerHandlers(socket, game) {
       });
 
   socket.on('leave room', () => {
+          if (socket.pendingReturnRoom) {
+              const pending = game.rooms[socket.pendingReturnRoom]?.players[socket.uniqueId];
+              if (pending?.returnSocketId === socket.id) pending.returnSocketId = null;
+              socket.pendingReturnRoom = null;
+              game.io.to(socket.id).emit('room left');
+              return;
+          }
           const roomName = socket.currentRoom;
           if (roomName && game.rooms[roomName]) {
               const room = game.rooms[roomName];
@@ -437,6 +455,15 @@ module.exports = function registerHandlers(socket, game) {
                   return;
               }
 
+              const leavingPlayer = room.players[playerUniqueId];
+              if (leavingPlayer && leavingPlayer.id !== socket.id) return;
+              if (room.gameStarted && !room.gameOver && leavingPlayer && !leavingPlayer.isBot) {
+                  socket.leave(roomName);
+                  socket.currentRoom = null;
+                  game.io.to(socket.id).emit('room left');
+                  game.startReplacementBot(room, leavingPlayer);
+                  return;
+              }
               const playerName = room.players[playerUniqueId]?.name || 'Unknown Player';
 
               clearTimeout(room.players[playerUniqueId]?.disconnectTimeout);
@@ -486,6 +513,12 @@ module.exports = function registerHandlers(socket, game) {
                   // Don't immediately remove the player - allow for reconnection
                   player.connected = false;
                   player.lastDisconnectTime = Date.now();
+                  if (player.isReplacementBot) {
+                      player.reconnectDeadline = null;
+                      game.emitRoomState(room.name);
+                      return; // Internal bot reconnects itself; never delete its seat.
+                  }
+                  player.reconnectDeadline = Date.now() + game.RECONNECT_TIMEOUT;
 
                   if (player.disconnectTimeout) {
                       clearTimeout(player.disconnectTimeout);
@@ -499,6 +532,10 @@ module.exports = function registerHandlers(socket, game) {
                   player.disconnectTimeout = setTimeout(() => {
                       if (game.rooms[roomName] !== room) return;
                       if (room.players[playerUniqueId] && !room.players[playerUniqueId].connected) {
+                          if (room.gameStarted && !room.gameOver) {
+                              game.startReplacementBot(room, room.players[playerUniqueId]);
+                              return;
+                          }
                           // Player hasn't reconnected, remove them
                           const pName = room.players[playerUniqueId].name;
                           delete room.players[playerUniqueId];

@@ -74,113 +74,8 @@ module.exports = function createServices(game) {
       
       // ตรวจสอบว่าการ์ดในมือหมดหรือไม่ในช่วงกลางวัน
       if (room.currentPhase === 'DAY' && nextPlayer.hand.length === 0) {
-          // จั่วการ์ดให้อัตโนมัติ 2 ใบ
-          game.sendGameMessage(room.name, `<b>${nextPlayer.name}</b> ไม่มีการ์ดในมือ ระบบจั่วการ์ดให้อัตโนมัติ`, 'blue', true);
-          
-          let drewAnyCard = false;
-          for (let i = 0; i < 2; i++) {
-              if (room.gameDeck.length > 0) {
-                  const card = room.gameDeck.shift();
-                  if (card.type === 'Event') {
-                      // Handle Event cards
-                      switch (card.name) {
-                          case 'Conspiracy':
-                              room.conspiracyDrawer = nextPlayerUniqueId;
-                              if (room.blackCatHolder && room.players[room.blackCatHolder]?.alive) {
-                                  const bcHolder = room.players[room.blackCatHolder];
-                                  if (bcHolder.tryalCards.length > 0) {
-                                      room.awaitingConspiracySelection = {
-                                          selector: nextPlayerUniqueId,
-                                          target: room.blackCatHolder,
-                                          tryalCount: bcHolder.tryalCards.length
-                                      };
-                                      game.sendGameMessage(room.name, `จั่วได้การ์ด ${game.getCardNameWithColor('Conspiracy')}`, 'orange', true);
-                                      game.io.to(nextPlayer.id).emit('prompt select blackcat tryal', {
-                                          blackCatHolder: room.blackCatHolder,
-                                          tryalCount: bcHolder.tryalCards.length,
-                                          blackCatHolderName: bcHolder.name
-                                      });
-                                      room.discardPile.push(card);
-                                      // Don't proceed to next turn until selection is complete
-                                      return;
-                                  }
-                              }
-                              game.promptTryalCardSelectionToLeft(room.name);
-                              room.discardPile.push(card);
-                              // Don't proceed to next turn until selection is complete
-                              return;
-                          case 'Night':
-                              room.nightCardDrawer = nextPlayerUniqueId;
-                              game.sendGameMessage(room.name, `<b>${nextPlayer.name}</b> ใช้การ์ด ${game.getCardNameWithColor('Night')}`, 'orange', true);
-                              room.discardPile.push(card);
-                              game.changePhase(room.name, 'NIGHT');
-                              return;
-                      }
-                  } else {
-                      nextPlayer.hand.push(card);
-                      drewAnyCard = true;
-                  }
-              } else {
-                  // Reshuffle discard pile
-                  const nightCards = room.discardPile.filter(card => card.name === 'Night');
-                  const otherCards = room.discardPile.filter(card => card.name !== 'Night');
-                  room.gameDeck = game.shuffleArray([...otherCards]);
-                  room.discardPile = [];
-                  if (nightCards.length > 0) {
-                      room.gameDeck = room.gameDeck.concat(nightCards);
-                  }
-                  if (room.gameDeck.length > 0) {
-                      const card = room.gameDeck.shift();
-                      if (card.type === 'Event') {
-                          // Handle Event cards (same as above)
-                          switch (card.name) {
-                              case 'Conspiracy':
-                              room.conspiracyDrawer = nextPlayerUniqueId;
-                                  if (room.blackCatHolder && room.players[room.blackCatHolder]?.alive) {
-                                      const bcHolder = room.players[room.blackCatHolder];
-                                      if (bcHolder.tryalCards.length > 0) {
-                                          room.awaitingConspiracySelection = {
-                                              selector: nextPlayerUniqueId,
-                                              target: room.blackCatHolder,
-                                              tryalCount: bcHolder.tryalCards.length
-                                          };
-                                          game.sendGameMessage(room.name, `จั่วได้การ์ด ${game.getCardNameWithColor('Conspiracy')}`, 'orange', true);
-                                          game.io.to(nextPlayer.id).emit('prompt select blackcat tryal', {
-                                              blackCatHolder: room.blackCatHolder,
-                                              tryalCount: bcHolder.tryalCards.length,
-                                              blackCatHolderName: bcHolder.name
-                                          });
-                                          room.discardPile.push(card);
-                                          // Don't proceed to next turn until selection is complete
-                                          return;
-                                      }
-                                  }
-                                  game.promptTryalCardSelectionToLeft(room.name);
-                                  room.discardPile.push(card);
-                                  // Don't proceed to next turn until selection is complete
-                                  return;
-                              case 'Night':
-                                  room.nightCardDrawer = nextPlayerUniqueId;
-                                  game.sendGameMessage(room.name, `<b>${nextPlayer.name}</b> ใช้การ์ด ${game.getCardNameWithColor('Night')}`, 'orange', true);
-                                  room.discardPile.push(card);
-                                  game.changePhase(room.name, 'NIGHT');
-                                  return;
-                          }
-                      } else {
-                          nextPlayer.hand.push(card);
-                          drewAnyCard = true;
-                      }
-                  } else {
-                      break;
-                  }
-              }
-          }
-          
-          game.io.to(nextPlayer.id).emit('update hand', nextPlayer.hand);
-          game.emitRoomState(room.name);
-          game.sendDeckInfo(room.name);
-          // หลังจั่วอัตโนมัติแล้วจบเทิร์นทันที
-          game.setNextTurn(room);
+          nextPlayer.hasPlayedCardsThisTurn = false;
+          game.drawCards(room.name, nextPlayerUniqueId, 2);
           return;
       }
       
@@ -196,7 +91,7 @@ module.exports = function createServices(game) {
   }
 
   function hasPendingCardAction(room) {
-      return !!(room.prankShot || room.playerForcedToRevealTryal || room.awaitingCurseSelection ||
+      return !!(room.pendingDraw || room.prankShot || room.playerForcedToRevealTryal || room.awaitingCurseSelection ||
           room.awaitingAlibiSelection || room.awaitingConspiracySelection ||
           room.awaitingLeftTryalSelections || room.isAssigningBlackCat);
   }
@@ -208,7 +103,14 @@ module.exports = function createServices(game) {
   }
 
   function finishEmptyHandTurn(room) {
+      if (!room || room.gameOver || room.currentPhase !== 'DAY' || hasPendingCardAction(room)) return;
       const player = room.players[room.currentTurnPlayerUniqueId];
+      // A completed reveal can kill the actor through Matchmaker. Resume from
+      // that seat only after the reveal/pending action has been cleaned up.
+      if (player && !player.alive) {
+          game.setNextTurn(room, player.uniqueId, true);
+          return;
+      }
       if (!canAutoEndTurn(room, player)) return;
       game.sendGameMessage(room.name, `<b>${player.name}</b> การ์ดในมือหมดแล้ว จบเทิร์นอัตโนมัติ`, 'orange', true);
       game.setNextTurn(room);

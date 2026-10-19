@@ -2,6 +2,10 @@
 module.exports = function createServices(game) {
   function applyTwoPlayerRules(room) {
       if (!room.gameStarted || game.getAlivePlayers(room).length > 2) return;
+      if (!room.twoPlayerRulesAnnounced) {
+          room.twoPlayerRulesAnnounced = true;
+          game.sendGameMessage(room.name, 'เหลือผู้เล่นไม่เกิน 2 คน: นำการ์ดสีน้ำเงิน แพะรับบาป และช่วงชิงออกจากเกมทั้งหมด การ์ดเหล่านี้จะไม่กลับเข้ากองจั่ว', 'gold', true);
+      }
       const excluded = card => card.color === 'Blue' || ['Scapegoat', 'Robbery'].includes(card.name);
       const remove = cards => (cards || []).filter(card => {
           if (!excluded(card)) return true;
@@ -11,7 +15,13 @@ module.exports = function createServices(game) {
       room.discardPile = remove(room.discardPile);
       for (const player of Object.values(room.players)) {
           const oldHand = player.hand.length, oldEffects = player.inPlayCards.length;
+          const removedFromHand = player.hand.filter(excluded);
           player.hand = remove(player.hand); player.inPlayCards = remove(player.inPlayCards);
+          if (player.alive && removedFromHand.length) {
+              const counts = {};
+              removedFromHand.forEach(card => { const name = game.CARD_NAME_THAI[card.name] || card.name; counts[name] = (counts[name] || 0) + 1; });
+              game.io.to(player.id).emit('game message', `กติกาเหลือ 2 คน: นำการ์ดในมือออกจากเกม ${Object.entries(counts).map(([name, count]) => `${name} ${count} ใบ`).join(', ')}`, 'gold');
+          }
           if (player.hand.length !== oldHand) game.io.to(player.id).emit('update hand', player.hand);
           if (player.inPlayCards.length !== oldEffects) game.io.to(player.id).emit('update in play cards', player.inPlayCards);
       }
@@ -95,7 +105,7 @@ module.exports = function createServices(game) {
 
   function playCard(roomName, playerUniqueId, cardIndex, targetUniqueId = null, secondTargetUniqueId = null) {
       const room = game.rooms[roomName];
-      if (room?.prankShot) return;
+      if (room?.prankShot || room?.pendingDraw) return;
       if (!room || room.gameOver) return;
       if (!room || !room.gameStarted || room.currentPhase !== 'DAY') {
           const player = room?.players[playerUniqueId];
@@ -112,6 +122,11 @@ module.exports = function createServices(game) {
 
       if (room.awaitingCurseSelection?.selector === playerUniqueId) {
           game.io.to(player.id).emit('game message', 'กรุณาเลือกการ์ดจาก Curse ให้เสร็จก่อนทำ action อื่น.', 'orange');
+          return;
+      }
+
+      if (room.awaitingAlibiSelection) {
+          game.io.to(player.id).emit('game message', 'กรุณาเลือกข้อแก้ต่างให้เสร็จ หรือยกเลิก ก่อนเล่นการ์ดใบอื่น', 'orange');
           return;
       }
 
@@ -578,163 +593,92 @@ module.exports = function createServices(game) {
 
   function drawCards(roomName, playerUniqueId, count = 2) {
       const room = game.rooms[roomName];
-      if (room) applyTwoPlayerRules(room);
-      if (room?.prankShot) return;
-      if (!room || room.gameOver) return;
-      if (!room || !room.gameStarted || room.currentPhase !== 'DAY') {
-          const player = room?.players[playerUniqueId];
-          if (player) game.io.to(player.id).emit('game message', 'ตอนนี้ยังจั่วการ์ดไม่ได้.', 'red');
-          return;
-      }
-      const player = room.players[playerUniqueId];
-      if (!player || !player.alive || player.uniqueId !== room.currentTurnPlayerUniqueId) {
-          if (player) {
-              game.io.to(player.id).emit('game message', 'ไม่ใช่ตาของคุณหรือคุณไม่สามารถจั่วการ์ดได้.', 'red');
-          }
-          return;
-      }
-
-      if (room.playerForcedToConfess) {
-          game.io.to(player.id).emit('game message', `รอให้ ${room.players[room.playerForcedToConfess].name} สารภาพก่อน`, 'orange');
-          return;
-      }
-
-      if (room.awaitingCurseSelection?.selector === playerUniqueId) {
-          game.io.to(player.id).emit('game message', 'กรุณาเลือกการ์ดจาก Curse ให้เสร็จก่อนจั่วการ์ด.', 'orange');
-          return;
-      }
-
-      if (player.isSilenced) {
-          game.io.to(player.id).emit('game message', 'คุณถูกทำให้เงียบและไม่สามารถจั่วการ์ดได้.', 'red');
-          return;
-      }
-
-      // เพิ่มข้อความแจ้งเตือนการจั่วการ์ด
-      game.sendGameMessage(room.name, `<b>${player.name}</b> จั่วการ์ด`, 'blue', true);
-
-      // Check if player has already played cards this turn
+      const player = room?.players[playerUniqueId];
+      if (!room || room.gameOver || !room.gameStarted || room.currentPhase !== 'DAY' ||
+          room.prankShot || room.pendingDraw || game.hasPendingCardAction(room) ||
+          !player?.alive || playerUniqueId !== room.currentTurnPlayerUniqueId || player.isSilenced) return;
       if (player.hasPlayedCardsThisTurn) {
-          game.io.to(player.id).emit('game message', 'คุณได้เล่นการ์ดไปแล้วในเทิร์นนี้. คุณต้องจบเทิร์น.', 'red');
+          game.io.to(player.id).emit('game message', 'คุณเล่นการ์ดแล้วในเทิร์นนี้ จั่วเพิ่มไม่ได้', 'red');
           return;
       }
+      applyTwoPlayerRules(room);
+      player.hasPlayedCardsThisTurn = true;
+      room.pendingDraw = { playerId: playerUniqueId, remaining: count, waiting: false };
+      game.io.to(player.id).emit('disable draw button');
+      game.sendGameMessage(room.name, `${player.name} จั่วการ์ด ${count} ใบ`, 'blue', true);
+      continuePendingDraw(room);
+  }
 
-      let drewAnyCard = false;
-      for (let i = 0; i < count; i++) {
-          if (room.gameDeck.length > 0) {
-              const card = room.gameDeck.shift();
-              game.io.to(roomName).emit('table card movement', { kind: 'draw', targetId: playerUniqueId, delay: i * 160 });
-              if (card.type === 'Event') game.io.to(roomName).emit('table phase cue', { cardName: card.name });
-              // If an Event card is drawn, resolve it immediately (กลางวันหรือกลางคืน)
-              if (card.type === 'Event') {
-                  switch (card.name) {
-                      case 'Conspiracy':
-                          game.sendGameMessage(room.name, `<b>${player.name}</b> จั่วได้การ์ด ${game.getCardNameWithColor('Conspiracy')} ต้องเปิดการ์ดชีวิตของผู้ถือเครื่องเซ่น!`, 'orange', true);
-                          room.conspiracyDrawer = playerUniqueId;
-                          if (room.blackCatHolder && room.players[room.blackCatHolder]?.alive) {
-                              const bcHolder = room.players[room.blackCatHolder];
-                              if (bcHolder.tryalCards.length > 0) {
-                                  room.awaitingConspiracySelection = {
-                                      selector: playerUniqueId,
-                                      target: room.blackCatHolder,
-                                      tryalCount: bcHolder.tryalCards.length
-                                  };
-                                  game.io.to(player.id).emit('prompt select blackcat tryal', {
-                                      blackCatHolder: room.blackCatHolder,
-                                      tryalCount: bcHolder.tryalCards.length,
-                                      blackCatHolderName: bcHolder.name,
-                                      fromConspiracyDraw: true
-                                  });
-                                  room.discardPile.push(card); // discard ทันที
-                                  return; // resolve event แล้วหยุดจั่วใบถัดไป
-                              }
-                          }
-                          game.sendGameMessage(room.name, 'ไม่มีผู้ถือการ์ดเครื่องเซ่นในเกมแล้ว ข้ามขั้นเปิดการ์ดชีวิตและเข้าสู่ช่วงหยิบการ์ดจากผู้เล่นซ้ายมือทันที', 'blue', true);
-                          game.promptTryalCardSelectionToLeft(roomName);
-                          room.discardPile.push(card); // discard ทันที
-                          return;
-                      case 'Night':
-                          game.sendGameMessage(room.name, `<b>${player.name}</b> จั่วได้การ์ด ${game.getCardNameWithColor('Night')} เกมจะเข้าสู่ช่วงกลางคืน!`, 'blue', true);
-                          room.nightCardDrawer = playerUniqueId;
-                          room.discardPile.push(card); // discard ทันที
-                          game.changePhase(roomName, 'NIGHT');
-                          game.sendGameMessage(room.name, 'กลางคืนเริ่มต้นขึ้น! ปอบและหมอผีเตรียมตัว', 'blue', true);
-                          return;
-                  }
-              } else {
-                  player.hand.push(card);
-              }
-              drewAnyCard = true;
-          } else {
-              // Reshuffle discard pile into game deck, but keep Night cards at bottom
-              const nightCards = room.discardPile.filter(card => card.name === 'Night');
-              const otherCards = room.discardPile.filter(card => card.name !== 'Night');
-              room.gameDeck = game.shuffleArray([...otherCards]);
+  function continuePendingDraw(room, fallbackPlayerId = null) {
+      if (!room || room.gameOver) return;
+      const draw = room.pendingDraw;
+      if (!draw) {
+          game.setNextTurn(room, fallbackPlayerId, !!fallbackPlayerId);
+          return;
+      }
+      if (room.currentPhase !== 'DAY') return;
+      const player = room.players[draw.playerId];
+      if (!player?.alive) {
+          room.pendingDraw = null;
+          game.setNextTurn(room, draw.playerId, true);
+          return;
+      }
+      room.currentTurnPlayerUniqueId = draw.playerId;
+      if (draw.waiting && draw.remaining > 0) {
+          game.sendGameMessage(room.name, `${player.name} จั่วต่ออีก ${draw.remaining} ใบให้ครบเทิร์นเดิม`, 'blue', true);
+      }
+      draw.waiting = false;
+      applyTwoPlayerRules(room);
+      let delay = 0;
+      while (draw.remaining > 0) {
+          if (!room.gameDeck.length) {
+              const night = room.discardPile.filter(card => card.name === 'Night');
+              room.gameDeck = game.shuffleArray(room.discardPile.filter(card => card.name !== 'Night')).concat(night);
               room.discardPile = [];
-              // Place Night cards at the bottom of the deck
-              if (nightCards.length > 0) {
-                  room.gameDeck = room.gameDeck.concat(nightCards);
-              }
-              // Try drawing again
-              if (room.gameDeck.length > 0) {
-                  const card = room.gameDeck.shift();
-              game.io.to(roomName).emit('table card movement', { kind: 'draw', targetId: playerUniqueId, delay: i * 160 });
-              if (card.type === 'Event') game.io.to(roomName).emit('table phase cue', { cardName: card.name });
-                  if (card.type === 'Event') {
-                      // resolve event ทันที (เหมือนข้างบน)
-                      switch (card.name) {
-                          case 'Conspiracy':
-                              room.conspiracyDrawer = playerUniqueId;
-                              if (room.blackCatHolder && room.players[room.blackCatHolder]?.alive) {
-                                  const bcHolder = room.players[room.blackCatHolder];
-                                  if (bcHolder.tryalCards.length > 0) {
-                                      room.awaitingConspiracySelection = {
-                                          selector: playerUniqueId,
-                                          target: room.blackCatHolder,
-                                          tryalCount: bcHolder.tryalCards.length
-                                      };
-                                      game.sendGameMessage(room.name, `จั่วได้การ์ด ${game.getCardNameWithColor('Conspiracy')}`, 'orange', true);
-                                      game.io.to(player.id).emit('prompt select blackcat tryal', {
-                                          blackCatHolder: room.blackCatHolder,
-                                          tryalCount: bcHolder.tryalCards.length,
-                                          blackCatHolderName: bcHolder.name,
-                                          fromConspiracyDraw: true
-                                      });
-                                      room.discardPile.push(card);
-                                      // Don't set next turn yet - wait for Tryal selection to complete
-                                      return;
-                                  }
-                              }
-                              game.sendGameMessage(room.name, 'ไม่มีผู้ถือการ์ดเครื่องเซ่นในเกมแล้ว ข้ามขั้นเปิดการ์ดชีวิตและเข้าสู่ช่วงหยิบการ์ดจากผู้เล่นซ้ายมือทันที', 'blue', true);
-                              game.promptTryalCardSelectionToLeft(roomName);
-                              room.discardPile.push(card);
-                              // Don't set next turn yet - wait for Tryal selection to complete
-                              return;
-                          case 'Night':
-                              room.nightCardDrawer = playerUniqueId;
-                              game.sendGameMessage(room.name, `<b>${player.name}</b> ใช้การ์ด ${game.getCardNameWithColor('Night')}`, 'orange', true);
-                              room.discardPile.push(card);
-                              game.changePhase(roomName, 'NIGHT');
-                              return;
-                      }
-                  } else {
-                      player.hand.push(card);
-                  }
-                  drewAnyCard = true;
-              } else {
-                  break; // No more cards to draw
-              }
+          }
+          const card = room.gameDeck.shift();
+          if (!card) {
+              game.sendGameMessage(room.name, 'ไม่เหลือการ์ดให้จั่วในกองจั่วและกองทิ้ง', 'grey', true);
+              break;
+          }
+          draw.remaining--;
+          game.io.to(room.name).emit('table card movement', { kind: 'draw', targetId: draw.playerId, delay });
+          delay += 160;
+          if (card.type !== 'Event') {
+              player.hand.push(card);
+              continue;
+          }
+          draw.waiting = true;
+          room.discardPile.push(card);
+          game.io.to(player.id).emit('update hand', player.hand);
+          game.io.to(room.name).emit('table phase cue', { cardName: card.name });
+          game.sendGameMessage(room.name, `${player.name} จั่วได้ ${game.getCardNameWithColor(card.name)} · หลังเหตุการณ์จั่วต่ออีก ${draw.remaining} ใบ`, 'blue', true);
+          game.sendDeckInfo(room.name);
+          game.emitRoomState(room.name);
+          if (card.name === 'Night') {
+              room.nightCardDrawer = draw.playerId;
+              game.changePhase(room.name, 'NIGHT');
+              return;
+          }
+          if (card.name === 'Conspiracy') {
+              room.conspiracyDrawer = draw.playerId;
+              const holder = room.players[room.blackCatHolder];
+              if (holder?.alive && holder.tryalCards.length > 0) {
+                  room.awaitingConspiracySelection = { selector: draw.playerId, target: holder.uniqueId, tryalCount: holder.tryalCards.length };
+                  game.io.to(player.id).emit('prompt select blackcat tryal', {
+                      blackCatHolder: holder.uniqueId, blackCatHolderName: holder.name,
+                      tryalCount: holder.tryalCards.length, fromConspiracyDraw: true
+                  });
+                  game.emitRoomState(room.name);
+              } else game.promptTryalCardSelectionToLeft(room.name);
+              return;
           }
       }
+      room.pendingDraw = null;
       game.io.to(player.id).emit('update hand', player.hand);
+      game.sendDeckInfo(room.name);
       game.emitRoomState(room.name);
-      // Mark that player has drawn cards this turn
-      player.hasPlayedCardsThisTurn = true;
-      // จบเทิร์นอัตโนมัติหลังจั่ว (ถ้ามีการ์ดให้จั่ว) - ยกเว้นการจั่วอัตโนมัติตอนเริ่มเทิร์น
-      if (drewAnyCard && player.hand.length > 0) {
-          game.setNextTurn(room);
-      }
-      // Send deck information update
-      game.sendDeckInfo(roomName);
+      game.setNextTurn(room, draw.playerId, true);
   }
 
   function sendDeckInfo(roomName) {
@@ -761,5 +705,5 @@ module.exports = function createServices(game) {
       if (!found) room.blackCatHolder = null;
   }
 
-  return { shuffleArray, getCardNameWithColor, prepareDeckForNewDay, playCard, drawCards, sendDeckInfo, updateBlackCatHolder, applyTwoPlayerRules, discardDuplicateMatchmakers, onTryalRevealed };
+  return { shuffleArray, getCardNameWithColor, prepareDeckForNewDay, playCard, drawCards, continuePendingDraw, sendDeckInfo, updateBlackCatHolder, applyTwoPlayerRules, discardDuplicateMatchmakers, onTryalRevealed };
 };

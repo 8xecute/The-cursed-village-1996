@@ -22,6 +22,10 @@ module.exports = function createServices(game) {
 
   function emitRoomState(roomName) {
       const room = game.rooms[roomName];
+      if (room && !room.replacementRestoreQueued) {
+          room.replacementRestoreQueued = true;
+          queueMicrotask(() => { room.replacementRestoreQueued = false; game.restoreReplacementPlayers(room); });
+      }
       if (!room) return;
 
       // Team members know one another immediately, including daytime infections.
@@ -41,6 +45,9 @@ module.exports = function createServices(game) {
               uniqueId: player.uniqueId,
               isHost: player.isHost,
               isBot: !!player.isBot,
+              isReplacementBot: !!player.isReplacementBot,
+              connected: !!player.connected,
+              reconnectDeadline: player.reconnectDeadline || null,
               handSize: player.hand.length,
               revealedTryalCards: (player.revealedTryalCards || []).map(card => ({ name: card.name })),
               tryalCardCount: player.tryalCards.length, // Send total count of Tryal Cards

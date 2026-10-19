@@ -106,9 +106,7 @@ client.actions.showSelectPlayerPopup = function showSelectPlayerPopup(title, pla
     if (actionType === 'constable') {
         alivePlayers = alivePlayers.filter(p => !p.inPlayCards || !p.inPlayCards.some(card => card === 'Asylum' || card.name === 'Asylum'));
     }
-    if (actionType === 'witch') {
-        alivePlayers = alivePlayers.filter(p => p.uniqueId !== client.state.myUniqueId);
-    }
+
 
     let selectedId = null;
     const isRedCard = cardObj && (cardObj.color === 'Red' || ['Accusation', 'Evidence', 'Witness'].includes(cardObj.name));

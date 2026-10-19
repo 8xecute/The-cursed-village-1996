@@ -112,6 +112,9 @@ function createBotClient({ url, uniqueId, token, name }) {
         const me = currentBot();
         if (!me || !state.gameStarted || state.gameOver) return;
 
+        if (state.currentPhase === 'DAY' && state.currentTurnPlayerUniqueId === uniqueId && me.alive && !me.hasPlayedCardsThisTurn) {
+            later('day-turn', submitDayAction);
+        }
         const witchNight = state.witchNightState;
         if (state.currentPhase === 'NIGHT' && witchNight && !witchNight.committed &&
             witchNight.members?.every(member => member.isBot) &&
@@ -126,10 +129,10 @@ function createBotClient({ url, uniqueId, token, name }) {
             }, 1500);
         }
 
-        if (state.currentPhase === 'PRE_DAWN' && state.confessionOrder?.[state.currentConfessionIndex] === uniqueId &&
+        if (state.currentPhase === 'PRE_DAWN' && state.confessionOrder?.includes(uniqueId) &&
             !(state.confessionActions || []).includes(uniqueId)) {
             later('confession', () => {
-                if (roomState?.currentPhase !== 'PRE_DAWN' || roomState.confessionOrder?.[roomState.currentConfessionIndex] !== uniqueId) return;
+                if (roomState?.currentPhase !== 'PRE_DAWN' || !roomState.confessionOrder?.includes(uniqueId) || roomState.confessionActions?.includes(uniqueId)) return;
                 if (tryalCards.length > 0 && Math.random() < 0.5) {
                     socket.emit('confess during night', Math.floor(Math.random() * tryalCards.length));
                 } else {
@@ -176,7 +179,7 @@ function createBotClient({ url, uniqueId, token, name }) {
 
     socket.on('prompt select accused tryal', ({ accusedUniqueId, tryalCount } = {}) => {
         later('accused-tryal', () => {
-            const count = Math.min(Number(tryalCount) || 0, tryalCards.length);
+            const count = Math.min(Number(tryalCount) || 0, roomState?.players?.[accusedUniqueId]?.tryalCardCount || 0);
             if (count > 0) socket.emit('select tryal card for confession', accusedUniqueId, Math.floor(Math.random() * count));
         });
     });

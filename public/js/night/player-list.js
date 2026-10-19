@@ -15,12 +15,8 @@ client.actions.populateNightActionPlayersList = function populateNightActionPlay
     // Filter players based on action type
     let eligiblePlayers = [];
     if (actionType === 'witch') {
-        // Witches can target any alive player who does NOT have Asylum and is not self
-        eligiblePlayers = Object.values(client.state.currentRoomState.players).filter(player =>
-            player.alive &&
-            player.uniqueId !== client.state.myUniqueId &&
-            !(player.inPlayCards && player.inPlayCards.some(card => (typeof card === 'string' ? card === 'Asylum' : card.name === 'Asylum')))
-        );
+        // Protection is checked only after the team commits its target.
+        eligiblePlayers = Object.values(client.state.currentRoomState.players).filter(player => player.alive);
     } else if (actionType === 'constable') {
         // Constables can target any player except themselves, and only alive
         eligiblePlayers = Object.values(client.state.currentRoomState.players).filter(player => player.uniqueId !== client.state.myUniqueId && player.alive);

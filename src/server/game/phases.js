@@ -60,44 +60,14 @@ module.exports = function createServices(game) {
                   }
                   break;
           case 'PRE_DAWN':
-              // ตั้งค่าลำดับสารภาพ
-              room.confessionOrder = [];
+              room.confessionOrder = game.getAlivePlayers(room).map(player => player.uniqueId);
               room.confessionActions = [];
-              const witchTarget = room.playersWhoActedAtNight['witchKill'];
-              if (room.nightCardDrawer && (!room.playersWhoActedAtNight['constableSave'] || room.nightCardDrawer !== room.playersWhoActedAtNight['constableSave'])) {
-                  // ข้ามถ้ามี Asylum
-                  const p = room.players[room.nightCardDrawer];
-                  if (!p.inPlayCards.some(card => card.name === 'Asylum')) {
-                  room.confessionOrder.push(room.nightCardDrawer);
-                  }
-              }
-              const constableSaveTarget = room.playersWhoActedAtNight['constableSave'];
-              game.getAlivePlayers(room).forEach(p => {
-                  if (
-                      p.uniqueId !== room.nightCardDrawer &&
-                      p.uniqueId !== constableSaveTarget &&
-                      !p.inPlayCards.some(card => card.name === 'Asylum')
-                  ) {
-                      room.confessionOrder.push(p.uniqueId);
-                  }
-              });
-              // witchTarget มีสิทธิ์สารภาพ (แต่ต้องอยู่ท้ายสุด)
-              if (witchTarget && !room.confessionOrder.includes(witchTarget)) {
-                  const p = room.players[witchTarget];
-                  if (!p.inPlayCards.some(card => card.name === 'Asylum')) {
-                  room.confessionOrder.push(witchTarget);
-                  }
-              }
+              room.confessionResolving = false;
+              room.confessionChoices = {};
+              room.nightConfessors = [];
               room.currentConfessionIndex = 0;
-              // เริ่ม timer สารภาพคนแรก
-              if (room.confessionOrder.length > 0 && room.confessionTimerDuration > 0) {
-                  const firstConfessor = room.confessionOrder[0];
-                  const firstPlayer = room.players[firstConfessor];
-                  if (firstPlayer && firstPlayer.alive && firstPlayer.tryalCards.length > 0) {
-                      game.sendGameMessage(room.name, `<b>${firstPlayer.name}</b> มีเวลา ${room.confessionTimerDuration} วินาทีในการสารภาพ (จะข้ามการสารภาพหากหมดเวลา).`, 'blue', true);
-                      game.startConfessionTimer(roomName, firstConfessor);
-                  }
-              }
+              room.confessionTimerDuration = 0;
+              game.clearConfessionTimer(roomName);
               nextPhase = 'PRE_DAWN';
               break;
           case 'GAME_OVER':
@@ -122,7 +92,7 @@ module.exports = function createServices(game) {
           room.witchNightMarks = {};
       }
       room.currentPhase = nextPhase;
-      nextDuration = room.phaseConfig[nextPhase] || game.DEFAULT_PHASE_DURATIONS[nextPhase];
+      nextDuration = nextPhase === 'PRE_DAWN' ? 0 : room.phaseConfig[nextPhase] || game.DEFAULT_PHASE_DURATIONS[nextPhase];
       game.startPhaseTimer(roomName, nextDuration);
       game.emitRoomState(roomName);
 
@@ -167,20 +137,7 @@ module.exports = function createServices(game) {
           game.setNextTurn(room); // Start the turn cycle for the day phase
       }
 
-      // --- ใน changePhase (หลังหมดเวลา NIGHT ก่อน changePhase(roomName, 'PRE_DAWN')) ---
-      if (room.playersWhoActedAtNight && room.playersWhoActedAtNight['constableSave']) {
-          const savedPlayer = room.players[room.playersWhoActedAtNight['constableSave']];
-          if (savedPlayer && savedPlayer.alive) {
-              game.sendGameMessage(room.name, `<b>${savedPlayer.name}</b> ได้รับการปกป้องจากหมอผี!`, 'green', true);
-          }
-      }
-      game.getAlivePlayers(room).forEach(p => {
-          if (p.inPlayCards.some(card => card.name === 'Asylum')) {
-              game.sendGameMessage(room.name, `<b>${p.name}</b> ได้รับการปกป้องจาก Asylum!`, 'green', true);
-          }
-      });
-      // ...
-      // changePhase(roomName, 'PRE_DAWN');
+
   }
 
   function startGame(roomName) {
@@ -201,7 +158,9 @@ module.exports = function createServices(game) {
       }
       room.gameStarted = true;
       room.firstTurnStarted = false;
+      room.pendingDraw = null;
       room.removedGameCards = [];
+      room.twoPlayerRulesAnnounced = false;
       room.usageRoundId = game.uuidv4();
       usageLog('game_started', { roomName, roundId: room.usageRoundId, playerCount: alivePlayers.length,
           humanCount: alivePlayers.filter(player => !player.isBot).length, hostId: room.hostUniqueId });

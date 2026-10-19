@@ -186,9 +186,9 @@ module.exports = function registerHandlers(socket, game) {
               if (room.conspiracyDrawer) {
                   const drawer = room.conspiracyDrawer;
                   room.conspiracyDrawer = null;
-                  game.setNextTurn(room, drawer, true);
+                  game.continuePendingDraw(room, drawer);
               } else {
-                  game.setNextTurn(room);
+                  game.continuePendingDraw(room);
               }
               game.emitRoomState(roomName);
               // ... (logic เดิม)

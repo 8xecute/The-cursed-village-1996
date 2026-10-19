@@ -57,18 +57,12 @@ export function initialize() {
           (!client.state.currentRoomState.confessionActions || !client.state.currentRoomState.confessionActions.includes(client.state.myUniqueId)) &&
           (!client.state.currentRoomState.nightConfessors || !client.state.currentRoomState.nightConfessors.includes(client.state.myUniqueId)) &&
           client.state.currentRoomState.confessionOrder &&
-          client.state.currentRoomState.confessionOrder[client.state.currentRoomState.currentConfessionIndex] === client.state.myUniqueId &&
+          client.state.currentRoomState.confessionOrder.includes(client.state.myUniqueId) &&
           client.state.myTryalCards && client.state.myTryalCards.length > 0 &&
           !document.getElementById('confess-popup')
       ) {
-          const isProtectedByConstable = client.state.currentRoomState.playersWhoActedAtNight && 
-              client.state.currentRoomState.playersWhoActedAtNight['constableSave'] === client.state.myUniqueId;
-          const hasAsylum = myPlayer.inPlayCards && 
-              myPlayer.inPlayCards.some(card => card.name === 'Asylum');
-          if (!isProtectedByConstable && !hasAsylum) {
-              client.actions.showConfessPopup(client.state.myTryalCards);
-              client.state.confessPopupShownForThisPreDawn = true;
-          }
+          client.actions.showConfessPopup(client.state.myTryalCards);
+          client.state.confessPopupShownForThisPreDawn = true;
       }
   });
 

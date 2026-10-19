@@ -47,8 +47,7 @@ module.exports = function registerHandlers(socket, game) {
               !(player.hasBeenWitch || player.isWitch) || game.hasNightActionChosen(room, 'witchKill')) return;
           if (!nightId || nightId !== room.witchNightId) return;
           const target = room.players[targetUniqueId];
-          if (targetUniqueId !== null && (!target?.alive || targetUniqueId === player.uniqueId ||
-              target.inPlayCards.some(card => card.name === 'Asylum'))) {
+          if (targetUniqueId !== null && !target?.alive) {
               game.io.to(socket.id).emit('game message', 'ไม่สามารถมาร์คเป้าหมายนี้ได้.', 'red');
               return;
           }
@@ -75,11 +74,6 @@ module.exports = function registerHandlers(socket, game) {
                   game.io.to(socket.id).emit('game message', 'กรุณามาร์คเป้าหมายและยืนยันการสังหารอีกครั้ง.', 'orange');
                   return;
               }
-              // ป้องกันไม่ให้ปอบเลือกฆ่าตัวเอง
-              if (targetUniqueId === player.uniqueId) {
-                  game.io.to(socket.id).emit('game message', 'คุณไม่สามารถเลือกฆ่าตัวเองได้.', 'red');
-                  return;
-              }
               // ถ้า targetUniqueId เป็น null หรือ undefined ให้ถือว่า skip
               if (!targetUniqueId) {
                   game.sendGameMessage(room.name, `<b>${player.name}</b> ไม่ได้เลือกสังหารใครในคืนนี้.`, 'orange');
@@ -95,11 +89,6 @@ module.exports = function registerHandlers(socket, game) {
                   } else {
                       game.changePhase(roomName, 'PRE_DAWN');
                   }
-                  return;
-              }
-              // ป้องกันไม่ให้เลือกเป้าหมายที่มี Asylum
-              if (room.players[targetUniqueId]?.inPlayCards.some(card => card.name === 'Asylum')) {
-                  game.io.to(socket.id).emit('game message', 'คุณไม่สามารถเลือกเป้าหมายที่ได้รับการปกป้องจาก Asylum ได้.', 'red');
                   return;
               }
               if (targetUniqueId && room.players[targetUniqueId]?.alive) {
