@@ -1,3 +1,4 @@
+const { getGameCardsForPlayerCount } = require('../shared/cards');
 const PLAYER_LIMIT = 12;
 
 const MIN_PLAYERS_TO_START = 4;
@@ -18,27 +19,7 @@ const CARD_TEMPLATES = {
     night: { name: 'Night', type: 'Event', color: 'Black', description: 'เมื่อจั่วได้การ์ดนี้ จะเกิดเหตุการณ์: ผู้ดำเนินเกมจะให้ผู้เล่นทุกคนหลับตา จากนั้นปอบทำการสังหารผู้เล่นหนึ่งคน และหมอผีจะต้องทำการปัดเป่าเพื่อปกป้องผู้เล่น 1 คน' }
 };
 
-const GAME_CARDS = [
-    // Accusation Cards (Red)
-    ...Array(26).fill({ name: 'Accusation', type: 'Accusation', color: 'Red', value: 1, description: 'กล่าวหาผู้เล่นคนอื่น (1 ข้อกล่าวหา)' }),
-    ...Array(8).fill({ name: 'Evidence', type: 'Accusation', color: 'Red', value: 3, description: 'กล่าวหาผู้เล่นคนอื่น (3 ข้อกล่าวหา)' }),
-    ...Array(3).fill({ name: 'Witness', type: 'Accusation', color: 'Red', value: 7, description: 'กล่าวหาผู้เล่นคนอื่น (7 ข้อกล่าวหา)' }),
-    // Action Cards (Green)
-    ...Array(2).fill({ name: 'Scapegoat', type: 'Action', color: 'Green', description: 'ย้ายการ์ดสีน้ำเงิน, เขียว และแดง ของจากผู้เล่นเป้าหมาย ไปอีกผู้เล่นหนึ่ง' }),
-    ...Array(2).fill({ name: 'Curse', type: 'Action', color: 'Green', description: 'ลบการ์ดสีน้ำเงินที่ผู้เล่นเป้าหมายโดน 1 ใบลงไปที่กองทิ้ง' }),
-    ...Array(3).fill({ name: 'Alibi', type: 'Action', color: 'Green', description: 'ลบข้อกล่าวหาของผู้เล่นได้สูงสุด 3 ใบ' }),
-    ...Array(2).fill({ name: 'Robbery', type: 'Action', color: 'Green', description: 'ขโมยการ์ดบนมือทั้งหมดจากผู้เล่นเป้าหมาย ไปอีกผู้เล่นหนึ่ง' }),
-    ...Array(2).fill({ name: 'Stocks', type: 'Permanent', color: 'Green', description: 'ข้ามตาของผู้เล่นที่โดนการ์ดนี้ สามารถ stack การ์ดนี้เพื่อข้ามตาหลายรอบได้' }),
-    ...Array(2).fill({ name: 'Arson', type: 'Action', color: 'Green', description: 'ทิ้งการ์ดในมือทั้งหมดของผู้เล่นเป้าหมายไปที่กองทิ้ง' }),
-    // Permanent Cards (Blue)
-    ...Array(1).fill({ name: 'Black Cat', type: 'Permanent', color: 'Blue', description: 'หากการ์ดนี้อยู่กับผู้เล่นคนไหน จะต้องเริ่มเล่นเป็นคนแรก. หากมีผู้เล่นคนไหนเปิดได้การ์ดพิธีเซ่นไหว้, ผู้เล่นที่มีการ์ดเครื่องเซ่นจะต้องเปิดการ์ดชีวิต 1 ใบ.' }),
-    ...Array(1).fill({ name: 'Asylum', type: 'Permanent', color: 'Blue', description: 'เลือกผู้เล่นที่จะป้องกันการถูกฆ่าในรอบกลางคืน' }),
-    ...Array(1).fill({ name: 'Piety', type: 'Permanent', color: 'Blue', description: 'เลือกผู้เล่นที่ไม่สามารถถูกโจมตีด้วยการ์ดสีแดงได้' }),
-    ...Array(2).fill({ name: 'Matchmaker', type: 'Permanent', color: 'Blue', description: 'เลือกวางการ์ดหน้าผู้เล่นเป้าหมาย (ผู้เล่น 2 คนที่มีการ์ดนี้อยู่ตรงหน้า หากผู้เล่นคนใดคนหนึ่งตาย อีกคนต้องตายตาม)' }),
-    // Event Cards (Black)
-    ...Array(1).fill(CARD_TEMPLATES.conspiracy), // 1 Conspiracy card
-    ...Array(1).fill(CARD_TEMPLATES.night), // 1 Night card
-];
+const GAME_CARDS = getGameCardsForPlayerCount();
 
 const TRYAL_CARDS_BASE = [
     { name: 'Witch', type: 'Role' },
@@ -46,7 +27,7 @@ const TRYAL_CARDS_BASE = [
     { name: 'Not A Witch', type: 'Role' }
 ];
 
-const CARDS_NEED_TARGET = ['Accusation', 'Evidence', 'Witness', 'Curse', 'Alibi', 'Robbery', 'Stocks', 'Arson', 'Scapegoat', 'Asylum', 'Piety', 'Matchmaker'];
+const CARDS_NEED_TARGET = ['Accusation', 'Evidence', 'Witness', 'Curse', 'Alibi', 'Robbery', 'Stocks', 'Arson', 'Scapegoat', 'Asylum', 'Piety', 'Matchmaker', 'Black Cat'];
 
 const CARDS_NEED_TWO_TARGETS = ['Scapegoat', 'Robbery'];
 
@@ -78,7 +59,7 @@ const CARD_DESCRIPTION_THAI = {
     'Robbery': 'ขโมยการ์ดบนมือทั้งหมดจากผู้เล่นคนหนึ่ง ไปให้ผู้เล่นอีกคนหนึ่ง',
     'Stocks': 'ผู้เล่นที่ถูกการ์ดนี้จะต้องข้ามตาของตัวเอง',
     'Arson': 'บังคับให้ผู้เล่นเป้าหมายทิ้งการ์ดบนมือทั้งหมด',
-    'Black Cat': 'ผู้เล่นที่ถือการ์ดนี้จะต้องเริ่มเล่นเป็นคนแรก และหากมีผู้เล่นเปิดได้ "พิธีเซ่นไหว้" ผู้เล่นที่ถือ "เครื่องเซ่น" จะต้องเปิดการ์ดชีวิต 1 ใบ',
+    'Black Cat': 'เล่นใส่ผู้เล่นอื่นเท่านั้น (เลือกตัวเองได้เฉพาะตอนเริ่มเกม) ผู้เล่นที่ถือการ์ดนี้จะต้องเริ่มเล่นเป็นคนแรก และหากมีผู้เล่นเปิดได้ "พิธีเซ่นไหว้" ผู้เล่นที่ถือ "เครื่องเซ่น" จะต้องเปิดการ์ดชีวิต 1 ใบ',
     'Asylum': 'ป้องกันการถูกสังหารในช่วง "ยามวิกาล"',
     'Piety': 'การ์ดข้อกล่าวหา (สีแดง) จะไม่มีผลกับผู้เล่นที่ถือการ์ดนี้',
     'Matchmaker': 'ผู้เล่น 2 คนที่ถือการ์ดนี้ หากคนใดคนหนึ่งตาย อีกคนต้องตายตาม',

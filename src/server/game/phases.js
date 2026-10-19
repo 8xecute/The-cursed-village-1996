@@ -200,6 +200,8 @@ module.exports = function createServices(game) {
           return;
       }
       room.gameStarted = true;
+      room.firstTurnStarted = false;
+      room.removedGameCards = [];
       room.usageRoundId = game.uuidv4();
       usageLog('game_started', { roomName, roundId: room.usageRoundId, playerCount: alivePlayers.length,
           humanCount: alivePlayers.filter(player => !player.isBot).length, hostId: room.hostUniqueId });
@@ -217,16 +219,8 @@ module.exports = function createServices(game) {
       // --- Dynamically create TRYAL_CARDS deck based on player count ---
       const playerCount = alivePlayers.length;
       const TRYAL_CARDS = [];
-      let witchCount = 0;
-
-      // ปรับเงื่อนไขใหม่: 4-5 คน = 1 ใบ, 6-9 คน = 2 ใบ, 10-12 คน = 3 ใบ
-      if (playerCount >= 4 && playerCount <= 5) {
-          witchCount = 1;
-      } else if (playerCount >= 6 && playerCount <= 9) {
-          witchCount = 2;
-      } else if (playerCount >= 10 && playerCount <= game.PLAYER_LIMIT) {
-          witchCount = 3;
-      }
+      const tryalCardsPerPlayer = playerCount <= 7 ? 5 : playerCount <= 9 ? 4 : 3;
+      let witchCount = playerCount <= 5 ? 1 : 2;
 
       if (room.customWitchCardCount != null) witchCount = room.customWitchCardCount;
       room.initialWitchCardCount = witchCount;
@@ -236,8 +230,8 @@ module.exports = function createServices(game) {
       }
       // Add Constable card
       TRYAL_CARDS.push({ name: 'Constable', type: 'Role' });
-      // Fill the rest with 'Not A Witch' cards to make 5 per player
-      const requiredTryalCards = playerCount * 5;
+      // One Constable, the configured Witches, and enough townsfolk for every seat.
+      const requiredTryalCards = playerCount * tryalCardsPerPlayer;
       const notAWitchCount = requiredTryalCards - TRYAL_CARDS.length;
       for (let i = 0; i < notAWitchCount; i++) {
           TRYAL_CARDS.push({ name: 'Not A Witch', type: 'Role' });
@@ -264,8 +258,8 @@ module.exports = function createServices(game) {
           player.accusationsReceived = 0;
           player.isReady = false;
 
-          // Deal 5 Tryal Cards to each player
-          for (let i = 0; i < 5; i++) {
+          // Standard setup: 4–7 players get 5 lives, 8–9 get 4, 10–12 get 3.
+          for (let i = 0; i < tryalCardsPerPlayer; i++) {
               if (tryalCardIndex < shuffledTryalCards.length) {
                   const card = shuffledTryalCards[tryalCardIndex++];
                   player.tryalCards.push(card);

@@ -1,5 +1,34 @@
 // cards: game services. Dependencies are injected through game.
 module.exports = function createServices(game) {
+  function applyTwoPlayerRules(room) {
+      if (!room.gameStarted || game.getAlivePlayers(room).length > 2) return;
+      const excluded = card => card.color === 'Blue' || ['Scapegoat', 'Robbery'].includes(card.name);
+      const remove = cards => (cards || []).filter(card => {
+          if (!excluded(card)) return true;
+          (room.removedGameCards ||= []).push(card); return false;
+      });
+      room.gameDeck = remove(room.gameDeck);
+      room.discardPile = remove(room.discardPile);
+      for (const player of Object.values(room.players)) {
+          const oldHand = player.hand.length, oldEffects = player.inPlayCards.length;
+          player.hand = remove(player.hand); player.inPlayCards = remove(player.inPlayCards);
+          if (player.hand.length !== oldHand) game.io.to(player.id).emit('update hand', player.hand);
+          if (player.inPlayCards.length !== oldEffects) game.io.to(player.id).emit('update in play cards', player.inPlayCards);
+      }
+      game.updateBlackCatHolder(room);
+  }
+  function discardDuplicateMatchmakers(room, player) {
+      const cards = player.inPlayCards.filter(card => card.name === 'Matchmaker');
+      if (cards.length < 2) return;
+      player.inPlayCards = player.inPlayCards.filter(card => card.name !== 'Matchmaker');
+      room.discardPile.push(...cards);
+      game.sendGameMessage(room.name, `${player.name} มีผูกวิญญาณสองใบ จึงทิ้งทั้งคู่`, 'grey');
+  }
+  function onTryalRevealed(room, card) {
+      if (card.name !== 'Constable') return;
+      for (const player of Object.values(room.players)) player.isConstable = false;
+      game.sendGameMessage(room.name, 'การ์ดหมอผีถูกเปิดแล้ว ความสามารถหมอผีสิ้นสุดลง', 'blue');
+  }
   function shuffleArray(array) {
       for (let i = array.length - 1; i > 0; i--) {
           const j = Math.floor(Math.random() * (i + 1));
@@ -148,8 +177,8 @@ module.exports = function createServices(game) {
       }
 
       // Enforce the no-self-target rule before applying any card effects or
-      // consuming the card. Black Cat is played onto its owner automatically.
-      const BLUE_CARDS_THAT_CANNOT_TARGET_SELF = ['Asylum', 'Piety', 'Matchmaker'];
+      // consuming the card. Initial Black Cat assignment is handled separately.
+      const BLUE_CARDS_THAT_CANNOT_TARGET_SELF = ['Asylum', 'Piety', 'Matchmaker', 'Black Cat'];
       const targetsSelf = targetUniqueId === playerUniqueId || secondTargetUniqueId === playerUniqueId;
       const cannotTargetSelf =
           ((cardToPlay.color === 'Red' || cardToPlay.color === 'Green') && targetsSelf) ||
@@ -225,6 +254,7 @@ module.exports = function createServices(game) {
                   sourcePlayer.inPlayCards = sourcePlayer.inPlayCards.filter(card => !['Blue','Green','Red'].includes(card.color));
                   // Add to destination
                   destPlayer.inPlayCards.push(...blueCards, ...greenCards, ...redCards);
+                  discardDuplicateMatchmakers(room, destPlayer);
                   // Stocks: if any moved, update isSilenced
                   if (greenCards.some(card => card.name === 'Stocks')) {
                       destPlayer.isSilenced = true;
@@ -277,8 +307,9 @@ module.exports = function createServices(game) {
                           targetPlayer.inPlayCards = targetPlayer.inPlayCards.filter(c => c !== cardToDiscard);
                           // Black Cat: remove from game, not to discard
                           if (cardToDiscard.name === 'Black Cat') {
+                              room.discardPile.push(cardToDiscard);
                               game.updateBlackCatHolder(room); // reset holder
-                              game.sendGameMessage(room.name, 'การ์ดพิธีเซ่นไหว้ ถูกลบออกจากเกม!', 'grey', true);
+                              game.sendGameMessage(room.name, 'การ์ดเครื่องเซ่นถูกทิ้งลงกองทิ้ง', 'grey', true);
                               game.emitRoomState(room.name);
                           } else if (cardToDiscard.name === 'Asylum') {
                               // Remove Asylum effect
@@ -399,13 +430,15 @@ module.exports = function createServices(game) {
                   emitCardUsedOnYou(targetUniqueId, cardToPlay);
               }
               break;
-          case 'Black Cat':
-              // Black Cat goes to the player who plays it
-              player.inPlayCards.push(cardToPlay);
-                  room.blackCatHolder = player.uniqueId;
-                  game.sendGameMessage(room.name, `<b>${player.name}</b> ถือ <b>การ์ดเครื่องเซ่น</b>!`, 'gold', true);
-              game.io.to(player.id).emit('update in play cards', player.inPlayCards);
+          case 'Black Cat': {
+              const targetPlayer = room.players[targetUniqueId];
+              targetPlayer.inPlayCards.push(cardToPlay);
+              game.updateBlackCatHolder(room);
+              game.sendGameMessage(room.name, `<b>${player.name}</b> ใช้การ์ด ${game.getCardNameWithColor('Black Cat')} ใส่ <b>${targetPlayer.name}</b>`, 'gold', true);
+              game.io.to(targetPlayer.id).emit('update in play cards', targetPlayer.inPlayCards);
+              emitCardUsedOnYou(targetUniqueId, cardToPlay);
               break;
+          }
           case 'Asylum':
               if (targetUniqueId) {
                   const targetPlayer = room.players[targetUniqueId];
@@ -428,6 +461,7 @@ module.exports = function createServices(game) {
               if (targetUniqueId) {
                   const targetPlayer = room.players[targetUniqueId];
                   targetPlayer.inPlayCards.push(cardToPlay);
+                  discardDuplicateMatchmakers(room, targetPlayer);
                   game.sendGameMessage(room.name, `<b>${player.name}</b> ใช้การ์ด ${game.getCardNameWithColor('Matchmaker')} ใส่ <b>${targetPlayer.name}</b>`, 'orange', true);
                   game.io.to(targetPlayer.id).emit('update in play cards', targetPlayer.inPlayCards);
                   emitCardUsedOnYou(targetUniqueId, cardToPlay);
@@ -544,6 +578,7 @@ module.exports = function createServices(game) {
 
   function drawCards(roomName, playerUniqueId, count = 2) {
       const room = game.rooms[roomName];
+      if (room) applyTwoPlayerRules(room);
       if (room?.prankShot) return;
       if (!room || room.gameOver) return;
       if (!room || !room.gameStarted || room.currentPhase !== 'DAY') {
@@ -726,5 +761,5 @@ module.exports = function createServices(game) {
       if (!found) room.blackCatHolder = null;
   }
 
-  return { shuffleArray, getCardNameWithColor, prepareDeckForNewDay, playCard, drawCards, sendDeckInfo, updateBlackCatHolder };
+  return { shuffleArray, getCardNameWithColor, prepareDeckForNewDay, playCard, drawCards, sendDeckInfo, updateBlackCatHolder, applyTwoPlayerRules, discardDuplicateMatchmakers, onTryalRevealed };
 };

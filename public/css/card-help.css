@@ -306,3 +306,11 @@
   }
 }
 
+
+.card-quantity-text {
+  margin: 6px 0;
+  color: #e4bd78;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}

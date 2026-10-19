@@ -36,7 +36,7 @@ export function initialize() {
 
   client.state.deathNotified = false;
 
-  client.state.CARDS_NEED_TARGET = ['Accusation', 'Evidence', 'Witness', 'Curse', 'Alibi', 'Stocks', 'Arson', 'Asylum', 'Piety', 'Matchmaker'];
+  client.state.CARDS_NEED_TARGET = ['Accusation', 'Evidence', 'Witness', 'Curse', 'Alibi', 'Stocks', 'Arson', 'Asylum', 'Piety', 'Matchmaker', 'Black Cat'];
 
   client.state.CARDS_NEED_TWO_TARGETS = ['Scapegoat', 'Robbery'];
 

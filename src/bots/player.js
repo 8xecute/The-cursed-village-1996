@@ -2,7 +2,7 @@ const { io } = require('socket.io-client');
 
 const TARGET_CARDS = new Set([
     'Accusation', 'Evidence', 'Witness', 'Curse', 'Alibi', 'Robbery',
-    'Stocks', 'Arson', 'Scapegoat', 'Asylum', 'Piety', 'Matchmaker',
+    'Stocks', 'Arson', 'Scapegoat', 'Asylum', 'Piety', 'Matchmaker', 'Black Cat',
 ]);
 const TWO_TARGET_CARDS = new Set(['Robbery', 'Scapegoat']);
 

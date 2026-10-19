@@ -40,7 +40,7 @@ export const lessons = [
     card('Arson', 'ใช้วางเพลิงใส่มาลี', 'การ์ดในมือมาลีถูกทิ้งทั้งหมด · การ์ดชีวิตไม่เสีย'),
     card('Robbery', 'เลือกมาลีเป็นผู้ถูกขโมย แล้วเลือกคำปันเป็นผู้รับ', 'ย้ายการ์ดในมือมาลีทั้งหมดให้คำปัน', { targets: 2 }),
     card('Scapegoat', 'เลือกมาลีเป็นต้นทาง แล้วเลือกคำปันเป็นปลายทาง', 'ย้ายการ์ดที่วางหน้ามาลีไปหน้าคำปัน · ไม่ย้ายการ์ดชีวิต', { targets: 2 }),
-    card('Black Cat', 'เล่นเครื่องเซ่นไว้หน้าตัวเอง', 'เครื่องเซ่นอยู่หน้าคุณ · ผู้ถือเริ่มก่อนและมีผลกับพิธีเซ่นไหว้', { targets: 0 }),
+    card('Black Cat', 'เลือกวางเครื่องเซ่นหน้าผู้เล่นอื่น', 'ผู้ถือเครื่องเซ่นต้องเปิดการ์ดชีวิตเมื่อจั่วพิธีเซ่นไหว้ · ให้ตัวเองได้เฉพาะตอนเริ่มเกม', { targets: 1 }),
     card('Asylum', 'วางที่หลบภัยให้มาลี', 'มาลีได้รับการป้องกันการสังหารกลางคืน และไม่จำเป็นต้องสารภาพ'),
     card('Matchmaker', 'มาลีมีผูกวิญญาณอยู่แล้ว วางอีกใบให้คำปัน', 'มาลีกับคำปันถูกผูกวิญญาณ · คนใดตาย อีกคนตายตาม', { match: true }),
     { id: 'end-turn', chapter: 'ชาวบ้าน · จบเทิร์น', role: 'ชาวบ้าน', phase: 'กลางวัน', kind: 'end',
@@ -84,7 +84,7 @@ export function applyTrainingCard(scene, card, ids, selectedCards = []) {
     const target = scene.players[ids[0]];
     const recipient = scene.players[ids[1]];
     const red = { Accusation: 1, Evidence: 3, Witness: 7 };
-    if (!['Black Cat'].includes(card) && (!target?.alive || target.id === 0)) return false;
+    if (!target?.alive || target.id === 0) return false;
     if (['Robbery', 'Scapegoat'].includes(card) && (!recipient?.alive || recipient.id === 0 || recipient.id === target.id)) return false;
     if (red[card]) {
         if (!target?.alive || target.id === 0 || target.effects.includes('Piety')) return false;
@@ -98,7 +98,7 @@ export function applyTrainingCard(scene, card, ids, selectedCards = []) {
     else if (card === 'Scapegoat') {
         recipient.effects.push(...target.effects); recipient.accusations.push(...target.accusations);
         target.effects = []; target.accusations = [];
-    } else if (card === 'Black Cat') scene.players[0].effects.push(card);
+    } else if (card === 'Black Cat') target.effects.push(card);
     else target.effects.push(card);
     scene.players[0].hand--;
     if (card === 'Curse' || card === 'Alibi') scene.discard += selectedCards.length;

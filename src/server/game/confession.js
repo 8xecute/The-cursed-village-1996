@@ -37,7 +37,8 @@ module.exports = function createServices(game) {
           return;
       }
 
-      const revealedCard = player.tryalCards.splice(cardIndex, 1)[0]; // Remove selected card
+      const revealedCard = player.tryalCards.splice(cardIndex, 1)[0];
+      game.onTryalRevealed(room, revealedCard); // Remove selected card
       (player.revealedTryalCards ||= []).push({ name: revealedCard.name });
       player.revealedTryalCardIndexes.add(revealedCard.name);
       
@@ -101,13 +102,14 @@ module.exports = function createServices(game) {
           room.blackCatHolderAlreadyActedThisDay = false;
           room.playersWhoActedAtNight = {};
           room.nightConfessors = [];
+          room.resumeTurnFrom = room.nightCardDrawer || room.currentTurnPlayerUniqueId;
           room.nightCardDrawer = null;
           room.confessionOrder = [];
           room.currentConfessionIndex = 0;
           game.prepareDeckForNewDay(room);
           room.currentPhase = 'DAY';
           game.emitRoomState(room.name);
-          game.setNextTurn(room);
+          game.setNextTurn(room, room.resumeTurnFrom, true);
       }
   }
 
@@ -152,7 +154,8 @@ module.exports = function createServices(game) {
           return;
       }
 
-      const revealedCard = player.tryalCards.splice(cardIndex, 1)[0]; // Remove selected card
+      const revealedCard = player.tryalCards.splice(cardIndex, 1)[0];
+      game.onTryalRevealed(room, revealedCard); // Remove selected card
       (player.revealedTryalCards ||= []).push({ name: revealedCard.name });
       player.revealedTryalCardIndexes.add(revealedCard.name);
       
@@ -217,12 +220,13 @@ module.exports = function createServices(game) {
           room.blackCatHolderAlreadyActedThisDay = false;
           room.playersWhoActedAtNight = {};
           room.nightConfessors = [];
+          room.resumeTurnFrom = room.nightCardDrawer || room.currentTurnPlayerUniqueId;
           room.nightCardDrawer = null;
           room.confessionOrder = [];
           room.currentConfessionIndex = 0;
           room.currentPhase = 'DAY';
           game.emitRoomState(room.name);
-          game.setNextTurn(room);
+          game.setNextTurn(room, room.resumeTurnFrom, true);
       }
   }
 
@@ -319,7 +323,8 @@ module.exports = function createServices(game) {
           return;
       }
 
-      const revealedCard = player.tryalCards.splice(cardIndex, 1)[0]; // Remove selected card
+      const revealedCard = player.tryalCards.splice(cardIndex, 1)[0];
+      game.onTryalRevealed(room, revealedCard); // Remove selected card
       (player.revealedTryalCards ||= []).push({ name: revealedCard.name });
       player.revealedTryalCardIndexes.add(revealedCard.name);
 
@@ -342,7 +347,7 @@ module.exports = function createServices(game) {
               game.finishEmptyHandTurn(room);
               return;
       } else if (revealedCard.name === 'Constable') {
-          player.isConstable = true; // Confirm Constable status
+          player.isConstable = false; // Revealed Constable no longer has a power
           game.sendGameMessage(room.name, `<b>${player.name}</b> คือหมอผี!`, 'green', true);
       }
 

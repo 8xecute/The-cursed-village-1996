@@ -1,6 +1,7 @@
 // turns: game services. Dependencies are injected through game.
 module.exports = function createServices(game) {
   function setNextTurn(room, fromPlayerUniqueId = null, forceFromPlayer = false) {
+      game.applyTwoPlayerRules(room);
       const alivePlayers = game.getAlivePlayers(room);
       if (alivePlayers.length === 0) {
           game.sendGameMessage(room.name, "No players left.", 'grey', true);
@@ -11,11 +12,12 @@ module.exports = function createServices(game) {
       let nextPlayerUniqueId = null;
 
       // Check for Black Cat holder starting first if it's the start of a DAY phase
-      if (!forceFromPlayer && room.currentPhase === 'DAY' && room.dayNumber > 0 && room.blackCatHolder && room.players[room.blackCatHolder]?.alive) {
+      if (!forceFromPlayer && !room.firstTurnStarted && room.currentPhase === 'DAY' && room.blackCatHolder && room.players[room.blackCatHolder]?.alive) {
           // If Black Cat holder exists and is alive, they start the day
           if (!room.blackCatHolderAlreadyActedThisDay) { // Ensure they only start once per day
               nextPlayerUniqueId = room.blackCatHolder;
               room.blackCatHolderAlreadyActedThisDay = true;
+              room.firstTurnStarted = true;
           }
       }
 
@@ -67,6 +69,7 @@ module.exports = function createServices(game) {
       }
 
       room.currentTurnPlayerUniqueId = nextPlayerUniqueId;
+      room.firstTurnStarted = true;
       const nextPlayer = room.players[nextPlayerUniqueId];
       
       // ตรวจสอบว่าการ์ดในมือหมดหรือไม่ในช่วงกลางวัน

@@ -100,13 +100,14 @@ module.exports = function registerHandlers(socket, game) {
                   room.blackCatHolderAlreadyActedThisDay = false;
                   room.playersWhoActedAtNight = {};
                   room.nightConfessors = [];
-                  room.nightCardDrawer = null;
+                  room.resumeTurnFrom = room.nightCardDrawer || room.currentTurnPlayerUniqueId;
+          room.nightCardDrawer = null;
                   room.confessionOrder = [];
                   room.currentConfessionIndex = 0;
                   game.prepareDeckForNewDay(room);
                   room.currentPhase = 'DAY';
                   game.emitRoomState(room.name);
-                  game.setNextTurn(room);
+                  game.setNextTurn(room, room.resumeTurnFrom, true);
           }
       });
 
@@ -135,6 +136,7 @@ module.exports = function registerHandlers(socket, game) {
               const targetPlayer = room.players[targetPlayerUniqueId];
               if (targetPlayer && targetPlayer.alive && Number.isInteger(cardIndex) && cardIndex >= 0 && targetPlayer.tryalCards.length > cardIndex) {
                   const selectedCard = targetPlayer.tryalCards.splice(cardIndex, 1)[0];
+      game.onTryalRevealed(room, selectedCard);
                   (targetPlayer.revealedTryalCards ||= []).push({ name: selectedCard.name });
                   targetPlayer.revealedTryalCardIndexes.add(selectedCard.name);
                   
@@ -155,7 +157,7 @@ module.exports = function registerHandlers(socket, game) {
                       game.finishEmptyHandTurn(room);
                       return;
                   } else if (selectedCard.name === 'Constable') {
-                      targetPlayer.isConstable = true;
+                      targetPlayer.isConstable = false;
                       game.sendGameMessage(room.name, `${targetPlayer.name} คือหมอผี!`, 'green', true);
                   }
                   

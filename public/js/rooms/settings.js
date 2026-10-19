@@ -17,9 +17,10 @@ export function initialize() {
         }
         select.value = custom == null ? 'auto' : String(custom);
         select.disabled = !host || state.gameStarted;
-        const auto = state.playerCount <= 5 ? 1 : state.playerCount <= 9 ? 2 : 3;
+        const auto = state.playerCount <= 5 ? 1 : 2;
+        const lives = state.playerCount <= 7 ? 5 : state.playerCount <= 9 ? 4 : 3;
         help.textContent = custom != null && custom > max ? 'ผู้เล่นลดลง · หัวห้องต้องเลือกจำนวนปอบใหม่ก่อนเริ่ม'
-            : `${custom == null ? `อัตโนมัติ: ${auto} ใบ` : `กำหนดเอง: ${custom} ใบ`} · เป็นจำนวนไพ่ ไม่ใช่จำนวนคน · ไพ่ปอบอาจอยู่กับคนเดียวกัน`;
+            : `${custom == null ? `อัตโนมัติ: ${auto} ใบ` : `กำหนดเอง: ${custom} ใบ`} · ชีวิตคนละ ${lives} ใบ · หมอผี 1 ใบ · เป็นจำนวนไพ่ ไม่ใช่จำนวนคน · ไพ่ปอบอาจอยู่กับคนเดียวกัน`;
     });
     select.addEventListener('change', () => {
         if (!select.disabled) client.state.socket.emit('set witch card count',select.value === 'auto' ? null : Number(select.value));

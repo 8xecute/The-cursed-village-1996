@@ -1,4 +1,14 @@
 /* Modal children are positioned by their overlay, never centered a second time. */
+body :is(#confess-popup, #select-left-tryal-popup, #blackcat-tryal-select-popup, #select-blackcat-tryal-popup, #accused-tryal-select-popup) button.tryal-card-btn {
+    background: #29170e url('../cards/back.svg') center / 100% 100% no-repeat !important;
+    border: 1px solid #b87736 !important; border-radius: 3px !important;
+    outline: none !important; box-shadow: 0 4px 12px #0008 !important;
+    justify-content: flex-end !important; padding-bottom: 14px !important;
+}
+body button.tryal-card-btn > span:first-child { display: none; }
+body button.tryal-card-btn > span:last-child {
+    padding: 2px 5px; border-radius: 3px; background: #29170ee8; color: #eddbb7; font-size: .8rem;
+}
 @media (max-width: 768px), (max-height: 520px) {
     body:not(.game-view-3d) .curse-target-modal {
         box-sizing: border-box; height: 100dvh !important; padding: 12px;

@@ -67,8 +67,9 @@ module.exports = function registerHandlers(socket, game) {
                   // Remove the card from inPlayCards
                   targetPlayer.inPlayCards = targetPlayer.inPlayCards.filter(c => c !== cardToDiscard);
                   if (cardToDiscard.name === 'Black Cat') {
+                      room.discardPile.push(cardToDiscard);
                       game.updateBlackCatHolder(room); // reset holder
-                      game.sendGameMessage(room.name, 'การ์ดพิธีเซ่นไหว้ ถูกลบออกจากเกม!', 'grey', true);
+                      game.sendGameMessage(room.name, 'การ์ดเครื่องเซ่นถูกทิ้งลงกองทิ้ง', 'grey', true);
                       game.emitRoomState(room.name);
                   } else if (cardToDiscard.name === 'Asylum') {
                       game.sendGameMessage(room.name, 'การ์ดที่หลบภัยถูกลบและสถานะป้องกันถูกยกเลิก!', 'grey', true);

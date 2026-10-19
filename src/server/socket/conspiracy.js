@@ -27,6 +27,7 @@ module.exports = function registerHandlers(socket, game) {
           if (!bcHolder || bcHolder.tryalCards.length <= cardIndex) return;
           // Reveal the selected Tryal Card
           const revealedCard = bcHolder.tryalCards.splice(cardIndex, 1)[0];
+      game.onTryalRevealed(room, revealedCard);
           (bcHolder.revealedTryalCards ||= []).push({ name: revealedCard.name });
           bcHolder.revealedTryalCardIndexes.add(revealedCard.name);
           game.sendGameMessage(room.name, `<b>${player.name}</b> ต้องเปิดการ์ดชีวิต ${bcHolder.name}`, 'orange', true);
@@ -172,6 +173,10 @@ module.exports = function registerHandlers(socket, game) {
                       }
                   }
               });
+              // Resolve ownership after every transfer, including the player who lost it.
+              for (const player of Object.values(room.players)) {
+                  player.isConstable = player.alive && player.tryalCards.some(card => card.name === 'Constable');
+              }
               alivePlayers.forEach(player => game.eliminatePlayerWithoutLifeCards(room, player));
               delete room.conspiracyTryalSelections;
               room.awaitingLeftTryalSelections = false;

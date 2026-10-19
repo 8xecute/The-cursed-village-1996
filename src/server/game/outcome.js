@@ -107,11 +107,11 @@ module.exports = function createServices(game) {
       // ทิ้งการ์ด inPlayCards (Permanent/Blue)
       if (player.inPlayCards && player.inPlayCards.length > 0) {
           const blueCards = player.inPlayCards.filter(card => card.color === 'Blue');
-          const otherCards = player.inPlayCards.filter(card => card.color !== 'Blue');
+          const otherCards = player.inPlayCards;
           if (otherCards.length > 0) {
               room.discardPile.push(...otherCards);
           }
-          // การ์ดสีน้ำเงิน (Blue) จะถูกลบออกจากเกม ไม่ใส่ discardPile
+          // All cards enter discard; the final-two rule removes excluded cards afterward.
           // Reset Black Cat holder if needed
           if (blueCards.some(card => card.name === 'Black Cat')) {
               room.blackCatHolder = null;
@@ -130,6 +130,7 @@ module.exports = function createServices(game) {
           player.inPlayCards = [];
       }
       game.updateBlackCatHolder(room);
+      game.applyTwoPlayerRules(room);
       game.emitRoomState(room.name); // อัปเดตสถานะผู้เล่น
       game.checkWinCondition(room); // เช็คปอบชนะทันทีหลังมีผู้เล่นตาย
   }
