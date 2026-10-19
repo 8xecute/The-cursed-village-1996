@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { timberTexture, ceremonialCloth, buildCeremonialRoom, createRitualBust } from './ritual-scene.mjs';
 
@@ -162,6 +163,8 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
     const pointer = new THREE.Vector2();
     let targets = [];
     let signature = '';
+    let sculptedHead = null;
+    let lastSceneOptions = null;
     let active = false;
     let disposed = false;
     let renderFrame = 0;
@@ -291,6 +294,19 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
     document.addEventListener('visibilitychange',visibilityChanged);
     window.addEventListener('blur',clearMovement);
 
+    new GLTFLoader().load('models/villager-head-seated.glb', gltf => {
+        const source = gltf.scene.getObjectByProperty('isMesh', true);
+        if (!source || disposed) {
+            gltf.scene.traverse(part => { part.geometry?.dispose(); part.material?.dispose(); });
+            return;
+        }
+        sculptedHead = source.geometry.clone();
+        sculptedHead.computeVertexNormals();
+        gltf.scene.traverse(part => { part.geometry?.dispose(); part.material?.dispose(); });
+        if (lastSceneOptions) { signature = ''; update(lastSceneOptions); }
+        requestRender();
+    }, undefined, () => { /* Keep the complete seated fallback if loading fails. */ });
+
     function cardTexture(url) {
         if (!url) return back;
         if (!textures.has(url)) {
@@ -352,7 +368,9 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
         targets = [];
     }
 
-    function update({ state, me, hand, selected, imageFor, interaction = null, canDraw = false, drawConfirming = false, handLowered = true, artwork = 'new' }) {
+    function update(options) {
+        lastSceneOptions = options;
+        const { state, me, hand, selected, imageFor, interaction = null, canDraw = false, drawConfirming = false, handLowered = true, artwork = 'new' } = options;
         if (!state) return;
         const nextSignature = JSON.stringify([state.currentPhase, state.awaitingLeftTryalSelections, state.playerForcedToRevealTryal, state.players, state.currentTurnPlayerUniqueId, state.deckCount, state.discardPileCount, state.witchNightState, hand, selected, me, interaction, canDraw, drawConfirming, handLowered, artwork]);
         if (signature === nextSignature) return;
@@ -388,8 +406,8 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             dynamic.add(seat);
             const pawn = new THREE.Group(); pawn.position.z = 2.05; pawn.position.y = -.1; seat.add(pawn);
             pawn.scale.setScalar(1.4);
-            if (!player.alive) { pawn.rotation.z = Math.PI / 2; pawn.position.y = 0.2; }
-            const parts = createRitualBust(pawn, COLORS[index % COLORS.length], player.alive, index);
+            // Eliminated players stay seated; do not tip the chair and full body onto the table.
+            const parts = createRitualBust(pawn, COLORS[index % COLORS.length], player.alive, index, sculptedHead);
             parts.forEach(part => { part.userData = { ...part.userData, playerId: player.uniqueId }; targets.push(part); });
             const eligibleTarget = interaction?.kind === 'player' && interaction.eligible.includes(player.uniqueId);
             const selectedTarget = eligibleTarget && interaction.selected.includes(player.uniqueId);
@@ -634,7 +652,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             cancelAnimationFrame(renderFrame);
             resizeObserver.disconnect(); controls.dispose(); clearDynamic();
             scene.traverse(object => { object.geometry?.dispose(); object.material?.dispose(); });
-            flameGlowTexture.dispose(); wood.dispose(); cloth.dispose(); back.dispose(); textures.forEach(texture => texture.dispose());
+            sculptedHead?.dispose(); flameGlowTexture.dispose(); wood.dispose(); cloth.dispose(); back.dispose(); textures.forEach(texture => texture.dispose());
             renderer.dispose(); renderer.domElement.remove();
         },
     };
