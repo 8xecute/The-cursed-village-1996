@@ -16,7 +16,7 @@ function canvasTexture(width, height, draw) {
 }
 
 function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError, onInspect, onSeatFocus }) {
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'low-power' });
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'low-power' });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -30,7 +30,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
     renderer.domElement.setAttribute('aria-label', 'โต๊ะ 3D ลากหมุน ลากสองนิ้วเพื่อเลื่อน WASD เคลื่อนกล้อง Space ขึ้น Q ลง');
 
     const scene = new THREE.Scene();
-    scene.background = null;
+    scene.background = new THREE.Color(0x151713);
     scene.fog = new THREE.Fog(0x151713, 17, 36);
     const camera = new THREE.PerspectiveCamera(43, 1, 0.1, 60);
     const controls = new OrbitControls(camera, renderer.domElement);
@@ -352,7 +352,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
         targets = [];
     }
 
-    function update({ state, me, hand, selected, imageFor, interaction = null, canDraw = false, drawConfirming = false, handLowered = false, artwork = 'new' }) {
+    function update({ state, me, hand, selected, imageFor, interaction = null, canDraw = false, drawConfirming = false, handLowered = true, artwork = 'new' }) {
         if (!state) return;
         const nextSignature = JSON.stringify([state.currentPhase, state.awaitingLeftTryalSelections, state.playerForcedToRevealTryal, state.players, state.currentTurnPlayerUniqueId, state.deckCount, state.discardPileCount, state.witchNightState, hand, selected, me, interaction, canDraw, drawConfirming, handLowered, artwork]);
         if (signature === nextSignature) return;
@@ -389,7 +389,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             const pawn = new THREE.Group(); pawn.position.z = 2.05; pawn.position.y = -.1; seat.add(pawn);
             pawn.scale.setScalar(1.4);
             if (!player.alive) { pawn.rotation.z = Math.PI / 2; pawn.position.y = 0.2; }
-            const parts = createRitualBust(pawn, COLORS[index % COLORS.length], player.alive);
+            const parts = createRitualBust(pawn, COLORS[index % COLORS.length], player.alive, index);
             parts.forEach(part => { part.userData = { ...part.userData, playerId: player.uniqueId }; targets.push(part); });
             const eligibleTarget = interaction?.kind === 'player' && interaction.eligible.includes(player.uniqueId);
             const selectedTarget = eligibleTarget && interaction.selected.includes(player.uniqueId);
@@ -397,7 +397,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
                 part.material.emissive.set(selectedTarget ? 0xb47e34 : 0x597b70);
                 part.material.emissiveIntensity = selectedTarget ? .9 : .55;
             });
-            const nameLabel = label(seat, `${selectedTarget ? '✓ ' : ''}${player.name}${player.uniqueId === me ? ' (คุณ)' : ''}${state.players?.[me]?.hasBeenWitch && player.hasBeenWitch ? ' · ทีมปอบ' : ''}${player.isReplacementBot ? ' · บอทเล่นแทน' : player.reconnectDeadline ? ' · รอเชื่อมต่อ' : ''}${!player.alive ? ' · เสียชีวิต' : ''}`, [0, 1.65, 2.05],
+            const nameLabel = label(seat, `${selectedTarget ? '✓ ' : ''}${player.name}${player.uniqueId === me ? ' (คุณ)' : ''}${state.players?.[me]?.hasBeenWitch && player.hasBeenWitch ? ' · ทีมปอบ' : ''}${player.isReplacementBot ? ' · บอทเล่นแทน' : player.reconnectDeadline ? ' · รอเชื่อมต่อ' : ''}${!player.alive ? ' · เสียชีวิต' : ''}`, [0, 1.78, 2.05],
                 eligibleTarget ? selectedTarget ? '#ffe1a0' : '#a9e0c9' : player.alive ? '#eddbb7' : '#a39b91');
             nameLabel.userData.playerId = player.uniqueId;
             targets.push(nameLabel);
@@ -446,12 +446,12 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
                 const row = own ? Math.floor(i / Math.max(1, columns)) : 0;
                 const rowCount = Math.min(columns, count - row * columns);
                 const offset = (own ? i % columns : i) - (rowCount - 1) / 2;
-                const lowered = handLowered;
+                const lowered = !own || handLowered;
                 const position = lowered ? [offset * spacing, .08 + (own && selected === i ? .12 : 0), .38 + row * .88 + Math.abs(offset) * .025]
                     : [offset * spacing, 1 + row * .98 + (own && selected === i ? .16 : 0), .7 + Math.abs(offset) * .025];
                 const rotation = lowered ? [-Math.PI / 2, 0, 0] : [-.12, 0, own ? 0 : -offset * Math.min(.045, .35 / Math.max(1, count))];
                 const face = card(seat, position, rotation,
-                    own ? cardTexture(imageFor(hand[i].name)) : back,
+                    own && !lowered ? cardTexture(imageFor(hand[i].name)) : back,
                     own ? { cardIndex: i, category: hand[i].color } : { playerId: player.uniqueId }, own ? .56 : .47);
                 if (own && selected === i) face.material.color.set(0xb9a687);
             }

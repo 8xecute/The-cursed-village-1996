@@ -173,7 +173,7 @@ export function initialize() {
   client.state.table3DBundle = null;
 
   client.state.table3DFocusedPlayer = null;
-  client.state.table3DHandLowered = false;
+  client.state.table3DHandLowered = true;
 
   client.state.savedGameViewMode = '2d';
 

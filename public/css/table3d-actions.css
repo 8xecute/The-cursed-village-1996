@@ -245,7 +245,7 @@ body.game-view-3d .table3d-confirm .target-selection-footer button { min-height:
 }
 
 /* The table uses the same village artwork as the page. */
-#table3d-canvas { background: linear-gradient(#0d0b0980,#0d0b0930), url('../Background/background.jpg') center / cover no-repeat; }
+#table3d-canvas { background: #151713; }
 body.game-view-3d:not(.table3d-unavailable) :is(#waiting-status-banner, #turn-notice) { display:none !important; }
 .table-phase-cue-night #table3d-canvas { animation:phase-night 2.4s ease-out; }
 .table-phase-cue-conspiracy #table3d-canvas { animation:phase-conspiracy 2.4s ease-out; }
@@ -256,7 +256,7 @@ body.game-view-3d:not(.table3d-unavailable) :is(#waiting-status-banner, #turn-no
 body.game-view-3d:not(.table3d-unavailable) .select-player-modal.table3d-direct-target { display: none !important; }
 
 body.game-view-3d:not(.table3d-unavailable) #alibi-redcard-select-popup.table3d-phase-source { display:none !important; }
-#table3d-canvas { background-position: center center; }
+
 
 /* Public log shares the existing message source; no duplicate socket listeners. */
 body.game-view-3d:not(.table3d-unavailable) #player-status-peek { display:none !important; }

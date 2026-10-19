@@ -87,40 +87,98 @@ export function buildCeremonialRoom(scene, wood) {
     beam([7,.15,.18],[0,-1.02,0]);beam([.18,.15,7],[0,-1.02,0]);
 }
 
-export function createRitualBust(parent, color, alive) {
-    const body = new THREE.MeshStandardMaterial({color:alive?new THREE.Color(color).multiplyScalar(.58):0x292725,roughness:.96});
-    const skin = new THREE.MeshStandardMaterial({color:alive?0x64584b:0x39342f,roughness:.92});
-    const recess = new THREE.MeshStandardMaterial({color:0x24221f,roughness:1});
+export function createRitualBust(parent, color, alive, variant = 0) {
+    const body = new THREE.MeshStandardMaterial({color:alive?new THREE.Color(color).multiplyScalar(.65):0x292725,roughness:.94});
+    const skin = new THREE.MeshStandardMaterial({color:alive?[0x766350,0x806953,0x685b4f,0x8a7360][variant%4]:0x45403a,roughness:.86});
+    const recess = new THREE.MeshStandardMaterial({color:0x292620,roughness:.96});
+    const hairMaterial = new THREE.MeshStandardMaterial({color:[0x272722,0x41403a,0x39332b,0x5b554b][variant%4],roughness:1});
     const parts=[];
     const add=(geometry,material,position,scale)=>{const part=new THREE.Mesh(geometry,material.clone());part.position.set(...position);if(scale)part.scale.set(...scale);part.castShadow=part.receiveShadow=true;parent.add(part);parts.push(part);return part;};
-    // One continuous shoulder/torso silhouette, rather than a head on a cylinder.
-    const torso=[[0,0],[.23,0],[.27,.08],[.26,.3],[.32,.46],[.29,.54],[.16,.58],[.095,.63],[.08,.69]].map(([r,y])=>new THREE.Vector2(r,y));
-    const robe=add(new THREE.LatheGeometry(torso,24),body,[0,0,0]);robe.scale.z=.62;
-    add(new THREE.SphereGeometry(.16,20,14),skin,[0,.82,-.005],[.85,1.25,.92]);
-    add(new THREE.CylinderGeometry(.075,.09,.15,14),skin,[0,.64,0]);
-    // Face is oriented inward toward the table; restrained features avoid bright eyes.
-    add(new THREE.SphereGeometry(.095,16,10),skin,[0,.74,-.055],[.9,.72,.9]);
-    add(new THREE.SphereGeometry(.033,10,8),skin,[0,.81,-.143],[.6,1.45,1]);
+    const segment=(from,to,radius,material)=>{
+        const start=new THREE.Vector3(...from),end=new THREE.Vector3(...to);
+        const delta=end.clone().sub(start);
+        const part=add(new THREE.CapsuleGeometry(radius,Math.max(.001,delta.length()-radius*2),3,10),material,start.clone().add(end).multiplyScalar(.5).toArray());
+        part.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),delta.normalize());return part;
+    };
+    // Anatomical torso and short-sleeved shirt, joined under the collar.
+    const width=1+(variant%3-1)*.055;
+    const torso=[[0,0],[.21,0],[.24,.06],[.25,.28],[.29,.47],[.285,.53],[.2,.58],[.105,.62],[.085,.65]].map(([r,y])=>new THREE.Vector2(r,y));
+    const shirt=add(new THREE.LatheGeometry(torso,28),body,[0,0,.025],[width,1,.65]);
+    // Subtle tailoring follows the torso rather than separate cylinder arms.
     for(const side of [-1,1]) {
-        add(new THREE.SphereGeometry(.028,10,8),skin,[side*.137,.82,0],[.48,1.1,.7]);
-        add(new THREE.SphereGeometry(.031,12,8),recess,[side*.052,.85,-.129],[1,.23,.26]);
-        const brow=add(new THREE.SphereGeometry(.037,12,8),skin,[side*.052,.871,-.131],[1,.35,.45]);brow.rotation.z=side*.13;
-        const shoulder=add(new THREE.SphereGeometry(.13,14,10),body,[side*.24,.43,0],[.85,1.35,.77]);shoulder.rotation.z=side*.13;
+        const upper=add(new THREE.SphereGeometry(.12,18,12),body,[side*.265*width,.452,.015],[1,1.38,.9]);upper.rotation.z=side*.16;
+        segment([side*.29*width,.4,0],[side*.34*width,.18,-.13],.068,skin);
+        segment([side*.34*width,.18,-.13],[side*.27*width,.065,-.43],.052,skin);
+        const palm=add(new THREE.SphereGeometry(.065,16,10),skin,[side*.26*width,.055,-.46],[.8,.39,1.16]);palm.rotation.y=side*.13;
+        // Four fingers plus an opposed thumb resting on the table edge.
+        for(let finger=0;finger<4;finger++) {
+            const x=side*.26*width+(finger-1.5)*.023;
+            const length=[.083,.104,.096,.073][finger];
+            segment([x,.055,-.49],[x,.045,-.49-length],.012,skin);
+            segment([x,.045,-.49-length],[x,.035,-.512-length],.010,skin);
+        }
+        segment([side*.215*width,.06,-.45],[side*.183*width,.04,-.514],.018,skin);
+        // Folded collar panels in the same subdued cloth palette.
+        const collar=new THREE.Shape();
+        collar.moveTo(side*.018,.635);collar.lineTo(side*.12,.585);collar.lineTo(side*.075,.49);collar.lineTo(side*.005,.568);collar.closePath();
+        add(new THREE.ExtrudeGeometry(collar,{depth:.012,bevelEnabled:true,bevelSegments:1,steps:1,bevelSize:.004,bevelThickness:.003}),body,[0,0,-.118]);
     }
-    add(new THREE.SphereGeometry(.037,12,8),recess,[0,.743,-.135],[1,.1,.18]);
-    const hair=add(new THREE.SphereGeometry(.16,20,12,0,Math.PI*2,0,Math.PI*.48),recess,[0,.825,.006],[.87,1.22,.95]);
-    hair.rotation.x=.08;
-    // Shallow cloth seams give the robe volume without dense geometry.
+    add(new THREE.CylinderGeometry(.073,.086,.17,20),skin,[0,.688,.008]);
+    for(let button=0;button<4;button++) add(new THREE.SphereGeometry(.009,8,6),recess,[0,.44-button*.09,-.145],[1,1,.45]);
     for(let i=-2;i<=2;i++) {
-        const fold=add(new THREE.CapsuleGeometry(.012,.25,2,6),body,[i*.062,.25,-.155]);fold.rotation.z=i*.12;
+        const fold=segment([i*.055,.07,-.13],[i*.067,.3,-.146],.006,body);
+        fold.rotation.z+=i*.035;
     }
+    // Sculpt the entire face into one surface: jaw, cheeks, sockets, nose and chin.
+    const head=new THREE.SphereGeometry(1,40,32);
+    const positions=head.attributes.position;
+    const gaussian=(x,y,cx,cy,sx,sy)=>Math.exp(-(((x-cx)/sx)**2+((y-cy)/sy)**2));
+    for(let i=0;i<positions.count;i++) {
+        const sx=positions.getX(i),sy=positions.getY(i),sz=positions.getZ(i);
+        const jaw=sy<-.22?1-(Math.min(1,(-sy-.22)/.78))*.25:1;
+        const x=sx*.145*jaw*(1+(variant%3-1)*.035);
+        const y=sy*.211;
+        let z=sz*.143;
+        if(sz<0) {
+            const front=Math.min(1,-sz*3);
+            let relief=.049*gaussian(x,y,0,-.018,.027,.072);
+            relief+=.047*gaussian(x,y,0,-.035,.032,.024);
+            relief+=.019*gaussian(x,y,0,-.131,.069,.03);
+            for(const side of [-1,1]) {
+                relief+=.014*gaussian(x,y,side*.077,-.05,.041,.041);
+                relief+=.015*gaussian(x,y,side*.057,.047,.047,.016);
+                relief-=.017*gaussian(x,y,side*.055,.022,.036,.018);
+            }
+            relief+=.008*gaussian(x,y,0,-.094,.048,.015);
+            z-=relief*front;
+        }
+        positions.setXYZ(i,x,y,z);
+    }
+    head.computeVertexNormals();
+    add(head,skin,[0,.906,0]);
+    for(const side of [-1,1]) {
+        const ear=add(new THREE.SphereGeometry(.033,16,12),skin,[side*.141,.9,.002],[.46,1.18,.75]);ear.rotation.z=side*.1;
+        add(new THREE.SphereGeometry(.02,12,8),recess,[side*.151,.902,-.011],[.16,.73,.64]);
+        // Narrow dark eyes and brows, kept matte rather than glowing white.
+        add(new THREE.SphereGeometry(.023,16,10),recess,[side*.053,.927,-.137],[1,.2,.3]);
+        const brow=segment([side*.027,.954,-.139],[side*.082,.952,-.125],.006,hairMaterial);
+        brow.rotation.z=side*.025;
+        for(let crease=0;crease<2;crease++) segment([side*.079,.923-crease*.009,-.12],[side*.099,.918-crease*.011,-.105],.0016,recess);
+    }
+    segment([-.033,.809,-.143],[.033,.809,-.143],.0025,recess);
+    for(const side of [-1,1]) add(new THREE.SphereGeometry(.007,10,6),recess,[side*.014,.863,-.18],[1,.35,.4]);
+    // Receding hairline, with a back section instead of a floating cap.
+    const hair=add(new THREE.SphereGeometry(.15,32,18,0,Math.PI*2,0,Math.PI*.43),hairMaterial,[0,.916,.008],[1,1.39,1.01]);
+    hair.rotation.x=.12;
+    const backHair=add(new THREE.SphereGeometry(.145,24,14,0,Math.PI,0,Math.PI*.77),hairMaterial,[0,.91,.007],[1,1.31,1]);
+    backHair.rotation.y=-Math.PI/2;
     // Merge by material so twelve detailed busts do not multiply draw calls.
     const batches = new Map();
     for (const part of parts) {
         part.updateMatrix();
         const key = part.material.color.getHexString();
         if (!batches.has(key)) batches.set(key, { material: part.material.clone(), geometries: [] });
-        const geometry = part.geometry.clone(); geometry.applyMatrix4(part.matrix);
+        const geometry = part.geometry.index ? part.geometry.toNonIndexed() : part.geometry.clone(); geometry.applyMatrix4(part.matrix);
         batches.get(key).geometries.push(geometry);
         parent.remove(part); part.geometry.dispose(); part.material.dispose();
     }
@@ -131,6 +189,6 @@ export function createRitualBust(parent, color, alive) {
         const merged = new THREE.Mesh(geometry, batch.material);
         merged.castShadow = merged.receiveShadow = true; parent.add(merged); mergedParts.push(merged);
     }
-    body.dispose();skin.dispose();recess.dispose();
+    body.dispose();skin.dispose();recess.dispose();hairMaterial.dispose();
     return mergedParts;
 }
