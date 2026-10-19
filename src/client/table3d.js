@@ -17,9 +17,10 @@ function canvasTexture(width, height, draw) {
 }
 
 function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError, onInspect, onSeatFocus }) {
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'low-power' });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
-    renderer.shadowMap.enabled = true;
+    const lowPower = window.matchMedia('(max-width: 768px), (pointer: coarse)').matches || (navigator.deviceMemory && navigator.deviceMemory <= 4);
+    const renderer = new THREE.WebGLRenderer({ antialias: !lowPower, alpha: false, powerPreference: 'low-power' });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, lowPower ? 1 : 1.5));
+    renderer.shadowMap.enabled = !lowPower;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.15;
@@ -106,7 +107,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
         parent.add(object);
         return object;
     }
-    buildCeremonialRoom(scene, wood);
+    buildCeremonialRoom(scene, wood, lowPower);
     const tableMaterial = new THREE.MeshStandardMaterial({ map: wood, bumpMap: wood, bumpScale: .035, roughness: .78, color: 0xb4a38b });
     mesh(new THREE.CylinderGeometry(6.2, 6.2, 0.35, 80), tableMaterial, scene, [0, -0.2, 0]);
     const rim = mesh(new THREE.TorusGeometry(6.12, 0.12, 8, 96),
@@ -168,13 +169,15 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
     let active = false;
     let disposed = false;
     let renderFrame = 0;
+    let lastRenderedAt = 0;
+    const characterCache = new Map();
     let flameTimer;
     let ritualActive = false;
     let candleBaseIntensity = 10;
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
     function tickFlame() {
         if (!active || disposed || reducedMotion.matches) return;
-        requestRender(); flameTimer = setTimeout(tickFlame, 65);
+        requestRender(); flameTimer = setTimeout(tickFlame, lowPower ? 125 : 65);
     }
     let down = null;
     let moved = false;
@@ -206,6 +209,8 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
         if (!active || disposed || renderFrame) return;
         renderFrame = requestAnimationFrame(() => {
             renderFrame = 0;
+            if (lowPower && performance.now() - lastRenderedAt < 32) { requestRender(); return; }
+            lastRenderedAt = performance.now();
             controls.update();
             const now = performance.now();
             moveCamera(now);
@@ -407,7 +412,17 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             const pawn = new THREE.Group(); pawn.position.z = 2.05; pawn.position.y = -.1; seat.add(pawn);
             pawn.scale.setScalar(1.4);
             // Eliminated players stay seated; do not tip the chair and full body onto the table.
-            const parts = createRitualBust(pawn, COLORS[index % COLORS.length], player.alive, index, sculptedHead);
+            const modelKey = `${index}:${player.alive}:${!!sculptedHead}`;
+            if (!characterCache.has(modelKey)) {
+                const template = new THREE.Group();
+                characterCache.set(modelKey, createRitualBust(template, COLORS[index % COLORS.length], player.alive, index, sculptedHead));
+            }
+            const parts = characterCache.get(modelKey).map(source => {
+                const part = new THREE.Mesh(source.geometry, source.material.clone());
+                part.userData.sharedGeometry = true;
+                part.castShadow = part.receiveShadow = !lowPower;
+                pawn.add(part); return part;
+            });
             parts.forEach(part => { part.userData = { ...part.userData, playerId: player.uniqueId }; targets.push(part); });
             const eligibleTarget = interaction?.kind === 'player' && interaction.eligible.includes(player.uniqueId);
             const selectedTarget = eligibleTarget && interaction.selected.includes(player.uniqueId);
@@ -652,6 +667,8 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             cancelAnimationFrame(renderFrame);
             resizeObserver.disconnect(); controls.dispose(); clearDynamic();
             scene.traverse(object => { object.geometry?.dispose(); object.material?.dispose(); });
+            characterCache.forEach(parts => parts.forEach(part => { part.geometry.dispose(); part.material.dispose(); }));
+            characterCache.clear();
             sculptedHead?.dispose(); flameGlowTexture.dispose(); wood.dispose(); cloth.dispose(); back.dispose(); textures.forEach(texture => texture.dispose());
             renderer.dispose(); renderer.domElement.remove();
         },

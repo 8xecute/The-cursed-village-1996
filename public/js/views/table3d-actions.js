@@ -229,6 +229,7 @@ export function initialize() {
             }
         }
         if (source && source.classList.contains('table3d-phase-source') !== enabled) source.classList.toggle('table3d-phase-source', enabled);
+        phasePanel.classList.toggle('is-direct-target', !!target);
         const show = enabled && canAct() && !!root;
         if (phasePanel.hidden !== !show) phasePanel.hidden = !show;
         if (!show) { phaseSignature = ''; return; }
@@ -339,6 +340,8 @@ export function initialize() {
         if (hint.textContent !== title) hint.textContent = title;
         statusBar.classList.toggle('is-your-turn', canAct() && client.state.isMyTurn && !request);
         const selected = client.state.myCurrentHand?.[client.state.selectedCard];
+        panel.classList.toggle('has-selected-card', !!selected);
+        panel.classList.toggle('has-phase-action', !!request && !request.preview);
         const text = selected ? `${client.actions.displayCardName(selected.name)} · ${client.actions.displayCardDescription(selected.name)}` : 'แตะการ์ดเพื่อเลือก · แตะซ้ำเพื่อยกเลิก · การ์ดไม่ระบุเป้าหมายแตะซ้ำเพื่อใช้';
         if (description.textContent !== text) description.textContent = text;
         document.querySelectorAll('#table3d-section [data-table-action]').forEach(button => {

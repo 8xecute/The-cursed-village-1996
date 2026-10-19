@@ -377,3 +377,24 @@ body.game-view-3d.table3d-phase-details #night-action-popup.table3d-docked .moda
     border-radius: 4px; pointer-events: none;
 }
 @media (hover: none) { #table3d-keyboard-status { display: none; } }
+
+/* One instruction row and only the controls needed for the current mobile action. */
+@media (max-width: 768px) {
+    body.game-view-3d #table3d-section .table3d-hand-controls { padding: 8px; min-height: 44px; }
+    body.game-view-3d #table3d-seat-label,
+    body.game-view-3d #table3d-keyboard-status { display: none !important; }
+    body.game-view-3d #table3d-section #table3d-phase-panel {
+        margin: 0; padding: 8px 12px; border: 0; border-radius: 0;
+        max-height: 18dvh; background: #211a15;
+    }
+    body.game-view-3d #table3d-phase-panel p { display: none; }
+    body.game-view-3d #table3d-phase-panel.is-direct-target .table3d-phase-header { display: none; }
+    body.game-view-3d #table3d-phase-panel button { min-height: 40px; margin: 0 6px 0 0; padding: 6px 12px; }
+    body.game-view-3d #table3d-play-panel { padding: 4px 12px; }
+    body.game-view-3d #table3d-card-description { display: none; }
+    body.game-view-3d #table3d-play-panel.has-selected-card:not(.has-phase-action) #table3d-card-description {
+        display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+        overflow: hidden; margin: 4px 0; font-size: .8rem;
+    }
+    body.game-view-3d #table3d-details-toggle { background: transparent; border: 0; font-size: .75rem; padding: 4px 0; min-height: 36px; }
+}
