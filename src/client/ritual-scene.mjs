@@ -80,7 +80,7 @@ export function buildCeremonialRoom(scene, wood, lowPower = false) {
             for(let i=0;i<6;i++){const a=i*Math.PI/3;wallBeam([.025,.7,.025],[x+Math.sin(a)*.25,2.3,-11.3+Math.cos(a)*.25]);}
             wallAdd(new THREE.CylinderGeometry(.3,.3,.06,12),bronze,[x,2.64,-11.3]);wallBeam([.025,3.1,.025],[x,4.2,-11.3]);
         }
-        const light=new THREE.PointLight(0xdf9e59,7,10,2);light.position.set(0,3,-10.4);if (!lowPower) group.add(light);
+        const light=new THREE.PointLight(0xdf9e59,7,10,2);light.position.set(0,3,-10.4);light.userData.qualityLight=true;group.add(light);
     }
     // Table legs and cross braces visible when looking across the table.
     for(const x of [-3.3,3.3]) for(const z of [-3.3,3.3]) {

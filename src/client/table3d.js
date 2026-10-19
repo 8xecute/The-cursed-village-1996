@@ -16,10 +16,11 @@ function canvasTexture(width, height, draw) {
     return texture;
 }
 
-function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError, onInspect, onSeatFocus }) {
-    const lowPower = window.matchMedia('(max-width: 768px), (pointer: coarse)').matches || (navigator.deviceMemory && navigator.deviceMemory <= 4);
-    const renderer = new THREE.WebGLRenderer({ antialias: !lowPower, alpha: false, powerPreference: 'low-power' });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, lowPower ? 1 : 1.5));
+function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError, onInspect, onSeatFocus, quality = 'medium', cameraMode = 'rotate' }) {
+    let qualityLevel = ['low','medium','high'].includes(quality) ? quality : 'medium';
+    let lowPower = qualityLevel === 'low';
+    const renderer = new THREE.WebGLRenderer({ antialias: false, alpha: false, powerPreference: 'default' });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, {low:1,medium:1.5,high:2}[qualityLevel]));
     renderer.shadowMap.enabled = !lowPower;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -37,16 +38,21 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
     const camera = new THREE.PerspectiveCamera(43, 1, 0.1, 60);
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enablePan = true;
-    controls.screenSpacePanning = true;
-    controls.panSpeed = .65;
+    controls.screenSpacePanning = false;
+    controls.panSpeed = .9;
+    controls.rotateSpeed = .65;
+    controls.mouseButtons = { LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN };
+    controls.touches = { ONE: cameraMode === 'pan' ? THREE.TOUCH.PAN : THREE.TOUCH.ROTATE, TWO: cameraMode === 'pan' ? THREE.TOUCH.DOLLY_ROTATE : THREE.TOUCH.DOLLY_PAN };
+    if (cameraMode === 'pan') controls.mouseButtons.LEFT = THREE.MOUSE.PAN;
+    renderer.domElement.style.touchAction = 'none';
     controls.enableDamping = true;
     controls.dampingFactor = 0.09;
     controls.minDistance = 3;
-    controls.maxDistance = 30;
+    controls.maxDistance = 24;
     controls.minPolarAngle = .05;
     controls.maxPolarAngle = Math.PI / 2.05;
     controls.enableZoom = true;
-    controls.zoomSpeed = 0.8;
+    controls.zoomSpeed = .65;
 
     let seatOrder = [];
     let ownSeatId = null;
@@ -76,7 +82,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
     const key = new THREE.DirectionalLight(0xffd9b0, 2.4);
     key.position.set(-4, 10, 5);
     key.castShadow = true;
-    key.shadow.mapSize.set(1024, 1024);
+    key.shadow.mapSize.set(qualityLevel === 'high' ? 2048 : 1024, qualityLevel === 'high' ? 2048 : 1024);
     key.shadow.camera.left = key.shadow.camera.bottom = -8;
     key.shadow.camera.right = key.shadow.camera.top = 8;
     key.shadow.normalBias = 0.035;
@@ -107,7 +113,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
         parent.add(object);
         return object;
     }
-    buildCeremonialRoom(scene, wood, lowPower);
+    buildCeremonialRoom(scene, wood);
     const tableMaterial = new THREE.MeshStandardMaterial({ map: wood, bumpMap: wood, bumpScale: .035, roughness: .78, color: 0xb4a38b });
     mesh(new THREE.CylinderGeometry(6.2, 6.2, 0.35, 80), tableMaterial, scene, [0, -0.2, 0]);
     const rim = mesh(new THREE.TorusGeometry(6.12, 0.12, 8, 96),
@@ -169,7 +175,6 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
     let active = false;
     let disposed = false;
     let renderFrame = 0;
-    let lastRenderedAt = 0;
     const characterCache = new Map();
     let flameTimer;
     let ritualActive = false;
@@ -177,7 +182,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
     function tickFlame() {
         if (!active || disposed || reducedMotion.matches) return;
-        requestRender(); flameTimer = setTimeout(tickFlame, lowPower ? 125 : 65);
+        requestRender();
     }
     let down = null;
     let moved = false;
@@ -209,11 +214,10 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
         if (!active || disposed || renderFrame) return;
         renderFrame = requestAnimationFrame(() => {
             renderFrame = 0;
-            if (lowPower && performance.now() - lastRenderedAt < 32) { requestRender(); return; }
-            lastRenderedAt = performance.now();
             controls.update();
             const now = performance.now();
             moveCamera(now);
+            constrainCamera();
             if (!reducedMotion.matches) {
                 const time = now * .001;
                 flame.scale.set(1+Math.sin(time*5)*.04,1+Math.sin(time*7)*.07,1);
@@ -253,7 +257,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
                 if (elapsed >= shot.raiseDuration + shot.bulletDuration) { removeGunShot(shot); gunShots.splice(index, 1); }
             }
             renderer.render(scene, camera);
-            if (flights.length || gunShots.length || pressedKeys.size) requestRender();
+            if (flights.length || gunShots.length || pressedKeys.size || !reducedMotion.matches) requestRender();
         });
     }
     controls.addEventListener('change', requestRender);
@@ -277,6 +281,35 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
     function keyUp(event) { pressedKeys.delete(event.code); if (!pressedKeys.size) previousMovementTime = 0; }
     function focusChanged(event) { if (typing(event.target) || document.querySelector('#card-inspect-overlay:not([hidden])')) clearMovement(); }
     function visibilityChanged() { if (document.hidden) clearMovement(); }
+    function constrainCamera() {
+        const target=controls.target.clone();
+        controls.target.x=THREE.MathUtils.clamp(controls.target.x,-8,8);
+        controls.target.z=THREE.MathUtils.clamp(controls.target.z,-8,8);
+        controls.target.y=THREE.MathUtils.clamp(controls.target.y,-.4,8);
+        camera.position.add(controls.target.clone().sub(target));
+        camera.position.y=THREE.MathUtils.clamp(camera.position.y,.35,28);
+    }
+    function setQuality(level) {
+        if (!['low','medium','high'].includes(level)) return;
+        const changed=qualityLevel!==level;
+        qualityLevel=level;lowPower=level==='low';
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1,{low:1,medium:1.5,high:2}[level]));
+        renderer.setSize(container.clientWidth || 1,container.clientHeight || 1);
+        renderer.shadowMap.enabled=!lowPower;
+        const shadowSize=level==='high'?2048:1024;
+        if(key.shadow.mapSize.x!==shadowSize) {
+            key.shadow.map?.dispose();key.shadow.map=null;
+            key.shadow.mapPass?.dispose();key.shadow.mapPass=null;
+            key.shadow.mapSize.set(shadowSize,shadowSize);
+        }
+        let lightIndex=0;
+        scene.traverse(part=>{
+            if(part.userData.qualityLight) {part.visible=level==='high'||(level==='medium'&&lightIndex%2===0);lightIndex++;}
+            if(changed && part.isMesh && part.material) part.material.needsUpdate=true;
+        });
+        if(changed && lastSceneOptions) {signature='';update(lastSceneOptions);}
+        renderer.shadowMap.needsUpdate=true;requestRender();
+    }
     function moveCamera(now) {
         if (!pressedKeys.size) return;
         const dt = Math.min(.05, Math.max(0,(now-previousMovementTime)/1000)); previousMovementTime = now;
@@ -580,6 +613,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
     }
     const resizeObserver = new ResizeObserver(resize);
     resizeObserver.observe(container);
+    setQuality(qualityLevel);
     resetCamera();
     return {
         update,
@@ -590,6 +624,20 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             else { clearMovement(); clearTimeout(flameTimer); cancelAnimationFrame(renderFrame); renderFrame = 0; }
         },
         resetCamera,
+        setQuality,
+        setCameraMode(mode) {
+            const pan=mode==='pan';
+            controls.mouseButtons.LEFT=pan?THREE.MOUSE.PAN:THREE.MOUSE.ROTATE;
+            controls.touches.ONE=pan?THREE.TOUCH.PAN:THREE.TOUCH.ROTATE;
+            controls.touches.TWO=pan?THREE.TOUCH.DOLLY_ROTATE:THREE.TOUCH.DOLLY_PAN;
+            down=null;clearTimeout(holdTimer);
+        },
+        stopMovement() { clearMovement(); },
+        setMovement(code, held) {
+            if(!active || disposed || !movementKeys.has(code)) return;
+            if(held) {if(!pressedKeys.size)previousMovementTime=performance.now();pressedKeys.add(code);requestRender();}
+            else {pressedKeys.delete(code);if(!pressedKeys.size)previousMovementTime=0;}
+        },
         animateShot(event) {
             if (!active || disposed || reducedMotion.matches) return;
             const from = seatPositions.get(event.actorId)?.clone();

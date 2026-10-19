@@ -52,6 +52,8 @@ client.actions.syncTable3D = async function syncTable3D() {
         if (!client.state.table3D) {
             client.state.table3D = window.VillageTable3D.create({
                 container: document.getElementById('table3d-canvas'),
+                quality: client.state.graphicsQuality || 'medium',
+                cameraMode: client.state.table3DCameraMode || 'rotate',
                 onCard: index => {
                     client.actions.hidePlayerStatus?.();
                     if (!client.actions.canUseTable3DHand()) return;
@@ -174,6 +176,42 @@ export function initialize() {
 
   client.state.table3DFocusedPlayer = null;
   client.state.table3DHandLowered = true;
+  client.state.graphicsQuality = 'medium';
+  try {
+      const saved=localStorage.getItem('villageGraphicsQuality');
+      if(['low','medium','high'].includes(saved)) client.state.graphicsQuality=saved;
+  } catch (_) {}
+  const qualitySelect=document.getElementById('graphics-quality');
+  if(qualitySelect) {
+      qualitySelect.value=client.state.graphicsQuality;
+      qualitySelect.addEventListener('change',()=>{
+          client.state.graphicsQuality=qualitySelect.value;
+          try {localStorage.setItem('villageGraphicsQuality',qualitySelect.value);} catch (_) {}
+          client.state.table3D?.setQuality(qualitySelect.value);
+      });
+  }
+  client.state.table3DCameraMode='rotate';
+  const cameraTools=document.getElementById('table3d-camera-tools');
+  document.querySelector('.table3d-hand-controls')?.appendChild(cameraTools);
+  document.querySelectorAll('[data-camera-mode]').forEach(button=>button.addEventListener('click',()=>{
+      client.state.table3DCameraMode=button.dataset.cameraMode;
+      client.state.table3D?.setCameraMode(client.state.table3DCameraMode);
+      document.querySelectorAll('[data-camera-mode]').forEach(item=>item.setAttribute('aria-pressed',String(item===button)));
+  }));
+  document.querySelectorAll('[data-camera-move]').forEach(button=>{
+      const stop=()=>client.state.table3D?.setMovement(button.dataset.cameraMove,false);
+      button.addEventListener('pointerdown',event=>{
+          event.preventDefault();button.setPointerCapture(event.pointerId);
+          client.state.table3D?.setMovement(button.dataset.cameraMove,true);
+      });
+      button.addEventListener('pointerup',stop);button.addEventListener('pointercancel',stop);button.addEventListener('lostpointercapture',stop);
+      button.addEventListener('keydown',event=>{if(event.code==='Space'||event.code==='Enter'){event.preventDefault();client.state.table3D?.setMovement(button.dataset.cameraMove,true);}});
+      button.addEventListener('keyup',stop);button.addEventListener('blur',stop);
+  });
+  document.querySelectorAll('[data-camera-zoom]').forEach(button=>button.addEventListener('click',()=>client.state.table3D?.zoom(button.dataset.cameraZoom)));
+  document.querySelectorAll('[data-camera-view]').forEach(button=>button.addEventListener('click',()=>client.state.table3D?.setCameraView(button.dataset.cameraView)));
+  document.getElementById('table3d-camera-tools')?.addEventListener('toggle',event=>{if(!event.currentTarget.open)client.state.table3D?.stopMovement();});
+
 
   client.state.savedGameViewMode = '2d';
 
