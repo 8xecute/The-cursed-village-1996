@@ -1,0 +1,23 @@
+#life-setup-panel { position:relative; z-index:30; margin:10px auto; padding:14px; max-width:660px; border:1px solid #a88a56; border-radius:12px; background:#211b16f5; color:#f4dfb6; text-align:center; box-sizing:border-box; }
+#life-setup-panel h3 { margin:0 0 8px; font-size:1.08rem; }
+#life-setup-panel p { margin:8px 0; line-height:1.55; }
+.game-view-3d #life-setup-panel { position:absolute; top:60px; left:50%; transform:translateX(-50%); width:min(660px,calc(100% - 24px)); max-height:55%; overflow:auto; margin:0; }
+.setup-seats { display:flex; flex-wrap:wrap; justify-content:center; gap:7px; }
+.setup-seat { display:flex; flex-direction:column; padding:5px 9px; background:#100e0c; border:1px solid #67543c; border-radius:7px; font-size:.82rem; }
+.setup-card-count { color:#c9a673; min-height:1.1em; letter-spacing:2px; }
+.setup-seat.is-dealt { animation:setup-arrival .65s ease-out; }
+.setup-deck { margin:14px auto; width:52px; height:74px; border:3px double #b29465; border-radius:5px; background:#26170f; display:grid; place-items:center; box-shadow:5px 4px #130d08,9px 8px #80633f; animation:setup-shuffle .3s alternate infinite; }
+.setup-own-lives { display:flex; justify-content:center; gap:8px; margin:10px 0; }
+.setup-own-lives button { padding:2px; width:min(18%,85px); aspect-ratio:2/3; background:#18120d; border:2px solid #7d6645; border-radius:5px; cursor:pointer; }
+.setup-own-lives img { width:100%; height:100%; object-fit:cover; }
+.setup-own-lives button[aria-pressed=true] { border-color:#ffe086; transform:translateY(-5px); }
+.setup-own-lives button:disabled { opacity:.8; cursor:default; }
+.setup-role { padding:8px; background:#3c2a20; border-radius:7px; }
+.setup-confirm { min-height:44px; }
+.setup-life-back { display:grid; place-items:center; background:#29170e; border:3px double #b29465; color:#c5a576; box-sizing:border-box; }
+@keyframes setup-shuffle { from { transform:rotate(-9deg) translateX(-7px); } to { transform:rotate(9deg) translateX(7px); } }
+@keyframes setup-arrival { from { transform:translateY(-16px); border-color:#ffe39b; } to { transform:translateY(0); } }
+@media(max-width:600px) { .game-view-3d #life-setup-panel { top:95px; max-height:48%; padding:10px; } #life-setup-panel p { font-size:.85rem; } .setup-seat { font-size:.7rem; padding:3px 5px; } }
+@media(prefers-reduced-motion:reduce) { .setup-deck,.setup-seat.is-dealt { animation:none; } }
+
+.setup-flying-card { position:absolute; width:30px; height:44px; border:2px solid #c5a576; border-radius:3px; background:#29170e; pointer-events:none; z-index:2; }

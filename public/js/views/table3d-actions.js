@@ -15,6 +15,8 @@ client.actions.canUseTable3DHand = function canUseTable3DHand() {
 };
 client.actions.getTable3DInteraction = function getTable3DInteraction() {
     if (!canAct()) return null;
+    const setupInteraction = client.actions.getSetupInteraction?.();
+    if (setupInteraction) return setupInteraction;
     const session = currentInteraction();
     if (session) return interactionSnapshot(session);
     {
@@ -53,6 +55,7 @@ client.actions.handleTable3DPlayer = function handleTable3DPlayer(id) {
     if (session?.kind === 'player' && interactionSnapshot(session).eligible.includes(id)) session.choose(id);
 };
 client.actions.handleTable3DLife = function handleTable3DLife(id, index) {
+    if (client.state.currentRoomState?.currentPhase === 'SETUP') { client.actions.chooseSetupLife?.(id, index); return; }
     if (!canAct()) return;
     const session = currentInteraction();
     if (session?.kind !== 'life' || session.owner !== id) { client.actions.handleTable3DPlayer(id); return; }

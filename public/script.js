@@ -1,3 +1,4 @@
+import { initialize as initializeLifeSetup } from './js/views/life-setup.js';
 import { initialize as initializePrank } from './js/views/prank.js';
 import { initialize as initializeRoomSettings } from './js/rooms/settings.js';
 import { initialize as initializeTable3DLog } from './js/views/table3d-log.js';
@@ -79,3 +80,5 @@ initializeTable3DLog();
 
 initializeRoomSettings();
 initializePrank();
+
+initializeLifeSetup();

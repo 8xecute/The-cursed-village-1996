@@ -144,6 +144,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
     const characterCache = new Map();
     let flameTimer;
     let ritualActive = false;
+    let lifeSetupStage = null, lifeSetupPile = null;
     let candleBaseIntensity = 10;
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
     function tickFlame() {
@@ -186,6 +187,10 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             cameraRig.constrainCamera();
             if (!reducedMotion.matches) {
                 const time = now * .001;
+                if (lifeSetupPile && lifeSetupStage === 'shuffle') {
+                    lifeSetupPile.rotation.z = Math.sin(time * 14) * .18;
+                    lifeSetupPile.position.x = Math.sin(time * 11) * .22;
+                }
                 flame.scale.set(1+Math.sin(time*5)*.04,1+Math.sin(time*7)*.07,1);
                 flame.rotation.z = Math.sin(time*4)*.045;
                 flame.position.x = Math.sin(time*4)*.018;
@@ -312,6 +317,8 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
         const nextSignature = JSON.stringify([state.currentPhase, state.awaitingLeftTryalSelections, state.playerForcedToRevealTryal, state.players, state.currentTurnPlayerUniqueId, state.deckCount, state.discardPileCount, state.witchNightState, hand, selected, selectedCards, me, interaction, canDraw, drawConfirming, handLowered, artwork]);
         if (signature === nextSignature) return;
         signature = nextSignature;
+        lifeSetupStage = state.lifeSetup?.stage || null;
+        lifeSetupPile = null;
         const night = state.currentPhase === 'NIGHT';
         ritualActive = state.currentPhase === 'BLACKCAT_TRYAL' || !!state.awaitingLeftTryalSelections;
         const choosingLife = ritualActive || !!state.playerForcedToRevealTryal || state.currentPhase === 'PRE_DAWN' || interaction?.kind === 'life';
@@ -403,7 +410,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             });
             if (revealed.length) label(seat, 'เปิดแล้ว', [0,.3,-.38], '#cbb58b');
             const own = player.uniqueId === me;
-            const count = interaction?.kind === 'life' ? 0 : own ? hand.length : Number(player.handSize) || 0;
+            const count = state.currentPhase === 'SETUP' || interaction?.kind === 'life' ? 0 : own ? hand.length : Number(player.handSize) || 0;
             // Own hand uses separate rows so every title remains visible.
             const columns = own ? Math.min(6, count) : count;
             const spacing = own ? .61 : Math.min(.43, 2.4 / Math.max(1, count));
@@ -429,6 +436,13 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
                 if (interaction?.kind === 'effect' && interaction.owner === player.uniqueId && interaction.eligible.includes(i)) outline(effectCard, interaction.selected.includes(i) ? 0x879277 : 0xc2ab87);
             });
         });
+
+        if (state.currentPhase === 'SETUP' && lifeSetupStage !== 'arrange') {
+            const stack = new THREE.Group(); dynamic.add(stack);
+            stack.position.set(0, 1.45, 0);
+            for (let i = 0; i < 4; i++) card(stack, [i * .025, i * .025, 0], [-Math.PI / 2, 0, i * .03], back, {}, .72);
+            lifeSetupPile = stack;
+        }
 
         function pile(x, count, title, clickable) {
             const height = Math.max(.04, Math.min(.52, count * .01));
@@ -561,7 +575,15 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             if (event.discard) addFlight(to,new THREE.Vector3(1.2,.3,0),texture,cardFlightDuration+cardArrivalPause);
         },
         animateMovement(event) {
-            if (event.kind === 'draw') {
+            if (event.kind === 'life-deal') {
+                if (!active || disposed || reducedMotion.matches) return;
+                const seat = seatPositions.get(event.targetId);
+                if (seat) {
+                    addFlight(new THREE.Vector3(0, 1.6, 0), seat.clone().multiplyScalar(.79).setY(.18), back, 0, 0);
+                    const flight = flights.at(-1);
+                    flight.duration = 650; flight.arc = .5;
+                }
+            } else if (event.kind === 'draw') {
                 const to = seatPositions.get(event.targetId);
                 if (to) addFlight(new THREE.Vector3(-1.2,.4,0),to.clone().multiplyScalar(1.15).setY(1),back,event.delay || 0);
             } else if (event.kind === 'conspiracy') {

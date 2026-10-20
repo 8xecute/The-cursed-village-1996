@@ -69,6 +69,7 @@ client.actions.replaceCardNamesInMessage = function replaceCardNamesInMessage(me
 
 client.actions.getPhaseNameTH = function getPhaseNameTH(phase) {
   switch (phase) {
+    case 'SETUP': return 'แจกและจัดการ์ดชีวิต';
     case 'DAY': return 'กลางวัน';
     case 'NIGHT': return 'กลางคืน';
     case 'PRE_DAWN': return 'ก่อนรุ่งสาง';

@@ -1,4 +1,10 @@
 module.exports = function registerHandlers(socket, game) {
+  socket.on('confirm life setup', setupId => {
+      if (socket.currentRoom) game.confirmLifeSetup(socket.currentRoom, socket.uniqueId, setupId);
+  });
+  socket.on('swap tryal cards', (from, to, setupId) => {
+      if (socket.currentRoom) game.swapSetupLives(socket.currentRoom, socket.uniqueId, from, to, setupId);
+  });
   socket.on('start game', (roomName) => {
           const room = game.rooms[roomName];
           if (room && room.hostUniqueId === socket.uniqueId) {

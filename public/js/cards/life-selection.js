@@ -126,10 +126,15 @@ client.actions.updateTryalCardDisplay = function updateTryalCardDisplay() {
             else tryalClass = 'notawitch';
             cardDiv.className = `card tryal-card-in-hand tryal-card ${tryalClass}`;
             cardDiv.dataset.index = idx;
+            cardDiv.draggable = client.state.currentRoomState?.currentPhase === 'SETUP' && client.state.currentRoomState.lifeSetup?.stage === 'arrange' && !client.state.currentRoomState.lifeSetup.confirmed.includes(client.state.myUniqueId);
             cardDiv.setAttribute('title', client.actions.displayCardDescription(card.name)); // <-- Add tooltip for tryal cards
             
             // แสดงรูปการ์ดแทนข้อความ
-            const cardImage = client.actions.createCardImage(card.name);
+            const cardImage = card.name ? client.actions.createCardImage(card.name) : document.createElement('div');
+            if (!card.name) {
+                cardImage.className = 'setup-life-back';
+                cardImage.textContent = '1996';
+            }
             cardImage.style.width = '100%';
             cardImage.style.height = '100%';
             cardImage.style.objectFit = 'cover';
@@ -157,13 +162,7 @@ client.actions.updateTryalCardDisplay = function updateTryalCardDisplay() {
                 const fromIdx = parseInt(e.dataTransfer.getData('text/plain'), 10);
                 const toIdx = idx;
                 if (fromIdx !== toIdx) {
-                    // Swap cards
-                    const temp = client.state.myTryalCards[fromIdx];
-                    client.state.myTryalCards[fromIdx] = client.state.myTryalCards[toIdx];
-                    client.state.myTryalCards[toIdx] = temp;
-                    // Emit swap to server
-                    client.state.socket.emit('swap tryal cards', fromIdx, toIdx);
-                    client.actions.updateTryalCardDisplay();
+                    client.actions.swapSetupLife?.(fromIdx, toIdx);
                 }
             });
             tryalCardsList.appendChild(cardDiv);
@@ -172,8 +171,10 @@ client.actions.updateTryalCardDisplay = function updateTryalCardDisplay() {
     // Use hasBeenWitch for team display and update witch chat
     const myPlayer = client.state.currentRoomState && client.state.currentRoomState.players && client.state.currentRoomState.players[client.state.myUniqueId];
     if (myPlayer) {
-        // ทีมปอบ: ถ้าเคยมีไพ่ Witch (hasBeenWitch)
-        if (myPlayer.hasBeenWitch) {
+        if (client.state.currentRoomState.currentPhase === 'SETUP' && client.state.currentRoomState.lifeSetup?.stage !== 'arrange') {
+            client.dom.myRoleDisplay.textContent = 'รอแจกการ์ดชีวิตครบ';
+            client.dom.myRoleDisplay.classList.remove('team-witch', 'team-town');
+        } else if (myPlayer.hasBeenWitch) {
             client.dom.myRoleDisplay.textContent = 'ทีมปอบ';
             client.dom.myRoleDisplay.classList.add('team-witch');
             client.dom.myRoleDisplay.classList.remove('team-town');

@@ -26,7 +26,7 @@ module.exports = function createReconnectionServices(game) {
 
       // Send private player data before emitting room state
       game.io.to(socket.id).emit('update hand', player.hand || []);
-      game.io.to(socket.id).emit('update tryal cards initial', player.tryalCards || []);
+      game.io.to(socket.id).emit('update tryal cards initial', room.currentPhase === 'SETUP' && room.lifeSetup?.stage !== 'arrange' ? (player.tryalCards || []).map(() => ({ name: null, type: null })) : player.tryalCards || []);
       if (player.revealedTryalCardIndexes) {
           game.io.to(socket.id).emit('update revealed tryal indexes', Array.from(player.revealedTryalCardIndexes));
       }

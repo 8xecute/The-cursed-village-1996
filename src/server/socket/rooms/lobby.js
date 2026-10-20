@@ -125,6 +125,7 @@ module.exports = function registerRoomLobby(socket, game) {
           }
 
           room.gameStarted = false;
+      game.cancelLifeSetup(room);
           room.gameOver = false;
           room.gameSummary = null;
           room.gameDeck = [];

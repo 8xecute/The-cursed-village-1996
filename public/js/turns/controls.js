@@ -30,7 +30,7 @@ client.actions.updateTurnUI = function updateTurnUI() {
     client.dom.playCardButton.disabled = !client.state.isMyTurn || !me?.alive || client.state.selectedCard === null;
     client.dom.endTurnButton.disabled = !client.state.isMyTurn || !me || !me.alive || !me.hasPlayedCardsThisTurn;
     if (client.dom.gameActionsDiv) {
-        client.dom.gameActionsDiv.style.display = me?.alive && !client.state.currentRoomState?.gameOver ? '' : 'none';
+        client.dom.gameActionsDiv.style.display = me?.alive && !client.state.currentRoomState?.gameOver && client.state.currentRoomState?.currentPhase !== 'SETUP' ? '' : 'none';
     }
     if (!client.state.isMyTurn) {
         client.actions.clearCardSelection();

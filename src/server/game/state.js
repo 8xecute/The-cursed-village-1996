@@ -31,6 +31,7 @@ module.exports = function createServices(game) {
       // Team members know one another immediately, including daytime infections.
       game.rememberWitchTeammates(room);
 
+      const dealingLives = room.currentPhase === 'SETUP' && room.lifeSetup?.stage !== 'arrange';
       const buildPlayersStateFor = (viewer) => {
         const playersState = {};
         for (const uniqueId in room.players) {
@@ -52,7 +53,7 @@ module.exports = function createServices(game) {
               revealedTryalCards: (player.revealedTryalCards || []).map(card => ({ name: card.name })),
               tryalCardCount: player.tryalCards.length, // Send total count of Tryal Cards
               tryalCards: player.tryalCards.map((card, index) => (
-                  room.gameOver || !player.alive || (isSelf && !viewer?.isSpectator) || revealedIndexes.has(index)
+                  room.gameOver || !player.alive || (isSelf && !viewer?.isSpectator && !dealingLives) || revealedIndexes.has(index)
                       ? { name: card.name, type: card.type }
                       : { name: null, type: null }
               )),
@@ -86,6 +87,9 @@ module.exports = function createServices(game) {
           customLifeCardCount: room.customLifeCardCount ?? null,
           gameStarted: room.gameStarted,
           currentPhase: room.currentPhase,
+          lifeSetup: room.lifeSetup ? { id: room.lifeSetup.id, stage: room.lifeSetup.stage,
+              order: room.lifeSetup.order, count: room.lifeSetup.count, dealt: room.lifeSetup.dealt,
+              total: room.lifeSetup.total, confirmed: [...room.lifeSetup.confirmed], lastDeal: room.lifeSetup.lastDeal } : null,
           phaseTimer: room.phaseTimer,
           dayNumber: room.dayNumber,
           currentTurnPlayerUniqueId: room.currentTurnPlayerUniqueId,
@@ -132,7 +136,7 @@ module.exports = function createServices(game) {
                       : null,
               });
               game.io.to(player.id).emit('update hand', player.hand);
-              game.io.to(player.id).emit('update tryal cards initial', player.tryalCards);
+              game.io.to(player.id).emit('update tryal cards initial', dealingLives ? player.tryalCards.map(() => ({ name: null, type: null })) : player.tryalCards);
           }
       }
 

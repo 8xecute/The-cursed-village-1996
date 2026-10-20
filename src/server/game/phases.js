@@ -25,6 +25,7 @@ module.exports = function createServices(game) {
 
   function changePhase(roomName, forcedNextPhase = null) {
       const room = game.rooms[roomName];
+      if (room?.currentPhase === 'SETUP') return;
       if (!room || room.gameOver) return;
       clearInterval(room.phaseInterval); // Stop current timer
       clearTimeout(room.nightActionTimeout); // Clear night action timeout if any
@@ -169,7 +170,7 @@ module.exports = function createServices(game) {
       usageLog('game_started', { roomName, roundId: room.usageRoundId, playerCount: alivePlayers.length,
           humanCount: alivePlayers.filter(player => !player.isBot).length, hostId: room.hostUniqueId });
       room.dayNumber = 0; // Start at Day 0, will increment to Day 1
-      room.currentPhase = 'LOBBY'; // Set to Lobby, next changePhase will move to DAY
+      room.currentPhase = 'SETUP'; // Deal lives and wait for each player's confirmation.
       room.blackCatHolder = null; // Will be assigned the first Black Cat drawn
       room.gameMessageHistory = []; // Reset game message history for new game
       room.infectionLog = [];
@@ -201,8 +202,6 @@ module.exports = function createServices(game) {
       }
 
       const shuffledTryalCards = game.shuffleArray([...TRYAL_CARDS]);
-      let tryalCardIndex = 0;
-      const witches = []; // Array to hold witch players
       alivePlayers.forEach(player => {
           player.tryalCards = [];
           player.revealedTryalCards = [];
@@ -219,20 +218,6 @@ module.exports = function createServices(game) {
           player.hasPlayedCardsThisTurn = false; // Initialize turn action flag
           player.isReady = false;
 
-          // Standard setup: 4–7 players get 5 lives, 8–9 get 4, 10–12 get 3.
-          for (let i = 0; i < tryalCardsPerPlayer; i++) {
-              if (tryalCardIndex < shuffledTryalCards.length) {
-                  const card = shuffledTryalCards[tryalCardIndex++];
-                  player.tryalCards.push(card);
-                  if (card.name === 'Witch') {
-                      player.isWitch = true;
-                      player.hasBeenWitch = true; // Mark that this player has been a witch
-                      witches.push(player); // Add the player object to the witches array
-                  } else if (card.name === 'Constable') {
-                      player.isConstable = true;
-                  }
-              }
-          }
       });
 
       // --- New Card Dealing Logic ---
@@ -255,8 +240,7 @@ module.exports = function createServices(game) {
               }
           }
           game.io.to(player.id).emit('update hand', player.hand);
-          game.io.to(player.id).emit('update tryal cards initial', player.tryalCards);
-          game.emitRoomState(room.name);
+
       });
 
       // 3. Prepare the final game deck (no Night, no Conspiracy, no Black Cat)
@@ -271,34 +255,9 @@ module.exports = function createServices(game) {
           room.gameDeck.push(nightCards[0]); // Only add the first Night card
       }
 
-      /// 6. Handle the Black Cat card - keep it separate for the Witch to assign
-      if (witches.length > 0) {
-          room.pendingBlackCatCard = blackCatCard; // Store it in the room state
-          room.isAssigningBlackCat = true;
-          game.sendGameMessage(room.name, 'การ์ดเครื่องเซ่นถูกแยกไว้ต่างหาก ปอบจะเลือกผู้เล่นที่จะได้รับการ์ดนี้.', 'blue', true);
-          // Emit a prompt to the witch(es) to make a choice
-          const potentialTargets = alivePlayers; // Witch can assign to anyone, including themselves.
-          witches.forEach(witchPlayer => {
-              game.io.to(witchPlayer.id).emit('popup assign black cat', potentialTargets.map(p => ({ uniqueId: p.uniqueId, name: p.name })));
-          });
-          // Update clients to show the witch action UI
-          game.emitRoomState(room.name);
-          
-          // Send initial deck information
-          game.sendDeckInfo(roomName);
-      } else {
-          game.sendGameMessage(room.name, 'ไม่มีปอบในเกม การ์ดเครื่องเซ่นจึงไม่ถูกใช้งานในตอนนี้.', 'grey', false);
-          if (blackCatCard) { // Check if blackCatCard was found
-              room.discardPile.push(blackCatCard); // Discard the card if no witch
-          }
-          room.pendingBlackCatCard = null;
-          // If no witch, proceed directly to the game
-          game.sendGameMessage(room.name, 'เกมเริ่มแล้ว!', 'green', true);
-          game.changePhase(room.name, 'NIGHT');
-          
-          // Send initial deck information
-          game.sendDeckInfo(roomName);
-      }
+      room.pendingBlackCatCard = blackCatCard;
+      room.isAssigningBlackCat = false;
+      game.beginLifeSetup(room, shuffledTryalCards, tryalCardsPerPlayer);
   }
 
   return { startPhaseTimer, changePhase, startGame };

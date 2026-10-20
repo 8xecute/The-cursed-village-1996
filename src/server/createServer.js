@@ -18,6 +18,7 @@ const serviceFactories = [
   require('./game/cards'),
   require('./game/red-cards'),
   require('./game/turns'),
+  require('./game/life-setup'),
   require('./game/phases'),
   require('./game/life-cards'),
   require('./game/confession'),

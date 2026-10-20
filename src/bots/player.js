@@ -112,6 +112,12 @@ function createBotClient({ url, uniqueId, token, name }) {
         const me = currentBot();
         if (!me || !state.gameStarted || state.gameOver) return;
 
+        if (state.currentPhase === 'SETUP' && state.lifeSetup?.stage === 'arrange' && !state.lifeSetup.confirmed.includes(uniqueId)) {
+            const setupId = state.lifeSetup.id;
+            later('life-setup', () => {
+                if (roomState?.currentPhase === 'SETUP' && roomState.lifeSetup?.id === setupId && roomState.lifeSetup.stage === 'arrange') socket.emit('confirm life setup', setupId);
+            }, 1000);
+        }
         if (state.currentPhase === 'DAY' && state.currentTurnPlayerUniqueId === uniqueId && me.alive && !me.hasPlayedCardsThisTurn) {
             later('day-turn', submitDayAction);
         }
