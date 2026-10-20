@@ -2,6 +2,7 @@ import { QUALITY_PRESETS, normalizeQuality, createGraphicsQuality } from './grap
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { prepareVillagerModels, instantiateVillager, disposeVillagerModels } from './villager-models.mjs';
+import { createGunShot } from './gun-shot.mjs';
 import { createCameraControls } from './camera-controls.mjs';
 import { timberTexture, ceremonialCloth, buildCeremonialRoom, createRitualBust } from './ritual-scene.mjs';
 
@@ -161,12 +162,12 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
     let holdTimer;
     let inspected = false;
     const seatPositions = new Map();
+    const actorPawns = new Map();
     let feedbackImageFor;
     const flights = [];
     const gunShots = [];
     function removeGunShot(shot) {
-        scene.remove(shot.group);
-        shot.group.traverse(part => { part.geometry?.dispose(); part.material?.dispose(); });
+        shot.dispose();
     }
     const cardFlightDuration = 1400;
     const cardArrivalPause = 550;
@@ -216,21 +217,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             }
             for (let index = gunShots.length - 1; index >= 0; index--) {
                 const shot = gunShots[index];
-                const elapsed = now - shot.started;
-                const lift = Math.min(1, elapsed / shot.raiseDuration);
-                shot.gun.position.copy(shot.from);
-                shot.gun.position.y += -.45 + .45 * lift * lift * (3 - 2 * lift);
-                shot.gun.lookAt(shot.to);
-                shot.gun.rotateX((1 - lift) * .8);
-                const travel = Math.max(0, Math.min(1, (elapsed - shot.raiseDuration) / shot.bulletDuration));
-                shot.bullet.visible = elapsed >= shot.raiseDuration;
-                shot.bullet.position.lerpVectors(shot.muzzle, shot.to, travel);
-                shot.flash.visible = elapsed >= shot.raiseDuration && elapsed < shot.raiseDuration + 130;
-                if (elapsed >= shot.raiseDuration) {
-                    const recoil = Math.max(0, 1 - (elapsed - shot.raiseDuration) / 260);
-                    shot.gun.translateZ(-recoil * .12);
-                }
-                if (elapsed >= shot.raiseDuration + shot.bulletDuration) { removeGunShot(shot); gunShots.splice(index, 1); }
+                if (!shot.tick(now)) { removeGunShot(shot); gunShots.splice(index, 1); }
             }
             renderer.render(scene, camera);
             if (flights.length || gunShots.length || cameraRig.hasMovement || !reducedMotion.matches) requestRender();
@@ -343,7 +330,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
         glow.material.color.set(night ? 0xff3028 : 0xffffff);
         candleLight.color.set(night ? 0xff3038 : 0xffa04c);
         clearDynamic();
-        seatPositions.clear(); feedbackImageFor = imageFor;
+        seatPositions.clear(); actorPawns.clear(); feedbackImageFor = imageFor;
         const players = Object.values(state.players || {});
         cameraRig.setSeats(players, me);
         const ownIndex = players.findIndex(player => player.uniqueId === me);
@@ -360,6 +347,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             seatPositions.set(player.uniqueId, seat.position.clone().setY(1.3));
             dynamic.add(seat);
             const pawn = new THREE.Group(); pawn.position.z = 2.05; pawn.position.y = -.1; seat.add(pawn);
+            actorPawns.set(player.uniqueId, pawn);
             pawn.scale.setScalar(1.4);
             // Eliminated players stay seated; do not tip the chair and full body onto the table.
             const modelKey = `${index}:${player.alive}:${!!villagerModels}`;
@@ -371,6 +359,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             }
             const parts = characterCache.get(modelKey).map(source => {
                 const part = new THREE.Mesh(source.geometry, source.material.clone());
+                part.name = source.name;
                 part.userData.sharedGeometry = true;
                 part.castShadow = part.receiveShadow = !graphics.lowPower;
                 pawn.add(part); return part;
@@ -563,20 +552,8 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             const to = seatPositions.get(event.targetId)?.clone();
             if (!from || !to) return;
             from.multiplyScalar(1.35).setY(.9); to.multiplyScalar(1.35).setY(.7);
-            const direction = to.clone().sub(from).normalize();
-            const side = new THREE.Vector3().crossVectors(direction, new THREE.Vector3(0,1,0)).normalize();
-            from.addScaledVector(side, .32);
-            const group = new THREE.Group(); scene.add(group);
-            const gun = new THREE.Group(); group.add(gun); gun.position.copy(from); gun.lookAt(to);
-            mesh(new THREE.BoxGeometry(.14,.17,.4), new THREE.MeshStandardMaterial({color:0x302b25,metalness:.8,roughness:.3}),gun,[0,0,.12]);
-            mesh(new THREE.BoxGeometry(.09,.09,.38), new THREE.MeshStandardMaterial({color:0xb99346,metalness:.85,roughness:.25}),gun,[0,.025,.43]);
-            mesh(new THREE.BoxGeometry(.1,.26,.14), new THREE.MeshStandardMaterial({color:0x211913,roughness:.8}),gun,[0,-.17,.02]);
-            const flash = mesh(new THREE.SphereGeometry(.16,8,6), new THREE.MeshBasicMaterial({color:0xffe6a1,toneMapped:false}),gun,[0,.025,.66]);
-            flash.visible = false;
-            const muzzle = new THREE.Vector3(0,.025,.66).applyQuaternion(gun.quaternion).add(from);
-            const bullet = new THREE.Mesh(new THREE.SphereGeometry(.085, 12, 8), new THREE.MeshBasicMaterial({ color: 0xffd27a, toneMapped: false }));
-            bullet.visible = false; group.add(bullet);
-            gunShots.push({ group, gun, flash, bullet, from, to, muzzle, started: performance.now(), raiseDuration: event.raiseDuration || 900, bulletDuration: event.bulletDuration || 4200 });
+            gunShots.push(createGunShot({ scene, from, to, getPawn: () => actorPawns.get(event.actorId),
+                raiseDuration: event.raiseDuration || 900, bulletDuration: event.bulletDuration || 4200 }));
             requestRender();
         },
         setKeyboardLocked: cameraRig.setKeyboardLocked,

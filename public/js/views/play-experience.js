@@ -109,8 +109,33 @@ export function initialize() {
     try { const value = localStorage.getItem('villageSfxVolume'); if (value !== null && Number.isFinite(Number(value))) saved = Math.max(0,Math.min(1,Number(value))); } catch (_) {}
     volume.value = saved * 100;
     let audio;
-    function sound(kind) {
+    const shotSounds = new Set();
+    function sound(kind, delay = 0) {
         if (!audio || audio.state !== 'running' || !saved || document.hidden) return;
+        if (kind === 'gun') {
+            const when = audio.currentTime + Math.max(0, delay);
+            const mix = audio.createGain(); mix.gain.value = saved * .42; mix.connect(audio.destination);
+            const nodes = [], sources = [];
+            // A sharp filtered crack, low body and short room reflections.
+            const buffer = audio.createBuffer(1, Math.ceil(audio.sampleRate * .45), audio.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (audio.sampleRate * .065));
+            for (const [offset, level] of [[0, 1], [.075, .22], [.14, .1]]) {
+                const noise = audio.createBufferSource(), filter = audio.createBiquadFilter(), gain = audio.createGain();
+                noise.buffer = buffer; filter.type = 'lowpass'; filter.frequency.value = offset ? 1800 : 6500; gain.gain.value = level;
+                noise.connect(filter); filter.connect(gain); gain.connect(mix); noise.start(when + offset);
+                sources.push(noise); nodes.push(noise, filter, gain);
+            }
+            const bass = audio.createOscillator(), envelope = audio.createGain(); bass.type = 'sine';
+            bass.frequency.setValueAtTime(125, when); bass.frequency.exponentialRampToValueAtTime(38, when + .17);
+            envelope.gain.setValueAtTime(.65, when); envelope.gain.exponentialRampToValueAtTime(.001, when + .22);
+            bass.connect(envelope); envelope.connect(mix); bass.start(when); bass.stop(when + .65);
+            sources.push(bass); nodes.push(bass, envelope, mix);
+            const cleanup = () => { nodes.forEach(node => node.disconnect()); shotSounds.delete(stop); };
+            const stop = () => { sources.forEach(source => { try { source.stop(); } catch (_) {} }); cleanup(); };
+            shotSounds.add(stop); bass.onended = cleanup;
+            return;
+        }
         const osc = audio.createOscillator(), gain = audio.createGain();
         osc.type = kind === 'turn' ? 'sine' : 'triangle';
         osc.frequency.setValueAtTime(kind === 'turn' ? 620 : kind === 'flip' ? 330 : 160, audio.currentTime);
@@ -169,7 +194,11 @@ export function initialize() {
         sound('flip');
     });
     client.state.socket.on('update hand', () => sound('flip'));
+    client.state.socket.on('prank gun shot', event => {
+        sound('place');
+        sound('gun', (event.raiseDuration || 900) / 1000);
+    });
     client.state.socket.on('card play rejected', ({message}) => { showFeedback(message); sound('flip'); });
-    client.state.socket.on('room left', () => { focused=null; status.hidden=true; closeInspect(); feedback.hidden=true; clearTimeout(feedbackTimer); previousPhase=previousTurn=null; });
+    client.state.socket.on('room left', () => { shotSounds.forEach(stop => stop()); focused=null; status.hidden=true; closeInspect(); feedback.hidden=true; clearTimeout(feedbackTimer); previousPhase=previousTurn=null; });
     window.addEventListener('pagehide', () => { audio?.suspend().catch(() => {}); });
 }
