@@ -11,6 +11,9 @@ import { timberTexture, ceremonialCloth, buildCeremonialRoom, createRitualBust }
 const TABLE_TOP_Y = -.025;
 const CLOTH_TOP_Y = .016;
 const PAPER_FACE_OFFSET = .016; // .012-thick edge, plus a small anti-flicker gap.
+const CARD_WIDTH = .56;
+const CARD_HEIGHT = CARD_WIDTH * 1.48;
+const CARD_SPACING = CARD_WIDTH + .04;
 const COLORS = [0x526774, 0x795551, 0x88744e, 0x596b55, 0x716275, 0x8a806b,
     0x7e634e, 0x5c6974, 0x785d69, 0x727354, 0x56716d, 0x72675e];
 
@@ -178,7 +181,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
     }
     function addFlight(from, to, texture = back, delay = 0, hold = 250) {
         if (!active || disposed || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-        const face = new THREE.Mesh(new THREE.PlaneGeometry(.65,.95), new THREE.MeshBasicMaterial({map:texture,transparent:true,side:THREE.DoubleSide}));
+        const face = new THREE.Mesh(new THREE.PlaneGeometry(CARD_WIDTH,CARD_HEIGHT), new THREE.MeshBasicMaterial({map:texture,transparent:true,side:THREE.DoubleSide}));
         face.quaternion.copy(camera.quaternion); face.position.copy(from); face.visible = false; scene.add(face);
         flights.push({mesh:face,from:from.clone(),to:to.clone(),started:performance.now()+delay,hold}); requestRender();
     }
@@ -249,10 +252,12 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
         return textures.get(url) || back;
     }
 
-    function card(parent, position, rotation, texture, data, size = 0.58) {
+    function card(parent, position, rotation, texture, data) {
+        const size = CARD_WIDTH;
         const material = new THREE.MeshStandardMaterial({ map: texture, side: THREE.DoubleSide, roughness: 0.86 });
         const face = mesh(new THREE.PlaneGeometry(size, size * 1.48), material, parent, position);
         face.rotation.set(...rotation);
+        face.castShadow = face.receiveShadow = false;
         if (data.resting) {
             // Seat-local card heights must account for the seat's own translation.
             parent.updateWorldMatrix(true, false);
@@ -265,7 +270,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
         // A thin paper edge adds depth without changing the clickable face.
         const edge = mesh(new THREE.BoxGeometry(size, size * 1.48, .012),
             new THREE.MeshStandardMaterial({color:0x574533,roughness:.95}), face, [0,0,-.009]);
-        edge.castShadow = false;
+        edge.castShadow = edge.receiveShadow = false;
         targets.push(face);
         const categoryColor = { Red: 0xc94d45, Green: 0x549560, Blue: 0x4a8dc0, Black: 0x77716b }[data.category];
         if (categoryColor !== undefined) {
@@ -310,7 +315,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
 
     function update(options) {
         lastSceneOptions = options;
-        const { state, me, hand, selected, selectedCards = [], imageFor, interaction = null, canDraw = false, drawConfirming = false, handLowered = true, artwork = 'new', reorderIndex = null } = options;
+        const { state, me, hand, selected, selectedCards = [], imageFor, interaction = null, canDraw = false, drawConfirming = false, handLowered = false, artwork = 'new', reorderIndex = null } = options;
         if (!state) return;
         const nextSignature = JSON.stringify([state.currentPhase, state.awaitingLeftTryalSelections, state.playerForcedToRevealTryal, state.players, state.currentTurnPlayerUniqueId, state.deckCount, state.discardPileCount, state.witchNightState, hand, selected, selectedCards, me, interaction, canDraw, drawConfirming, handLowered, artwork, reorderIndex]);
         if (signature === nextSignature) return;
@@ -397,47 +402,49 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             }
             for (let life = 0; life < lives; life++) {
                 const revealedName = player.tryalCards?.[life]?.name;
-                const lifeCard = card(seat, [(life - (lives - 1) / 2) * .42, .06, -.98], [-Math.PI / 2, 0, 0],
-                    revealedName ? cardTexture(imageFor(revealedName)) : back, { playerId: player.uniqueId, lifeIndex: life, resting: true }, .38);
+                const lifeCard = card(seat, [(life - (lives - 1) / 2) * CARD_SPACING, .06, -1.10], [-Math.PI / 2, 0, 0],
+                    revealedName ? cardTexture(imageFor(revealedName)) : back, { playerId: player.uniqueId, lifeIndex: life, resting: true });
                 addLifeCardFrame(lifeCard, lifeBorderColor(revealedName));
                 if (interaction?.kind === 'life' && interaction.owner === player.uniqueId && interaction.eligible.includes(life))
                     addLifeCardFrame(lifeCard, interaction.selected?.includes(life) ? 0xffd359 : 0x6ee7d2, { selected: true, inset: .015 });
                 if (interaction?.kind === 'life' && interaction.owner === player.uniqueId && interaction.eligible.includes(life)) {
-                    label(seat, `${interaction.selected?.includes(life) ? '✓ ' : ''}${life + 1}`, [(life - (lives - 1) / 2) * .42, .24, -.98], '#ffe2a0');
+                    label(seat, `${interaction.selected?.includes(life) ? '✓ ' : ''}${life + 1}`, [(life - (lives - 1) / 2) * CARD_SPACING, .24, -1.10], '#ffe2a0');
                 }
             }
             const revealed = player.revealedTryalCards || [];
             revealed.forEach((revealedCard, i) => {
-                const face = card(seat, [(i-(revealed.length-1)/2)*.42, .075, -.38], [-Math.PI/2,0,0],
-                    cardTexture(imageFor(revealedCard.name)), { playerId: player.uniqueId, revealedIndex: i, resting: true }, .38);
+                const face = card(seat, [(i-(revealed.length-1)/2)*CARD_SPACING, .075, -2.05], [-Math.PI/2,0,0],
+                    cardTexture(imageFor(revealedCard.name)), { playerId: player.uniqueId, revealedIndex: i, resting: true });
                 addLifeCardFrame(face, lifeBorderColor(revealedCard.name));
             });
-            if (revealed.length) label(seat, 'เปิดแล้ว', [0,.3,-.38], '#cbb58b');
+            if (revealed.length) label(seat, 'เปิดแล้ว', [0,.3,-2.05], '#cbb58b');
             const own = player.uniqueId === me;
             const count = state.currentPhase === 'SETUP' || interaction?.kind === 'life' ? 0 : own ? hand.length : Number(player.handSize) || 0;
             // Own hand uses separate rows so every title remains visible.
-            const columns = own ? Math.min(6, count) : count;
-            const spacing = own ? .61 : Math.min(.43, 2.4 / Math.max(1, count));
+            const maxColumns = container.clientHeight > container.clientWidth ? 3 : 8;
+            const columns = Math.ceil(count / Math.max(1, Math.ceil(count / maxColumns)));
+            const spacing = CARD_SPACING;
             for (let i = 0; i < count; i++) {
-                const row = own ? Math.floor(i / Math.max(1, columns)) : 0;
+                const row = Math.floor(i / Math.max(1, columns));
                 const rowCount = Math.min(columns, count - row * columns);
-                const offset = (own ? i % columns : i) - (rowCount - 1) / 2;
+                const offset = i % columns - (rowCount - 1) / 2;
                 const lowered = !own || handLowered;
-                const position = lowered ? [offset * spacing, .08 + (own && (selected === i || selectedCards.includes(i)) ? .12 : 0), .38 - row * .88 + Math.abs(offset) * .025]
-                    : [offset * spacing, 1 + row * .98 + (own && (selected === i || selectedCards.includes(i)) ? .16 : 0), .7 + Math.abs(offset) * .025];
+                const position = lowered ? [offset * spacing, .08, .75 - row * .91 + Math.abs(offset) * .025]
+                    : [offset * spacing, 1.35 + row * .92 + (own && (selected === i || selectedCards.includes(i)) ? .16 : 0), -.1 + Math.abs(offset) * .025];
                 const rotation = lowered ? [-Math.PI / 2, 0, 0] : [-.12, 0, own ? 0 : -offset * Math.min(.045, .35 / Math.max(1, count))];
                 const face = card(seat, position, rotation,
                     own ? cardTexture(imageFor(hand[i].name)) : back,
-                    own ? { cardIndex: i, category: hand[i].color, resting: lowered } : { playerId: player.uniqueId, resting: lowered }, own ? .56 : .47);
+                    own ? { cardIndex: i, category: hand[i].color, resting: lowered } : { playerId: player.uniqueId, resting: lowered });
                 if (own && (selected === i || selectedCards.includes(i))) face.material.color.set(0xb9a687);
                 if (own && reorderIndex === i) outline(face, 0xffdc73);
             }
             // Public effects form a row toward the table centre, above life cards.
             const effects = player.inPlayCards || [];
-            const effectSpacing = Math.min(.43, 2.1 / Math.max(1, effects.length));
+            const effectColumns = Math.min(6, effects.length);
             effects.forEach((effect, i) => {
-                const effectCard = card(seat, [(i - (effects.length - 1) / 2) * effectSpacing, .08 + i * .002, -1.75],
-                    [-Math.PI / 2, 0, 0], cardTexture(imageFor(effect.name)), { playerId: player.uniqueId, effectIndex: i, category: effect.color, resting: true }, .4);
+                const row = Math.floor(i / effectColumns), rowCount = Math.min(effectColumns, effects.length - row * effectColumns);
+                const effectCard = card(seat, [(i % effectColumns - (rowCount - 1) / 2) * CARD_SPACING, .08, -3 - row * .91],
+                    [-Math.PI / 2, 0, 0], cardTexture(imageFor(effect.name)), { playerId: player.uniqueId, effectIndex: i, category: effect.color, resting: true });
                 if (interaction?.kind === 'effect' && interaction.owner === player.uniqueId && interaction.eligible.includes(i)) outline(effectCard, interaction.selected.includes(i) ? 0x879277 : 0xc2ab87);
             });
         });
@@ -445,14 +452,15 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
         if (state.currentPhase === 'SETUP' && lifeSetupStage !== 'arrange') {
             const stack = new THREE.Group(); dynamic.add(stack);
             stack.position.set(0, 1.45, 0);
-            for (let i = 0; i < 4; i++) card(stack, [i * .025, i * .025, 0], [-Math.PI / 2, 0, i * .03], back, {}, .72);
+            for (let i = 0; i < 4; i++) card(stack, [i * .025, i * .025, 0], [-Math.PI / 2, 0, i * .03], back, {});
             lifeSetupPile = stack;
         }
 
         function pile(x, count, title, clickable) {
             const height = Math.max(.04, Math.min(.52, count * .01));
-            const box = mesh(new THREE.BoxGeometry(.75, height, 1.1), new THREE.MeshStandardMaterial({ color: 0x9e8764 }), dynamic, [x, CLOTH_TOP_Y + height / 2, 0]);
-            const top = card(dynamic, [x, CLOTH_TOP_Y + height + PAPER_FACE_OFFSET, 0], [-Math.PI / 2, 0, 0], back, { draw: clickable }, .74);
+            const box = mesh(new THREE.BoxGeometry(CARD_WIDTH, height, CARD_HEIGHT), new THREE.MeshStandardMaterial({ color: 0x9e8764 }), dynamic, [x, CLOTH_TOP_Y + height / 2, 0]);
+            box.castShadow = box.receiveShadow = false;
+            const top = card(dynamic, [x, CLOTH_TOP_Y + height + PAPER_FACE_OFFSET, 0], [-Math.PI / 2, 0, 0], back, { draw: clickable });
             if (clickable && canDraw) {
                 box.material.emissive.set(0xe9a63b);
                 box.material.emissiveIntensity = 0.65;
@@ -522,11 +530,13 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
         const width = container.clientWidth;
         const height = container.clientHeight;
         if (!width || !height || (width === canvasWidth && height === canvasHeight)) return;
+        const layoutChanged = (width < height) !== (canvasWidth < canvasHeight);
         canvasWidth = width; canvasHeight = height;
         container.parentElement.style.setProperty('--table3d-canvas-height', `${height}px`);
         renderer.setSize(width, height);
         camera.aspect = width / height;
         camera.updateProjectionMatrix();
+        if (layoutChanged && lastSceneOptions) { signature = ''; update(lastSceneOptions); }
         requestRender();
     }
     const resizeObserver = new ResizeObserver(resize);

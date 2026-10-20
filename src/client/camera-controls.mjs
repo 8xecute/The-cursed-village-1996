@@ -59,25 +59,28 @@ export function createCameraControls({ camera, renderer, cameraMode, requestRend
     let seatOrder = [];
     let ownSeatId = null;
     let focusedSeatId = null;
+    function placeAtSeat(seat) {
+        const direction = new THREE.Vector3(seat?.x || 0, 0, seat?.z || 1).normalize();
+        const surface = renderer.domElement.parentElement || renderer.domElement;
+        const portrait = surface.clientHeight > surface.clientWidth;
+        lensZoom(portrait ? 58 : 43);
+        const radius = portrait ? 12.8 : 10.8;
+        controls.target.set(direction.x * 4.3, .35, direction.z * 4.3);
+        camera.position.set(direction.x * radius, portrait ? 4.5 : 3.7, direction.z * radius);
+        controls.enableRotate = true; controls.enablePan = true;
+        controls.update(); requestRender();
+    }
     function focusSeat(id) {
         const seat = getSeatPosition(id);
         if (!seat) return;
         focusedSeatId = id;
-        controls.enableRotate = true; controls.enablePan = true;
-        controls.target.set(seat.x*.68,.1,seat.z*.68);
-        camera.position.set(controls.target.x+seat.x*.5,9.5,controls.target.z+seat.z*.5);
-        controls.update(); requestRender();
+        placeAtSeat(seat);
         onSeatFocus?.(seatOrder.find(player => player.uniqueId === id)?.name || 'ผู้เล่น');
     }
     function resetCamera() {
-        lensZoom(43);
-        focusedSeatId = null;
-        controls.enableRotate = true; controls.enablePan = true;
+        focusedSeatId = ownSeatId;
         onSeatFocus?.('มุมของคุณ');
-        camera.position.set(0, 17, 5.5);
-        controls.target.set(0, 0.35, 0);
-        controls.update();
-        requestRender();
+        placeAtSeat(getSeatPosition(ownSeatId));
     }
 
     const pressedKeys = new Set();

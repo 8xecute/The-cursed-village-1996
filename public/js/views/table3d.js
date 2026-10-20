@@ -177,7 +177,20 @@ export function initialize() {
   client.state.table3DBundle = null;
 
   client.state.table3DFocusedPlayer = null;
-  client.state.table3DHandLowered = true;
+  client.state.table3DHandLowered = false;
+  let gameWasStarted = false, setupId = null;
+  client.state.socket.on('room state update', state => {
+      const freshSetup = state.lifeSetup?.id && state.lifeSetup.id !== setupId;
+      if (state.gameStarted && (!gameWasStarted || freshSetup)) {
+          client.state.table3DHandLowered = false;
+          const toggle = document.getElementById('table3d-hand-toggle');
+          if (toggle) { toggle.textContent = 'วางไพ่'; toggle.setAttribute('aria-pressed', 'false'); }
+          client.state.table3D?.resetCamera();
+      }
+      gameWasStarted = !!state.gameStarted;
+      setupId = state.lifeSetup?.id || null;
+  });
+  client.state.socket.on('room left', () => { gameWasStarted = false; setupId = null; client.state.table3DHandLowered = false; });
   client.state.graphicsQuality = 'medium';
   try {
       const saved=localStorage.getItem('villageGraphicsQuality');

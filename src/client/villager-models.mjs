@@ -17,7 +17,9 @@ function greyMap(texture) {
             }
             ctx.putImageData(pixels, 0, 0);
         }
-        const grey = texture.clone(); grey.image = canvas; grey.needsUpdate = true;
+        // Texture.clone shares its Source with the original. Give the grey
+        // variant its own Source so dead players cannot recolor living ones.
+        const grey = texture.clone(); grey.source = new THREE.Source(canvas); grey.needsUpdate = true;
         greyMaps.set(texture, grey);
     }
     return greyMaps.get(texture);

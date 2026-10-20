@@ -1,12 +1,12 @@
 import * as THREE from 'three';
 
-export const lifeBorderColor = name => name === 'Witch' ? 0xffe066 : name === 'Constable' ? 0xe0e0e0 : name ? 0x929292 : 0xb29465;
+export const lifeBorderColor = name => name === 'Witch' ? 0xff355b : name === 'Constable' ? 0x46aaff : name ? 0xb7b0a5 : 0xb29465;
 
 // Mesh strips have real width on every WebGL device (lineWidth is usually
 // limited to one pixel). Sit just above the face to avoid depth flicker.
 export function addLifeCardFrame(face, color, { selected = false, inset = 0 } = {}) {
     const { width, height } = face.geometry.parameters;
-    const thickness = width * (selected ? .035 : .025);
+    const thickness = width * (selected ? .035 : .045);
     const w = width - inset * 2, h = height - inset * 2;
     const material = new THREE.MeshBasicMaterial({ color, toneMapped: false, side: THREE.DoubleSide });
     for (const [bw, bh, x, y] of [
