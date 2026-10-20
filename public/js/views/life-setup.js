@@ -1,6 +1,10 @@
 import { client } from '../core/client.js';
 
 let panel, firstChoice = null, setupId = null, lastAnimated = null;
+let previousRender = '', renderFrame = 0;
+function scheduleRender() {
+    if (!renderFrame) renderFrame = requestAnimationFrame(() => { renderFrame = 0; render(); });
+}
 function editable() {
     const state = client.state.currentRoomState;
     return state?.currentPhase === 'SETUP' && state.lifeSetup?.stage === 'arrange' &&
@@ -25,17 +29,22 @@ client.actions.chooseSetupLife = (owner, index) => {
     if (firstChoice === null) firstChoice = index;
     else if (firstChoice === index) firstChoice = null;
     else client.actions.swapSetupLife(firstChoice, index);
-    render();
+    scheduleRender();
     document.dispatchEvent(new Event('table3d selection'));
 };
 function render() {
     const state = client.state.currentRoomState, setup = state?.lifeSetup;
-    if (state?.currentPhase !== 'SETUP' || !setup) { panel?.remove(); panel = null; firstChoice = null; setupId = null; return; }
+    if (state?.currentPhase !== 'SETUP' || !setup) { panel?.remove(); panel = null; firstChoice = null; setupId = null; previousRender = ''; return; }
     if (setupId !== setup.id) { setupId = setup.id; firstChoice = null; }
     if (!panel) { panel = document.createElement('section'); panel.id = 'life-setup-panel'; panel.setAttribute('aria-label', 'เตรียมการ์ดชีวิต'); }
     const mode3d = document.body.classList.contains('game-view-3d');
     const mount = document.getElementById(mode3d ? 'table3d-section' : 'game-section');
     if (!mount) return;
+    const signature = JSON.stringify([setup, firstChoice, mode3d, state.isSpectator, client.state.myUniqueId,
+        client.state.socket.connected, setup.order.map(id => { const p = state.players[id];
+            return p ? [id, p.name, p.tryalCardCount, id === client.state.myUniqueId ? p.tryalCards : null, p.alive, p.hasBeenWitch, p.isConstable] : null; })]);
+    if (panel.isConnected && panel.parentElement === mount && signature === previousRender) return;
+    previousRender = signature;
     if (panel.parentElement !== mount) mount.prepend(panel);
     panel.replaceChildren(); panel.dataset.stage = setup.stage;
     const title = document.createElement('h3');
@@ -93,9 +102,15 @@ function render() {
     panel.append(confirm);
 }
 export function initialize() {
-    client.state.socket.on('room state update', () => { firstChoice = null; render(); });
-    client.state.socket.on('room left', () => { panel?.remove(); panel = null; firstChoice = null; });
-    client.state.socket.on('disconnect', render);
-    const observer = new MutationObserver(render);
+    client.state.socket.on('room state update', scheduleRender);
+    client.state.socket.on('room left', () => { panel?.remove(); panel = null; firstChoice = null; previousRender = ''; });
+    client.state.socket.on('disconnect', scheduleRender);
+    client.state.socket.on('connect', scheduleRender);
+    // Unrelated body classes (turn notice, fullscreen, phase cue) must not rebuild the setup UI.
+    let was3D = document.body.classList.contains('game-view-3d');
+    const observer = new MutationObserver(() => {
+        const is3D = document.body.classList.contains('game-view-3d');
+        if (is3D !== was3D) { was3D = is3D; scheduleRender(); }
+    });
     observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
 }

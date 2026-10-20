@@ -64,14 +64,15 @@ export function initialize() {
             clearTimeout(noticeTimer);
             notice.hidden = false;
             document.body.classList.add('turn-attention');
-            noticeTimer = setTimeout(() => { notice.hidden = true; document.body.classList.remove('turn-attention'); }, 6000);
+            noticeTimer = setTimeout(() => { notice.hidden = true; if (document.body.classList.contains('turn-attention')) document.body.classList.remove('turn-attention'); }, 6000);
         } else if (!myTurn) {
             clearTimeout(noticeTimer);
             notice.hidden = true;
             document.body.classList.remove('turn-attention');
         }
         previousTurn = myTurn;
-        document.title = myTurn ? `ถึงตาคุณแล้ว • ${originalTitle}` : originalTitle;
+        const pageTitle = myTurn ? `ถึงตาคุณแล้ว • ${originalTitle}` : originalTitle;
+        if (document.title !== pageTitle) document.title = pageTitle;
         if (!visible) { previousGuide = ''; return; }
         const guide = getGuide(state);
         const signature = JSON.stringify(guide);
@@ -85,7 +86,7 @@ export function initialize() {
     function schedule() {
         if (queued) return;
         queued = true;
-        queueMicrotask(update);
+        requestAnimationFrame(update);
     }
     button.addEventListener('click', () => {
         client.actions.switchMobileGameTab('hand');
