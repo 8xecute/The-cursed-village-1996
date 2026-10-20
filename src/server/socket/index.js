@@ -8,6 +8,7 @@ const registrars = [
   require('./conspiracy'),
   require('./chat'),
   require('./prank'),
+  require('./ghost-scare'),
 ];
 
 module.exports = function registerSocketHandlers(game) {

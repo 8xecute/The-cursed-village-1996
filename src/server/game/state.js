@@ -127,6 +127,7 @@ module.exports = function createServices(game) {
                   ...publicState,
                   players: buildPlayersStateFor(player),
                   prankGun: !!player.prankGun,
+                  ghostScareAvailable: !!room.gameStarted && !room.gameOver && player.alive === false && !player.ghostScareUsed && !player.isBot,
                   prankGunAdmin: room.hostUniqueId === player.uniqueId && player.isHost
                       ? Object.values(room.players).filter(p => p.alive).map(p => ({ id: p.uniqueId, name: p.name, armed: !!p.prankGun })) : null,
                   prankShotActive: !!room.prankShot,

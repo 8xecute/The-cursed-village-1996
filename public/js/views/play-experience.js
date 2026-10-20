@@ -112,6 +112,25 @@ export function initialize() {
     const shotSounds = new Set();
     function sound(kind, delay = 0) {
         if (!audio || audio.state !== 'running' || !saved || document.hidden) return;
+        if (kind === 'ghost') {
+            const when = audio.currentTime, mix = audio.createGain(); mix.connect(audio.destination);
+            mix.gain.setValueAtTime(.001, when); mix.gain.exponentialRampToValueAtTime(saved * .22, when + .035);
+            mix.gain.exponentialRampToValueAtTime(.001, when + .72);
+            const voice = audio.createOscillator(), filter = audio.createBiquadFilter();
+            voice.type = 'sawtooth'; voice.frequency.setValueAtTime(210, when); voice.frequency.exponentialRampToValueAtTime(54, when + .6);
+            filter.type = 'lowpass'; filter.frequency.setValueAtTime(1800, when); filter.frequency.exponentialRampToValueAtTime(180, when + .65);
+            voice.connect(filter); filter.connect(mix);
+            const noise = audio.createBufferSource(), rasp = audio.createBiquadFilter();
+            const buffer = audio.createBuffer(1, Math.ceil(audio.sampleRate * .75), audio.sampleRate), samples = buffer.getChannelData(0);
+            for (let i = 0; i < samples.length; i++) samples[i] = (Math.random() * 2 - 1) * .3;
+            noise.buffer = buffer; rasp.type = 'bandpass'; rasp.frequency.value = 1000; rasp.Q.value = .7;
+            noise.connect(rasp); rasp.connect(mix);
+            voice.start(); noise.start(); voice.stop(when + .75);
+            let ended = false;
+            const cleanup = () => { if (ended) return; ended = true; [voice, filter, noise, rasp, mix].forEach(node => node.disconnect()); };
+            voice.onended = cleanup;
+            return () => { try { voice.stop(); noise.stop(); } catch (_) {} cleanup(); };
+        }
         if (kind === 'gun') {
             const when = audio.currentTime + Math.max(0, delay);
             const mix = audio.createGain(); mix.gain.value = saved * .42; mix.connect(audio.destination);
@@ -144,6 +163,9 @@ export function initialize() {
         osc.connect(gain); gain.connect(audio.destination); osc.start(); osc.stop(audio.currentTime+.2);
         osc.onended = () => { osc.disconnect(); gain.disconnect(); };
     }
+    let stopGhostSound;
+    client.actions.stopGhostScareSound = () => { stopGhostSound?.(); stopGhostSound = null; };
+    client.actions.playGhostScareSound = () => { client.actions.stopGhostScareSound(); stopGhostSound = sound('ghost'); };
     document.addEventListener('pointerdown', () => {
         if (!audio) {
             const Audio = window.AudioContext || window.webkitAudioContext; if (!Audio) return;

@@ -1,0 +1,16 @@
+#ghost-scare-controls { position:fixed; right:12px; bottom:calc(12px + env(safe-area-inset-bottom, 0px)); z-index:15010; color:#efdcff; }
+#ghost-scare-controls[hidden], #ghost-scare-controls [hidden], #ghost-scare-overlay[hidden] { display:none !important; }
+#ghost-scare-controls button { width:auto; margin:4px 0 0; padding:10px 14px; border:1px solid #9974b1; border-radius:9px; background:#302039; color:#f7eaff; font-size:.88rem; cursor:pointer; }
+#ghost-scare-controls button:disabled { opacity:.5; cursor:default; }
+#ghost-scare-panel { width:min(320px, calc(100vw - 40px)); max-height:60vh; overflow:auto; margin-bottom:8px; padding:14px; border:1px solid #9974b1; border-radius:12px; background:#201725f5; box-shadow:0 6px 30px #0009; }
+#ghost-scare-panel p { margin:8px 0; font-size:.82rem; line-height:1.5; }
+#ghost-scare-panel select { width:100%; box-sizing:border-box; margin:8px 0; padding:10px; border:1px solid #82618e; background:#17111b; color:#f7eaff; border-radius:8px; }
+#ghost-scare-panel button + button { margin-left:8px; background:#2a252c; }
+#ghost-scare-controls { display:flex; flex-direction:column-reverse; align-items:flex-end; }
+#ghost-scare-overlay { position:fixed; inset:0; z-index:2147483000; overflow:hidden; pointer-events:none; background:radial-gradient(ellipse, #220b13bb, #050205f2 75%); display:grid; place-items:center; animation:ghost-scare-screen 1.4s ease-out both; }
+.ghost-scare-face { position:absolute; width:min(76vmin, 620px); aspect-ratio:1; overflow:hidden; border-radius:45%; mask-image:radial-gradient(ellipse, #000 28%, transparent 70%); -webkit-mask-image:radial-gradient(ellipse, #000 28%, transparent 70%); animation:ghost-scare-face 1.4s cubic-bezier(.16,.8,.2,1) both; }
+.ghost-scare-face img { position:absolute; width:155%; max-width:none; height:auto; left:-27.5%; top:-20%; filter:contrast(1.35) saturate(.55) drop-shadow(0 0 18px #8e1636); }
+.ghost-scare-caption { position:absolute; bottom:12%; left:12px; right:12px; text-align:center; color:#f1d7df; font-size:clamp(20px, 4vw, 38px); font-weight:bold; text-shadow:0 3px 14px #000; }
+@keyframes ghost-scare-face { 0% { transform:scale(.48); opacity:0; } 12% { transform:scale(1.12); opacity:1; } 65% { transform:scale(1.05); opacity:1; } 100% { transform:scale(1.1); opacity:0; } }
+@keyframes ghost-scare-screen { 0% { opacity:0; } 8%, 70% { opacity:1; } 100% { opacity:0; } }
+@media (prefers-reduced-motion:reduce) { #ghost-scare-overlay, .ghost-scare-face { animation:none; } }
