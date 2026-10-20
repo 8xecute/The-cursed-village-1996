@@ -399,33 +399,29 @@ body.game-view-3d.table3d-phase-details #night-action-popup.table3d-docked .moda
     body.game-view-3d #table3d-details-toggle { background: transparent; border: 0; font-size: .75rem; padding: 4px 0; min-height: 36px; }
 }
 
-.table3d-hand-controls #table3d-camera-tools { position: relative; white-space: normal; }
-#table3d-camera-tools > summary {
-    list-style: none; cursor: pointer; display: grid; place-items: center;
-    box-sizing: border-box; min-height: 44px; padding: 8px 12px;
-    border: 1px solid #b79964; border-radius: 10px; background: #302519; color: #ffe1aa;
-}
-#table3d-camera-tools > summary::-webkit-details-marker { display: none; }
-#table3d-camera-tools .camera-tools-content {
-    position: absolute; bottom: calc(100% + 8px); right: 0; z-index: 30;
-    width: min(320px, calc(100vw - 28px)); box-sizing: border-box;
-    padding: 10px; border: 1px solid #8c7452; border-radius: 10px;
-    background: #211a15; color: #eddbb7; max-height: 65dvh; overflow: auto;
-}
-#table3d-camera-tools .camera-mode-row { display: flex; gap: 6px; margin-bottom: 6px; }
-#table3d-camera-tools .camera-mode-row button { flex: 1; padding: 6px; margin: 0; }
-#table3d-camera-tools button[aria-pressed=true] { background: #5a4526; border-color: #e0c188; }
-#table3d-camera-tools .camera-move-pad { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 6px; margin: 8px 0; }
-#table3d-camera-tools .camera-move-pad button { margin: 0; padding: 6px; touch-action: none; user-select: none; }
-#table3d-camera-tools [data-camera-move=KeyW] { grid-column: 2; }
-#table3d-camera-tools [data-camera-move=KeyA] { grid-column: 1; }
-#table3d-camera-tools [data-camera-move=Space] { grid-column: 1 / 3; }
-#table3d-camera-tools small { display: block; font-size: .7rem; line-height: 1.6; }
-@media(max-width:768px) {
-    #table3d-camera-tools > summary { min-height: 40px; padding: 6px 10px; }
-    body.game-view-3d #table3d-section .table3d-hand-controls button { padding-inline: 10px; }
-}
-
 #table3d-reorder-hand[aria-pressed=true] { border-color:#ffda86; background:#614320; }
 #table3d-reorder-hint { display:block; flex-basis:100%; color:#efdbac; font-size:.8rem; text-align:center; }
 #table3d-reorder-hint[hidden] { display:none; }
+
+/* Fixed columns keep hand actions usable at every viewport width. */
+body.game-view-3d #table3d-section .table3d-hand-controls {
+    display:grid; grid-template-columns:36px minmax(0,1fr) minmax(0,1.15fr) 36px minmax(0,1fr);
+    gap:6px; width:min(460px,calc(100% - 20px)); max-width:calc(100% - 20px);
+    box-sizing:border-box; white-space:normal; align-items:center;
+    top:calc(var(--table3d-canvas-height,75dvh) - 58px); bottom:auto;
+}
+body.game-view-3d #table3d-section .table3d-hand-controls:has(#table3d-reorder-hint:not([hidden])) {
+    top:calc(var(--table3d-canvas-height,75dvh) - 88px);
+}
+body.game-view-3d #table3d-section .table3d-hand-controls button {
+    width:100%; min-width:0; min-height:42px; padding:6px 3px; margin:0; font-size:.8rem; line-height:1.2;
+}
+#table3d-keyboard-status { display:none !important; }
+#table3d-reorder-hint { grid-column:1 / -1; white-space:normal; line-height:1.4; margin:0; }
+@media(max-width:768px) {
+    body.game-view-3d #table3d-section .table3d-hand-controls,
+    body.game-view-3d #table3d-section .table3d-hand-controls:has(#table3d-reorder-hint:not([hidden])) {
+        position:relative; top:auto; bottom:auto; left:auto; transform:none; padding:8px;
+        width:100%; max-width:100%; margin:0;
+    }
+}

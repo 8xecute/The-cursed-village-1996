@@ -193,28 +193,6 @@ export function initialize() {
       });
   }
   client.state.table3DCameraMode='rotate';
-  const cameraTools=document.getElementById('table3d-camera-tools');
-  document.querySelector('.table3d-hand-controls')?.appendChild(cameraTools);
-  document.querySelectorAll('[data-camera-mode]').forEach(button=>button.addEventListener('click',()=>{
-      client.state.table3DCameraMode=button.dataset.cameraMode;
-      client.state.table3D?.setCameraMode(client.state.table3DCameraMode);
-      document.querySelectorAll('[data-camera-mode]').forEach(item=>item.setAttribute('aria-pressed',String(item===button)));
-  }));
-  document.querySelectorAll('[data-camera-move]').forEach(button=>{
-      const stop=()=>client.state.table3D?.setMovement(button.dataset.cameraMove,false);
-      button.addEventListener('pointerdown',event=>{
-          event.preventDefault();button.setPointerCapture(event.pointerId);
-          client.state.table3D?.setMovement(button.dataset.cameraMove,true);
-      });
-      button.addEventListener('pointerup',stop);button.addEventListener('pointercancel',stop);button.addEventListener('lostpointercapture',stop);
-      button.addEventListener('keydown',event=>{if(event.code==='Space'||event.code==='Enter'){event.preventDefault();client.state.table3D?.setMovement(button.dataset.cameraMove,true);}});
-      button.addEventListener('keyup',stop);button.addEventListener('blur',stop);
-  });
-  document.querySelectorAll('[data-camera-zoom]').forEach(button=>button.addEventListener('click',()=>client.state.table3D?.zoom(button.dataset.cameraZoom)));
-  document.querySelectorAll('[data-camera-view]').forEach(button=>button.addEventListener('click',()=>client.state.table3D?.setCameraView(button.dataset.cameraView)));
-  document.getElementById('table3d-camera-tools')?.addEventListener('toggle',event=>{if(!event.currentTarget.open)client.state.table3D?.stopMovement();});
-
-
   client.state.savedGameViewMode = '2d';
 
   try {

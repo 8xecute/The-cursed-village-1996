@@ -122,43 +122,52 @@ export function createRitualBust(parent, color, alive, variant = 0, headGeometry
         segment([side*.215*width,.06,-.45],[side*.183*width,.04,-.514],.018,skin);
         // Folded collar panels in the same subdued cloth palette.
         const collar=new THREE.Shape();
-        collar.moveTo(side*.018,.635);collar.lineTo(side*.12,.585);collar.lineTo(side*.075,.49);collar.lineTo(side*.005,.568);collar.closePath();
+        collar.moveTo(side*.018,.628);collar.lineTo(side*.105,.593);collar.lineTo(side*.065,.545);collar.lineTo(side*.008,.581);collar.closePath();
         add(new THREE.ExtrudeGeometry(collar,{depth:.012,bevelEnabled:true,bevelSegments:1,steps:1,bevelSize:.004,bevelThickness:.003}),body,[0,0,-.118]);
     }
     add(new THREE.CylinderGeometry(.064,.082,.12,20),skin,[0,.65,.008]);
     for(let button=0;button<4;button++) add(new THREE.SphereGeometry(.009,8,6),recess,[0,.44-button*.09,-.145],[1,1,.45]);
-    for(let i=-2;i<=2;i++) {
-        const fold=segment([i*.055,.07,-.13],[i*.067,.3,-.146],.006,body);
-        fold.rotation.z+=i*.035;
-    }
     // A scanned head provides coherent facial anatomy instead of separate primitive features.
     if (headGeometry) {
         const head=headGeometry.clone();
-        // The scan has closed lids. Open only the forward eye apertures and
-        // insert matte eyeballs; do not paint white eyes over closed eyelids.
-        if (alive && head.index) {
-            const vertices=head.attributes.position,indices=head.index.array,kept=[];
-            const inside=(index)=>{
-                const x=vertices.getX(index),y=vertices.getY(index),z=vertices.getZ(index);
-                return z<-.103 && ((Math.abs(x)-.061)/.024)**2+((y-.231)/.011)**2<1;
-            };
-            for(let i=0;i<indices.length;i+=3) {
-                if (inside(indices[i]) || inside(indices[i+1]) || inside(indices[i+2])) continue;
-                kept.push(indices[i],indices[i+1],indices[i+2]);
+        // Retain the scan's continuous facial surface. Thin eye insets follow
+        // the surface rather than projecting separate eyeballs out of the face.
+        const vertices = head.attributes.position;
+        const surfaceAt = (x, y) => {
+            let nearest = Infinity, z = -.11;
+            for (let i = 0; i < vertices.count; i++) {
+                if (vertices.getZ(i) > 0) continue;
+                const distance = (vertices.getX(i) - x) ** 2 + (vertices.getY(i) - y) ** 2;
+                if (distance < nearest) { nearest = distance; z = vertices.getZ(i); }
             }
-            head.setIndex(kept);head.computeVertexNormals();
-        }
+            return z;
+        };
         add(head,skin,[0,.66,0],[.82,.82,.82]);
         if (alive) {
-            const sclera=new THREE.MeshStandardMaterial({color:0xaaa394,roughness:.7});
-            const iris=new THREE.MeshStandardMaterial({color:0x42382c,roughness:.7});
-            for(const side of [-1,1]) {
-                const x=side*.061*.82,y=.66+.231*.82;
-                add(new THREE.SphereGeometry(.023,20,12),sclera,[x,y,-.145*.82],[.82,.36,.4]);
-                add(new THREE.SphereGeometry(.009,16,10),iris,[x,y,-.156*.82],[.85,.9,.25]);
-                add(new THREE.SphereGeometry(.0045,12,8),recess,[x,y,-.159*.82],[1,1,.25]);
+            const sclera = new THREE.MeshStandardMaterial({ color: 0x8a8070, roughness: .95 });
+            const iris = new THREE.MeshStandardMaterial({ color: 0x322a21, roughness: .9 });
+            for (const side of [-1, 1]) {
+                const localX = side * .061, localY = .231;
+                const x = localX * .82, y = .66 + localY * .82;
+                const z = surfaceAt(localX, localY) * .82;
+                add(new THREE.SphereGeometry(.018,16,10),sclera,[x,y,z-.001],[1,.25,.09]);
+                add(new THREE.SphereGeometry(.0065,12,8),iris,[x,y,z-.0025],[1,.65,.09]);
+                add(new THREE.SphereGeometry(.003,10,6),recess,[x,y,z-.003],[1,.8,.1]);
             }
-            sclera.dispose();iris.dispose();
+            sclera.dispose(); iris.dispose();
+        }
+        // A close-fitting hair shell uses the same scanned skull, with a
+        // modest hairline and different heights for each villager.
+        if (head.index) {
+            const hair = headGeometry.clone(), kept = [], indices = hair.index.array;
+            const line = [.335,.315,.35,.325][variant % 4];
+            const covered = i => vertices.getY(i) > line ||
+                (vertices.getY(i) > .21 && vertices.getZ(i) > -.015);
+            for (let i = 0; i < indices.length; i += 3) {
+                if (covered(indices[i]) && covered(indices[i+1]) && covered(indices[i+2])) kept.push(indices[i],indices[i+1],indices[i+2]);
+            }
+            hair.setIndex(kept);
+            add(hair,hairMaterial,[0,.661,.001],[.827,.827,.827]);
         }
     }
     else add(new THREE.SphereGeometry(.145,24,18),skin,[0,.88,0],[.93,1.4,1]);
