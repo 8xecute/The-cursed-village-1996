@@ -517,7 +517,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
                     : [offset * spacing, 1 + row * .98 + (own && selected === i ? .16 : 0), .7 + Math.abs(offset) * .025];
                 const rotation = lowered ? [-Math.PI / 2, 0, 0] : [-.12, 0, own ? 0 : -offset * Math.min(.045, .35 / Math.max(1, count))];
                 const face = card(seat, position, rotation,
-                    own && !lowered ? cardTexture(imageFor(hand[i].name)) : back,
+                    own ? cardTexture(imageFor(hand[i].name)) : back,
                     own ? { cardIndex: i, category: hand[i].color } : { playerId: player.uniqueId }, own ? .56 : .47);
                 if (own && selected === i) face.material.color.set(0xb9a687);
             }

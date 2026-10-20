@@ -151,9 +151,14 @@ module.exports = function createServices(game) {
       }
 
       if (room.customWitchCardCount != null && (!Number.isInteger(room.customWitchCardCount) ||
-          room.customWitchCardCount < 1 || room.customWitchCardCount > alivePlayers.length - 1)) {
+          room.customWitchCardCount < 1 || room.customWitchCardCount > Math.min(4, alivePlayers.length - 1))) {
           const host = Object.values(room.players).find(player => player.isHost);
-          if (host) game.io.to(host.id).emit('game message', 'จำนวนปอบที่ตั้งไว้เกินจำนวนผู้เล่น กรุณาตั้งใหม่ก่อนเริ่มเกม', 'orange');
+          if (host) game.io.to(host.id).emit('game message', 'จำนวนปอบ custom ต้องไม่เกิน 4 ใบ และน้อยกว่าจำนวนผู้เล่น กรุณาตั้งใหม่ก่อนเริ่มเกม', 'orange');
+          return;
+      }
+      if (room.customLifeCardCount != null && (!Number.isInteger(room.customLifeCardCount) || room.customLifeCardCount < 1 || room.customLifeCardCount > 5)) {
+          const host = room.players[room.hostUniqueId];
+          if (host) game.io.to(host.id).emit('game message', 'จำนวนการ์ดชีวิตต้องเป็น 1–5 ใบ หรืออัตโนมัติ', 'orange');
           return;
       }
       room.gameStarted = true;
@@ -178,7 +183,7 @@ module.exports = function createServices(game) {
       // --- Dynamically create TRYAL_CARDS deck based on player count ---
       const playerCount = alivePlayers.length;
       const TRYAL_CARDS = [];
-      const tryalCardsPerPlayer = playerCount <= 7 ? 5 : playerCount <= 9 ? 4 : 3;
+      const tryalCardsPerPlayer = room.customLifeCardCount ?? (playerCount <= 7 ? 5 : playerCount <= 9 ? 4 : 3);
       let witchCount = playerCount <= 5 ? 1 : 2;
 
       if (room.customWitchCardCount != null) witchCount = room.customWitchCardCount;

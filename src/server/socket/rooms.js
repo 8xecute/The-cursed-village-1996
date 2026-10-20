@@ -281,11 +281,23 @@ module.exports = function registerHandlers(socket, game) {
           game.emitRoomState(room.name);
       });
 
+  socket.on('set life card count', count => {
+      const room = game.rooms[socket.currentRoom];
+      const host = room?.players?.[socket.uniqueId];
+      if (!room || room.gameStarted || !host?.isHost || host.id !== socket.id || room.hostUniqueId !== socket.uniqueId) return;
+      if (count !== null && (!Number.isInteger(count) || count < 1 || count > 5)) {
+          socket.emit('game message', 'เลือกการ์ดชีวิตคนละ 1–5 ใบ หรืออัตโนมัติ', 'orange');
+          return;
+      }
+      room.customLifeCardCount = count;
+      game.emitRoomState(room.name);
+  });
+
   socket.on('set witch card count', count => {
       const room = game.rooms[socket.currentRoom];
       const host = room?.players?.[socket.uniqueId];
       if (!room || room.gameStarted || !host?.isHost || host.id !== socket.id) return;
-      const max = Math.max(1, game.getAlivePlayers(room).length - 1);
+      const max = Math.min(4, Math.max(1, game.getAlivePlayers(room).length - 1));
       if (count !== null && (!Number.isInteger(count) || count < 1 || count > max)) {
           socket.emit('game message', `เลือกการ์ดปอบตั้งแต่ 1 ถึง ${max} ใบ หรืออัตโนมัติ`, 'orange'); return;
       }

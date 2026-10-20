@@ -83,6 +83,7 @@ module.exports = function createServices(game) {
           playerCount: Object.keys(room.players).length,
           maxPlayers: game.PLAYER_LIMIT,
           customWitchCardCount: room.customWitchCardCount ?? null,
+          customLifeCardCount: room.customLifeCardCount ?? null,
           gameStarted: room.gameStarted,
           currentPhase: room.currentPhase,
           phaseTimer: room.phaseTimer,

@@ -138,6 +138,15 @@
                     <select id="lobby-witch-count" disabled><option value="auto">อัตโนมัติ</option></select>
                     <small id="lobby-witch-count-help">หัวห้องปรับได้ก่อนเริ่มเกม</small>
                 </div>
+                <div class="lobby-witch-setting">
+                    <label for="lobby-life-count">การ์ดชีวิตต่อผู้เล่น</label>
+                    <select id="lobby-life-count" disabled>
+                        <option value="auto">อัตโนมัติตามจำนวนผู้เล่น</option>
+                        <option value="1">คนละ 1 ใบ</option><option value="2">คนละ 2 ใบ</option>
+                        <option value="3">คนละ 3 ใบ</option><option value="4">คนละ 4 ใบ</option><option value="5">คนละ 5 ใบ</option>
+                    </select>
+                    <small id="lobby-life-count-help">อัตโนมัติ: 4–7 คน 5 ใบ · 8–9 คน 4 ใบ · 10–12 คน 3 ใบ</small>
+                </div>
                 <h3>รายชื่อผู้เล่นในห้อง:</h3>
                 <div id="player-list"></div>
                 <div class="lobby-action-row" style="display: flex; gap: 12px; flex-wrap: wrap; margin-top: 14px; align-items: center;">
