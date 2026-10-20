@@ -1,3 +1,4 @@
+import { registerLifeInteraction } from '../core/interaction.js';
 import { client } from '../core/client.js';
 
 client.actions.showAccusedTryalSelection = function showAccusedTryalSelection(accusedUniqueId, tryalCount) {
@@ -27,6 +28,7 @@ client.actions.showAccusedTryalSelection = function showAccusedTryalSelection(ac
     subtitle.style = 'color: #d7ccc8; font-size: 0.95em; margin-top: -6px; margin-bottom: 16px;';
     container.appendChild(subtitle);
 
+    const lifeCommands = new Map();
     const cardsDiv = document.createElement('div');
     cardsDiv.className = 'cards-container';
 
@@ -40,12 +42,14 @@ client.actions.showAccusedTryalSelection = function showAccusedTryalSelection(ac
             if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);
             if (container && container.parentNode) container.parentNode.removeChild(container);
         };
+        lifeCommands.set(i, cardBtn.onclick);
         cardsDiv.appendChild(cardBtn);
     }
     container.appendChild(cardsDiv);
     client.actions.addTryalPopupCollapseControl(container, overlay, title);
     overlay.appendChild(container);
     document.body.appendChild(overlay);
+    registerLifeInteraction(container, accusedUniqueId, lifeCommands);
 };
 
 client.actions.closeForcedRevealNotice = function closeForcedRevealNotice() {
@@ -85,6 +89,7 @@ client.actions.showBlackCatTryalSelection = function showBlackCatTryalSelection(
         : '🐱 เลือกการ์ดชีวิตของผู้ถือการ์ดเครื่องเซ่นเพื่อเปิดเผย';
     container.appendChild(title);
 
+    const lifeCommands = new Map();
     const cardsDiv = document.createElement('div');
     cardsDiv.className = 'cards-container';
 
@@ -98,12 +103,14 @@ client.actions.showBlackCatTryalSelection = function showBlackCatTryalSelection(
             if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);
             if (container && container.parentNode) container.parentNode.removeChild(container);
         };
+        lifeCommands.set(i, cardBtn.onclick);
         cardsDiv.appendChild(cardBtn);
     }
     container.appendChild(cardsDiv);
     client.actions.addTryalPopupCollapseControl(container, overlay, title);
     overlay.appendChild(container);
     document.body.appendChild(overlay);
+    registerLifeInteraction(container, blackCatHolder, lifeCommands);
 };
 
 client.actions.updateTryalCardDisplay = function updateTryalCardDisplay() {

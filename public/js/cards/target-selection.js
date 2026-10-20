@@ -1,3 +1,4 @@
+import { registerInteraction, selectionChanged } from '../core/interaction.js';
 import { client } from '../core/client.js';
 
 client.actions.showSelectPlayerPopup = function showSelectPlayerPopup(title, playerList, callback, cardObj = null, actionType = null) {
@@ -109,6 +110,7 @@ client.actions.showSelectPlayerPopup = function showSelectPlayerPopup(title, pla
 
 
     let selectedId = null;
+    const targetCommands = new Map();
     const isRedCard = cardObj && (cardObj.color === 'Red' || ['Accusation', 'Evidence', 'Witness'].includes(cardObj.name));
     const blockedReason = player => {
         if(!isRedCard || !player) return '';
@@ -212,7 +214,7 @@ client.actions.showSelectPlayerPopup = function showSelectPlayerPopup(title, pla
         btn.addEventListener('mouseout', () => {
             // ไม่เปลี่ยนสีหรือขอบเมื่อ mouseout
         });
-        btn.addEventListener('click', () => {
+        const selectTarget = () => {
             if (protectedTarget || isProtected(client.state.currentRoomState?.players?.[player.uniqueId] || player)) {
                 targetHint.textContent = blockedReason(client.state.currentRoomState?.players?.[player.uniqueId] || player);
                 return;
@@ -230,7 +232,10 @@ client.actions.showSelectPlayerPopup = function showSelectPlayerPopup(title, pla
             confirmBtn.textContent = title.startsWith('1/2') ? 'เลือกต้นทางนี้ →'
                 : title.startsWith('2/2') ? `ยืนยันผู้รับ: ${player.name}`
                 : cardObj ? `ใช้${client.actions.displayCardName(cardObj.name)}กับ ${player.name}` : 'ยืนยันเป้าหมาย';
-        });
+            selectionChanged();
+        };
+        targetCommands.set(player.uniqueId, selectTarget);
+        btn.addEventListener('click', selectTarget);
         listDiv.appendChild(btn);
     });
     content.appendChild(listDiv);
@@ -254,7 +259,7 @@ client.actions.showSelectPlayerPopup = function showSelectPlayerPopup(title, pla
     confirmBtn.style.cursor = 'pointer';
     confirmBtn.style.marginTop = '6px';
     confirmBtn.disabled = true;
-    confirmBtn.addEventListener('click', () => {
+    const confirmTarget = () => {
         if (isProtected(client.state.currentRoomState?.players?.[selectedId])) {
             targetHint.textContent = blockedReason(client.state.currentRoomState?.players?.[selectedId]);
             selectedId = null;
@@ -265,7 +270,8 @@ client.actions.showSelectPlayerPopup = function showSelectPlayerPopup(title, pla
             if (document.body.contains(modal)) document.body.removeChild(modal);
             callback(selectedId);
         }
-    });
+    };
+    confirmBtn.addEventListener('click', confirmTarget);
     footer.appendChild(confirmBtn);
 
     // Cancel button
@@ -290,6 +296,16 @@ client.actions.showSelectPlayerPopup = function showSelectPlayerPopup(title, pla
 
     modal.appendChild(content);
     document.body.appendChild(modal);
+    registerInteraction(modal, {
+        kind: 'player',
+        read: () => ({
+            eligible: alivePlayers.filter(p => !isProtected(client.state.currentRoomState?.players?.[p.uniqueId] || p)).map(p => p.uniqueId),
+            selected: selectedId ? [selectedId] : [],
+            blocked: Object.fromEntries(alivePlayers.filter(isProtected).map(p => [p.uniqueId, blockedReason(p)]))
+        }),
+        choose: id => { if (id === selectedId) confirmTarget(); else targetCommands.get(id)?.(); },
+        cancel: () => modal.remove()
+    });
 };
 
 export function initialize() {

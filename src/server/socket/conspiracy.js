@@ -26,20 +26,17 @@ module.exports = function registerHandlers(socket, game) {
           }
           if (!bcHolder || bcHolder.tryalCards.length <= cardIndex) return;
           // Reveal the selected Tryal Card
-          const revealedCard = bcHolder.tryalCards.splice(cardIndex, 1)[0];
-      game.onTryalRevealed(room, revealedCard);
-          (bcHolder.revealedTryalCards ||= []).push({ name: revealedCard.name });
-          bcHolder.revealedTryalCardIndexes.add(revealedCard.name);
+          const revealedCard = game.openLifeCard(room, bcHolder, cardIndex);
+          if (!revealedCard) return;
           game.sendGameMessage(room.name, `<b>${player.name}</b> ต้องเปิดการ์ดชีวิต ${bcHolder.name}`, 'orange', true);
           // เพิ่มข้อความแจ้งว่าถูกเปิดการ์ดชีวิตอะไร
           game.sendGameMessage(room.name, `<b>${bcHolder.name}</b> ถูกเปิดการ์ดชีวิต: ${game.getCardNameWithColor(revealedCard.name)}`, 'gold', true);
-          game.io.to(bcHolder.id).emit('update tryal cards initial', bcHolder.tryalCards);
+          game.syncLifeCards(bcHolder);
           if (revealedCard.name === 'Witch') {
-              bcHolder.isWitch = true;
               game.sendGameMessage(room.name, `${bcHolder.name} คือปอบ!`, 'red', true);
               // ตายทันทีเมื่อเปิด Witch
               game.sendGameMessage(room.name, `<b>${bcHolder.name}</b> ถูกเปิดเผยว่าเป็นปอบและตายทันที!`, 'red', true);
-              game.handlePlayerDeath(room, bcHolder, { cause: 'revealed_witch' });
+              game.resolveLifeCard(room, bcHolder, revealedCard);
               game.emitRoomState(room.name);
               game.checkWinCondition(room);
               delete room.awaitingConspiracySelection;
@@ -50,7 +47,7 @@ module.exports = function registerHandlers(socket, game) {
               return;
           }
 
-          game.eliminatePlayerWithoutLifeCards(room, bcHolder);
+          game.resolveLifeCard(room, bcHolder, revealedCard);
           if (room.gameOver) {
               delete room.awaitingConspiracySelection;
               return;

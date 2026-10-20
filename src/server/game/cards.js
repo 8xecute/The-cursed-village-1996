@@ -1,5 +1,7 @@
-// cards: game services. Dependencies are injected through game.
+// Shared card authorization and finalization; individual effects live in card-effects/.
+const createCardEffects = require('./card-effects');
 module.exports = function createServices(game) {
+  const applyCardEffect = createCardEffects(game);
   function applyTwoPlayerRules(room) {
       if (!room.gameStarted || game.getAlivePlayers(room).length > 2) return;
       if (!room.twoPlayerRulesAnnounced) {
@@ -39,14 +41,6 @@ module.exports = function createServices(game) {
       for (const player of Object.values(room.players)) player.isConstable = false;
       game.sendGameMessage(room.name, 'การ์ดหมอผีถูกเปิดแล้ว ความสามารถหมอผีสิ้นสุดลง', 'blue');
   }
-  function shuffleArray(array) {
-      for (let i = array.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [array[i], array[j]] = [array[j], array[i]];
-      }
-      return array;
-  }
-
   function getCardNameWithColor(cardName) {
       const cardNameThai = game.CARD_NAME_THAI[cardName] || cardName;
       
@@ -79,28 +73,6 @@ module.exports = function createServices(game) {
       }
       
       return `<span style="color: ${colorCode}; font-weight: bold;">${cardNameThai}</span>`;
-  }
-
-  function prepareDeckForNewDay(room) {
-      if (!room) return;
-      if (room.discardPile && room.discardPile.length > 0) {
-          room.gameDeck = (room.gameDeck || []).concat(room.discardPile);
-          room.discardPile = [];
-      }
-      if (room.gameDeck && room.gameDeck.length > 0) {
-          // Keep exactly one Night card at the bottom of the deck
-          const nightCards = room.gameDeck.filter(card => card.name === 'Night');
-          const otherCards = room.gameDeck.filter(card => card.name !== 'Night');
-          const shuffled = game.shuffleArray(otherCards);
-          const nightCard = nightCards.length > 0 ? [nightCards[0]] : [];
-          room.gameDeck = shuffled;
-          if (nightCard.length > 0) {
-              room.gameDeck.push(nightCard[0]);
-          }
-      }
-      room.hasShuffledThisDay = true;
-      game.sendDeckInfo(room.name);
-      game.sendGameMessage(room.name, '🎴 กองการ์ดและกองทิ้งถูกสับรวมเตรียมพร้อมสำหรับวันใหม่เรียบร้อยแล้ว', 'blue', true);
   }
 
   function playCard(roomName, playerUniqueId, cardIndex, targetUniqueId = null, secondTargetUniqueId = null) {
@@ -141,18 +113,29 @@ module.exports = function createServices(game) {
       }
 
       const cardToPlay = player.hand[cardIndex];
+      const pendingReason = game.pendingActionReason(room);
+      if (pendingReason) {
+          game.io.to(player.id).emit('game message', pendingReason, 'orange');
+          return;
+      }
       if (!cardToPlay) {
           game.io.to(player.id).emit('game message', 'การ์ดไม่ถูกต้อง.', 'red');
           return;
       }
 
+      // Single-card clients and bots use the same atomic red-card action as batches.
+      if (cardToPlay.color === 'Red') {
+          if (secondTargetUniqueId) {
+              game.io.to(player.id).emit('game message', 'การ์ดนี้ต้องการเป้าหมาย 1 คน.', 'red');
+              return;
+          }
+          return game.playRedCards(roomName, playerUniqueId, [cardIndex], targetUniqueId);
+      }
+
       // Public action information only: never include hands, life cards, or hidden roles.
       function emitCardFeedback() {
           const target = room.players[targetUniqueId];
-          const result = cardToPlay.name === 'Accusation' || cardToPlay.name === 'Evidence'
-              ? room.playerForcedToRevealTryal === targetUniqueId ? 'ครบ 7 แต้ม · เลือกเปิดการ์ดชีวิต'
-                  : `ข้อกล่าวหา +${cardToPlay.value || 1} · รวม ${target?.accusationPoints || 0}/7`
-              : ({ Witness: 'เลือกเปิดการ์ดชีวิต 1 ใบ', Stocks: 'ข้ามเทิร์นถัดไป',
+          const result = ({ Stocks: 'ข้ามเทิร์นถัดไป',
                   Arson: 'ทิ้งการ์ดในมือทั้งหมด', Robbery: 'ย้ายการ์ดในมือไปยังผู้รับ',
                   Scapegoat: 'ย้ายการ์ดสถานะไปยังผู้รับ', Piety: 'ป้องกันการ์ดแดง',
                   Asylum: 'ป้องกันการสังหารกลางคืน', Matchmaker: 'ผูกวิญญาณแล้ว',
@@ -162,7 +145,7 @@ module.exports = function createServices(game) {
               actorId: playerUniqueId, actorName: player.name, cardName: cardToPlay.name,
               targetId: targetUniqueId, targetName: target?.name || null,
               secondTargetName: room.players[secondTargetUniqueId]?.name || null,
-              discard: cardToPlay.type === 'Action' || cardToPlay.type === 'Event' || cardToPlay.name === 'Witness', result
+              discard: cardToPlay.type === 'Action' || cardToPlay.type === 'Event', result
           });
       }
 
@@ -204,19 +187,6 @@ module.exports = function createServices(game) {
           return;
       }
 
-      // --- Piety effect: Prevent red cards from targeting players with Piety ---
-      const RED_CARD_NAMES = ['Accusation', 'Evidence', 'Witness'];
-      if (
-          RED_CARD_NAMES.includes(cardToPlay.name) &&
-          targetUniqueId &&
-          room.players[targetUniqueId]?.inPlayCards.some(c => c.name === 'Piety')
-      ) {
-          const message = `${room.players[targetUniqueId].name} มีพลังศรัทธา ใช้การ์ดสีแดงใส่ไม่ได้ · การ์ดยังอยู่ในมือคุณ`;
-          game.io.to(player.id).emit('game message', message, 'red');
-          game.io.to(player.id).emit('card play rejected', { reason: 'piety', message });
-          return;
-      }
-      
       // Move red and green cards to discard pile (Action and Accusation cards)
       if (cardToPlay.color === 'Green' && cardToPlay.name !== 'Stocks') {
           room.discardPile.push(cardToPlay);
@@ -224,340 +194,9 @@ module.exports = function createServices(game) {
       // Note: Blue cards (Permanent) stay in play, Black cards (Event) are resolved and discarded
       // RED cards (Accusation) will be handled in the card effects section
 
-      // Handle card effects
-      switch (cardToPlay.name) {
-          case 'Accusation':
-          case 'Evidence':
-              if (targetUniqueId && room.players[targetUniqueId]) {
-                  const targetPlayer = room.players[targetUniqueId];
-                  const accVal = cardToPlay.value || 0;
-                  player.accusationsGiven = (player.accusationsGiven || 0) + accVal;
-                  targetPlayer.accusationsReceived = (targetPlayer.accusationsReceived || 0) + accVal;
-                  room.accusedPlayers[targetUniqueId] = (room.accusedPlayers[targetUniqueId] || 0) + accVal;
-                  targetPlayer.inPlayCards.push(cardToPlay);
-                  game.io.to(targetPlayer.id).emit('update in play cards', targetPlayer.inPlayCards);
-                  game.sendGameMessage(room.name, `<b>${player.name}</b> ใช้การ์ด ${game.getCardNameWithColor(cardToPlay.name)} ใส่ <b>${targetPlayer.name}</b> (+${cardToPlay.value || 0})`, 'orange', true);
-                  emitCardUsedOnYou(targetUniqueId, cardToPlay);
-
-                  if ((room.accusedPlayers[targetUniqueId] || 0) >= 7) {
-                      room.playerForcedToRevealTryal = targetUniqueId;
-                      room.playerForcedToRevealSelector = player.uniqueId;
-                      game.sendGameMessage(room.name, `<b>${targetPlayer.name}</b> มีข้อกล่าวหาถึง 7 แต้มและต้องเปิดเผยการ์ดชีวิต!`, 'gold', true);
-                      game.io.to(player.id).emit('prompt select accused tryal', {
-                          accusedUniqueId: targetUniqueId,
-                          tryalCount: targetPlayer.tryalCards.length
-                      });
-                      game.io.to(targetPlayer.id).emit('forced reveal notice', {
-                          byPlayerName: player.name,
-                          reason: 'accusation_threshold',
-                          points: room.accusedPlayers[targetUniqueId] || 0
-                      });
-                  }
-                  game.emitRoomState(room.name);
-              }
-              break;
-          
-          case 'Scapegoat':
-              if (targetUniqueId && secondTargetUniqueId) {
-                  const sourcePlayer = room.players[targetUniqueId];
-                  const destPlayer = room.players[secondTargetUniqueId];
-                  // Move blue, green, and red cards from source to destination
-                  const blueCards = sourcePlayer.inPlayCards.filter(card => card.color === 'Blue');
-                  const greenCards = sourcePlayer.inPlayCards.filter(card => card.color === 'Green');
-                  const redCards = sourcePlayer.inPlayCards.filter(card => card.color === 'Red');
-                  // Remove from source
-                  sourcePlayer.inPlayCards = sourcePlayer.inPlayCards.filter(card => !['Blue','Green','Red'].includes(card.color));
-                  // Add to destination
-                  destPlayer.inPlayCards.push(...blueCards, ...greenCards, ...redCards);
-                  discardDuplicateMatchmakers(room, destPlayer);
-                  // Stocks: if any moved, update isSilenced
-                  if (greenCards.some(card => card.name === 'Stocks')) {
-                      destPlayer.isSilenced = true;
-                      sourcePlayer.isSilenced = sourcePlayer.inPlayCards.some(card => card.name === 'Stocks');
-                  }
-                  // --- อัปเดต Black Cat Holder หลังย้าย ---
-                  game.updateBlackCatHolder(room);
-                  game.io.to(sourcePlayer.id).emit('update in play cards', sourcePlayer.inPlayCards);
-                  game.io.to(destPlayer.id).emit('update in play cards', destPlayer.inPlayCards);
-                  game.sendGameMessage(room.name, `<b>${player.name}</b> ใช้การ์ด ${game.getCardNameWithColor('Scapegoat')} จาก <b>${sourcePlayer.name}</b> ไปยัง <b>${destPlayer.name}</b>`, 'orange', true);
-                  // --- ย้ายข้อกล่าวหา (accusationPoints) ถ้ามีการ์ดแดงถูกย้าย ---
-                  const accusationPointsToMove = room.accusedPlayers[targetUniqueId] || 0;
-                  if (redCards.length > 0 && accusationPointsToMove > 0) {
-                      room.accusedPlayers[secondTargetUniqueId] = (room.accusedPlayers[secondTargetUniqueId] || 0) + accusationPointsToMove;
-                      room.accusedPlayers[targetUniqueId] = 0;
-                      game.sendGameMessage(room.name, `ข้อกล่าวหาของ <b>${sourcePlayer.name}</b> ถูกย้ายไปให้ <b>${destPlayer.name}</b> ด้วย!`, 'orange', true);
-                      // ถ้าข้อกล่าวหาใหม่ครบ 7 แต้ม ให้เปิด Tryal Card
-                      if (room.accusedPlayers[secondTargetUniqueId] >= 7) {
-                          room.playerForcedToRevealTryal = secondTargetUniqueId;
-                          room.playerForcedToRevealSelector = player.uniqueId;
-                          game.sendGameMessage(room.name, `<b>${destPlayer.name}</b> มีข้อกล่าวหาถึง 7 แต้มและต้องเปิดเผยการ์ดชีวิต!`, 'gold', true);
-                          game.io.to(player.id).emit('prompt select accused tryal', {
-                              accusedUniqueId: secondTargetUniqueId,
-                              tryalCount: destPlayer.tryalCards.length
-                          });
-                          game.io.to(destPlayer.id).emit('forced reveal notice', {
-                              byPlayerName: player.name,
-                              reason: 'accusation_threshold',
-                              points: room.accusedPlayers[secondTargetUniqueId] || 0
-                          });
-                          game.emitRoomState(room.name);
-                          // ลบการ์ด Scapegoat ออกจากมือก่อน return
-                          player.hand.splice(cardIndex, 1);
-                          game.io.to(player.id).emit('update hand', player.hand);
-                          return;
-                      }
-                  }
-                  emitCardUsedOnYou(targetUniqueId, cardToPlay);
-                  emitCardUsedOnYou(secondTargetUniqueId, cardToPlay);
-              }
-              break;
-          case 'Curse':
-              if (targetUniqueId) {
-                  const targetPlayer = room.players[targetUniqueId];
-                  const blueCards = targetPlayer.inPlayCards.filter(c => c.color === 'Blue');
-                  if (blueCards.length > 0) {
-                      if (blueCards.length === 1) {
-                          // Only one blue card, discard it automatically
-                          const cardToDiscard = blueCards[0];
-                          targetPlayer.inPlayCards = targetPlayer.inPlayCards.filter(c => c !== cardToDiscard);
-                          // Black Cat: remove from game, not to discard
-                          if (cardToDiscard.name === 'Black Cat') {
-                              room.discardPile.push(cardToDiscard);
-                              game.updateBlackCatHolder(room); // reset holder
-                              game.sendGameMessage(room.name, 'การ์ดเครื่องเซ่นถูกทิ้งลงกองทิ้ง', 'grey', true);
-                              game.emitRoomState(room.name);
-                          } else if (cardToDiscard.name === 'Asylum') {
-                              // Remove Asylum effect
-                              game.sendGameMessage(room.name, 'การ์ดที่หลบภัยถูกลบและสถานะป้องกันถูกยกเลิก!', 'grey', true);
-                              room.discardPile.push(cardToDiscard);
-                              game.io.to(targetPlayer.id).emit('update in play cards', targetPlayer.inPlayCards);
-                          } else if (cardToDiscard.name === 'Piety') {
-                              game.sendGameMessage(room.name, 'การ์ดพลังศรัทธาถูกลบและไม่สามารถกันการ์ดแดงได้อีก!', 'grey', true);
-                              room.discardPile.push(cardToDiscard);
-                              game.io.to(targetPlayer.id).emit('update in play cards', targetPlayer.inPlayCards);
-                          } else if (cardToDiscard.name === 'Matchmaker') {
-                              game.sendGameMessage(room.name, 'การ์ดผูกวิญญาณถูกลบออก!', 'grey', true);
-                              room.discardPile.push(cardToDiscard);
-                              game.io.to(targetPlayer.id).emit('update in play cards', targetPlayer.inPlayCards);
-                          } else if (cardToDiscard.name === 'Conspiracy') {
-                              game.sendGameMessage(room.name, 'การ์ดพิธีเซ่นไหว้ถูกลบและไปยังกองทิ้ง!', 'grey', true);
-                              room.discardPile.push(cardToDiscard);
-                              game.io.to(targetPlayer.id).emit('update in play cards', targetPlayer.inPlayCards);
-                          } else {
-                              room.discardPile.push(cardToDiscard);
-                          game.io.to(targetPlayer.id).emit('update in play cards', targetPlayer.inPlayCards);
-                          }
-                          // --- เพิ่ม game message ---
-                          game.sendGameMessage(room.name, `<b>${player.name}</b> ใช้การ์ด ${game.getCardNameWithColor('Curse')} ใส่ <b>${targetPlayer.name}</b> ทิ้งการ์ด ${game.getCardNameWithColor(cardToDiscard.name)}`, 'orange', true);
-                          // Do NOT end turn here; allow player to continue
-                      } else {
-                          // Multiple blue cards, prompt player to choose
-                          room.awaitingCurseSelection = {
-                              selector: playerUniqueId,
-                              target: targetUniqueId,
-                          };
-                          // Consume only the Curse that was played. Keep any
-                          // duplicate Curse cards in the player's hand.
-                          player.hand.splice(cardIndex, 1);
-                          player.hasPlayedCardsThisTurn = true;
-                          game.io.to(player.id).emit('update hand', player.hand);
-                          game.io.to(player.id).emit('disable draw button');
-                          game.io.to(player.id).emit('card played successfully');
-      emitCardFeedback();
-                          game.io.to(player.id).emit('prompt select curse target', {
-                              targetUniqueId,
-                              blueCards: blueCards.map(card => ({ name: card.name }))
-                          });
-                          game.emitRoomState(room.name);
-                          return;
-                      }
-                  } else {
-                      game.sendGameMessage(room.name, `<b>${targetPlayer.name}</b> ไม่มีการ์ดสีน้ำเงินให้ลบ`, 'orange', true);
-                  }
-                  emitCardUsedOnYou(targetUniqueId, cardToPlay);
-              }
-              break;
-          case 'Alibi':
-              if (targetUniqueId) {
-                  const targetPlayer = room.players[targetUniqueId];
-                  // หา red cards (Accusation/Evidence) ใน inPlayCards
-                  const redCards = targetPlayer.inPlayCards
-                      .map((c, idx) => ({ ...c, index: idx }))
-                      .filter(c => c.color === 'Red' && (c.name === 'Accusation' || c.name === 'Evidence'));
-                  
-                  if (redCards.length > 0) {
-                      // มีการ์ดสีแดง ต้อง popup ให้เลือก
-                      game.io.to(player.id).emit('prompt select alibi removal', {
-                          targetUniqueId,
-                          redCards: redCards.map(c => ({ name: c.name, value: c.value, index: c.index }))
-                      });
-                      room.awaitingAlibiSelection = {
-                          card: cardToPlay,
-                          selector: playerUniqueId,
-                          target: targetUniqueId,
-                          cardIndex: cardIndex // เก็บ index ของ Alibi ในมือผู้ใช้
-                      };
-                      // ลบการ์ด Alibi ออกจากมือทันทีเมื่อเริ่มใช้งาน
-                      player.hand.splice(cardIndex, 1);
-                      game.io.to(player.id).emit('update hand', player.hand);
-                      return; // ยังไม่จบเทิร์น
-                  } else {
-                      game.sendGameMessage(room.name, `<b>${targetPlayer.name}</b> ไม่มีการ์ดข้อกล่าวหา/หลักฐานให้ลบ`, 'orange', true);
-                  }
-              }
-              break;
-          case 'Robbery':
-              if (targetUniqueId && secondTargetUniqueId) {
-                  const sourcePlayer = room.players[targetUniqueId];
-                  const destPlayer = room.players[secondTargetUniqueId];
-                  if (sourcePlayer.hand.length > 0) {
-                      destPlayer.hand.push(...sourcePlayer.hand);
-                      sourcePlayer.hand = [];
-                      game.sendGameMessage(room.name, `<b>${player.name}</b> ใช้การ์ด ${game.getCardNameWithColor('Robbery')} จาก <b>${sourcePlayer.name}</b> ไปยัง <b>${destPlayer.name}</b>`, 'orange', true);
-                      game.io.to(sourcePlayer.id).emit('update hand', sourcePlayer.hand);
-                      game.io.to(destPlayer.id).emit('update hand', destPlayer.hand);
-                  }
-                  emitCardUsedOnYou(targetUniqueId, cardToPlay);
-                  emitCardUsedOnYou(secondTargetUniqueId, cardToPlay);
-              }
-              break;
-          case 'Stocks':
-              if (targetUniqueId) {
-                  const targetPlayer = room.players[targetUniqueId];
-                  // Add Stocks card to target player's inPlayCards (stackable)
-                  targetPlayer.inPlayCards.push(cardToPlay);
-                  targetPlayer.isSilenced = true; // Mark player as silenced
-                  game.sendGameMessage(room.name, `<b>${player.name}</b> ใช้การ์ด ${game.getCardNameWithColor('Stocks')} ใส่ <b>${targetPlayer.name}</b>`, 'orange', true);
-                  game.io.to(targetPlayer.id).emit('update in play cards', targetPlayer.inPlayCards);
-                  // Silence effect will be cleared at the start of new day in setNextTurn function
-                  emitCardUsedOnYou(targetUniqueId, cardToPlay);
-              }
-              break;
-          case 'Arson':
-              if (targetUniqueId) {
-                  const targetPlayer = room.players[targetUniqueId];
-                  if (targetPlayer.hand.length > 0) {
-                      room.discardPile.push(...targetPlayer.hand); // Add to discard pile
-                      targetPlayer.hand = [];
-                      game.sendGameMessage(room.name, `<b>${player.name}</b> ใช้การ์ด ${game.getCardNameWithColor('Arson')} ใส่ <b>${targetPlayer.name}</b>`, 'orange', true);
-                      game.io.to(targetPlayer.id).emit('update hand', targetPlayer.hand);
-                  }
-                  emitCardUsedOnYou(targetUniqueId, cardToPlay);
-              }
-              break;
-          case 'Black Cat': {
-              const targetPlayer = room.players[targetUniqueId];
-              targetPlayer.inPlayCards.push(cardToPlay);
-              game.updateBlackCatHolder(room);
-              game.sendGameMessage(room.name, `<b>${player.name}</b> ใช้การ์ด ${game.getCardNameWithColor('Black Cat')} ใส่ <b>${targetPlayer.name}</b>`, 'gold', true);
-              game.io.to(targetPlayer.id).emit('update in play cards', targetPlayer.inPlayCards);
-              emitCardUsedOnYou(targetUniqueId, cardToPlay);
-              break;
-          }
-          case 'Asylum':
-              if (targetUniqueId) {
-                  const targetPlayer = room.players[targetUniqueId];
-                  targetPlayer.inPlayCards.push(cardToPlay);
-                  game.sendGameMessage(room.name, `<b>${player.name}</b> ใช้การ์ด ${game.getCardNameWithColor('Asylum')} ใส่ <b>${targetPlayer.name}</b>`, 'orange', true);
-                  game.io.to(targetPlayer.id).emit('update in play cards', targetPlayer.inPlayCards);
-                  emitCardUsedOnYou(targetUniqueId, cardToPlay);
-              }
-              break;
-          case 'Piety':
-              if (targetUniqueId) {
-                  const targetPlayer = room.players[targetUniqueId];
-                  targetPlayer.inPlayCards.push(cardToPlay);
-                  game.sendGameMessage(room.name, `<b>${player.name}</b> ใช้การ์ด ${game.getCardNameWithColor('Piety')} ใส่ <b>${targetPlayer.name}</b>`, 'orange', true);
-                  game.io.to(targetPlayer.id).emit('update in play cards', targetPlayer.inPlayCards);
-                  emitCardUsedOnYou(targetUniqueId, cardToPlay);
-              }
-              break;
-          case 'Matchmaker':
-              if (targetUniqueId) {
-                  const targetPlayer = room.players[targetUniqueId];
-                  targetPlayer.inPlayCards.push(cardToPlay);
-                  discardDuplicateMatchmakers(room, targetPlayer);
-                  game.sendGameMessage(room.name, `<b>${player.name}</b> ใช้การ์ด ${game.getCardNameWithColor('Matchmaker')} ใส่ <b>${targetPlayer.name}</b>`, 'orange', true);
-                  game.io.to(targetPlayer.id).emit('update in play cards', targetPlayer.inPlayCards);
-                  emitCardUsedOnYou(targetUniqueId, cardToPlay);
-              }
-              break;
-          case 'Conspiracy':
-              room.conspiracyDrawer = playerUniqueId;
-              game.updateBlackCatHolder(room); // เช็คสถานะล่าสุดก่อน
-              if (room.blackCatHolder && room.players[room.blackCatHolder]?.alive) {
-                  const bcHolder = room.players[room.blackCatHolder];
-                  // เช็คว่าผู้เล่นยังมี Black Cat จริง
-                  if (bcHolder.inPlayCards.some(card => card.name === 'Black Cat') && bcHolder.tryalCards.length > 0) {
-                      room.awaitingConspiracySelection = {
-                          selector: playerUniqueId,
-                          target: room.blackCatHolder,
-                          tryalCount: bcHolder.tryalCards.length
-                      };
-                      game.sendGameMessage(room.name, `<b>${player.name}</b> ใช้การ์ด ${game.getCardNameWithColor('Conspiracy')}`, 'orange', true);
-                      game.io.to(player.id).emit('prompt select blackcat tryal', {
-                          blackCatHolder: room.blackCatHolder,
-                          tryalCount: bcHolder.tryalCards.length,
-                          blackCatHolderName: bcHolder.name
-                      });
-                      // รอให้ selector เลือกผ่าน UI ก่อน promptTryalCardSelectionToLeft และจบเทิร์น
-                      room.discardPile.push(cardToPlay); // <--- FIX: discard Conspiracy after use
-                      return; // ไม่จบเทิร์นทันที
-                  }
-              }
-              // --- เพิ่ม flag สำหรับพิธีเซ่นไหว้ ---
-              room.awaitingLeftTryalSelections = true;
-              room.conspiracyDrawer = playerUniqueId;
-              game.promptTryalCardSelectionToLeft(roomName);
-              game.emitRoomState(roomName);
-              room.discardPile.push(cardToPlay); // <--- FIX: discard Conspiracy after use
-              break;
-          case 'Witness':
-              if (targetUniqueId && room.players[targetUniqueId]) {
-                  const targetPlayer = room.players[targetUniqueId];
-                  const accVal = cardToPlay.value || 0;
-                  player.accusationsGiven = (player.accusationsGiven || 0) + accVal;
-                  targetPlayer.accusationsReceived = (targetPlayer.accusationsReceived || 0) + accVal;
-                  // เพิ่มแต้มข้อกล่าวหา
-                  room.accusedPlayers[targetUniqueId] = (room.accusedPlayers[targetUniqueId] || 0) + accVal;
-                  game.sendGameMessage(room.name, `<b>${player.name}</b> ใช้การ์ด ${game.getCardNameWithColor('Witness')} ใส่ <b>${targetPlayer.name}</b>`, 'orange', true);
-                  // Place RED card in front of the target player
-                  targetPlayer.inPlayCards.push(cardToPlay);
-                  game.io.to(targetPlayer.id).emit('update in play cards', targetPlayer.inPlayCards);
-                  // บังคับเปิดการ์ดชีวิต 1 ใบทันที
-                  room.playerForcedToRevealTryal = targetUniqueId;
-                  room.playerForcedToRevealSelector = player.uniqueId;
-                  game.io.to(player.id).emit('prompt select accused tryal', {
-                      accusedUniqueId: targetUniqueId,
-                      tryalCount: targetPlayer.tryalCards.length
-                  });
-                  game.io.to(targetPlayer.id).emit('forced reveal notice', {
-                      byPlayerName: player.name,
-                      reason: 'witness_card',
-                      points: room.accusedPlayers[targetUniqueId] || 0
-                  });
-                  game.emitRoomState(room.name);
-              }
-              // ไม่ว่า target จะถูกหรือไม่ ให้ลบการ์ดออกจากมือและทิ้งลงกองทิ้งเสมอ
-              if (cardIndex >= 0 && cardIndex < player.hand.length) {
-                  player.hand.splice(cardIndex, 1);
-              }
-              player.hasPlayedCardsThisTurn = true;
-              game.io.to(player.id).emit('disable draw button');
-              game.io.to(player.id).emit('card played successfully');
-      emitCardFeedback();
-              game.io.to(player.id).emit('update hand', player.hand);
-              game.sendDeckInfo(roomName);
-              if (game.canAutoEndTurn(room, player)) {
-                  game.sendGameMessage(room.name, `<b>${player.name}</b> การ์ดในมือหมดแล้ว จบเทิร์นอัตโนมัติ`, 'orange', true);
-                  game.setNextTurn(room);
-              } else {
-                  game.emitRoomState(room.name);
-              }
-              return;
-          default:
-              break;
-      }
+      const handled = applyCardEffect({ roomName, room, player, playerUniqueId, cardIndex, cardToPlay,
+          targetUniqueId, secondTargetUniqueId, emitCardFeedback, emitCardUsedOnYou });
+      if (handled) return;
 
       // Remove card from hand (after handling effects)
       player.hand.splice(cardIndex, 1);
@@ -573,10 +212,7 @@ module.exports = function createServices(game) {
       emitCardFeedback();
       
       // จบเทิร์นอัตโนมัติถ้าการ์ดในมือหมด (หลังจากลบการ์ดแล้ว)
-      if (game.canAutoEndTurn(room, player)) {
-          game.sendGameMessage(room.name, `<b>${player.name}</b> การ์ดในมือหมดแล้ว จบเทิร์นอัตโนมัติ`, 'orange', true);
-          game.setNextTurn(room);
-      }
+      game.finishEmptyHandTurn(room);
       
       game.io.to(player.id).emit('update hand', player.hand);
       game.emitRoomState(room.name);
@@ -591,152 +227,6 @@ module.exports = function createServices(game) {
       }
   }
 
-  function playRedCards(roomName, playerId, indexes, targetId) {
-      const room=game.rooms[roomName], player=room?.players[playerId], target=room?.players[targetId];
-      if (!room || room.gameOver || !room.gameStarted || room.currentPhase!=='DAY' ||
-          !player?.alive || player.isSilenced || room.currentTurnPlayerUniqueId!==playerId ||
-          game.hasPendingCardAction(room) || !target?.alive || targetId===playerId) return;
-      const reject=message=>{game.io.to(player.id).emit('game message',message,'orange');game.io.to(player.id).emit('card play rejected',{reason:'red_batch',message});};
-      if(!Array.isArray(indexes) || indexes.length<1 || indexes.length>7 ||
-          new Set(indexes).size!==indexes.length || indexes.some(i=>!Number.isInteger(i)||i<0||i>=player.hand.length)) return;
-      const cards=indexes.map(i=>player.hand[i]);
-      if(cards.some(card=>card.color!=='Red'||!['Accusation','Evidence','Witness'].includes(card.name))) return;
-      const points=cards.reduce((total,card)=>total+card.value,0);
-      const existing=room.accusedPlayers[targetId]||0;
-      if(points<1||points>7) {reject('เล่นการ์ดแดงได้รวมไม่เกิน 7 แต้มต่อแอ็กชัน กรุณาลดจำนวนไพ่');return;}
-      if(target.inPlayCards.some(card=>card.name==='Piety')) {reject('เป้าหมายมีพลังศรัทธา ใช้การ์ดแดงใส่ไม่ได้');return;}
-      // Validate the whole batch before consuming any card; commit as one action.
-      [...indexes].sort((a,b)=>b-a).forEach(index=>player.hand.splice(index,1));
-      target.inPlayCards.push(...cards);
-      room.accusedPlayers[targetId]=existing+points;
-      player.accusationsGiven=(player.accusationsGiven||0)+points;
-      target.accusationsReceived=(target.accusationsReceived||0)+points;
-      player.hasPlayedCardsThisTurn=true;
-      game.sendGameMessage(room.name, `${player.name} ใช้การ์ดแดง ${cards.length} ใบ (${cards.map(card=>game.CARD_NAME_THAI[card.name]||card.name).join(', ')}) ใส่ ${target.name} +${points} รวม ${existing+points}/7`, 'orange', true);
-      game.io.to(player.id).emit('update hand',player.hand);
-      game.io.to(player.id).emit('disable draw button');
-      game.io.to(player.id).emit('card played successfully');
-      game.io.to(target.id).emit('update in play cards',target.inPlayCards);
-      game.io.to(target.id).emit('card used on you',player.name,cards[0].name,`ใช้การ์ดแดง ${cards.length} ใบ · ข้อกล่าวหา +${points} รวม ${existing+points}/7`);
-      cards.forEach((card,index)=>game.io.to(room.name).emit('card action feedback',{
-          actorId:playerId,actorName:player.name,cardName:card.name,targetId,targetName:target.name,
-          discard:false,delay:index*180,result:`ข้อกล่าวหารวม ${existing+points}/7`
-      }));
-      // One batch can trigger only one reveal, even when the total exceeds seven.
-      if(existing+points>=7) {
-          room.playerForcedToRevealTryal=targetId;
-          room.playerForcedToRevealSelector=playerId;
-          game.io.to(player.id).emit('prompt select accused tryal',{accusedUniqueId:targetId,tryalCount:target.tryalCards.length});
-          game.io.to(target.id).emit('forced reveal notice',{byPlayerName:player.name,reason:'accusation_threshold',points:existing+points});
-      }
-      game.emitRoomState(roomName);
-      game.sendDeckInfo(roomName);
-      game.finishEmptyHandTurn(room);
-  }
-
-  function drawCards(roomName, playerUniqueId, count = 2) {
-      const room = game.rooms[roomName];
-      const player = room?.players[playerUniqueId];
-      if (!room || room.gameOver || !room.gameStarted || room.currentPhase !== 'DAY' ||
-          room.prankShot || room.pendingDraw || game.hasPendingCardAction(room) ||
-          !player?.alive || playerUniqueId !== room.currentTurnPlayerUniqueId || player.isSilenced) return;
-      if (player.hasPlayedCardsThisTurn) {
-          game.io.to(player.id).emit('game message', 'คุณเล่นการ์ดแล้วในเทิร์นนี้ จั่วเพิ่มไม่ได้', 'red');
-          return;
-      }
-      applyTwoPlayerRules(room);
-      player.hasPlayedCardsThisTurn = true;
-      room.pendingDraw = { playerId: playerUniqueId, remaining: count, waiting: false };
-      game.io.to(player.id).emit('disable draw button');
-      game.sendGameMessage(room.name, `${player.name} จั่วการ์ด ${count} ใบ`, 'blue', true);
-      continuePendingDraw(room);
-  }
-
-  function continuePendingDraw(room, fallbackPlayerId = null) {
-      if (!room || room.gameOver) return;
-      const draw = room.pendingDraw;
-      if (!draw) {
-          game.setNextTurn(room, fallbackPlayerId, !!fallbackPlayerId);
-          return;
-      }
-      if (room.currentPhase !== 'DAY') return;
-      const player = room.players[draw.playerId];
-      if (!player?.alive) {
-          room.pendingDraw = null;
-          game.setNextTurn(room, draw.playerId, true);
-          return;
-      }
-      room.currentTurnPlayerUniqueId = draw.playerId;
-      if (draw.waiting && draw.remaining > 0) {
-          game.sendGameMessage(room.name, `${player.name} จั่วต่ออีก ${draw.remaining} ใบให้ครบเทิร์นเดิม`, 'blue', true);
-      }
-      draw.waiting = false;
-      applyTwoPlayerRules(room);
-      let delay = 0;
-      while (draw.remaining > 0) {
-          if (!room.gameDeck.length) {
-              const night = room.discardPile.filter(card => card.name === 'Night');
-              room.gameDeck = game.shuffleArray(room.discardPile.filter(card => card.name !== 'Night')).concat(night);
-              room.discardPile = [];
-          }
-          const card = room.gameDeck.shift();
-          if (!card) {
-              game.sendGameMessage(room.name, 'ไม่เหลือการ์ดให้จั่วในกองจั่วและกองทิ้ง', 'grey', true);
-              break;
-          }
-          draw.remaining--;
-          game.io.to(room.name).emit('table card movement', { kind: 'draw', targetId: draw.playerId, delay });
-          delay += 160;
-          if (card.type !== 'Event') {
-              player.hand.push(card);
-              continue;
-          }
-          draw.waiting = true;
-          room.discardPile.push(card);
-          game.io.to(player.id).emit('update hand', player.hand);
-          game.io.to(room.name).emit('table phase cue', { cardName: card.name });
-          game.sendGameMessage(room.name, `${player.name} จั่วได้ ${game.getCardNameWithColor(card.name)} · หลังเหตุการณ์จั่วต่ออีก ${draw.remaining} ใบ`, 'blue', true);
-          game.sendDeckInfo(room.name);
-          game.emitRoomState(room.name);
-          if (card.name === 'Night') {
-              room.nightCardDrawer = draw.playerId;
-              game.changePhase(room.name, 'NIGHT');
-              return;
-          }
-          if (card.name === 'Conspiracy') {
-              room.conspiracyDrawer = draw.playerId;
-              const holder = room.players[room.blackCatHolder];
-              if (holder?.alive && holder.tryalCards.length > 0) {
-                  room.awaitingConspiracySelection = { selector: draw.playerId, target: holder.uniqueId, tryalCount: holder.tryalCards.length };
-                  game.io.to(player.id).emit('prompt select blackcat tryal', {
-                      blackCatHolder: holder.uniqueId, blackCatHolderName: holder.name,
-                      tryalCount: holder.tryalCards.length, fromConspiracyDraw: true
-                  });
-                  game.emitRoomState(room.name);
-              } else game.promptTryalCardSelectionToLeft(room.name);
-              return;
-          }
-      }
-      room.pendingDraw = null;
-      game.io.to(player.id).emit('update hand', player.hand);
-      game.sendDeckInfo(room.name);
-      game.emitRoomState(room.name);
-      game.setNextTurn(room, draw.playerId, true);
-  }
-
-  function sendDeckInfo(roomName) {
-      const room = game.rooms[roomName];
-      if (!room) return;
-      
-      const deckCount = room.gameDeck ? room.gameDeck.length : 0;
-      const discardCount = room.discardPile ? room.discardPile.length : 0;
-      
-      game.io.to(roomName).emit('deck info update', {
-          deckCount: deckCount,
-          discardPileCount: discardCount
-      });
-  }
-
   function updateBlackCatHolder(room) {
       let found = false;
       Object.values(room.players).forEach(p => {
@@ -748,5 +238,5 @@ module.exports = function createServices(game) {
       if (!found) room.blackCatHolder = null;
   }
 
-  return { shuffleArray, getCardNameWithColor, prepareDeckForNewDay, playCard, playRedCards, drawCards, continuePendingDraw, sendDeckInfo, updateBlackCatHolder, applyTwoPlayerRules, discardDuplicateMatchmakers, onTryalRevealed };
+  return { getCardNameWithColor, playCard, updateBlackCatHolder, applyTwoPlayerRules, discardDuplicateMatchmakers, onTryalRevealed };
 };

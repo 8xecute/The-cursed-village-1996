@@ -6,8 +6,6 @@ module.exports = function createServices(game) {
       const targetId = room.playersWhoActedAtNight?.witchKill;
       const target = room.players[targetId];
       const aliveWitches = game.getAlivePlayers(room).filter(player => player.hasBeenWitch || player.isWitch);
-      room.killedPlayer = null;
-      room.killedPlayerMatchmaker = null;
       if (target?.alive && aliveWitches.length > 0) {
           const protectedBy = target.inPlayCards.some(card => card.name === 'Asylum') ? 'ที่หลบภัย'
               : room.playersWhoActedAtNight.constableSave === targetId ? 'หมอผี'

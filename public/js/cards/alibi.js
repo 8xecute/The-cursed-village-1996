@@ -1,3 +1,4 @@
+import { registerInteraction, selectionChanged } from '../core/interaction.js';
 import { client } from '../core/client.js';
 
 client.actions.showAlibiRedCardSelectionPopup = function showAlibiRedCardSelectionPopup(targetUniqueId, redCards) {
@@ -42,6 +43,22 @@ client.actions.showAlibiRedCardSelectionPopup = function showAlibiRedCardSelecti
     cardListDiv.style.gap = '18px';
     cardListDiv.style.margin = '18px 0';
 
+    function selectEffect(index) {
+        const card = redCards.find(card => card.index === index);
+        if (!card || !['Accusation', 'Evidence'].includes(card.name)) return;
+        if (selectedType !== card.name) {
+            selectedType = card.name;
+            selectedIndexes = [];
+            accBtn.style.background = selectedType === 'Accusation' ? '#b71c1c' : '#444';
+            evidenceBtn.style.background = selectedType === 'Evidence' ? '#6d4c41' : '#444';
+        }
+        if (selectedIndexes.includes(index)) selectedIndexes = selectedIndexes.filter(i => i !== index);
+        else if (selectedType === 'Accusation' && selectedIndexes.length < 3) selectedIndexes.push(index);
+        else if (selectedType === 'Evidence' && selectedIndexes.length === 0) selectedIndexes = [index];
+        renderCardButtons();
+        updateConfirmBtn();
+    }
+
     // Helper: render card buttons
     function renderCardButtons() {
         cardListDiv.innerHTML = '';
@@ -66,20 +83,7 @@ client.actions.showAlibiRedCardSelectionPopup = function showAlibiRedCardSelecti
             cardBtn.style.cursor = 'pointer';
             cardBtn.style.margin = '0 6px';
             cardBtn.style.opacity = selectedIndexes.includes(card.index) ? '1' : '0.7';
-            cardBtn.onclick = () => {
-                if (selectedType === 'Accusation') {
-                    // toggle select, max 3
-                    if (selectedIndexes.includes(card.index)) {
-                        selectedIndexes = selectedIndexes.filter(i => i !== card.index);
-                    } else if (selectedIndexes.length < 3) {
-                        selectedIndexes.push(card.index);
-                    }
-                } else if (selectedType === 'Evidence') {
-                    selectedIndexes = selectedIndexes.includes(card.index) ? [] : [card.index]; // evidence เลือกได้แค่ 1
-                }
-                renderCardButtons();
-                updateConfirmBtn();
-            };
+            cardBtn.onclick = () => selectEffect(card.index);
             if (selectedType === 'Accusation' && selectedIndexes.length >= 3 && !selectedIndexes.includes(card.index)) {
                 cardBtn.disabled = true;
                 cardBtn.style.opacity = '0.4';
@@ -179,6 +183,7 @@ client.actions.showAlibiRedCardSelectionPopup = function showAlibiRedCardSelecti
 
     // Helper: update confirm button state
     function updateConfirmBtn() {
+        selectionChanged();
         if (selectedType === 'Accusation') {
             confirmBtn.disabled = selectedIndexes.length === 0 || selectedIndexes.length > 3;
         } else if (selectedType === 'Evidence') {
@@ -189,6 +194,12 @@ client.actions.showAlibiRedCardSelectionPopup = function showAlibiRedCardSelecti
     }
 
     document.body.appendChild(container);
+    registerInteraction(container, { kind: 'effect', owner: targetUniqueId,
+        read: () => ({ eligible: redCards.filter(card => ['Accusation','Evidence'].includes(card.name)).map(card => card.index), selected: selectedIndexes }),
+        choose: selectEffect,
+        confirm: () => { if (!confirmBtn.disabled) confirmBtn.onclick(); },
+        cancel: cancelBtn.onclick
+    });
 };
 
 export function initialize() {

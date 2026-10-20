@@ -1,3 +1,4 @@
+import { registerLifeInteraction } from '../core/interaction.js';
 import { client } from '../core/client.js';
 
 
@@ -48,7 +49,8 @@ export function initialize() {
           return;
       }
 
-      const cardsDiv = document.createElement('div');
+      const lifeCommands = new Map();
+    const cardsDiv = document.createElement('div');
       cardsDiv.className = 'cards-container';
 
       for (let i = 0; i < leftPlayerTryalCount; i++) {
@@ -62,12 +64,14 @@ export function initialize() {
               if (popup && popup.parentNode) popup.parentNode.removeChild(popup);
               setTimeout(() => { client.actions.updateTryalCardDisplay(); }, 300);
           };
-          cardsDiv.appendChild(btn);
+          lifeCommands.set(i, btn.onclick);
+        cardsDiv.appendChild(btn);
       }
       popup.appendChild(cardsDiv);
 
       client.actions.addTryalPopupCollapseControl(popup, overlay, title);
       overlay.appendChild(popup);
       document.body.appendChild(overlay);
+      registerLifeInteraction(popup, leftPlayerUniqueId, lifeCommands);
   });
 }

@@ -1,3 +1,4 @@
+import { registerLifeInteraction } from '../core/interaction.js';
 import { client } from '../core/client.js';
 
 client.actions.showConfessPopup = function showConfessPopup(tryalCards) {
@@ -34,6 +35,7 @@ client.actions.showConfessPopup = function showConfessPopup(tryalCards) {
     subtitle.style = 'color: #d7ccc8; font-size: 0.95em; margin-top: -6px; margin-bottom: 16px;';
     popup.appendChild(subtitle);
 
+    const lifeCommands = new Map();
     const cardsDiv = document.createElement('div');
     cardsDiv.className = 'cards-container';
 
@@ -47,6 +49,7 @@ client.actions.showConfessPopup = function showConfessPopup(tryalCards) {
             if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);
             if (popup && popup.parentNode) popup.parentNode.removeChild(popup);
         };
+        lifeCommands.set(i, btn.onclick);
         cardsDiv.appendChild(btn);
     });
     popup.appendChild(cardsDiv);
@@ -66,6 +69,7 @@ client.actions.showConfessPopup = function showConfessPopup(tryalCards) {
     client.actions.addTryalPopupCollapseControl(popup, overlay, title);
     overlay.appendChild(popup);
     document.body.appendChild(overlay);
+    registerLifeInteraction(popup, client.state.myUniqueId, lifeCommands, skipBtn.onclick);
 };
 
 export function initialize() {

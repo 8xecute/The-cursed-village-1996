@@ -66,7 +66,6 @@ module.exports = function createServices(game) {
               room.confessionChoices = {};
               room.nightConfessors = [];
               room.currentConfessionIndex = 0;
-              room.confessionTimerDuration = 0;
               game.clearConfessionTimer(roomName);
               nextPhase = 'PRE_DAWN';
               break;
@@ -218,8 +217,6 @@ module.exports = function createServices(game) {
           player.inPlayCards = []; // Clear permanent cards from previous game
           player.hand = []; // Clear hand from previous game
           player.hasPlayedCardsThisTurn = false; // Initialize turn action flag
-          player.accusationsGiven = 0;
-          player.accusationsReceived = 0;
           player.isReady = false;
 
           // Standard setup: 4–7 players get 5 lives, 8–9 get 4, 10–12 get 3.

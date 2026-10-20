@@ -1,3 +1,4 @@
+import { registerLifeInteraction } from '../core/interaction.js';
 import { client } from '../core/client.js';
 
 client.actions.afterPlayCard = function afterPlayCard() {
@@ -72,6 +73,7 @@ export function initialize() {
       subtitle.style = 'color: #d7ccc8; font-size: 0.95em; margin-top: -6px; margin-bottom: 16px;';
       popup.appendChild(subtitle);
 
+      const lifeCommands = new Map();
       const cardsDiv = document.createElement('div');
       cardsDiv.className = 'cards-container';
 
@@ -85,6 +87,7 @@ export function initialize() {
               if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);
               if (popup && popup.parentNode) popup.parentNode.removeChild(popup);
           };
+          lifeCommands.set(i, cardBtn.onclick);
           cardsDiv.appendChild(cardBtn);
       }
 
@@ -92,6 +95,7 @@ export function initialize() {
       client.actions.addTryalPopupCollapseControl(popup, overlay, title);
       overlay.appendChild(popup);
       document.body.appendChild(overlay);
+      registerLifeInteraction(popup, blackCatHolder, lifeCommands);
   });
 
   client.state.socket.on('prompt select curse target', ({ targetUniqueId, blueCards }) => {

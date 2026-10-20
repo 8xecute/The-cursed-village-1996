@@ -1,3 +1,4 @@
+import { registerInteraction } from '../core/interaction.js';
 import { client } from '../core/client.js';
 
 client.actions.showCurseTargetSelection = function showCurseTargetSelection(targetUniqueId, blueCards) {
@@ -37,6 +38,7 @@ client.actions.showCurseTargetSelection = function showCurseTargetSelection(targ
     cardList.style.gap = '18px';
     cardList.style.flexWrap = 'wrap';
 
+    const effectCommands = new Map();
     blueCards.forEach((card, idx) => {
         const cardDiv = document.createElement('div');
         cardDiv.className = 'card blue-card';
@@ -73,10 +75,12 @@ client.actions.showCurseTargetSelection = function showCurseTargetSelection(targ
             cardDiv.style.transform = '';
             cardDiv.style.borderColor = '#1565c0';
         });
-        cardDiv.addEventListener('click', () => {
+        const destroyEffect = () => {
             client.state.socket.emit('select curse target', targetUniqueId, idx);
             modal.remove();
-        });
+        };
+        effectCommands.set(idx, destroyEffect);
+        cardDiv.addEventListener('click', destroyEffect);
         cardList.appendChild(cardDiv);
     });
     content.appendChild(cardList);
@@ -98,6 +102,10 @@ client.actions.showCurseTargetSelection = function showCurseTargetSelection(targ
 
     modal.appendChild(content);
     document.body.appendChild(modal);
+    const indices = (client.state.currentRoomState?.players?.[targetUniqueId]?.inPlayCards || [])
+        .flatMap((card, index) => card.color === 'Blue' ? [index] : []);
+    registerInteraction(modal, { kind: 'effect', owner: targetUniqueId, eligible: indices,
+        choose: index => effectCommands.get(indices.indexOf(index))?.() });
 };
 
 export function initialize() {

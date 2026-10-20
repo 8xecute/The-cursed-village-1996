@@ -1,3 +1,4 @@
+import { registerInteraction, selectionChanged } from '../core/interaction.js';
 import { client } from '../core/client.js';
 
 client.actions.showAssignBlackCatPopup = function showAssignBlackCatPopup(potentialTargets) {
@@ -70,7 +71,9 @@ client.actions.showAssignBlackCatPopup = function showAssignBlackCatPopup(potent
     subtitle.style.margin = '0 0 14px 0';
     container.appendChild(subtitle);
 
+    let assignedTarget = '';
     const select = document.createElement('select');
+    select.addEventListener('change', () => { assignedTarget = select.value; selectionChanged(); });
     select.style.width = '100%';
     select.style.padding = '12px 14px';
     select.style.fontSize = '1em';
@@ -108,8 +111,8 @@ client.actions.showAssignBlackCatPopup = function showAssignBlackCatPopup(potent
     btn.style.boxSizing = 'border-box';
 
     btn.onclick = () => {
-        if (select.value) {
-            client.state.socket.emit('assign black cat', select.value);
+        if (assignedTarget) {
+            client.state.socket.emit('assign black cat', assignedTarget);
             if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
         } else {
             alert('กรุณาเลือกผู้เล่นก่อนยืนยัน!');
@@ -120,6 +123,15 @@ client.actions.showAssignBlackCatPopup = function showAssignBlackCatPopup(potent
     client.actions.addTryalPopupCollapseControl(container, overlay, title);
     overlay.appendChild(container);
     document.body.appendChild(overlay);
+    registerInteraction(container, { kind: 'player',
+        read: () => ({ eligible: potentialTargets.map(p => p.uniqueId), selected: assignedTarget ? [assignedTarget] : [] }),
+        choose: id => {
+            if (!potentialTargets.some(p => p.uniqueId === id)) return;
+            if (assignedTarget === id) btn.onclick();
+            else { assignedTarget = id; select.value = id; selectionChanged(); }
+        },
+        confirm: btn.onclick
+    });
 };
 
 client.actions.removeNightActionPopup = function removeNightActionPopup() {
@@ -378,6 +390,7 @@ export function initialize() {
           popup.style.textAlign = 'center';
           popup.innerHTML = '<h3 style="color:#ffd700;">คุณต้องเล่นการ์ด Night ก่อนจบเทิร์น!</h3>';
           document.body.appendChild(popup);
+          registerInteraction(popup, { kind: 'event', event: 'night' });
       }
   });
 

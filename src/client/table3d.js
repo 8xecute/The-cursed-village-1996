@@ -1,6 +1,7 @@
+import { QUALITY_PRESETS, normalizeQuality, createGraphicsQuality } from './graphics-quality.mjs';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { createCameraControls } from './camera-controls.mjs';
 import { timberTexture, ceremonialCloth, buildCeremonialRoom, createRitualBust } from './ritual-scene.mjs';
 
 const COLORS = [0x526774, 0x795551, 0x88744e, 0x596b55, 0x716275, 0x8a806b,
@@ -17,11 +18,10 @@ function canvasTexture(width, height, draw) {
 }
 
 function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError, onInspect, onSeatFocus, quality = 'medium', cameraMode = 'rotate' }) {
-    let qualityLevel = ['low','medium','high'].includes(quality) ? quality : 'medium';
-    let lowPower = qualityLevel === 'low';
+    const qualityLevel = normalizeQuality(quality);
     const renderer = new THREE.WebGLRenderer({ antialias: false, alpha: false, powerPreference: 'default' });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, {low:1,medium:1.5,high:2}[qualityLevel]));
-    renderer.shadowMap.enabled = !lowPower;
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, QUALITY_PRESETS[qualityLevel].pixelRatio));
+    renderer.shadowMap.enabled = QUALITY_PRESETS[qualityLevel].shadows;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.15;
@@ -36,53 +36,19 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
     scene.background = new THREE.Color(0x151713);
     scene.fog = new THREE.Fog(0x151713, 17, 36);
     const camera = new THREE.PerspectiveCamera(43, 1, 0.1, 60);
-    const controls = new OrbitControls(camera, renderer.domElement);
-    controls.enablePan = true;
-    controls.screenSpacePanning = false;
-    controls.panSpeed = .9;
-    controls.rotateSpeed = .65;
-    controls.mouseButtons = { LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN };
-    controls.touches = { ONE: cameraMode === 'pan' ? THREE.TOUCH.PAN : THREE.TOUCH.ROTATE, TWO: cameraMode === 'pan' ? THREE.TOUCH.DOLLY_ROTATE : THREE.TOUCH.DOLLY_PAN };
-    if (cameraMode === 'pan') controls.mouseButtons.LEFT = THREE.MOUSE.PAN;
-    renderer.domElement.style.touchAction = 'none';
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.09;
-    controls.minDistance = 3;
-    controls.maxDistance = 24;
-    controls.minPolarAngle = .05;
-    controls.maxPolarAngle = Math.PI / 2.05;
-    controls.enableZoom = true;
-    controls.zoomSpeed = .65;
-
-    let seatOrder = [];
-    let ownSeatId = null;
-    let focusedSeatId = null;
-    function focusSeat(id) {
-        const seat = seatPositions.get(id);
-        if (!seat) return;
-        focusedSeatId = id;
-        controls.enableRotate = true; controls.enablePan = true;
-        controls.target.set(seat.x*.68,.1,seat.z*.68);
-        camera.position.set(controls.target.x+seat.x*.5,9.5,controls.target.z+seat.z*.5);
-        controls.update(); requestRender();
-        onSeatFocus?.(seatOrder.find(player => player.uniqueId === id)?.name || 'ผู้เล่น');
-    }
-    function resetCamera() {
-        focusedSeatId = null;
-        controls.enableRotate = true; controls.enablePan = true;
-        onSeatFocus?.('มุมของคุณ');
-        camera.position.set(0, 17, 5.5);
-        controls.target.set(0, 0.35, 0);
-        controls.update();
-        requestRender();
-    }
+    const cameraRig = createCameraControls({ camera, renderer, cameraMode, requestRender,
+        isActive: () => active, isDisposed: () => disposed,
+        getSeatPosition: id => seatPositions.get(id), onSeatFocus,
+        onModeChange: () => { down = null; clearTimeout(holdTimer); }
+    });
+    const { controls, resetCamera } = cameraRig;
 
     const ambient = new THREE.HemisphereLight(0xc0ceda, 0x302016, 1.25);
     scene.add(ambient);
     const key = new THREE.DirectionalLight(0xffd9b0, 2.4);
     key.position.set(-4, 10, 5);
     key.castShadow = true;
-    key.shadow.mapSize.set(qualityLevel === 'high' ? 2048 : 1024, qualityLevel === 'high' ? 2048 : 1024);
+    key.shadow.mapSize.set(QUALITY_PRESETS[qualityLevel].shadowSize, QUALITY_PRESETS[qualityLevel].shadowSize);
     key.shadow.camera.left = key.shadow.camera.bottom = -8;
     key.shadow.camera.right = key.shadow.camera.top = 8;
     key.shadow.normalBias = 0.035;
@@ -216,8 +182,8 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             renderFrame = 0;
             controls.update();
             const now = performance.now();
-            moveCamera(now);
-            constrainCamera();
+            cameraRig.moveCamera(now);
+            cameraRig.constrainCamera();
             if (!reducedMotion.matches) {
                 const time = now * .001;
                 flame.scale.set(1+Math.sin(time*5)*.04,1+Math.sin(time*7)*.07,1);
@@ -257,80 +223,13 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
                 if (elapsed >= shot.raiseDuration + shot.bulletDuration) { removeGunShot(shot); gunShots.splice(index, 1); }
             }
             renderer.render(scene, camera);
-            if (flights.length || gunShots.length || pressedKeys.size || !reducedMotion.matches) requestRender();
+            if (flights.length || gunShots.length || cameraRig.hasMovement || !reducedMotion.matches) requestRender();
         });
     }
-    controls.addEventListener('change', requestRender);
-    const pressedKeys = new Set();
-    const movementKeys = new Set(['KeyW','KeyA','KeyS','KeyD','Space','KeyQ','ControlLeft','ControlRight']);
-    let keyboardLocked = false;
-    let previousMovementTime = 0;
-    function clearMovement() { pressedKeys.clear(); previousMovementTime = 0; }
-    function typing(target) { return !!target?.closest?.('input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="textbox"]'); }
-    function keyDown(event) {
-        const ctrlEnabled = keyboardLocked && !!document.fullscreenElement;
-        if ((event.ctrlKey && !ctrlEnabled) || event.altKey || event.metaKey) { clearMovement(); return; }
-        if (event.code.startsWith('Control') && !ctrlEnabled) return;
-        if (!active || disposed || document.hidden || !movementKeys.has(event.code) || typing(event.target)) return;
-        if (document.querySelector('#card-inspect-overlay:not([hidden])')) return;
-        if (event.code === 'Space' && event.target?.closest?.('button, summary, a')) return;
-        event.preventDefault();
-        if (!pressedKeys.size) previousMovementTime = performance.now();
-        pressedKeys.add(event.code); requestRender();
-    }
-    function keyUp(event) { pressedKeys.delete(event.code); if (!pressedKeys.size) previousMovementTime = 0; }
-    function focusChanged(event) { if (typing(event.target) || document.querySelector('#card-inspect-overlay:not([hidden])')) clearMovement(); }
-    function visibilityChanged() { if (document.hidden) clearMovement(); }
-    function constrainCamera() {
-        const target=controls.target.clone();
-        controls.target.x=THREE.MathUtils.clamp(controls.target.x,-8,8);
-        controls.target.z=THREE.MathUtils.clamp(controls.target.z,-8,8);
-        controls.target.y=THREE.MathUtils.clamp(controls.target.y,-.4,8);
-        camera.position.add(controls.target.clone().sub(target));
-        camera.position.y=THREE.MathUtils.clamp(camera.position.y,.35,28);
-    }
-    function setQuality(level) {
-        if (!['low','medium','high'].includes(level)) return;
-        const changed=qualityLevel!==level;
-        qualityLevel=level;lowPower=level==='low';
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1,{low:1,medium:1.5,high:2}[level]));
-        renderer.setSize(container.clientWidth || 1,container.clientHeight || 1);
-        renderer.shadowMap.enabled=!lowPower;
-        const shadowSize=level==='high'?2048:1024;
-        if(key.shadow.mapSize.x!==shadowSize) {
-            key.shadow.map?.dispose();key.shadow.map=null;
-            key.shadow.mapPass?.dispose();key.shadow.mapPass=null;
-            key.shadow.mapSize.set(shadowSize,shadowSize);
-        }
-        let lightIndex=0;
-        scene.traverse(part=>{
-            if(part.userData.qualityLight) {part.visible=level==='high'||(level==='medium'&&lightIndex%2===0);lightIndex++;}
-            if(changed && part.isMesh && part.material) part.material.needsUpdate=true;
-        });
-        if(changed && lastSceneOptions) {signature='';update(lastSceneOptions);}
-        renderer.shadowMap.needsUpdate=true;requestRender();
-    }
-    function moveCamera(now) {
-        if (!pressedKeys.size) return;
-        const dt = Math.min(.05, Math.max(0,(now-previousMovementTime)/1000)); previousMovementTime = now;
-        const forward = camera.getWorldDirection(new THREE.Vector3()); forward.y = 0;
-        if (forward.lengthSq() < .001) forward.set(0,0,-1); else forward.normalize();
-        const right = new THREE.Vector3().crossVectors(forward,camera.up).normalize();
-        const delta = new THREE.Vector3();
-        if (pressedKeys.has('KeyW')) delta.add(forward);
-        if (pressedKeys.has('KeyS')) delta.sub(forward);
-        if (pressedKeys.has('KeyD')) delta.add(right);
-        if (pressedKeys.has('KeyA')) delta.sub(right);
-        if (pressedKeys.has('Space')) delta.y += 1;
-        if (pressedKeys.has('KeyQ')) delta.y -= 1;
-        if (keyboardLocked && document.fullscreenElement && (pressedKeys.has('ControlLeft') || pressedKeys.has('ControlRight'))) delta.y -= 1;
-        if (delta.lengthSq()) { delta.normalize().multiplyScalar(4*dt); camera.position.add(delta); controls.target.add(delta); }
-    }
-    document.addEventListener('keydown',keyDown);
-    document.addEventListener('keyup',keyUp);
-    document.addEventListener('focusin',focusChanged);
-    document.addEventListener('visibilitychange',visibilityChanged);
-    window.addEventListener('blur',clearMovement);
+    const graphics = createGraphicsQuality({ renderer, scene, key, container, quality: qualityLevel, requestRender,
+        onChange: () => { if (lastSceneOptions) { signature = ''; update(lastSceneOptions); } }
+    });
+    const { setQuality } = graphics;
 
     new GLTFLoader().load('models/villager-head-seated.glb', gltf => {
         const source = gltf.scene.getObjectByProperty('isMesh', true);
@@ -428,7 +327,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
         clearDynamic();
         seatPositions.clear(); feedbackImageFor = imageFor;
         const players = Object.values(state.players || {});
-        seatOrder = players; ownSeatId = me;
+        cameraRig.setSeats(players, me);
         const ownIndex = players.findIndex(player => player.uniqueId === me);
         function outline(face, color = 0xc2ab87) {
             const edge = new THREE.LineSegments(new THREE.EdgesGeometry(face.geometry), new THREE.LineBasicMaterial({ color }));
@@ -453,7 +352,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             const parts = characterCache.get(modelKey).map(source => {
                 const part = new THREE.Mesh(source.geometry, source.material.clone());
                 part.userData.sharedGeometry = true;
-                part.castShadow = part.receiveShadow = !lowPower;
+                part.castShadow = part.receiveShadow = !graphics.lowPower;
                 pawn.add(part); return part;
             });
             parts.forEach(part => { part.userData = { ...part.userData, playerId: player.uniqueId }; targets.push(part); });
@@ -621,23 +520,13 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             if (active === value) return;
             active = value; controls.enabled = value;
             if (value) { resize(); requestRender(); clearTimeout(flameTimer); tickFlame(); }
-            else { clearMovement(); clearTimeout(flameTimer); cancelAnimationFrame(renderFrame); renderFrame = 0; }
+            else { cameraRig.stopMovement(); clearTimeout(flameTimer); cancelAnimationFrame(renderFrame); renderFrame = 0; }
         },
         resetCamera,
         setQuality,
-        setCameraMode(mode) {
-            const pan=mode==='pan';
-            controls.mouseButtons.LEFT=pan?THREE.MOUSE.PAN:THREE.MOUSE.ROTATE;
-            controls.touches.ONE=pan?THREE.TOUCH.PAN:THREE.TOUCH.ROTATE;
-            controls.touches.TWO=pan?THREE.TOUCH.DOLLY_ROTATE:THREE.TOUCH.DOLLY_PAN;
-            down=null;clearTimeout(holdTimer);
-        },
-        stopMovement() { clearMovement(); },
-        setMovement(code, held) {
-            if(!active || disposed || !movementKeys.has(code)) return;
-            if(held) {if(!pressedKeys.size)previousMovementTime=performance.now();pressedKeys.add(code);requestRender();}
-            else {pressedKeys.delete(code);if(!pressedKeys.size)previousMovementTime=0;}
-        },
+        setCameraMode: cameraRig.setCameraMode,
+        stopMovement: cameraRig.stopMovement,
+        setMovement: cameraRig.setMovement,
         animateShot(event) {
             if (!active || disposed || reducedMotion.matches) return;
             const from = seatPositions.get(event.actorId)?.clone();
@@ -660,13 +549,8 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             gunShots.push({ group, gun, flash, bullet, from, to, muzzle, started: performance.now(), raiseDuration: event.raiseDuration || 900, bulletDuration: event.bulletDuration || 4200 });
             requestRender();
         },
-        setKeyboardLocked(locked) { keyboardLocked = !!locked; clearMovement(); },
-        stepSeat(direction) {
-            if (!seatOrder.length) return;
-            const current = seatOrder.findIndex(player => player.uniqueId === (focusedSeatId || ownSeatId));
-            const index = (Math.max(0,current)+direction+seatOrder.length)%seatOrder.length;
-            focusSeat(seatOrder[index].uniqueId);
-        },
+        setKeyboardLocked: cameraRig.setKeyboardLocked,
+        stepSeat: cameraRig.stepSeat,
         animateCard(event) {
             const actor = seatPositions.get(event.actorId), target = seatPositions.get(event.targetId);
             const from = actor?.clone().multiplyScalar(1.15).setY(1);
@@ -687,33 +571,14 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
                 }
             }
         },
-        setCameraView(view) {
-            const offset = camera.position.clone().sub(controls.target);
-            const azimuth = Math.atan2(offset.x, offset.z);
-            const distance = view === 'top' ? 17 : 18;
-            const polar = view === 'top' ? .22 : .68;
-            controls.target.set(0, .2, 0);
-            camera.position.set(Math.sin(azimuth) * Math.sin(polar) * distance,
-                .2 + Math.cos(polar) * distance, Math.cos(azimuth) * Math.sin(polar) * distance);
-            controls.update(); requestRender();
-        },
-        zoom(direction) {
-            const offset = camera.position.clone().sub(controls.target);
-            offset.multiplyScalar(direction === 'in' ? .86 : 1.16);
-            offset.setLength(THREE.MathUtils.clamp(offset.length(), controls.minDistance, controls.maxDistance));
-            camera.position.copy(controls.target).add(offset);
-            controls.update(); requestRender();
-        },
+        setCameraView: cameraRig.setCameraView,
+        zoom: cameraRig.zoom,
         dispose() {
-            clearMovement();
-            document.removeEventListener('keydown',keyDown);
-            document.removeEventListener('keyup',keyUp);
-            document.removeEventListener('focusin',focusChanged);
-            document.removeEventListener('visibilitychange',visibilityChanged);
-            window.removeEventListener('blur',clearMovement);
+            cameraRig.stopMovement();
+            cameraRig.dispose();
             disposed = true; clearTimeout(holdTimer); clearTimeout(flameTimer); stopFlight();
             cancelAnimationFrame(renderFrame);
-            resizeObserver.disconnect(); controls.dispose(); clearDynamic();
+            resizeObserver.disconnect(); clearDynamic();
             scene.traverse(object => { object.geometry?.dispose(); object.material?.dispose(); });
             characterCache.forEach(parts => parts.forEach(part => { part.geometry.dispose(); part.material.dispose(); }));
             characterCache.clear();

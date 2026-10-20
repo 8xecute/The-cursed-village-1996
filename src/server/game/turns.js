@@ -1,6 +1,8 @@
 // turns: game services. Dependencies are injected through game.
 module.exports = function createServices(game) {
   function setNextTurn(room, fromPlayerUniqueId = null, forceFromPlayer = false) {
+      // Every caller, including draw continuation and phase startup, passes this gate.
+      if (!canAdvanceTurn(room)) return false;
       game.applyTwoPlayerRules(room);
       const alivePlayers = game.getAlivePlayers(room);
       if (alivePlayers.length === 0) {
@@ -90,30 +92,46 @@ module.exports = function createServices(game) {
 
   }
 
+  function pendingActionReason(room) {
+      if (!room) return null;
+      if (room.playerForcedToRevealTryal) return 'รอเลือกเปิดการ์ดชีวิตให้เสร็จก่อน';
+      if (room.awaitingCurseSelection) return 'รอเลือกผลคำสาปให้เสร็จก่อน';
+      if (room.awaitingAlibiSelection) return 'รอเลือกข้อแก้ต่างหรือยกเลิกให้เสร็จก่อน';
+      if (room.awaitingConspiracySelection || room.awaitingLeftTryalSelections) return 'รอพิธีเซ่นไหว้ให้เสร็จก่อน';
+      if (room.isAssigningBlackCat) return 'รอมอบเครื่องเซ่นให้เสร็จก่อน';
+      if (room.pendingDraw) return 'รอจั่วการ์ดให้ครบก่อน';
+      if (room.prankShot) return 'รอผลการยิงปืนให้เสร็จก่อน';
+      return null;
+  }
+
   function hasPendingCardAction(room) {
-      return !!(room.pendingDraw || room.prankShot || room.playerForcedToRevealTryal || room.awaitingCurseSelection ||
-          room.awaitingAlibiSelection || room.awaitingConspiracySelection ||
-          room.awaitingLeftTryalSelections || room.isAssigningBlackCat);
+      return pendingActionReason(room) !== null;
+  }
+
+  function canAdvanceTurn(room) {
+      return !!room?.gameStarted && !room.gameOver && room.currentPhase === 'DAY' &&
+          !hasPendingCardAction(room);
   }
 
   function canAutoEndTurn(room, player) {
-      return !room.gameOver && room.currentPhase === 'DAY' && player?.alive &&
+      return canAdvanceTurn(room) && player?.alive &&
           room.currentTurnPlayerUniqueId === player.uniqueId && player.hasPlayedCardsThisTurn &&
-          player.hand.length === 0 && !hasPendingCardAction(room);
+          player.hand.length === 0;
   }
 
   function finishEmptyHandTurn(room) {
-      if (!room || room.gameOver || room.currentPhase !== 'DAY' || hasPendingCardAction(room)) return;
+      if (!canAdvanceTurn(room)) return false;
       const player = room.players[room.currentTurnPlayerUniqueId];
       // A completed reveal can kill the actor through Matchmaker. Resume from
       // that seat only after the reveal/pending action has been cleaned up.
       if (player && !player.alive) {
           game.setNextTurn(room, player.uniqueId, true);
-          return;
+          return true;
       }
-      if (!canAutoEndTurn(room, player)) return;
+      if (!canAutoEndTurn(room, player)) return false;
       game.sendGameMessage(room.name, `<b>${player.name}</b> การ์ดในมือหมดแล้ว จบเทิร์นอัตโนมัติ`, 'orange', true);
       game.setNextTurn(room);
+      return true;
   }
 
   function endTurn(roomName, playerUniqueId) {
@@ -132,13 +150,9 @@ module.exports = function createServices(game) {
           return;
       }
 
-      if (room.playerForcedToRevealTryal) {
-          game.io.to(player.id).emit('game message', `รอให้ ${room.players[room.playerForcedToRevealTryal].name} เปิดเผยการ์ดชีวิตก่อน`, 'orange');
-          return;
-      }
-
-      if (hasPendingCardAction(room)) {
-          game.io.to(player.id).emit('game message', 'กรุณาทำแอ็กชันการ์ดให้เสร็จก่อนจบเทิร์น', 'orange');
+      const pendingReason = pendingActionReason(room);
+      if (pendingReason) {
+          game.io.to(player.id).emit('game message', pendingReason, 'orange');
           return;
       }
 
@@ -150,5 +164,5 @@ module.exports = function createServices(game) {
       game.setNextTurn(room); // Now advance to next player's turn
   }
 
-  return { setNextTurn, endTurn, hasPendingCardAction, canAutoEndTurn, finishEmptyHandTurn };
+  return { setNextTurn, endTurn, pendingActionReason, canAdvanceTurn, hasPendingCardAction, canAutoEndTurn, finishEmptyHandTurn };
 };

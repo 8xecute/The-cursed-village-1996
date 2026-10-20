@@ -37,19 +37,12 @@ module.exports = function createServices(game) {
               continue;
           }
           if (!player.alive) continue;
-          const card = player.tryalCards.splice(index, 1)[0];
+          const card = game.openLifeCard(room, player, index);
           if (!card) continue;
           room.nightConfessors.push(player.uniqueId);
-          game.onTryalRevealed(room, card);
-          (player.revealedTryalCards ||= []).push({ name: card.name });
-          player.revealedTryalCardIndexes.add(card.name);
           game.sendGameMessage(room.name, `${player.name} สารภาพบาป: ${game.getCardNameWithColor(card.name)}`, 'gold', true);
-          game.io.to(player.id).emit('update tryal cards initial', player.tryalCards);
-          game.io.to(player.id).emit('update revealed tryal indexes', Array.from(player.revealedTryalCardIndexes));
-          if (card.name === 'Witch') {
-              player.isWitch = player.hasBeenWitch = true;
-              game.handlePlayerDeath(room, player, { cause: 'revealed_witch' });
-          } else game.eliminatePlayerWithoutLifeCards(room, player);
+          game.syncLifeCards(player);
+          game.resolveLifeCard(room, player, card);
           if (room.gameOver) return;
       }
       game.resolveNightActions(roomName);
@@ -74,14 +67,14 @@ module.exports = function createServices(game) {
   function revealTryalCard(roomName, playerUniqueId, cardIndex) {
       const room = game.rooms[roomName];
       if (!room || room.gameOver) return;
-      if (!room || !room.gameStarted || room.currentPhase !== 'DAY') {
-          game.io.to(room.players[playerUniqueId].id).emit('game message', 'การเปิดเผยการ์ดชีวิตใช้ได้เฉพาะในช่วงกลางวันเท่านั้น.', 'red');
+      if (!room.gameStarted || room.currentPhase !== 'DAY') {
+          if (room.players[playerUniqueId]) game.io.to(room.players[playerUniqueId].id).emit('game message', 'การเปิดเผยการ์ดชีวิตใช้ได้เฉพาะในช่วงกลางวันเท่านั้น.', 'red');
           return;
       }
 
       const player = room.players[playerUniqueId];
       if (!player || !player.alive) {
-          game.io.to(player.id).emit('game message', 'คุณไม่สามารถเปิดเผยการ์ดชีวิตได้.', 'red');
+          if (player) game.io.to(player.id).emit('game message', 'คุณไม่สามารถเปิดเผยการ์ดชีวิตได้.', 'red');
           return;
       }
 
@@ -91,27 +84,22 @@ module.exports = function createServices(game) {
       }
 
       // Validate card index
-      if (cardIndex < 0 || cardIndex >= player.tryalCards.length) {
+      if (!Number.isInteger(cardIndex) || cardIndex < 0 || cardIndex >= player.tryalCards.length) {
           game.io.to(player.id).emit('game message', 'หมายเลขการ์ดไม่ถูกต้อง.', 'red');
           return;
       }
 
-      const revealedCard = player.tryalCards.splice(cardIndex, 1)[0];
-      game.onTryalRevealed(room, revealedCard); // Remove selected card
-      (player.revealedTryalCards ||= []).push({ name: revealedCard.name });
-      player.revealedTryalCardIndexes.add(revealedCard.name);
+      const revealedCard = game.openLifeCard(room, player, cardIndex);
+      if (!revealedCard) return;
 
       game.sendGameMessage(room.name, `<b>${player.name}</b> เปิดเผยการ์ดชีวิต: ${revealedCard.name}!`, 'gold', true);
-      game.io.to(player.id).emit('update tryal cards initial', player.tryalCards); // Update client's view
-      game.io.to(player.id).emit('update revealed tryal indexes', Array.from(player.revealedTryalCardIndexes)); // Update client's revealed roles
+      game.syncLifeCards(player);
 
       if (revealedCard.name === 'Witch') {
-          player.isWitch = true; // Confirm Witch status
-          player.hasBeenWitch = true; // Mark that this player has been a witch
           game.sendGameMessage(room.name, `<b>${player.name}</b> คือปอบ!`, 'red', true);
           // ตายทันทีเมื่อเปิด Witch ใบแรก
               game.sendGameMessage(room.name, `<b>${player.name}</b> ถูกเปิดเผยว่าเป็นปอบและตายทันที!`, 'red', true);
-              game.handlePlayerDeath(room, player, { cause: 'revealed_witch' });
+              game.resolveLifeCard(room, player, revealedCard);
           // --- Clear forced reveal state หลังผู้เล่นตาย ---
           room.playerForcedToRevealTryal = null;
           room.playerForcedToRevealSelector = null;
@@ -120,7 +108,6 @@ module.exports = function createServices(game) {
               game.finishEmptyHandTurn(room);
               return;
       } else if (revealedCard.name === 'Constable') {
-          player.isConstable = false; // Revealed Constable no longer has a power
           game.sendGameMessage(room.name, `<b>${player.name}</b> คือหมอผี!`, 'green', true);
       }
 
@@ -128,7 +115,7 @@ module.exports = function createServices(game) {
       room.playerForcedToRevealTryal = null;
       room.playerForcedToRevealSelector = null;
 
-      game.eliminatePlayerWithoutLifeCards(room, player);
+      game.resolveLifeCard(room, player, revealedCard);
 
       game.emitRoomState(room.name); // Update all players
       game.checkWinCondition(room); // Check win condition after revealing Tryal Card

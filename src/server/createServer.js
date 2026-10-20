@@ -10,10 +10,16 @@ const config = require('./config');
 const registerSocketHandlers = require('./socket');
 const serviceFactories = [
   require('./game/rooms'),
+  require('./game/reconnection'),
+  require('./game/replacement-bots'),
   require('./game/state'),
+  require('./game/deck'),
+  require('./game/draw'),
   require('./game/cards'),
+  require('./game/red-cards'),
   require('./game/turns'),
   require('./game/phases'),
+  require('./game/life-cards'),
   require('./game/confession'),
   require('./game/night'),
   require('./game/conspiracy'),

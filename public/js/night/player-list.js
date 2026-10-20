@@ -1,3 +1,4 @@
+import { registerInteraction, selectionChanged } from '../core/interaction.js';
 import { client } from '../core/client.js';
 
 client.actions.populateNightActionPlayersList = function populateNightActionPlayersList(actionType) {
@@ -22,6 +23,15 @@ client.actions.populateNightActionPlayersList = function populateNightActionPlay
         eligiblePlayers = Object.values(client.state.currentRoomState.players).filter(player => player.uniqueId !== client.state.myUniqueId && player.alive);
     }
     
+    const targetCommands = new Map();
+    const root = document.getElementById('night-action-popup');
+    if (root) registerInteraction(root, { kind: 'player',
+        read: () => ({ eligible: eligiblePlayers.map(p => p.uniqueId), selected: client.state.nightActionState.selectedTargetId ? [client.state.nightActionState.selectedTargetId] : [] }),
+        choose: id => {
+            if (actionType === 'constable' && client.state.nightActionState.selectedTargetId === id) client.actions.submitNightAction('constable');
+            else targetCommands.get(id)?.();
+        }
+    });
     console.log('Eligible players for night action:', eligiblePlayers.map(p => ({ name: p.name, uniqueId: p.uniqueId })));
     
     if (eligiblePlayers.length === 0) {
@@ -55,7 +65,7 @@ client.actions.populateNightActionPlayersList = function populateNightActionPlay
             <div class="night-target-badge">แตะเลือก</div>
         `;
         
-        playerDiv.addEventListener('click', () => {
+        const selectTarget = () => {
             console.log(`Player ${player.name} clicked in night action popup`);
             
             // Remove previous selection
@@ -87,7 +97,10 @@ client.actions.populateNightActionPlayersList = function populateNightActionPlay
             }
 
 
-        });
+            selectionChanged();
+        };
+        targetCommands.set(player.uniqueId, selectTarget);
+        playerDiv.addEventListener('click', selectTarget);
         
         playersList.appendChild(playerDiv);
     });
