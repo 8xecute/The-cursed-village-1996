@@ -18,7 +18,7 @@ client.actions.showAlibiRedCardSelectionPopup = function showAlibiRedCardSelecti
     container.style.textAlign = 'center';
     
     const title = document.createElement('div');
-    title.textContent = 'เลือกการ์ดข้อกล่าวหาที่จะลบ (เลือกได้ชนิดเดียว, แต้มรวมไม่เกิน 3)';
+    title.textContent = 'ลบสูงสุด 3 แต้ม: ข้อกล่าวหา (+1) สูงสุด 3 ใบ หรือหลักฐาน (+3) 1 ใบ';
     title.style.color = '#ffe799';
     title.style.fontWeight = 'bold';
     title.style.fontSize = '1.18em';

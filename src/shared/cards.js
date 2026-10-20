@@ -23,7 +23,7 @@ function getGameCardsForPlayerCount() {
       // Action Cards (Green)
       ...Array(2).fill({ name: 'Scapegoat', type: 'Action', color: 'Green', description: 'ย้ายการ์ดสีน้ำเงิน, เขียว และแดง ของจากผู้เล่นเป้าหมาย ไปอีกผู้เล่นหนึ่ง. (เลือกเป้าหมาย 2 คน)' }),
       ...Array(1).fill({ name: 'Curse', type: 'Action', color: 'Green', description: 'ลบการ์ดสีน้ำเงินที่ผู้เล่นเป้าหมายโดน 1 ใบลงไปที่กองทิ้ง. (เลือกเป้าหมาย)' }),
-      ...Array(3).fill({ name: 'Alibi', type: 'Action', color: 'Green', description: 'ลบข้อกล่าวหาของผู้เล่นได้สูงสุด 3 ใบ. (เลือกเป้าหมาย)' }),
+      ...Array(3).fill({ name: 'Alibi', type: 'Action', color: 'Green', description: 'ลบข้อกล่าวหารวมสูงสุด 3 แต้ม: ข้อกล่าวหา (+1) สูงสุด 3 ใบ หรือหลักฐาน (+3) 1 ใบ (เลือกเป้าหมาย)' }),
       ...Array(1).fill({ name: 'Robbery', type: 'Action', color: 'Green', description: 'ขโมยการ์ดบนมือทั้งหมดจากผู้เล่นเป้าหมาย ไปอีกผู้เล่นหนึ่ง. (เลือกเป้าหมาย 2 คน)' }),
       ...Array(3).fill({ name: 'Stocks', type: 'Permanent', color: 'Green', description: 'ข้ามตาของผู้เล่นที่โดนการ์ดนี้ สามารถ stack การ์ดนี้เพื่อข้ามตาหลายรอบได้. (เลือกเป้าหมาย)' }),
       ...Array(1).fill({ name: 'Arson', type: 'Action', color: 'Green', description: 'ทิ้งการ์ดในมือทั้งหมดของผู้เล่นเป้าหมายไปที่กองทิ้ง. (เลือกเป้าหมาย)' }),

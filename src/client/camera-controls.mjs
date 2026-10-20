@@ -9,7 +9,7 @@ export function createCameraControls({ camera, renderer, cameraMode, requestRend
     controls.screenSpacePanning = false;
     controls.panSpeed = .9;
     controls.rotateSpeed = .65;
-    controls.mouseButtons = { LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN };
+    controls.mouseButtons = { LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.PAN, RIGHT: THREE.MOUSE.PAN };
     controls.touches = { ONE: cameraMode === 'pan' ? THREE.TOUCH.PAN : THREE.TOUCH.ROTATE, TWO: cameraMode === 'pan' ? THREE.TOUCH.DOLLY_ROTATE : THREE.TOUCH.DOLLY_PAN };
     if (cameraMode === 'pan') controls.mouseButtons.LEFT = THREE.MOUSE.PAN;
     renderer.domElement.style.touchAction = 'none';
@@ -19,8 +19,41 @@ export function createCameraControls({ camera, renderer, cameraMode, requestRend
     controls.maxDistance = 24;
     controls.minPolarAngle = .05;
     controls.maxPolarAngle = Math.PI / 2.05;
-    controls.enableZoom = true;
-    controls.zoomSpeed = .65;
+    // Walking translates camera + target. Zoom changes only the lens, so it
+    // cannot dolly the camera through the same space as W/S movement.
+    controls.enableZoom = false;
+    function lensZoom(fov) {
+        camera.fov = THREE.MathUtils.clamp(fov, 28, 70);
+        camera.updateProjectionMatrix(); requestRender();
+    }
+    function wheelZoom(event) {
+        if (!isActive() || isDisposed()) return;
+        event.preventDefault(); event.stopImmediatePropagation();
+        const delta = event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? 200 : 1);
+        lensZoom(camera.fov * Math.exp(THREE.MathUtils.clamp(delta, -120, 120) * .0015));
+    }
+    const touches = new Map();
+    let pinchDistance = 0, pinchFov = 43;
+    function touchDown(event) {
+        if (event.pointerType !== 'touch') return;
+        touches.set(event.pointerId, new THREE.Vector2(event.clientX, event.clientY));
+        if (touches.size === 2) { const [a, b] = [...touches.values()]; pinchDistance = a.distanceTo(b); pinchFov = camera.fov; }
+    }
+    function touchMove(event) {
+        if (!touches.has(event.pointerId) || !isActive() || isDisposed()) return;
+        touches.get(event.pointerId).set(event.clientX, event.clientY);
+        if (touches.size === 2 && pinchDistance > 0) {
+            const [a, b] = [...touches.values()]; lensZoom(pinchFov * pinchDistance / Math.max(1, a.distanceTo(b)));
+        }
+    }
+    function touchEnd(event) { touches.delete(event.pointerId); if (touches.size !== 2) pinchDistance = 0; }
+    const canvas = renderer.domElement;
+    canvas.addEventListener('wheel', wheelZoom, { capture: true, passive: false });
+    canvas.addEventListener('pointerdown', touchDown);
+    canvas.addEventListener('pointermove', touchMove);
+    canvas.addEventListener('pointerup', touchEnd);
+    canvas.addEventListener('pointercancel', touchEnd);
+    canvas.addEventListener('lostpointercapture', touchEnd);
 
     controls.addEventListener('change', requestRender);
     let seatOrder = [];
@@ -37,6 +70,7 @@ export function createCameraControls({ camera, renderer, cameraMode, requestRend
         onSeatFocus?.(seatOrder.find(player => player.uniqueId === id)?.name || 'ผู้เล่น');
     }
     function resetCamera() {
+        lensZoom(43);
         focusedSeatId = null;
         controls.enableRotate = true; controls.enablePan = true;
         onSeatFocus?.('มุมของคุณ');
@@ -50,7 +84,7 @@ export function createCameraControls({ camera, renderer, cameraMode, requestRend
     const movementKeys = new Set(['KeyW','KeyA','KeyS','KeyD','Space','KeyQ','ControlLeft','ControlRight']);
     let keyboardLocked = false;
     let previousMovementTime = 0;
-    function clearMovement() { pressedKeys.clear(); previousMovementTime = 0; }
+    function clearMovement() { pressedKeys.clear(); touches.clear(); pinchDistance = 0; previousMovementTime = 0; }
     function typing(target) { return !!target?.closest?.('input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="textbox"]'); }
     function keyDown(event) {
         const ctrlEnabled = keyboardLocked && !!document.fullscreenElement;
@@ -122,6 +156,7 @@ export function createCameraControls({ camera, renderer, cameraMode, requestRend
             focusSeat(seatOrder[index].uniqueId);
         },
         setCameraView(view) {
+            lensZoom(43);
             const offset = camera.position.clone().sub(controls.target);
             const azimuth = Math.atan2(offset.x, offset.z);
             const distance = view === 'top' ? 17 : 18;
@@ -132,11 +167,7 @@ export function createCameraControls({ camera, renderer, cameraMode, requestRend
             controls.update(); requestRender();
         },
         zoom(direction) {
-            const offset = camera.position.clone().sub(controls.target);
-            offset.multiplyScalar(direction === 'in' ? .86 : 1.16);
-            offset.setLength(THREE.MathUtils.clamp(offset.length(), controls.minDistance, controls.maxDistance));
-            camera.position.copy(controls.target).add(offset);
-            controls.update(); requestRender();
+            lensZoom(camera.fov * (direction === 'in' ? .86 : 1.16));
         },
         dispose() {
             clearMovement();
@@ -145,6 +176,12 @@ export function createCameraControls({ camera, renderer, cameraMode, requestRend
             document.removeEventListener('focusin',focusChanged);
             document.removeEventListener('visibilitychange',visibilityChanged);
             window.removeEventListener('blur',clearMovement);
+            canvas.removeEventListener('wheel', wheelZoom, true);
+            canvas.removeEventListener('pointerdown', touchDown);
+            canvas.removeEventListener('pointermove', touchMove);
+            canvas.removeEventListener('pointerup', touchEnd);
+            canvas.removeEventListener('pointercancel', touchEnd);
+            canvas.removeEventListener('lostpointercapture', touchEnd);
             controls.dispose();
         }
     };

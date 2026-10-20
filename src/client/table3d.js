@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { prepareVillagerModels, instantiateVillager, disposeVillagerModels } from './villager-models.mjs';
 import { createGunShot } from './gun-shot.mjs';
+import { addLifeCardFrame, lifeBorderColor } from './life-card-frame.mjs';
 import { createCameraControls } from './camera-controls.mjs';
 import { timberTexture, ceremonialCloth, buildCeremonialRoom, createRitualBust } from './ritual-scene.mjs';
 
@@ -337,7 +338,6 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             const edge = new THREE.LineSegments(new THREE.EdgesGeometry(face.geometry), new THREE.LineBasicMaterial({ color }));
             face.add(edge);
         }
-        const lifeBorder = name => name === 'Witch' ? 0xffe066 : name === 'Constable' ? 0xe0e0e0 : 0x666666;
         players.forEach((player, index) => {
             const angle = (index - Math.max(0, ownIndex)) * Math.PI * 2 / Math.max(1, players.length);
             const seat = new THREE.Group();
@@ -399,8 +399,9 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
                 const revealedName = player.tryalCards?.[life]?.name;
                 const lifeCard = card(seat, [(life - (lives - 1) / 2) * .42, .06, -.98], [-Math.PI / 2, 0, 0],
                     revealedName ? cardTexture(imageFor(revealedName)) : back, { playerId: player.uniqueId, lifeIndex: life, resting: true }, .38);
-                outline(lifeCard, revealedName ? lifeBorder(revealedName) : 0x8d7658);
-                if (interaction?.kind === 'life' && interaction.owner === player.uniqueId && interaction.eligible.includes(life)) outline(lifeCard, interaction.selected?.includes(life) ? 0xffd359 : 0xc2ab87);
+                addLifeCardFrame(lifeCard, lifeBorderColor(revealedName));
+                if (interaction?.kind === 'life' && interaction.owner === player.uniqueId && interaction.eligible.includes(life))
+                    addLifeCardFrame(lifeCard, interaction.selected?.includes(life) ? 0xffd359 : 0x6ee7d2, { selected: true, inset: .015 });
                 if (interaction?.kind === 'life' && interaction.owner === player.uniqueId && interaction.eligible.includes(life)) {
                     label(seat, `${interaction.selected?.includes(life) ? '✓ ' : ''}${life + 1}`, [(life - (lives - 1) / 2) * .42, .24, -.98], '#ffe2a0');
                 }
@@ -409,7 +410,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             revealed.forEach((revealedCard, i) => {
                 const face = card(seat, [(i-(revealed.length-1)/2)*.42, .075, -.38], [-Math.PI/2,0,0],
                     cardTexture(imageFor(revealedCard.name)), { playerId: player.uniqueId, revealedIndex: i, resting: true }, .38);
-                outline(face,lifeBorder(revealedCard.name));
+                addLifeCardFrame(face, lifeBorderColor(revealedCard.name));
             });
             if (revealed.length) label(seat, 'เปิดแล้ว', [0,.3,-.38], '#cbb58b');
             const own = player.uniqueId === me;

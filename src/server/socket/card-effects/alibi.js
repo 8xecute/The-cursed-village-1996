@@ -34,7 +34,7 @@ module.exports = function registerAlibiHandlers(socket, game) {
           game.sendGameMessage(room.name, `<b>${player.name}</b> ใช้ ${game.getCardNameWithColor('Alibi')} ลบ${typeSet.has('Accusation') ? 'ข้อกล่าวหา' : 'หลักฐาน'} ${selectedCards.length} ใบของ <b>${targetPlayer.name}</b>`, 'green', true);
           // แจ้งเป้าหมายว่าถูกใช้การ์ด
           if (room.players[target] && room.players[target].alive) {
-              game.io.to(room.players[target].id).emit('card used on you', player.name, 'Alibi', game.CARD_DESCRIPTION_THAI?.['Alibi'] || 'ลบข้อกล่าวหาของผู้เล่นได้สูงสุด 3 ใบ');
+              game.io.to(room.players[target].id).emit('card used on you', player.name, 'Alibi', game.CARD_DESCRIPTION_THAI?.['Alibi'] || 'ลบข้อกล่าวหารวมสูงสุด 3 แต้ม');
           }
           // การ์ด Alibi ถูกลบออกจากมือแล้วใน playCard function
           // ไม่ต้องลบอีกครั้ง
@@ -63,7 +63,7 @@ module.exports = function registerAlibiHandlers(socket, game) {
               name: 'Alibi', 
               color: 'Green', 
               value: 1,
-              description: 'ลบข้อกล่าวหาของผู้เล่นได้สูงสุด 3 ใบ'
+              description: 'ลบข้อกล่าวหารวมสูงสุด 3 แต้ม: ข้อกล่าวหา (+1) สูงสุด 3 ใบ หรือหลักฐาน (+3) 1 ใบ'
           };
           const returnedCard = originalCard || alibiCard;
           const discardedIndex = room.discardPile.lastIndexOf(returnedCard);
