@@ -99,7 +99,7 @@ export function createRitualBust(parent, color, alive, variant = 0, headGeometry
     const segment=(from,to,radius,material)=>{
         const start=new THREE.Vector3(...from),end=new THREE.Vector3(...to);
         const delta=end.clone().sub(start);
-        const part=add(new THREE.CapsuleGeometry(radius,Math.max(.001,delta.length()),3,10),material,start.clone().add(end).multiplyScalar(.5).toArray());
+        const part=add(new THREE.CapsuleGeometry(radius,Math.max(.001,delta.length()-radius*1.3),3,10),material,start.clone().add(end).multiplyScalar(.5).toArray());
         part.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),delta.normalize());return part;
     };
     // Anatomical torso and short-sleeved shirt, joined under the collar.
@@ -109,17 +109,17 @@ export function createRitualBust(parent, color, alive, variant = 0, headGeometry
     // Subtle tailoring follows the torso rather than separate cylinder arms.
     for(const side of [-1,1]) {
         segment([side*.235*width,.49,.015],[side*.29*width,.36,-.015],.082,body);
-        segment([side*.29*width,.37,-.015],[side*.34*width,.18,-.13],.068,skin);
-        segment([side*.34*width,.18,-.13],[side*.27*width,.065,-.43],.052,skin);
-        const palm=add(new THREE.SphereGeometry(.065,16,10),skin,[side*.26*width,.055,-.46],[.8,.39,1.16]);palm.rotation.y=side*.13;
+        segment([side*.29*width,.37,-.015],[side*.34*width,.18,-.24],.068,skin);
+        segment([side*.34*width,.18,-.24],[side*.26*width,.05,-.74],.052,skin);
+        const palm=add(new THREE.SphereGeometry(.065,16,10),skin,[side*.26*width,.044,-.77],[.8,.36,1.16]);palm.rotation.y=side*.13;
         // Four fingers plus an opposed thumb resting on the table edge.
         for(let finger=0;finger<4;finger++) {
             const x=side*.26*width+(finger-1.5)*.023;
             const length=[.083,.104,.096,.073][finger];
-            segment([x,.055,-.49],[x,.045,-.49-length],.012,skin);
-            segment([x,.045,-.49-length],[x,.035,-.512-length],.010,skin);
+            segment([x,.044,-.8],[x,.04,-.8-length],.012,skin);
+            segment([x,.04,-.8-length],[x,.035,-.822-length],.010,skin);
         }
-        segment([side*.215*width,.06,-.45],[side*.183*width,.04,-.514],.018,skin);
+        segment([side*.215*width,.045,-.75],[side*.183*width,.035,-.83],.018,skin);
         // Folded collar panels in the same subdued cloth palette.
         const collar=new THREE.Shape();
         collar.moveTo(side*.018,.628);collar.lineTo(side*.105,.593);collar.lineTo(side*.065,.545);collar.lineTo(side*.008,.581);collar.closePath();

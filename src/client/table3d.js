@@ -1,9 +1,14 @@
 import { QUALITY_PRESETS, normalizeQuality, createGraphicsQuality } from './graphics-quality.mjs';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { prepareVillagerModels, instantiateVillager, disposeVillagerModels } from './villager-models.mjs';
 import { createCameraControls } from './camera-controls.mjs';
 import { timberTexture, ceremonialCloth, buildCeremonialRoom, createRitualBust } from './ritual-scene.mjs';
 
+// World heights match the tabletop and the ritual cloth geometry below.
+const TABLE_TOP_Y = -.025;
+const CLOTH_TOP_Y = .016;
+const PAPER_FACE_OFFSET = .016; // .012-thick edge, plus a small anti-flicker gap.
 const COLORS = [0x526774, 0x795551, 0x88744e, 0x596b55, 0x716275, 0x8a806b,
     0x7e634e, 0x5c6974, 0x785d69, 0x727354, 0x56716d, 0x72675e];
 
@@ -136,7 +141,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
     const pointer = new THREE.Vector2();
     let targets = [];
     let signature = '';
-    let sculptedHead = null;
+    let villagerModels = null;
     let lastSceneOptions = null;
     let active = false;
     let disposed = false;
@@ -236,15 +241,13 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
     });
     const { setQuality } = graphics;
 
-    new GLTFLoader().load('models/villager-head-seated.glb', gltf => {
-        const source = gltf.scene.getObjectByProperty('isMesh', true);
-        if (!source || disposed) {
-            gltf.scene.traverse(part => { part.geometry?.dispose(); part.material?.dispose(); });
-            return;
-        }
-        sculptedHead = source.geometry.clone();
-        sculptedHead.computeVertexNormals();
+    new GLTFLoader().load('models/villagers-seated.glb', gltf => {
+        const loaded = prepareVillagerModels(gltf.scene);
         gltf.scene.traverse(part => { part.geometry?.dispose(); part.material?.dispose(); });
+        if (disposed) { disposeVillagerModels(loaded, true); return; }
+        villagerModels = loaded;
+        characterCache.forEach(parts => parts.forEach(part => { part.geometry.dispose(); part.material.dispose(); }));
+        characterCache.clear();
         if (lastSceneOptions) { signature = ''; update(lastSceneOptions); }
         requestRender();
     }, undefined, () => { /* Keep the complete seated fallback if loading fails. */ });
@@ -263,6 +266,14 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
         const material = new THREE.MeshStandardMaterial({ map: texture, side: THREE.DoubleSide, roughness: 0.86 });
         const face = mesh(new THREE.PlaneGeometry(size, size * 1.48), material, parent, position);
         face.rotation.set(...rotation);
+        if (data.resting) {
+            // Seat-local card heights must account for the seat's own translation.
+            parent.updateWorldMatrix(true, false);
+            const world = parent.localToWorld(face.position.clone());
+            const surface = Math.hypot(world.x, world.z) <= 2.35 ? CLOTH_TOP_Y : TABLE_TOP_Y;
+            world.y = surface + PAPER_FACE_OFFSET;
+            face.position.copy(parent.worldToLocal(world));
+        }
         face.userData = data;
         // A thin paper edge adds depth without changing the clickable face.
         const edge = mesh(new THREE.BoxGeometry(size, size * 1.48, .012),
@@ -351,10 +362,12 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             const pawn = new THREE.Group(); pawn.position.z = 2.05; pawn.position.y = -.1; seat.add(pawn);
             pawn.scale.setScalar(1.4);
             // Eliminated players stay seated; do not tip the chair and full body onto the table.
-            const modelKey = `${index}:${player.alive}:${!!sculptedHead}`;
+            const modelKey = `${index}:${player.alive}:${!!villagerModels}`;
             if (!characterCache.has(modelKey)) {
                 const template = new THREE.Group();
-                characterCache.set(modelKey, createRitualBust(template, COLORS[index % COLORS.length], player.alive, index, sculptedHead));
+                characterCache.set(modelKey, villagerModels
+                    ? instantiateVillager(template, villagerModels, COLORS[index % COLORS.length], player.alive, index)
+                    : createRitualBust(template, COLORS[index % COLORS.length], player.alive, index));
             }
             const parts = characterCache.get(modelKey).map(source => {
                 const part = new THREE.Mesh(source.geometry, source.material.clone());
@@ -397,7 +410,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             for (let life = 0; life < lives; life++) {
                 const revealedName = player.tryalCards?.[life]?.name;
                 const lifeCard = card(seat, [(life - (lives - 1) / 2) * .42, .06, -.98], [-Math.PI / 2, 0, 0],
-                    revealedName ? cardTexture(imageFor(revealedName)) : back, { playerId: player.uniqueId, lifeIndex: life }, .38);
+                    revealedName ? cardTexture(imageFor(revealedName)) : back, { playerId: player.uniqueId, lifeIndex: life, resting: true }, .38);
                 outline(lifeCard, revealedName ? lifeBorder(revealedName) : 0x8d7658);
                 if (interaction?.kind === 'life' && interaction.owner === player.uniqueId && interaction.eligible.includes(life)) outline(lifeCard, interaction.selected?.includes(life) ? 0xffd359 : 0xc2ab87);
                 if (interaction?.kind === 'life' && interaction.owner === player.uniqueId && interaction.eligible.includes(life)) {
@@ -407,7 +420,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             const revealed = player.revealedTryalCards || [];
             revealed.forEach((revealedCard, i) => {
                 const face = card(seat, [(i-(revealed.length-1)/2)*.42, .075, -.38], [-Math.PI/2,0,0],
-                    cardTexture(imageFor(revealedCard.name)), { playerId: player.uniqueId, revealedIndex: i }, .38);
+                    cardTexture(imageFor(revealedCard.name)), { playerId: player.uniqueId, revealedIndex: i, resting: true }, .38);
                 outline(face,lifeBorder(revealedCard.name));
             });
             if (revealed.length) label(seat, 'เปิดแล้ว', [0,.3,-.38], '#cbb58b');
@@ -421,12 +434,12 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
                 const rowCount = Math.min(columns, count - row * columns);
                 const offset = (own ? i % columns : i) - (rowCount - 1) / 2;
                 const lowered = !own || handLowered;
-                const position = lowered ? [offset * spacing, .08 + (own && (selected === i || selectedCards.includes(i)) ? .12 : 0), .38 + row * .88 + Math.abs(offset) * .025]
+                const position = lowered ? [offset * spacing, .08 + (own && (selected === i || selectedCards.includes(i)) ? .12 : 0), .38 - row * .88 + Math.abs(offset) * .025]
                     : [offset * spacing, 1 + row * .98 + (own && (selected === i || selectedCards.includes(i)) ? .16 : 0), .7 + Math.abs(offset) * .025];
                 const rotation = lowered ? [-Math.PI / 2, 0, 0] : [-.12, 0, own ? 0 : -offset * Math.min(.045, .35 / Math.max(1, count))];
                 const face = card(seat, position, rotation,
                     own ? cardTexture(imageFor(hand[i].name)) : back,
-                    own ? { cardIndex: i, category: hand[i].color } : { playerId: player.uniqueId }, own ? .56 : .47);
+                    own ? { cardIndex: i, category: hand[i].color, resting: lowered } : { playerId: player.uniqueId, resting: lowered }, own ? .56 : .47);
                 if (own && (selected === i || selectedCards.includes(i))) face.material.color.set(0xb9a687);
                 if (own && reorderIndex === i) outline(face, 0xffdc73);
             }
@@ -435,7 +448,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             const effectSpacing = Math.min(.43, 2.1 / Math.max(1, effects.length));
             effects.forEach((effect, i) => {
                 const effectCard = card(seat, [(i - (effects.length - 1) / 2) * effectSpacing, .08 + i * .002, -1.75],
-                    [-Math.PI / 2, 0, 0], cardTexture(imageFor(effect.name)), { playerId: player.uniqueId, effectIndex: i, category: effect.color }, .4);
+                    [-Math.PI / 2, 0, 0], cardTexture(imageFor(effect.name)), { playerId: player.uniqueId, effectIndex: i, category: effect.color, resting: true }, .4);
                 if (interaction?.kind === 'effect' && interaction.owner === player.uniqueId && interaction.eligible.includes(i)) outline(effectCard, interaction.selected.includes(i) ? 0x879277 : 0xc2ab87);
             });
         });
@@ -449,8 +462,8 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
 
         function pile(x, count, title, clickable) {
             const height = Math.max(.04, Math.min(.52, count * .01));
-            const box = mesh(new THREE.BoxGeometry(.75, height, 1.1), new THREE.MeshStandardMaterial({ color: 0x9e8764 }), dynamic, [x, height / 2 + .04, 0]);
-            const top = card(dynamic, [x, height + .045, 0], [-Math.PI / 2, 0, 0], back, { draw: clickable }, .74);
+            const box = mesh(new THREE.BoxGeometry(.75, height, 1.1), new THREE.MeshStandardMaterial({ color: 0x9e8764 }), dynamic, [x, CLOTH_TOP_Y + height / 2, 0]);
+            const top = card(dynamic, [x, CLOTH_TOP_Y + height + PAPER_FACE_OFFSET, 0], [-Math.PI / 2, 0, 0], back, { draw: clickable }, .74);
             if (clickable && canDraw) {
                 box.material.emissive.set(0xe9a63b);
                 box.material.emissiveIntensity = 0.65;
@@ -605,9 +618,10 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             cancelAnimationFrame(renderFrame);
             resizeObserver.disconnect(); clearDynamic();
             scene.traverse(object => { object.geometry?.dispose(); object.material?.dispose(); });
-            characterCache.forEach(parts => parts.forEach(part => { part.geometry.dispose(); part.material.dispose(); }));
+            characterCache.forEach(parts => parts.forEach(part => { if (!villagerModels) part.geometry.dispose(); part.material.dispose(); }));
             characterCache.clear();
-            sculptedHead?.dispose(); flameGlowTexture.dispose(); wood.dispose(); cloth.dispose(); back.dispose(); textures.forEach(texture => texture.dispose());
+            if (villagerModels) disposeVillagerModels(villagerModels, true);
+            flameGlowTexture.dispose(); wood.dispose(); cloth.dispose(); back.dispose(); textures.forEach(texture => texture.dispose());
             renderer.dispose(); renderer.domElement.remove();
         },
     };

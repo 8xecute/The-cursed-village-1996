@@ -1,10 +1,29 @@
-# Character head
+# Seated villagers (current)
+
+`villagers-seated.glb` contains Riley and Sam, adapted from the free Innerscene
+"Riley and Sam - 3D Person, Two people at a table" model.
+
+- Publisher/source: https://www.innerscene.com/tools/library/3d-parts/riley-and-sam-3d-person-two-people-at-a-table-1833f30f
+- Original basis: MakeHuman/MPFB CC0 body, skin, clothing and hair assets, adapted by Innerscene.
+- License: CC0 1.0 Universal, https://creativecommons.org/publicdomain/zero/1.0/
+- Downloaded: 2026-10-20.
+- Changes: removed the original table/chairs, extracted both complete seated figures,
+  simplified geometry with locked boundaries, compacted vertex buffers, capped
+  color textures at 1024 px and normal maps at 512 px, compressed opaque color maps
+  to JPEG, and normalized orientation. Approximately 25,174 / 22,617 triangles.
+- Preparation: `scripts/prepare-villager-models.cjs` (takes the source GLB as an argument).
+- Runtime: scaled to the game table and fitted with locally generated wooden chairs.
+  Characters share geometry and textures. Cloth tint and eliminated-player darkening
+  are per-player materials. No old head or procedural body is placed underneath.
+
+## Older character head (retained asset, no longer loaded)
 
 Original source: Infinite, 3D Head Scan by Lee Perry-Smith.
 Source: https://github.com/mrdoob/three.js/tree/dev/examples/models/gltf/LeePerrySmith
 License: Creative Commons Attribution 3.0 Unported (CC BY 3.0).
 Original license is included in LeePerrySmith_License.txt.
-The unmodified source model is not distributed here. The game uses the derived seated head below.
+The unmodified source model is not distributed here. The derived head below is retained
+for reference but the current renderer does not load it.
 
 ## Seated character revision
 
