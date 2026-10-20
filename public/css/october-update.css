@@ -1,0 +1,39 @@
+/* Candle controls stay attached to the projected world position in every view. */
+#table3d-canvas { position: relative; }
+body.game-view-3d #table3d-section #table3d-canvas .table3d-end-turn {
+    position: absolute; top: var(--candle-y, 50%); left: var(--candle-x, 50%);
+    right: auto; bottom: auto; transform: translate(-50%, 8px); z-index: 5;
+    min-height: 38px !important; height: auto !important;
+    border: 1px solid #edc673; background: #503717ed; color: #fff0c0;
+    white-space: nowrap; box-shadow: 0 2px 10px #0008;
+}
+body.game-view-3d #table3d-section #table3d-canvas .table3d-end-turn:disabled { opacity: .55; }
+#table3d-canvas .table3d-end-turn[hidden] { display: none !important; }
+#prank-controls details[open] { max-height: 40dvh; overflow: auto; }
+#prank-controls details[open] select { display: block; width: 100%; margin: 8px 0; }
+#prank-controls details[open] button { min-height: 38px; }
+
+#game-messages .game-event-entry.is-self-event,
+#table3d-log-messages .game-event-entry.is-self-event {
+    background: #63482388; border-left: 4px solid #ffd57b; border-radius: 5px;
+    padding: 8px 10px; margin: 5px 0; box-shadow: inset 0 0 0 1px #edc57533;
+}
+body.game-view-3d #play-result-toast {
+    top: max(54px, calc(env(safe-area-inset-top) + 48px)); width: min(540px, calc(100vw - 340px));
+    min-width: 180px; text-align: center; font-weight: 600;
+    border-top: 3px solid #e6ba6d; box-shadow: 0 5px 22px #0008;
+}
+@media (max-width: 800px) {
+    body.game-view-3d #play-result-toast {
+        top: max(100px, calc(env(safe-area-inset-top) + 90px));
+        width: calc(100vw - 24px); max-width: 540px; font-size: .82rem;
+        padding: 8px 12px; line-height: 1.5;
+    }
+    #prank-controls { top: 40dvh; right: 8px; max-width: min(300px, calc(100vw - 16px)); }
+}
+.top-nav-btn[href] { text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.intro-patch-link { display: block; margin: 12px auto 0; color: #ffd596; text-align: center; }
+
+.lobby-rules-note { margin:10px 0; font-size:.82rem; color:#cfbea3; }
+.lobby-rules-note summary { cursor:pointer; color:#e5c58e; }
+.lobby-rules-note p { margin:6px 0; }

@@ -36,8 +36,9 @@
       </button>
       <button id="show-training-btn" class="top-nav-btn" type="button">
         <span class="top-nav-icon">🎓</span>
-        <span class="top-nav-text">ฝึกเล่น 3–5 นาที</span>
+        <span class="top-nav-text">ฝึกเล่น 2D / 3D</span>
       </button>
+      <a class="top-nav-btn" href="patch-notes.html">อัปเดตการเล่น</a>
     </div>
 
     
@@ -59,7 +60,8 @@
           </p>
           <div style="text-align:center; margin-top:24px;">
             <button id="enter-village-btn" class="enter-village-btn" style="font-size:1.1em; padding: 12px 36px;">เข้าสู่หมู่บ้านต้องสาป</button>
-            <button id="intro-training-btn" class="top-nav-btn" type="button">🎓 ฝึกเล่นก่อน · 3–5 นาที</button>
+            <button id="intro-training-btn" class="top-nav-btn" type="button">🎓 ฝึกเล่น 2D / 3D</button>
+            <a class="intro-patch-link" href="patch-notes.html">มีอะไรใหม่ · 18–20 ต.ค.</a>
           </div>
         </div>
       </div>
@@ -126,37 +128,41 @@
                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;">
                     <h2 style="margin: 0;">ล็อบบี้: <span id="lobby-room-name"></span></h2>
                     <button id="share-room-link-btn" style="background: #2e7d32; color: #fff; border: 1px solid #4caf50; padding: 8px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.95em; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.3);">
-                        🔗 คัดลอกลิงก์ชวนเพื่อน
+                        🔗 ชวนเพื่อน
                     </button>
                 </div>
                 <div id="share-link-toast" style="display: none; background: rgba(46, 125, 50, 0.95); color: #fff; padding: 8px 14px; border-radius: 6px; font-size: 0.95em; margin-bottom: 12px; text-align: center; border: 1px solid #81c784;">
-                    คัดลอกลิงก์ห้องเรียบร้อยแล้ว ส่งให้เพื่อนได้เลย!
+                    คัดลอกลิงก์แล้ว
                 </div>
                 <p>ผู้เล่น: <span id="lobby-player-count"></span>/<span id="lobby-max-players"></span></p>
                 <div class="lobby-witch-setting">
-                    <label for="lobby-witch-count">จำนวนการ์ดปอบเริ่มต้น</label>
+                    <label for="lobby-witch-count">ไพ่ปอบ</label>
                     <select id="lobby-witch-count" disabled><option value="auto">อัตโนมัติ</option></select>
                     <small id="lobby-witch-count-help">หัวห้องปรับได้ก่อนเริ่มเกม</small>
                 </div>
                 <div class="lobby-witch-setting">
-                    <label for="lobby-life-count">การ์ดชีวิตต่อผู้เล่น</label>
+                    <label for="lobby-life-count">ชีวิตต่อคน</label>
                     <select id="lobby-life-count" disabled>
-                        <option value="auto">อัตโนมัติตามจำนวนผู้เล่น</option>
+                        <option value="auto">อัตโนมัติ</option>
                         <option value="1">คนละ 1 ใบ</option><option value="2">คนละ 2 ใบ</option>
                         <option value="3">คนละ 3 ใบ</option><option value="4">คนละ 4 ใบ</option><option value="5">คนละ 5 ใบ</option>
                     </select>
                     <small id="lobby-life-count-help">อัตโนมัติ: 4–7 คน 5 ใบ · 8–9 คน 4 ใบ · 10–12 คน 3 ใบ</small>
                 </div>
-                <h3>รายชื่อผู้เล่นในห้อง:</h3>
+                <details class="lobby-rules-note"><summary>ค่ามาตรฐาน</summary>
+                    <p>ชีวิต: 4–7 คน 5 ใบ · 8–9 คน 4 ใบ · 10–12 คน 3 ใบ</p>
+                    <p>ปอบ: 1–5 คน 1 ใบ · 6 คนขึ้นไป 2 ใบ · หมอผี 1 ใบ<br>นับจำนวนไพ่ปอบ ไพ่หลายใบอาจอยู่กับคนเดียวกัน</p>
+                </details>
+                <h3>ผู้เล่น</h3>
                 <div id="player-list"></div>
                 <div class="lobby-action-row" style="display: flex; gap: 12px; flex-wrap: wrap; margin-top: 14px; align-items: center;">
                     <button id="ready-toggle-btn" class="ready-btn not-ready" style="display: none;">
-                        <span class="ready-btn-icon">⏳</span> <span class="ready-btn-text">กดพร้อม (Ready)</span>
+                        <span class="ready-btn-icon">⏳</span> <span class="ready-btn-text">พร้อม</span>
                     </button>
                     <button id="start-game-button">เริ่มเกม</button>
-                    <button id="add-bot-button" type="button" class="lobby-bot-add-btn" style="display: none;">🤖 เพิ่มบอทเติมห้อง</button>
+                    <button id="add-bot-button" type="button" class="lobby-bot-add-btn" style="display: none;">🤖 เพิ่มบอท</button>
                 </div>
-                <p style="color:#ff9800; font-size:1em; margin-top:8px;">* ต้องมีผู้เล่นอย่างน้อย 4 คนจึงจะเริ่มเกมได้</p>
+                <p style="color:#ff9800; font-size:1em; margin-top:8px;">เริ่มได้เมื่อครบ 4 คนและทุกคนพร้อม</p>
                 <div class="host-controls" id="host-controls-lobby" style="display: none;">
                     <h3>ควบคุมโฮสต์ (ล็อบบี้)</h3>
                     <button id="force-next-phase-button">ข้ามไปเฟสถัดไป</button>
@@ -188,7 +194,9 @@
                 <div id="turn-notice" class="turn-notice" role="status" hidden>ถึงตาคุณแล้ว · ดูคำแนะนำด้านบน</div>
 
                 <section id="table3d-section" class="table3d-section" hidden aria-label="โต๊ะเกม 3D">
-                    <div id="table3d-canvas" class="table3d-canvas"></div>
+                    <div id="table3d-canvas" class="table3d-canvas">
+                        <button type="button" class="table3d-end-turn" data-table-action="end-turn-button" disabled aria-label="จบเทิร์นที่ฐานเทียน">จบเทิร์น</button>
+                    </div>
                     <div class="table3d-hud">
                         <strong id="table3d-player-name">โต๊ะหมู่บ้าน</strong>
                         <span id="table3d-player-status">เลือกหมากเพื่อดูสถานะผู้เล่น</span>
@@ -198,7 +206,6 @@
                     </div>
                     <div class="table3d-view-controls" aria-label="มุมมองโต๊ะ">
                     </div>
-                    <button type="button" class="table3d-end-turn" data-table-action="end-turn-button" disabled>จบเทิร์น</button>
                     <div class="table3d-hand-controls"><span id="table3d-seat-label" role="status"></span><button type="button" id="table3d-seat-left" aria-label="ดูผู้เล่นทางซ้าย">◀</button><button type="button" id="table3d-hand-toggle" aria-pressed="false">วางไพ่</button><button type="button" id="table3d-reset" title="คืนกล้องไปยังมุมเริ่มต้น">กลับโต๊ะ</button><button type="button" id="table3d-seat-right" aria-label="ดูผู้เล่นทางขวา">▶</button></div>
                     <p id="table3d-loading" class="table3d-loading" role="status">กำลังเตรียมโต๊ะ 3D…</p>
 

@@ -54,6 +54,14 @@ client.actions.syncTable3D = async function syncTable3D() {
                 container: document.getElementById('table3d-canvas'),
                 quality: client.state.graphicsQuality || 'medium',
                 cameraMode: client.state.table3DCameraMode || 'rotate',
+                onEndTurn: () => document.querySelector('#table3d-canvas .table3d-end-turn:not(:disabled)')?.click(),
+                onCandleAnchor: ({x, y, visible}) => {
+                    const button = document.querySelector('#table3d-canvas .table3d-end-turn');
+                    if (!button) return;
+                    button.style.setProperty('--candle-x', `${x.toFixed(2)}%`);
+                    button.style.setProperty('--candle-y', `${y.toFixed(2)}%`);
+                    button.hidden = !visible || !!client.state.currentRoomState?.gameOver;
+                },
                 onCard: index => {
                     client.actions.hidePlayerStatus?.();
                     if (client.state.table3DReorderMode) { client.actions.reorderTable3DCard?.(index); return; }
@@ -98,6 +106,8 @@ client.actions.syncTable3D = async function syncTable3D() {
             imageFor: name => name ? client.actions.createCardImage(name).src : null,
             interaction: client.actions.getTable3DInteraction(),
             canDraw: client.actions.canUseTable3DHand() && !document.getElementById('draw-card-button')?.disabled,
+            canEndTurn: !document.querySelector('#table3d-canvas .table3d-end-turn')?.disabled,
+            endConfirming: document.getElementById('end-turn-button')?.classList.contains('confirming'),
             handLowered: !!client.state.table3DHandLowered,
             artwork: client.state.cardArtwork,
             reorderIndex: client.state.table3DReorderIndex ?? null,

@@ -186,10 +186,10 @@ export function initialize() {
               const me = roomState.players[client.state.myUniqueId];
               if (me && me.isReady) {
                   client.dom.readyToggleBtn.className = 'ready-btn ready';
-                  client.dom.readyToggleBtn.innerHTML = '<span class="ready-btn-icon">✅</span> <span class="ready-btn-text">พร้อมแล้ว (กดเพื่อยกเลิก)</span>';
+                  client.dom.readyToggleBtn.innerHTML = '<span class="ready-btn-icon">✅</span> <span class="ready-btn-text">พร้อมแล้ว · ยกเลิก</span>';
               } else {
                   client.dom.readyToggleBtn.className = 'ready-btn not-ready';
-                  client.dom.readyToggleBtn.innerHTML = '<span class="ready-btn-icon">⏳</span> <span class="ready-btn-text">กดพร้อม (Ready)</span>';
+                  client.dom.readyToggleBtn.innerHTML = '<span class="ready-btn-icon">⏳</span> <span class="ready-btn-text">พร้อม</span>';
               }
           } else {
               client.dom.readyToggleBtn.style.display = 'none';

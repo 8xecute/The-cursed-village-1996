@@ -27,7 +27,7 @@ export function initialize() {
     new MutationObserver(records => {
         added += records.reduce((sum, record) => sum + [...record.addedNodes].filter(node => node.nodeType === 1 && node.tagName === 'DIV').length, 0);
         if (!frame) frame = requestAnimationFrame(refresh);
-    }).observe(source, { childList: true });
+    }).observe(source, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
     panel.addEventListener('toggle', () => {
         if (panel.open) { unread = 0; updateBadge(); messages.scrollTop = messages.scrollHeight; }
     });

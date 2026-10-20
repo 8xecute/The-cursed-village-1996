@@ -11,7 +11,7 @@ client.actions.cardOutcomePreview = function(card, target) {
     return ({ Stocks: 'ข้ามเทิร์นถัดไป 1 ครั้ง', Arson: `ทิ้งการ์ดในมือทั้งหมด ${target?.handSize || 0} ใบ`,
         Piety: 'ป้องกันการ์ดกล่าวหาสีแดง', Asylum: 'ป้องกันการสังหารกลางคืน',
         Matchmaker: 'ผูกชะตากับผู้ถือผูกวิญญาณอีกคน', Curse: 'เลือกทำลายการ์ดสีน้ำเงิน 1 ใบ',
-        Alibi: 'เลือกนำการ์ดข้อกล่าวหาออกได้สูงสุด 3 ใบ', Robbery: 'ย้ายการ์ดในมือทั้งหมดไปยังผู้รับ',
+        Alibi: 'ลบการ์ดแดงชนิดเดียว รวมไม่เกิน 3 แต้ม', Robbery: 'ย้ายการ์ดในมือทั้งหมดไปยังผู้รับ',
         Scapegoat: 'ย้ายการ์ดสถานะไปยังผู้รับ' })[card?.name] || client.actions.displayCardDescription(card?.name);
 };
 
@@ -92,10 +92,20 @@ export function initialize() {
 
     const feedback = document.createElement('div'); feedback.id = 'play-result-toast'; feedback.hidden = true; feedback.setAttribute('role', 'status');
     document.body.appendChild(feedback); let feedbackTimer;
-    function showFeedback(text) {
+    const feedbackQueue = [];
+    function nextFeedback() {
+        clearTimeout(feedbackTimer);
+        const text = feedbackQueue.shift();
+        if (!text) { feedback.hidden = true; return; }
         feedback.textContent = text; feedback.hidden = false;
         feedback.classList.remove('result-enter'); void feedback.offsetWidth; feedback.classList.add('result-enter');
-        clearTimeout(feedbackTimer); feedbackTimer = setTimeout(() => { feedback.hidden = true; }, 3600);
+        feedbackTimer = setTimeout(nextFeedback, 4800);
+    }
+    function showFeedback(text) {
+        // Several red cards can resolve together; keep each result readable.
+        feedbackQueue.push(text);
+        if (feedbackQueue.length > 6) feedbackQueue.shift();
+        if (feedback.hidden) nextFeedback();
     }
     // Sound is synthesized locally; no downloads, and no autoplay before a gesture.
     const audioControls = document.createElement('div'); audioControls.id = 'game-sound-settings';
@@ -184,7 +194,10 @@ export function initialize() {
     });
     client.state.socket.on('card action feedback', event => {
         const route = event.targetName ? `${event.actorName} → ${event.targetName}${event.secondTargetName ? ' → '+event.secondTargetName : ''}` : event.actorName;
-        showFeedback(`${route} · ${client.actions.displayCardName(event.cardName)} · ${event.result}`); sound('place');
+        if (!event.batchIndex) {
+            const title = event.batchCount > 1 ? `การ์ดแดง ${event.batchCount} ใบ (+${event.batchPoints} แต้ม)` : client.actions.displayCardName(event.cardName);
+            showFeedback(`${route} · ${title} · ${event.result}`); sound('place');
+        }
         if (document.body.classList.contains('game-view-3d')) client.state.table3D?.animateCard?.(event);
         else if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
             const actor = document.querySelector(`.player-board-card[data-player-id="${CSS.escape(event.actorId || '')}"]`);
@@ -221,6 +234,7 @@ export function initialize() {
         sound('gun', (event.raiseDuration || 900) / 1000);
     });
     client.state.socket.on('card play rejected', ({message}) => { showFeedback(message); sound('flip'); });
-    client.state.socket.on('room left', () => { shotSounds.forEach(stop => stop()); focused=null; status.hidden=true; closeInspect(); feedback.hidden=true; clearTimeout(feedbackTimer); previousPhase=previousTurn=null; });
+    client.state.socket.on('game restarted', () => { feedback.hidden=true; feedback.textContent=''; feedbackQueue.length=0; clearTimeout(feedbackTimer); });
+    client.state.socket.on('room left', () => { shotSounds.forEach(stop => stop()); focused=null; status.hidden=true; closeInspect(); feedback.hidden=true; feedback.textContent=''; feedbackQueue.length=0; clearTimeout(feedbackTimer); previousPhase=previousTurn=null; });
     window.addEventListener('pagehide', () => { audio?.suspend().catch(() => {}); });
 }

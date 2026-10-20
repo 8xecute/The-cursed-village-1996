@@ -1,5 +1,6 @@
 import { client } from '../core/client.js';
 import { lessons, cardNames, getTrainingCardCategory, createScene, applyTrainingCard } from './lessons.js';
+import { createTrainingTable } from './table3d.js';
 
 const storageKey = 'village-training-v1';
 const actionLabels = {
@@ -24,6 +25,29 @@ export function initialize() {
     let opener;
     let triedProtection = false;
     let waitingToLeave = false;
+    let view = '2d', lifeChoice = null;
+    try { view = localStorage.getItem('villageTrainingView') === '3d' ? '3d' : '2d'; } catch (_) {}
+    const trainingTable = createTrainingTable({
+        imageFor: name => client.actions.createCardImage(name).src,
+        action: key => {
+            const target = key?.startsWith('life-') ? body.querySelector(`[data-training-life="${Number(key.slice(5))}"]`)
+                : [...body.querySelectorAll('[data-training-action]')].find(element => element.dataset.trainingAction === key);
+            if (dialog.open && target && !target.disabled) target.click();
+        },
+        onError: () => { view = '2d'; hint('เปิดโต๊ะ 3D ไม่สำเร็จ ฝึกต่อใน 2D ได้'); render(); }
+    });
+    function viewPicker(parent) {
+        const bar = node('div', '', 'training-view-picker');
+        for (const mode of ['2d','3d']) {
+            const pick = button(`ฝึก ${mode.toUpperCase()}`, () => {
+                view = mode;
+                try { localStorage.setItem('villageTrainingView', mode); } catch (_) {}
+                if (scene) render(); else showIntro();
+            }, bar);
+            pick.setAttribute('aria-pressed', String(view === mode));
+        }
+        parent.appendChild(bar);
+    }
 
     function node(tag, text, className) {
         const element = document.createElement(tag);
@@ -56,6 +80,7 @@ export function initialize() {
         scene = createScene(lessons[index]);
         step = 'start'; targets = []; selectedCards = []; finished = false; selected = false; taps = 0; message = '';
         triedProtection = false;
+        lifeChoice = null;
         save(); render();
     }
     function complete() {
@@ -84,9 +109,15 @@ export function initialize() {
         parent.appendChild(node('p', `${owner.name} · เลือกการ์ดชีวิต 1 ใบ`));
         const row = node('div', '', 'training-card-row');
         for (let i = 0; i < owner.life; i++) {
-            button(`🎴 ใบที่ ${i + 1}`, () => {
-                reveal(name);
-            }, row, false, i === 0 ? 'life' : '');
+            const choice = button(`🎴 ใบที่ ${i + 1}`, () => {
+                if (lifeChoice?.owner !== owner.id || lifeChoice.index !== i) {
+                    lifeChoice = {owner:owner.id,index:i}; render(); return;
+                }
+                lifeChoice = null; reveal(name);
+            }, row, false, i === 0 ? 'life' : `life-${i}`);
+            choice.dataset.trainingLife = String(i);
+            choice.dataset.trainingLifeOwner = String(owner.id);
+            choice.setAttribute('aria-pressed', String(lifeChoice?.owner === owner.id && lifeChoice.index === i));
         }
         parent.appendChild(row);
     }
@@ -98,6 +129,7 @@ export function initialize() {
         const lesson = lessons[index];
         if (!lesson) return '';
         if (finished) return 'next';
+        if (lifeChoice) return lifeChoice.index === 0 ? 'life' : `life-${lifeChoice.index}`;
         if (lesson.kind === 'card') {
             if (step === 'witness-life') return 'life';
             if (step === 'pick-effect') return selectedCards.length ? 'effects-confirm' : 'effect-0';
@@ -123,7 +155,7 @@ export function initialize() {
         const coach = body.querySelector('.training-coach');
         const label = element.querySelector('strong')?.textContent || element.textContent;
         if (coach) coach.textContent = `กดตรงที่มีกรอบเน้น: ${label.trim()}`;
-        if (!dialog.open) return;
+        if (!dialog.open || view === '3d') return;
         element.focus({ preventScroll: true });
         const bounds = element.getBoundingClientRect();
         const visible = dialog.getBoundingClientRect();
@@ -142,7 +174,11 @@ export function initialize() {
                 hint('🛡️ มาลีมีพลังศรัทธา ใช้การ์ดแดงใส่ไม่ได้ · ลองเลือกคำปันแทน'); return;
             }
             const expected = expectedTargets(lesson);
-            if (targets.length >= expected.length) { hint('เลือกเป้าหมายครบแล้ว · กดเล่นการ์ดด้านล่าง'); return; }
+            if (targets.length >= expected.length) {
+                if (targets.at(-1) === id) playCard();
+                else hint('แตะผู้เล่นคนเดิมอีกครั้ง หรือกดเล่นการ์ดเพื่อยืนยัน');
+                return;
+            }
             if (id !== expected[targets.length]) { hint(`ฉากนี้ให้เลือก ${scene.players[expected[targets.length]].name}${targets.length ? ' เป็นผู้รับ' : ''}`); return; }
             if (lesson.protection) triedProtection = true;
             targets.push(id); render();
@@ -175,13 +211,15 @@ export function initialize() {
             if (step === 'pick-effect') {
                 const options = lesson.card === 'Curse' ? scene.players[1].effects : scene.players[1].accusations;
                 const limit = lesson.card === 'Curse' ? 1 : 3;
-                parent.appendChild(node('p', `เลือกการ์ดที่จะนำออก ${limit === 1 ? '1 ใบ' : 'ได้สูงสุด 3 ใบ'}`));
+                parent.appendChild(node('p', lesson.card === 'Curse' ? 'เลือกการ์ดที่จะนำออก 1 ใบ' : 'เลือกการ์ดแดงชนิดเดียว แต้มรวมไม่เกิน 3'));
                 const row = node('div', '', 'training-card-row');
                 options.forEach((name, optionIndex) => {
                     const choice = cardButton(name, () => {
-                        selectedCards = selectedCards.includes(optionIndex)
-                            ? selectedCards.filter(value => value !== optionIndex)
-                            : selectedCards.length < limit ? [...selectedCards, optionIndex] : selectedCards;
+                        const points = card => ({Accusation:1,Evidence:3,Witness:7}[card] || 0);
+                        const valid = lesson.card === 'Curse' ? selectedCards.length < limit :
+                            selectedCards.every(i => options[i] === name) && selectedCards.reduce((n,i)=>n+points(options[i]),points(name)) <= 3;
+                        selectedCards = selectedCards.includes(optionIndex) ? selectedCards.filter(value => value !== optionIndex)
+                            : valid ? [...selectedCards, optionIndex] : selectedCards;
                         render();
                     }, row);
                     choice.setAttribute('aria-pressed', String(selectedCards.includes(optionIndex)));
@@ -241,7 +279,9 @@ export function initialize() {
     }
     function render() {
         const lesson = lessons[index];
+        dialog.dataset.trainingView = view;
         body.replaceChildren();
+        viewPicker(body);
         body.appendChild(node('p', `${lesson.chapter} · บท ${index + 1}/${lessons.length}`, 'training-eyebrow'));
         const progress = node('progress'); progress.max = lessons.length; progress.value = index; progress.setAttribute('aria-label', 'ความคืบหน้าบทฝึก'); body.appendChild(progress);
         const heading = node('h3', lesson.title); heading.tabIndex = -1; body.appendChild(heading);
@@ -249,10 +289,11 @@ export function initialize() {
         body.appendChild(node('p', finished ? '✓ ทำสำเร็จแล้ว' : lesson.prompt, 'training-instruction'));
         if (lesson.card) {
             const category = getTrainingCardCategory(lesson.card);
-            const explanation = node('section', '', `training-card-explanation ${category.className}`);
+            const explanation = node('details', '', `training-card-explanation ${category.className}`);
+            explanation.open = view === '2d';
             explanation.setAttribute('aria-label', 'ความสามารถของการ์ด');
             explanation.append(
-                node('strong', `${cardNames[lesson.card]} · ${category.label}`),
+                node('summary', `${cardNames[lesson.card]} · ${category.label}`),
                 node('p', client.actions.displayCardDescription(lesson.card))
             );
             body.appendChild(explanation);
@@ -279,9 +320,27 @@ export function initialize() {
         button('← บทก่อน', () => startLesson(index - 1), footer, index === 0);
         button(finished ? (index === lessons.length - 1 ? 'ดูสรุปการฝึก' : 'บทถัดไป →') : 'ข้ามบทนี้ →', () => startLesson(index + 1), footer, false, 'next');
         body.appendChild(footer);
+        if (view === '3d') {
+            board.before(trainingTable.root);
+            board.classList.add('training-board-fallback');
+            body.appendChild(node('p', '3D: ลากหมุน · จีบนิ้วซูม · แตะการ์ดแล้วแตะผู้เล่นซ้ำเพื่อยืนยัน · จบเทิร์นที่ฐานเทียน · ใช้ปุ่มบทฝึกด้านล่างได้เช่นกัน', 'training-3d-help'));
+            const life = body.querySelector('[data-training-life]');
+            const options = lesson.card === 'Alibi' ? scene.players[1].accusations : scene.players[1].effects;
+            const effectOffset = lesson.card === 'Alibi' ? scene.players[1].effects.filter(name=>name!=='constable-protected').length : 0;
+            const effectChoices = step === 'pick-effect' ? options.map((_,i)=>i+effectOffset) : [];
+            trainingTable.update({scene,lesson,selected,targets,finished,
+                lifeOwner:life ? Number(life.dataset.trainingLifeOwner) : null,
+                lifeCount:body.querySelectorAll('[data-training-life]').length,
+                lifeChoice:lifeChoice?.index ?? null, effectChoices,
+                effectMap:Object.fromEntries(effectChoices.map(i=>[i,i-effectOffset])),
+                effectSelection:selectedCards.map(i=>i+effectOffset),
+                drawAction:!finished ? ({draw:'draw',infection:step==='start'?'infection':null,night:'night'}[lesson.kind]) : null,
+                endAction:!finished && lesson.kind==='end', endLabel:taps ? 'ยืนยันจบเทิร์น' : 'จบเทิร์น'});
+        } else trainingTable.pause();
         updateCoach();
     }
     function summary() {
+        trainingTable.pause();
         body.replaceChildren();
         const practiced = new Set(lessons.filter(lesson => completed.has(lesson.id)).map(lesson => lesson.card).filter(Boolean));
         body.append(node('h3', 'สรุปการฝึก'), node('p', `ทำสำเร็จ ${completed.size}/${lessons.length} บท · ลองการ์ด ${practiced.size}/${Object.keys(cardNames).length} ชนิด`, 'training-instruction'));
@@ -296,6 +355,7 @@ export function initialize() {
         updateCoach(remaining.length ? `review-${remaining[0].id}` : 'restart');
     }
     function showRoomBlock() {
+        trainingTable.pause();
         dialog.dataset.trainingBlocked = 'true';
         body.replaceChildren();
         body.append(node('h3', 'คุณยังอยู่ในห้องจริง'), node('p', 'ออกจากห้องก่อนเริ่มฝึก เพื่อไม่ให้พลาดเทิร์นของคุณ'));
@@ -309,12 +369,15 @@ export function initialize() {
         updateCoach('leave-to-train');
     }
     function showIntro() {
+        trainingTable.pause(); scene = null;
         dialog.dataset.trainingBlocked = 'false';
         waitingToLeave = false;
         body.replaceChildren();
         restore();
-        body.append(node('h3', 'ฝึกเล่นแบบลงมือทำ'), node('p', 'ประมาณ 3–5 นาที · ชาวบ้าน ปอบ หมอผี · การ์ดครบ 18 ชนิด', 'training-instruction'),
+        viewPicker(body);
+        body.append(node('h3', 'ฝึกเล่นแบบลงมือทำ'), node('p', `${view.toUpperCase()} · ชาวบ้าน ปอบ หมอผี · การ์ดครบ 18 ชนิด`, 'training-instruction'),
             node('p', 'แต่ละบทเป็นฉากจำลองสั้น ๆ ที่เตรียมไว้ ให้ลองกดเลือกการ์ด เลือกเป้าหมาย และเห็นผลทันที ไม่ต้องสร้างห้องหรือรอคนอื่น'));
+        body.appendChild(node('p', 'เกมจริงเริ่มด้วยการแจกการ์ดชีวิต ดูฝั่งของคุณ แล้วสลับตำแหน่งไพ่ได้ก่อนกดยืนยัน เมื่อทุกคนพร้อมจึงเริ่มมอบเครื่องเซ่น · บทฝึกด้านล่างจำลองแต่ละสถานการณ์แยกกัน'));
         if (completed.size || index) button('ฝึกต่อจากครั้งก่อน', () => startLesson(index), body);
         button('เริ่มฝึกตั้งแต่ต้น', () => { completed.clear(); startLesson(0); }, body);
         updateCoach(completed.size || index ? 'resume' : 'start');
@@ -346,5 +409,9 @@ export function initialize() {
             showRoomBlock();
         }
     });
-    dialog.addEventListener('close', () => { waitingToLeave = false; opener?.focus(); });
+    dialog.addEventListener('close', () => { waitingToLeave = false; trainingTable.dispose(); opener?.focus(); });
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) trainingTable.pause();
+        else if (dialog.open && scene && view === '3d' && dialog.dataset.trainingBlocked !== 'true') render();
+    });
 }

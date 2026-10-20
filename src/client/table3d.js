@@ -11,9 +11,9 @@ import { timberTexture, ceremonialCloth, buildCeremonialRoom, createRitualBust }
 const TABLE_TOP_Y = -.025;
 const CLOTH_TOP_Y = .016;
 const PAPER_FACE_OFFSET = .016; // .012-thick edge, plus a small anti-flicker gap.
-const CARD_WIDTH = .56;
+const CARD_WIDTH = .44;
 const CARD_HEIGHT = CARD_WIDTH * 1.48;
-const CARD_SPACING = CARD_WIDTH + .04;
+const CARD_SPACING = CARD_WIDTH + .02;
 const COLORS = [0x526774, 0x795551, 0x88744e, 0x596b55, 0x716275, 0x8a806b,
     0x7e634e, 0x5c6974, 0x785d69, 0x727354, 0x56716d, 0x72675e];
 
@@ -27,7 +27,7 @@ function canvasTexture(width, height, draw) {
     return texture;
 }
 
-function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError, onInspect, onSeatFocus, quality = 'medium', cameraMode = 'rotate' }) {
+function create({ container, onCard, onDraw, onEndTurn, onCandleAnchor, onPlayer, onLife, onEffect, onError, onInspect, onSeatFocus, quality = 'medium', cameraMode = 'rotate' }) {
     const qualityLevel = normalizeQuality(quality);
     const renderer = new THREE.WebGLRenderer({ antialias: false, alpha: false, powerPreference: 'default' });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, QUALITY_PRESETS[qualityLevel].pixelRatio));
@@ -116,11 +116,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
     });
     const glow = new THREE.Sprite(new THREE.SpriteMaterial({map:flameGlowTexture,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,toneMapped:false}));
     glow.position.set(0,.15,0); glow.scale.set(.33,.52,1); flame.add(glow);
-    // Aged bronze rims and pooled wax catch the candlelight.
-    for (const radius of [5.98, 6.18]) {
-        const ring = mesh(new THREE.TorusGeometry(radius,.018,5,96),new THREE.MeshStandardMaterial({color:0x685432,metalness:.7,roughness:.65}),scene,[0,.015,0]);
-        ring.rotation.x = Math.PI/2;
-    }
+    // The hand contact area stays flat, including the former thin trim rings.
     const waxMaterial = new THREE.MeshStandardMaterial({color:0xc4b58d,roughness:.96});
     for(let i=0;i<7;i++) {
         const angle=i*2.4;
@@ -168,6 +164,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
     const actorPawns = new Map();
     let feedbackImageFor;
     const flights = [];
+    const candleAnchor = new THREE.Vector3();
     const gunShots = [];
     function removeGunShot(shot) {
         shot.dispose();
@@ -223,6 +220,11 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
                 if (!shot.tick(now)) { removeGunShot(shot); gunShots.splice(index, 1); }
             }
             renderer.render(scene, camera);
+            if (onCandleAnchor) {
+                const anchor = candleAnchor.set(0, .18, 0).project(camera);
+                onCandleAnchor({ x: (anchor.x + 1) * 50, y: (1 - anchor.y) * 50,
+                    visible: anchor.z > -1 && anchor.z < 1 && Math.abs(anchor.x) < .94 && Math.abs(anchor.y) < .9 });
+            }
             if (flights.length || gunShots.length || cameraRig.hasMovement || !reducedMotion.matches) requestRender();
         });
     }
@@ -315,9 +317,9 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
 
     function update(options) {
         lastSceneOptions = options;
-        const { state, me, hand, selected, selectedCards = [], imageFor, interaction = null, canDraw = false, drawConfirming = false, handLowered = false, artwork = 'new', reorderIndex = null } = options;
+        const { state, me, hand, selected, selectedCards = [], imageFor, interaction = null, canDraw = false, canEndTurn = false, endConfirming = false, drawConfirming = false, handLowered = false, artwork = 'new', reorderIndex = null } = options;
         if (!state) return;
-        const nextSignature = JSON.stringify([state.currentPhase, state.awaitingLeftTryalSelections, state.playerForcedToRevealTryal, state.players, state.currentTurnPlayerUniqueId, state.deckCount, state.discardPileCount, state.witchNightState, hand, selected, selectedCards, me, interaction, canDraw, drawConfirming, handLowered, artwork, reorderIndex]);
+        const nextSignature = JSON.stringify([state.currentPhase, state.gameOver, state.lifeSetup, state.awaitingLeftTryalSelections, state.playerForcedToRevealTryal, state.players, state.currentTurnPlayerUniqueId, state.deckCount, state.discardPileCount, state.witchNightState, hand, selected, selectedCards, me, interaction, canDraw, canEndTurn, endConfirming, drawConfirming, handLowered, artwork, reorderIndex]);
         if (signature === nextSignature) return;
         signature = nextSignature;
         lifeSetupStage = state.lifeSetup?.stage || null;
@@ -335,6 +337,14 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
         glow.material.color.set(night ? 0xff3028 : 0xffffff);
         candleLight.color.set(night ? 0xff3038 : 0xffa04c);
         clearDynamic();
+        const candleTarget = mesh(new THREE.CylinderGeometry(.48, .48, .28, 16),
+            new THREE.MeshBasicMaterial({ visible: false }), dynamic, [0, .18, 0]);
+        candleTarget.userData.endTurn = true;
+        candleTarget.castShadow = candleTarget.receiveShadow = false;
+        if (canEndTurn && !state.gameOver) {
+            targets.push(candleTarget);
+            if (!onCandleAnchor) label(dynamic, endConfirming ? 'แตะอีกครั้งเพื่อจบเทิร์น' : 'จบเทิร์น', [0, .28, .4], '#ffdb83');
+        }
         seatPositions.clear(); actorPawns.clear(); feedbackImageFor = imageFor;
         const players = Object.values(state.players || {});
         cameraRig.setSeats(players, me);
@@ -402,49 +412,63 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             }
             for (let life = 0; life < lives; life++) {
                 const revealedName = player.tryalCards?.[life]?.name;
-                const lifeCard = card(seat, [(life - (lives - 1) / 2) * CARD_SPACING, .06, -1.10], [-Math.PI / 2, 0, 0],
+                const lifeCard = card(seat, [(life - (lives - 1) / 2) * CARD_SPACING, .06, -.85], [-Math.PI / 2, 0, 0],
                     revealedName ? cardTexture(imageFor(revealedName)) : back, { playerId: player.uniqueId, lifeIndex: life, resting: true });
                 addLifeCardFrame(lifeCard, lifeBorderColor(revealedName));
                 if (interaction?.kind === 'life' && interaction.owner === player.uniqueId && interaction.eligible.includes(life))
                     addLifeCardFrame(lifeCard, interaction.selected?.includes(life) ? 0xffd359 : 0x6ee7d2, { selected: true, inset: .015 });
                 if (interaction?.kind === 'life' && interaction.owner === player.uniqueId && interaction.eligible.includes(life)) {
-                    label(seat, `${interaction.selected?.includes(life) ? '✓ ' : ''}${life + 1}`, [(life - (lives - 1) / 2) * CARD_SPACING, .24, -1.10], '#ffe2a0');
+                    label(seat, `${interaction.selected?.includes(life) ? '✓ ' : ''}${life + 1}`, [(life - (lives - 1) / 2) * CARD_SPACING, .24, -.85], '#ffe2a0');
                 }
             }
             const revealed = player.revealedTryalCards || [];
+            const effects = player.inPlayCards || [];
+            const publicCount = revealed.length + effects.length;
+            const publicColumns = Math.min(8, publicCount);
+            const publicRows = Math.ceil(publicCount / 8);
+            const publicScale = Math.min(1, 1.15 / Math.max(1, publicRows));
+            // Bound the public-card area outside the central piles, even after many effects.
+            function publicPosition(index) {
+                const row = Math.floor(index / publicColumns);
+                const columns = Math.min(publicColumns, publicCount - row * publicColumns);
+                return [(index % publicColumns - (columns - 1) / 2) * CARD_SPACING * publicScale, .075,
+                    -1.55 - row * (CARD_HEIGHT + .02) * publicScale];
+            }
             revealed.forEach((revealedCard, i) => {
-                const face = card(seat, [(i-(revealed.length-1)/2)*CARD_SPACING, .075, -2.05], [-Math.PI/2,0,0],
+                const face = card(seat, publicPosition(i), [-Math.PI/2,0,0],
                     cardTexture(imageFor(revealedCard.name)), { playerId: player.uniqueId, revealedIndex: i, resting: true });
+                face.scale.setScalar(publicScale);
                 addLifeCardFrame(face, lifeBorderColor(revealedCard.name));
             });
-            if (revealed.length) label(seat, 'เปิดแล้ว', [0,.3,-2.05], '#cbb58b');
+            if (revealed.length) label(seat, 'เปิดแล้ว', [0,.3,-1.55], '#cbb58b');
             const own = player.uniqueId === me;
             const count = state.currentPhase === 'SETUP' || interaction?.kind === 'life' ? 0 : own ? hand.length : Number(player.handSize) || 0;
             // Own hand uses separate rows so every title remains visible.
-            const maxColumns = container.clientHeight > container.clientWidth ? 3 : 8;
+            const seatColumns = Math.max(3, Math.floor((Math.PI * 2 * 4.7 / players.length - .3) / CARD_SPACING));
+            const maxColumns = own && !handLowered && container.clientHeight > container.clientWidth ? 3 : Math.min(8, seatColumns);
             const columns = Math.ceil(count / Math.max(1, Math.ceil(count / maxColumns)));
             const spacing = CARD_SPACING;
+            const handScale = Math.min(1, 2 / Math.max(1, Math.ceil(count / Math.max(1, columns))));
             for (let i = 0; i < count; i++) {
                 const row = Math.floor(i / Math.max(1, columns));
                 const rowCount = Math.min(columns, count - row * columns);
                 const offset = i % columns - (rowCount - 1) / 2;
                 const lowered = !own || handLowered;
-                const position = lowered ? [offset * spacing, .08, .75 - row * .91 + Math.abs(offset) * .025]
-                    : [offset * spacing, 1.35 + row * .92 + (own && (selected === i || selectedCards.includes(i)) ? .16 : 0), -.1 + Math.abs(offset) * .025];
+                const position = lowered ? [offset * spacing * handScale, .08, .75 - row * (CARD_HEIGHT + .025) * handScale]
+                    : [offset * spacing, 1.35 + row * (CARD_HEIGHT + .06) + (own && (selected === i || selectedCards.includes(i)) ? .16 : 0), -.1 + Math.abs(offset) * .025];
                 const rotation = lowered ? [-Math.PI / 2, 0, 0] : [-.12, 0, own ? 0 : -offset * Math.min(.045, .35 / Math.max(1, count))];
                 const face = card(seat, position, rotation,
                     own ? cardTexture(imageFor(hand[i].name)) : back,
                     own ? { cardIndex: i, category: hand[i].color, resting: lowered } : { playerId: player.uniqueId, resting: lowered });
+                if (lowered) face.scale.setScalar(handScale);
                 if (own && (selected === i || selectedCards.includes(i))) face.material.color.set(0xb9a687);
                 if (own && reorderIndex === i) outline(face, 0xffdc73);
             }
-            // Public effects form a row toward the table centre, above life cards.
-            const effects = player.inPlayCards || [];
-            const effectColumns = Math.min(6, effects.length);
+            // Public effects share the bounded area with opened life cards.
             effects.forEach((effect, i) => {
-                const row = Math.floor(i / effectColumns), rowCount = Math.min(effectColumns, effects.length - row * effectColumns);
-                const effectCard = card(seat, [(i % effectColumns - (rowCount - 1) / 2) * CARD_SPACING, .08, -3 - row * .91],
+                const effectCard = card(seat, publicPosition(revealed.length + i),
                     [-Math.PI / 2, 0, 0], cardTexture(imageFor(effect.name)), { playerId: player.uniqueId, effectIndex: i, category: effect.color, resting: true });
+                effectCard.scale.setScalar(publicScale);
                 if (interaction?.kind === 'effect' && interaction.owner === player.uniqueId && interaction.eligible.includes(i)) outline(effectCard, interaction.selected.includes(i) ? 0x879277 : 0xc2ab87);
             });
         });
@@ -502,7 +526,8 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
         if (!hit) return;
         const data = hit.object.userData;
         if (Number.isInteger(data.cardIndex)) onCard(data.cardIndex);
-        else if (data.draw) onDraw();
+        else if (data.draw) onDraw?.();
+        else if (data.endTurn) onEndTurn?.();
         else if (Number.isInteger(data.revealedIndex)) onInspect?.(data);
         else if (Number.isInteger(data.lifeIndex) && onLife) onLife(data.playerId, data.lifeIndex);
         else if (Number.isInteger(data.effectIndex) && onEffect) onEffect(data.playerId, data.effectIndex);

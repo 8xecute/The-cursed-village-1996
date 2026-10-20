@@ -28,7 +28,8 @@ module.exports = function createRedCardServices(game) {
       game.io.to(target.id).emit('card used on you',player.name,cards[0].name,`ใช้การ์ดแดง ${cards.length} ใบ · ข้อกล่าวหา +${points} รวม ${existing+points}/7`);
       cards.forEach((card,index)=>game.io.to(room.name).emit('card action feedback',{
           actorId:playerId,actorName:player.name,cardName:card.name,targetId,targetName:target.name,
-          discard:false,delay:index*180,result:`ข้อกล่าวหารวม ${existing+points}/7`
+          discard:false,delay:index*180,batchIndex:index,batchCount:cards.length,batchPoints:points,
+          result:`ข้อกล่าวหารวม ${existing+points}/7`
       }));
       // One batch can trigger only one reveal, even when the total exceeds seven.
       if(existing+points>=7) {

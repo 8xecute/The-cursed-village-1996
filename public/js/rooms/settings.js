@@ -10,7 +10,7 @@ export function initialize() {
         const host = !!state.players?.[client.state.myUniqueId]?.isHost && !state.isSpectator;
         const max = Math.min(4, Math.max(1, state.playerCount - 1));
         const custom = state.customWitchCardCount;
-        const next = JSON.stringify([max,custom,state.customLifeCardCount,host,state.gameStarted]);
+        const next = JSON.stringify([state.playerCount,max,custom,state.customLifeCardCount,host,state.gameStarted]);
         if (next === signature) return; signature = next;
         select.replaceChildren(new Option('อัตโนมัติ','auto'));
         for (let count=1; count<=max; count++) select.add(new Option(`${count} ใบ`,String(count)));
@@ -24,9 +24,11 @@ export function initialize() {
         const lives = state.customLifeCardCount ?? automaticLives;
         lifeSelect.value = state.customLifeCardCount == null ? 'auto' : String(state.customLifeCardCount);
         lifeSelect.disabled = !host || state.gameStarted;
-        lifeHelp.textContent = `${state.customLifeCardCount == null ? 'อัตโนมัติ' : 'กำหนดเอง'}: ชีวิตคนละ ${lives} ใบ · ค่าเริ่มต้น 4–7 คน 5 ใบ / 8–9 คน 4 ใบ / 10–12 คน 3 ใบ · จำนวนปอบและหมอผียังใช้ค่าที่ตั้งไว้`;
+        lifeHelp.textContent = `${state.customLifeCardCount == null ? 'อัตโนมัติ' : 'กำหนดเอง'} · คนละ ${lives} ใบ`;
+        lifeHelp.title = 'อัตโนมัติ: 4–7 คน 5 ใบ · 8–9 คน 4 ใบ · 10–12 คน 3 ใบ';
         help.textContent = custom != null && custom > max ? 'ผู้เล่นลดลง · หัวห้องต้องเลือกจำนวนปอบใหม่ก่อนเริ่ม'
-            : `${custom == null ? `อัตโนมัติ: ${auto} ใบ (1–5 คน 1 ใบ / ตั้งแต่ 6 คน 2 ใบ)` : `กำหนดเอง: ${custom} ใบ`} · ชีวิตคนละ ${lives} ใบ · หมอผี 1 ใบ · เป็นจำนวนไพ่ ไม่ใช่จำนวนคน · ไพ่ปอบอาจอยู่กับคนเดียวกัน`;
+            : `ปอบ ${custom ?? auto} ใบ · หมอผี 1 ใบ`;
+        help.title = 'ปอบอัตโนมัติ: 1–5 คน 1 ใบ · ตั้งแต่ 6 คน 2 ใบ · เป็นจำนวนไพ่ ไพ่ปอบอาจอยู่คนเดียวกัน';
     });
     select.addEventListener('change', () => {
         if (!select.disabled) client.state.socket.emit('set witch card count',select.value === 'auto' ? null : Number(select.value));

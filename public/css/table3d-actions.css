@@ -328,7 +328,7 @@ body.game-view-3d .table3d-docked .popup-collapse-toggle { display: none !import
     border-radius: 6px; background: #571f29; color: #ffe0df; font-size: .95rem;
 }
 #table3d-role-badge[hidden] { display: none; }
-#prank-controls { position: fixed; bottom: 12px; left: 12px; z-index: 14000; display: flex; align-items: end; gap: 6px; }
+#prank-controls { position: fixed; top: 40dvh; right: 12px; z-index: 14000; display: flex; flex-direction: column; align-items: end; gap: 6px; max-width: calc(100vw - 24px); }
 #prank-controls[hidden], #prank-controls [hidden], #prank-shot-cue[hidden] { display: none !important; }
 #prank-controls button, #prank-controls summary { width: auto; padding: 8px 12px; margin: 0; font-size: .85rem; cursor: pointer; }
 #prank-controls details { background: #241d17; color: #eddbb7; border: 1px solid #947344; border-radius: 8px; padding: 5px; max-width: calc(100vw - 24px); }
