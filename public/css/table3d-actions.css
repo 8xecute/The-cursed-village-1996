@@ -425,3 +425,7 @@ body.game-view-3d.table3d-phase-details #night-action-popup.table3d-docked .moda
     #table3d-camera-tools > summary { min-height: 40px; padding: 6px 10px; }
     body.game-view-3d #table3d-section .table3d-hand-controls button { padding-inline: 10px; }
 }
+
+#table3d-reorder-hand[aria-pressed=true] { border-color:#ffda86; background:#614320; }
+#table3d-reorder-hint { display:block; flex-basis:100%; color:#efdbac; font-size:.8rem; text-align:center; }
+#table3d-reorder-hint[hidden] { display:none; }

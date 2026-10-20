@@ -312,9 +312,9 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
 
     function update(options) {
         lastSceneOptions = options;
-        const { state, me, hand, selected, selectedCards = [], imageFor, interaction = null, canDraw = false, drawConfirming = false, handLowered = true, artwork = 'new' } = options;
+        const { state, me, hand, selected, selectedCards = [], imageFor, interaction = null, canDraw = false, drawConfirming = false, handLowered = true, artwork = 'new', reorderIndex = null } = options;
         if (!state) return;
-        const nextSignature = JSON.stringify([state.currentPhase, state.awaitingLeftTryalSelections, state.playerForcedToRevealTryal, state.players, state.currentTurnPlayerUniqueId, state.deckCount, state.discardPileCount, state.witchNightState, hand, selected, selectedCards, me, interaction, canDraw, drawConfirming, handLowered, artwork]);
+        const nextSignature = JSON.stringify([state.currentPhase, state.awaitingLeftTryalSelections, state.playerForcedToRevealTryal, state.players, state.currentTurnPlayerUniqueId, state.deckCount, state.discardPileCount, state.witchNightState, hand, selected, selectedCards, me, interaction, canDraw, drawConfirming, handLowered, artwork, reorderIndex]);
         if (signature === nextSignature) return;
         signature = nextSignature;
         lifeSetupStage = state.lifeSetup?.stage || null;
@@ -371,8 +371,10 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             });
             const nameLabel = label(seat, `${selectedTarget ? '✓ ' : ''}${player.name}${player.uniqueId === me ? ' (คุณ)' : ''}${state.players?.[me]?.hasBeenWitch && player.hasBeenWitch ? ' · ทีมปอบ' : ''}${player.isReplacementBot ? ' · บอทเล่นแทน' : player.reconnectDeadline ? ' · รอเชื่อมต่อ' : ''}${!player.alive ? ' · เสียชีวิต' : ''}`, [0, 1.55, 2.05],
                 eligibleTarget ? selectedTarget ? '#ffe1a0' : '#a9e0c9' : player.alive ? '#eddbb7' : '#a39b91');
+            // Our identity is already in the HUD; the nearby sprite covers raised cards.
+            nameLabel.visible = player.uniqueId !== me;
             nameLabel.userData.playerId = player.uniqueId;
-            targets.push(nameLabel);
+            if (player.uniqueId !== me) targets.push(nameLabel);
             if (interaction?.kind === 'player') {
                 const eligible = interaction.eligible.includes(player.uniqueId);
                 const picked = interaction.selected.includes(player.uniqueId);
@@ -426,6 +428,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
                     own ? cardTexture(imageFor(hand[i].name)) : back,
                     own ? { cardIndex: i, category: hand[i].color } : { playerId: player.uniqueId }, own ? .56 : .47);
                 if (own && (selected === i || selectedCards.includes(i))) face.material.color.set(0xb9a687);
+                if (own && reorderIndex === i) outline(face, 0xffdc73);
             }
             // Public effects form a row toward the table centre, above life cards.
             const effects = player.inPlayCards || [];

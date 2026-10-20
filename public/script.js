@@ -1,3 +1,4 @@
+import { initialize as initializeHandOrder } from './js/views/hand-order.js';
 import { initialize as initializeLifeSetup } from './js/views/life-setup.js';
 import { initialize as initializePrank } from './js/views/prank.js';
 import { initialize as initializeRoomSettings } from './js/rooms/settings.js';
@@ -82,3 +83,5 @@ initializeRoomSettings();
 initializePrank();
 
 initializeLifeSetup();
+
+initializeHandOrder();

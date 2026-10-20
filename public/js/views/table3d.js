@@ -56,6 +56,7 @@ client.actions.syncTable3D = async function syncTable3D() {
                 cameraMode: client.state.table3DCameraMode || 'rotate',
                 onCard: index => {
                     client.actions.hidePlayerStatus?.();
+                    if (client.state.table3DReorderMode) { client.actions.reorderTable3DCard?.(index); return; }
                     if (!client.actions.canUseTable3DHand()) return;
                     const cards = document.querySelectorAll('#player-hand > .card');
                     const card = client.state.myCurrentHand?.[index];
@@ -99,6 +100,7 @@ client.actions.syncTable3D = async function syncTable3D() {
             canDraw: client.actions.canUseTable3DHand() && !document.getElementById('draw-card-button')?.disabled,
             handLowered: !!client.state.table3DHandLowered,
             artwork: client.state.cardArtwork,
+            reorderIndex: client.state.table3DReorderIndex ?? null,
             drawConfirming: document.getElementById('draw-card-button')?.classList.contains('confirming') });
         client.actions.updateTable3DFocus();
     } catch (error) {

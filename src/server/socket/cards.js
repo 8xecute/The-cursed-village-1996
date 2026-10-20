@@ -35,7 +35,7 @@ module.exports = function registerHandlers(socket, game) {
           if (!room || room.gameOver || !room.players[socket.uniqueId]?.alive) return;
           
           const player = room.players[socket.uniqueId];
-          if (fromIdx >= 0 && fromIdx < player.hand.length && 
+          if (Number.isInteger(fromIdx) && Number.isInteger(toIdx) && fromIdx >= 0 && fromIdx < player.hand.length &&
               toIdx >= 0 && toIdx < player.hand.length) {
               
               // สลับการ์ดในมือ
