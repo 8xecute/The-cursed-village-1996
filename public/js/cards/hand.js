@@ -1,6 +1,13 @@
 import { cardArtworkUrl } from '../views/artwork.js';
 import { client } from '../core/client.js';
 
+client.actions.selectedRedBatch = function selectedRedBatch() {
+    return (client.state.selectedRedCards || []).filter(index => client.state.myCurrentHand?.[index]?.color === 'Red');
+};
+client.actions.selectedRedPoints = function selectedRedPoints() {
+    return client.actions.selectedRedBatch().reduce((sum,index)=>sum+(client.state.myCurrentHand[index].value || {Accusation:1,Evidence:3,Witness:7}[client.state.myCurrentHand[index].name] || 0),0);
+};
+
 client.actions.updateCardSelectionSummary = function updateCardSelectionSummary() {
     const summary = document.getElementById('selected-card-summary');
     const card = client.state.myCurrentHand?.[client.state.selectedCard];
@@ -10,8 +17,9 @@ client.actions.updateCardSelectionSummary = function updateCardSelectionSummary(
         if (client.dom.playCardButton) client.dom.playCardButton.disabled = true;
         return;
     }
-    document.getElementById('selected-card-name').textContent = client.actions.displayCardName(card.name);
-    document.getElementById('selected-card-description').textContent = client.actions.displayCardDescription(card.name);
+    const batch=client.actions.selectedRedBatch();
+    document.getElementById('selected-card-name').textContent = batch.length ? `การ์ดแดง ${batch.length} ใบ · ${client.actions.selectedRedPoints()}/7 แต้ม` : client.actions.displayCardName(card.name);
+    document.getElementById('selected-card-description').textContent = batch.length ? 'แตะการ์ดแดงเพิ่มเพื่อเลือกหลายใบ · แตะใบที่เลือกเพื่อเอาออก · รวมกับเป้าหมายไม่เกิน 7 แต้ม' : client.actions.displayCardDescription(card.name);
     const two = client.state.CARDS_NEED_TWO_TARGETS.includes(card.name);
     const target = two || client.state.CARDS_NEED_TARGET.includes(card.name);
     document.getElementById('selected-card-next').textContent = two
@@ -28,6 +36,7 @@ client.actions.updateCardSelectionSummary = function updateCardSelectionSummary(
 
 client.actions.clearCardSelection = function clearCardSelection() {
     client.state.selectedCard = null;
+    client.state.selectedRedCards = [];
     if (client.dom.playerHandDiv) {
         client.dom.playerHandDiv.querySelectorAll('.card').forEach(card => {
             card.classList.remove('selected');
@@ -80,6 +89,7 @@ client.actions.updateHandDisplay = function updateHandDisplay(hand) {
         selectedCardData = client.state.myCurrentHand[client.state.selectedCard];
     }
     
+    if(JSON.stringify(client.state.myCurrentHand)!==JSON.stringify(hand)) client.state.selectedRedCards=[];
     client.state.myCurrentHand = hand;
     client.dom.playerHandDiv.innerHTML = '';
     client.dom.handCardCount.textContent = hand.length;
@@ -129,6 +139,7 @@ client.actions.updateHandDisplay = function updateHandDisplay(hand) {
                 client.state.myCurrentHand[fromIdx] = client.state.myCurrentHand[toIdx];
                 client.state.myCurrentHand[toIdx] = temp;
                 
+                client.state.selectedRedCards=(client.state.selectedRedCards||[]).map(i=>i===fromIdx?toIdx:i===toIdx?fromIdx:i);
                 // ส่งข้อมูลการสลับตำแหน่งไปยัง server
                 client.state.socket.emit('swap hand cards', fromIdx, toIdx);
                 
@@ -159,6 +170,25 @@ client.actions.updateHandDisplay = function updateHandDisplay(hand) {
                 client.actions.addGameMessage('ไม่ใช่ตาของคุณ.', 'red');
                 return;
             }
+            if (card.color === 'Red') {
+                client.actions.resetDrawCardButton();
+                client.actions.resetEndTurnButton();
+                let batch=client.actions.selectedRedBatch();
+                if(batch.includes(index)) batch=batch.filter(i=>i!==index);
+                else {
+                    const value=card.value || {Accusation:1,Evidence:3,Witness:7}[card.name];
+                    if(client.actions.selectedRedPoints()+value>7) {client.actions.addGameMessage('เลือกการ์ดแดงรวมได้ไม่เกิน 7 แต้ม','orange');return;}
+                    batch.push(index);
+                }
+                if(!batch.length) {client.actions.clearCardSelection();return;}
+                client.state.selectedRedCards=batch;
+                client.state.selectedCard=batch.at(-1);
+                client.dom.playerHandDiv.querySelectorAll('.card').forEach((element,i)=>{
+                    element.classList.toggle('selected',batch.includes(i));element.setAttribute('aria-pressed',String(batch.includes(i)));
+                });
+                client.actions.updateCardSelectionSummary();
+                return;
+            }
             if (client.state.selectedCard === index) {
                 // แตะซ้ำที่การ์ดเดิมเพื่อยกเลิกการเลือก
                 client.actions.clearCardSelection();
@@ -183,7 +213,7 @@ client.actions.updateHandDisplay = function updateHandDisplay(hand) {
         });
         
         // ถ้าการ์ดนี้เป็นการ์ดที่เลือกไว้ ให้เพิ่ม selected class
-        if (index === client.state.selectedCard) {
+        if (index === client.state.selectedCard || client.actions.selectedRedBatch().includes(index)) {
             cardElement.classList.add('selected');
             cardElement.setAttribute('aria-pressed', 'true');
             client.state.selectedCard = index;

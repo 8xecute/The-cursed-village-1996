@@ -2,7 +2,7 @@ import { client } from '../core/client.js';
 
 const nameOf = card => typeof card === 'string' ? card : card.name;
 client.actions.cardOutcomePreview = function(card, target) {
-    const points = { Accusation: 1, Evidence: 3, Witness: 7 }[card?.name];
+    const points = card?.batchPoints || { Accusation: 1, Evidence: 3, Witness: 7 }[card?.name];
     if (points) {
         if (target?.inPlayCards?.some(c => nameOf(c) === 'Piety')) return 'พลังศรัทธา · ป้องกันการ์ดแดง';
         const total = (target?.accusationPoints || 0) + points;

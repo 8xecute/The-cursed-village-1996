@@ -93,7 +93,7 @@ client.actions.syncTable3D = async function syncTable3D() {
         }
         if (!loading.hidden) loading.hidden = true;
         client.state.table3D.setActive(true);
-        client.state.table3D.update({ state: client.state.currentRoomState, me: client.state.myUniqueId, hand: client.state.myCurrentHand || [], selected: client.state.selectedCard,
+        client.state.table3D.update({ state: client.state.currentRoomState, me: client.state.myUniqueId, hand: client.state.myCurrentHand || [], selected: client.state.selectedCard, selectedCards: client.actions.selectedRedBatch?.() || [],
             imageFor: name => name ? client.actions.createCardImage(name).src : null,
             interaction: client.actions.getTable3DInteraction(),
             canDraw: client.actions.canUseTable3DHand() && !document.getElementById('draw-card-button')?.disabled,

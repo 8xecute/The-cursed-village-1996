@@ -10,7 +10,12 @@ const requiredFiles = [
   "public/index.html",
   "public/script.js",
   "public/style.css",
-  "src/gameLogic.js",
+  "src/server/createServer.js",
+  "src/server/game/cards.js",
+  "src/shared/cards.js",
+  "src/bots/player.js",
+  "src/client/table3d.js",
+  "src/client/ritual-scene.mjs",
 ];
 
 function collectJavaScript(directory) {
@@ -18,11 +23,11 @@ function collectJavaScript(directory) {
     const relative = path.join(directory, entry.name);
     return entry.isDirectory()
       ? collectJavaScript(relative)
-      : entry.name.endsWith(".js") ? [relative] : [];
+      : /\.(?:js|mjs)$/.test(entry.name) ? [relative] : [];
   });
 }
 
-const jsFilesToCheck = ["server.js", "public/script.js", "src/gameLogic.js",
+const jsFilesToCheck = ["server.js", "public/script.js",
   ...collectJavaScript("src/server"), ...collectJavaScript("src/shared"),
   ...collectJavaScript("src/bots"), ...collectJavaScript("src/client"),
   ...collectJavaScript("public/js")];

@@ -11,7 +11,7 @@ It explains current system behavior as implemented, not a theoretical design.
 - Server framework: Express
 - Realtime transport: Socket.IO
 - Frontend: Vanilla HTML/CSS/JS under `public/`
-- Build tool: Webpack (client bundle emitted to `dist/`)
+- Build tool: Webpack for `public/table3d.bundle.js`; browser modules and CSS are served directly from `public/`
 
 ### 1.2 Key Files
 

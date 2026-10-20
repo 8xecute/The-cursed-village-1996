@@ -138,7 +138,7 @@
 
 ## จุดที่ต้องตัดสินใจ/ทวนก่อนล็อก expected result
 
-- `src/gameLogic.js` มี `checkWinCondition` คนละชุดกับ `server.js`; ระบุให้ชัดว่า server เป็น source of truth หรือเอา module เก่าออก/รวม logic ก่อนเขียน parity test
+- ใช้กติกาใน `src/server/game/` เป็น source of truth สำหรับ expected result; โค้ด legacy ถูกลบแล้ว
 - กรณีเปิด Witch ใบสุดท้ายแต่ไม่มีชาวบ้านที่ไม่เคยติดเชื้อรอด ควรกำหนด precedence ให้ชัดว่า Witches ชนะ, Draw หรือ Townsfolk ชนะ
 - ทดสอบความต่างของการเลือก self-target ตามชนิดการ์ดให้ตรงกับกติกาฉบับที่เกมใช้จริง
 - การหมดเวลา/ไม่เลือก Night action และการตาย/หลุดระหว่างรอ prompt ต้องมีนโยบายชัด เพื่อให้คาดหวังผลได้แน่นอน

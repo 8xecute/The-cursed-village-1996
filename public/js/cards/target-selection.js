@@ -110,15 +110,20 @@ client.actions.showSelectPlayerPopup = function showSelectPlayerPopup(title, pla
 
     let selectedId = null;
     const isRedCard = cardObj && (cardObj.color === 'Red' || ['Accusation', 'Evidence', 'Witness'].includes(cardObj.name));
-    const isProtected = player => isRedCard && player?.inPlayCards?.some(card => (card.name || card) === 'Piety');
+    const blockedReason = player => {
+        if(!isRedCard || !player) return '';
+        if(player.inPlayCards?.some(card=>(card.name || card)==='Piety')) return 'พลังศรัทธา · กันการ์ดแดง';
+        return '';
+    };
+    const isProtected = player => !!blockedReason(player);
     const targetHint = document.createElement('p');
     targetHint.style.color = '#fcd34d';
     targetHint.style.fontSize = '0.9em';
     targetHint.setAttribute('role', 'status');
     if (alivePlayers.some(isProtected)) {
         targetHint.textContent = alivePlayers.every(isProtected)
-            ? 'ไม่มีเป้าหมายที่รับการ์ดสีแดงได้ · ยกเลิกแล้วเลือกการ์ดอื่น'
-            : 'พลังศรัทธาป้องกันการ์ดสีแดง · เลือกคนที่ไม่มีโล่';
+            ? 'ไม่มีเป้าหมายที่ใช้ชุดนี้ได้ · ผู้เล่นได้รับการป้องกัน'
+            : 'เลือกเป้าหมายที่ไม่ถูกป้องกัน · ครบหรือเกิน 7 แต้มเปิดการ์ดชีวิต 1 ใบ';
     }
     content.appendChild(targetHint);
     alivePlayers.forEach(player => {
@@ -189,7 +194,7 @@ client.actions.showSelectPlayerPopup = function showSelectPlayerPopup(title, pla
         btn.innerHTML += info;
         if (protectedTarget) {
             const reason = document.createElement('span');
-            reason.textContent = '🛡️ พลังศรัทธา · กันการ์ดแดง';
+            reason.textContent = blockedReason(player);
             reason.style.cssText = 'display:block;color:#ffd57c;font-size:.84em;font-weight:bold;';
             btn.lastElementChild?.appendChild(reason);
             btn.style.cursor = 'not-allowed';
@@ -209,7 +214,7 @@ client.actions.showSelectPlayerPopup = function showSelectPlayerPopup(title, pla
         });
         btn.addEventListener('click', () => {
             if (protectedTarget || isProtected(client.state.currentRoomState?.players?.[player.uniqueId] || player)) {
-                targetHint.textContent = 'คนนี้มีพลังศรัทธา · ใช้การ์ดสีแดงใส่ไม่ได้';
+                targetHint.textContent = blockedReason(client.state.currentRoomState?.players?.[player.uniqueId] || player);
                 return;
             }
             // Remove highlight from all
@@ -251,7 +256,7 @@ client.actions.showSelectPlayerPopup = function showSelectPlayerPopup(title, pla
     confirmBtn.disabled = true;
     confirmBtn.addEventListener('click', () => {
         if (isProtected(client.state.currentRoomState?.players?.[selectedId])) {
-            targetHint.textContent = 'เป้าหมายได้รับพลังศรัทธาแล้ว · กรุณาเลือกคนอื่น';
+            targetHint.textContent = blockedReason(client.state.currentRoomState?.players?.[selectedId]);
             selectedId = null;
             confirmBtn.disabled = true;
             return;

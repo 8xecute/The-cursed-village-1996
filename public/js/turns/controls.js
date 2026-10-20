@@ -123,6 +123,16 @@ export function initialize() {
       }
       const card = client.state.myCurrentHand[client.state.selectedCard];
       if (!card) { client.actions.clearCardSelection(); return; }
+      const redBatch=client.actions.selectedRedBatch();
+      if(card.color==='Red' && redBatch.length) {
+          const indexes=[...redBatch],points=client.actions.selectedRedPoints();
+          const players=Object.values(client.state.currentRoomState.players).filter(player=>player.alive&&player.uniqueId!==client.state.myUniqueId);
+          client.actions.showSelectPlayerPopup(`การ์ดแดง ${indexes.length} ใบ · ${points} แต้ม`,players,targetId=>{
+              client.state.socket.emit('play red cards',indexes,targetId);
+              client.actions.clearCardSelection();client.dom.drawCardButton.disabled=true;
+          },{...card,value:points,batchPoints:points});
+          return;
+      }
       let targetUniqueId = null;
       let secondTargetUniqueId = null;
       if (client.state.CARDS_NEED_TWO_TARGETS.includes(card.name)) {

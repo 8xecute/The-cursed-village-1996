@@ -115,8 +115,7 @@ The-cursed-village-1996/
 │   │   └── socket/           # รับ events แยกตามระบบ
 │   ├── shared/cards.js       # สร้างสำรับตามจำนวนผู้เล่น
 │   ├── bots/player.js        # บอทผ่าน Socket.IO
-│   ├── client/table3d.js     # ฉาก Three.js
-│   └── legacy/               # โค้ดเก่าสำหรับอ้างอิง/compatibility
+│   └── client/               # ฉาก Three.js และโมเดลฉากพิธีกรรม
 ├── public/
 │   ├── index.html            # หน้าเว็บ
 │   ├── script.js             # โหลดและเริ่ม browser modules
@@ -138,14 +137,14 @@ The-cursed-village-1996/
 ```bash
 npm start                         # เปิด server; build 3D ก่อนเริ่ม
 npm run dev                       # เปิดด้วย nodemon; build 3D ก่อนเริ่ม
-npm run build:client              # build JavaScript, CSS และ 3D
+npm run build:client              # build 3D (ชื่อคำสั่งเดิมสำหรับ deploy)
 npm run build:3d                  # build เฉพาะฉาก Three.js
 npm run health                    # ตรวจไฟล์และ syntax
 node scripts/check-witch-night.cjs # integration check ระบบกลางคืน
 ```
 
 - `npm run build:render` เรียก build ฝั่ง client เช่นเดียวกัน
-- `npm run build` ต่อด้วย `build:server` ซึ่งปัจจุบันแสดงข้อความเท่านั้น เพราะ server รันจาก source โดยตรง
+- `npm run build`, `build:client` และ `build:render` สร้างเฉพาะ bundle 3D; server รันจาก source โดยตรง
 - `npm test` ใช้ Jest พร้อม `--passWithNoTests` จึงอาจผ่านได้แม้ไม่มี test cases
 - `npm run lint` มีอยู่ แต่การตั้งค่า ESLint เดิมยังใช้ `sourceType: script` จึงต้องปรับให้รองรับ ES modules ก่อนใช้เป็นเกณฑ์ตรวจทั้งโปรเจกต์
 - `optimize:assets` ยังเป็น placeholder ไม่ได้บีบอัดรูปหรือเสียงให้
@@ -165,16 +164,16 @@ Build Command: npm ci --include=dev
 Start Command: npm start
 ```
 
-`npm ci --include=dev` ใช้ `package-lock.json` ติดตั้งเครื่องมือ build และเรียก `postinstall` เพื่อ build หน้าเว็บกับ 3D
+`npm ci --include=dev` ใช้ `package-lock.json` ติดตั้งเครื่องมือ build และเรียก `postinstall` เพื่อ build bundle 3D
 
 - ใช้ Node.js 24 ให้ตรงกับตัวอย่างการพัฒนา
 - server อ่านพอร์ตจาก `PORT` ของระบบ โดยมีค่าเริ่มต้น 3000
-- หน้าเว็บปัจจุบันให้บริการจาก `public/` ด้วย native ES modules ส่วน webpack ยังสร้าง `dist/` ได้
+- หน้าเว็บปัจจุบันให้บริการจาก `public/` ด้วย native ES modules; webpack สร้างเฉพาะ bundle 3D ใน `public/`
 - ต้องเป็น server ที่รัน Node.js และ Socket.IO จึงจะสร้างห้องและเล่นหลายคนได้
 - ห้องและเกมเก็บในหน่วยความจำของ process การ restart หรือ deploy ใหม่ทำให้ห้องเดิมหาย
 - โครงสร้างปัจจุบันใช้ room store ใน process เดียว หากขยายหลาย instance ต้องออกแบบ shared state และการเชื่อมต่อเพิ่มเติม
 
-ไม่ควรแก้ `dist/`, `public/table3d.bundle.js` หรือ `node_modules` โดยตรง ให้แก้ source แล้ว build ใหม่
+ไม่ควรแก้ `public/table3d.bundle.js` หรือ `node_modules` โดยตรง ให้แก้ source แล้ว build ใหม่
 
 ## เทคโนโลยี
 

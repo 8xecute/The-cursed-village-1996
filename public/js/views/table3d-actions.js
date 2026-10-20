@@ -44,13 +44,14 @@ client.actions.getTable3DInteraction = function getTable3DInteraction() {
         if (!client.state.isMyTurn || state.currentPhase !== 'DAY' || state.awaitingLeftTryalSelections ||
             state.playerForcedToRevealTryal || state.isAssigningBlackCat || !card ||
             ![...client.state.CARDS_NEED_TARGET, ...client.state.CARDS_NEED_TWO_TARGETS].includes(card.name)) return null;
+        const batchPoints = card.color === 'Red' ? client.actions.selectedRedPoints?.() || 0 : 0;
         const eligible = [], blocked = {}, outcomes = {};
         for (const player of Object.values(state.players)) {
             const protectedTarget = (card.color === 'Red' || ['Accusation', 'Evidence', 'Witness'].includes(card.name)) &&
                 player.inPlayCards?.some(effect => (effect.name || effect) === 'Piety');
             const reason = !player.alive ? 'เสียชีวิตแล้ว' : player.uniqueId === client.state.myUniqueId ? 'เลือกตัวเองไม่ได้'
                 : protectedTarget ? 'พลังศรัทธา · กันการ์ดแดง' : null;
-            if (reason) blocked[player.uniqueId] = reason; else { eligible.push(player.uniqueId); outcomes[player.uniqueId] = client.actions.cardOutcomePreview?.(card, player) || 'แตะเพื่อเลือก'; }
+            if (reason) blocked[player.uniqueId] = reason; else { eligible.push(player.uniqueId); outcomes[player.uniqueId] = client.actions.cardOutcomePreview?.(batchPoints ? {...card,batchPoints} : card, player) || 'แตะเพื่อเลือก'; }
         }
         return { kind: 'player', preview: true, eligible, selected: [], blocked, outcomes };
     }
@@ -342,7 +343,8 @@ export function initialize() {
         const selected = client.state.myCurrentHand?.[client.state.selectedCard];
         panel.classList.toggle('has-selected-card', !!selected);
         panel.classList.toggle('has-phase-action', !!request && !request.preview);
-        const text = selected ? `${client.actions.displayCardName(selected.name)} · ${client.actions.displayCardDescription(selected.name)}` : 'แตะการ์ดเพื่อเลือก · แตะซ้ำเพื่อยกเลิก · การ์ดไม่ระบุเป้าหมายแตะซ้ำเพื่อใช้';
+        const batchPoints = client.actions.selectedRedPoints?.() || 0;
+        const text = batchPoints ? `การ์ดแดง ${client.actions.selectedRedBatch().length} ใบ · ${batchPoints}/7 แต้ม · แตะการ์ดแดงเพิ่มหรือลด แล้วเลือกผู้เล่น` : selected ? `${client.actions.displayCardName(selected.name)} · ${client.actions.displayCardDescription(selected.name)}` : 'แตะการ์ดเพื่อเลือก · แตะซ้ำเพื่อยกเลิก · การ์ดไม่ระบุเป้าหมายแตะซ้ำเพื่อใช้';
         if (description.textContent !== text) description.textContent = text;
         document.querySelectorAll('#table3d-section [data-table-action]').forEach(button => {
             const source = document.getElementById(button.dataset.tableAction);

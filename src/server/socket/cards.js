@@ -13,6 +13,10 @@ module.exports = function registerHandlers(socket, game) {
           }
       });
 
+  socket.on('play red cards', (indexes, targetId) => {
+      if(socket.currentRoom) game.playRedCards(socket.currentRoom, socket.uniqueId, indexes, targetId);
+  });
+
   socket.on('end turn', () => {
           const roomName = socket.currentRoom;
           if (roomName) {

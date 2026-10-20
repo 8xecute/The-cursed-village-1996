@@ -9,7 +9,7 @@
 
 - Backend: Node.js + Express + Socket.IO
 - Frontend: `public/index.html`, `public/script.js`, `public/style.css`
-- Build: Webpack (`npm run build:client`) แล้วปล่อยไฟล์ไป `dist/`
+- Build: Webpack (`npm run build:client`) สร้างเฉพาะ `public/table3d.bundle.js`; เว็บและ CSS ใช้ไฟล์จาก `public/` โดยตรง
 
 ### 1.2 ไฟล์สำคัญ
 

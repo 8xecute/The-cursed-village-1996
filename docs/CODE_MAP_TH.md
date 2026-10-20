@@ -76,22 +76,21 @@ ready, summary, card-help, navigation, profile, rules, night, action-overlays, d
 `raw-theme.css` เป็นธีมด้านที่โหลดท้ายสุด เก็บสีหลักและรูปแบบเลือกการ์ด/เป้าหมาย โดยใช้กรอบแทนแสงเรือง
 URL ใน CSS อ้างอิงจากตำแหน่งไฟล์ CSS นั้น เช่น `../Background/background.jpg`
 
-## บอทและโค้ดเก่า
+## บอทและกติกาที่ใช้งาน
 
 - `src/bots/player.js`: บอทที่สื่อสารผ่าน Socket.IO เช่นเดียวกับผู้เล่น
-- `src/legacy/`: โค้ดเดิมที่ไม่ได้เป็น runtime หลัก เก็บเพื่ออ้างอิง/รองรับ imports เก่า
-- `src/gameLogic.js`, `src/botPlayer.js`, `src/utils.js`, `src/table3d.js`: compatibility entries
-- อย่าเพิ่มกติกาใหม่ใน legacy; runtime จริงใช้ `src/server/game/`
+- กติกาที่ใช้งานจริงอยู่ใน `src/server/game/` และข้อมูลสำรับอยู่ใน `src/shared/cards.js`
+- โค้ด legacy และ compatibility entries ถูกลบแล้ว; ใช้ entry ปัจจุบันตามแผนผังนี้
 
 ## Build และการตรวจ
 
 - `npm start`: เปิด server; prestart สร้าง bundle 3D
 - `npm run dev`: เปิด server ด้วย nodemon
-- `npm run build:client`: build browser entry, CSS และ 3D
+- `npm run build:client`: build bundle 3D (คงชื่อคำสั่งเดิมสำหรับ deploy)
 - `npm run health`: ตรวจไฟล์และ syntax ของ modules
 - `node scripts/check-witch-night.cjs`: integration check ระบบกลางคืนด้วย server แยกและพอร์ตชั่วคราว
 
 หน้าเว็บที่ server ให้บริการใช้ native ES modules จาก `public/`; webpack ยังสร้าง `dist/` ได้ตามเดิม
 Render ใช้คำสั่งติดตั้ง/build/start เดิม ไม่ต้องเพิ่ม service หรือ environment variable
-อย่าแก้ `dist/`, `public/table3d.bundle.js` หรือ `node_modules` โดยตรง
+อย่าแก้ `public/table3d.bundle.js` หรือ `node_modules` โดยตรง
 การ build/syntax ผ่านยังไม่ยืนยันพฤติกรรมเล่นจริง; ก่อน Production ควรทดสอบครบตั้งแต่ล็อบบี้ถึงจบเกม

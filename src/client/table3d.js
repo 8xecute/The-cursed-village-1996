@@ -408,9 +408,9 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
 
     function update(options) {
         lastSceneOptions = options;
-        const { state, me, hand, selected, imageFor, interaction = null, canDraw = false, drawConfirming = false, handLowered = true, artwork = 'new' } = options;
+        const { state, me, hand, selected, selectedCards = [], imageFor, interaction = null, canDraw = false, drawConfirming = false, handLowered = true, artwork = 'new' } = options;
         if (!state) return;
-        const nextSignature = JSON.stringify([state.currentPhase, state.awaitingLeftTryalSelections, state.playerForcedToRevealTryal, state.players, state.currentTurnPlayerUniqueId, state.deckCount, state.discardPileCount, state.witchNightState, hand, selected, me, interaction, canDraw, drawConfirming, handLowered, artwork]);
+        const nextSignature = JSON.stringify([state.currentPhase, state.awaitingLeftTryalSelections, state.playerForcedToRevealTryal, state.players, state.currentTurnPlayerUniqueId, state.deckCount, state.discardPileCount, state.witchNightState, hand, selected, selectedCards, me, interaction, canDraw, drawConfirming, handLowered, artwork]);
         if (signature === nextSignature) return;
         signature = nextSignature;
         const night = state.currentPhase === 'NIGHT';
@@ -513,13 +513,13 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
                 const rowCount = Math.min(columns, count - row * columns);
                 const offset = (own ? i % columns : i) - (rowCount - 1) / 2;
                 const lowered = !own || handLowered;
-                const position = lowered ? [offset * spacing, .08 + (own && selected === i ? .12 : 0), .38 + row * .88 + Math.abs(offset) * .025]
-                    : [offset * spacing, 1 + row * .98 + (own && selected === i ? .16 : 0), .7 + Math.abs(offset) * .025];
+                const position = lowered ? [offset * spacing, .08 + (own && (selected === i || selectedCards.includes(i)) ? .12 : 0), .38 + row * .88 + Math.abs(offset) * .025]
+                    : [offset * spacing, 1 + row * .98 + (own && (selected === i || selectedCards.includes(i)) ? .16 : 0), .7 + Math.abs(offset) * .025];
                 const rotation = lowered ? [-Math.PI / 2, 0, 0] : [-.12, 0, own ? 0 : -offset * Math.min(.045, .35 / Math.max(1, count))];
                 const face = card(seat, position, rotation,
                     own ? cardTexture(imageFor(hand[i].name)) : back,
                     own ? { cardIndex: i, category: hand[i].color } : { playerId: player.uniqueId }, own ? .56 : .47);
-                if (own && selected === i) face.material.color.set(0xb9a687);
+                if (own && (selected === i || selectedCards.includes(i))) face.material.color.set(0xb9a687);
             }
             // Public effects form a row toward the table centre, above life cards.
             const effects = player.inPlayCards || [];
@@ -673,7 +673,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             const to = target ? target.clone().multiplyScalar(.63).setY(.18) : new THREE.Vector3(0,1.1,0);
             if (!from || !feedbackImageFor) return;
             const texture = cardTexture(feedbackImageFor(event.cardName));
-            addFlight(from,to,texture,0,cardArrivalPause);
+            addFlight(from,to,texture,event.delay || 0,cardArrivalPause);
             if (event.discard) addFlight(to,new THREE.Vector3(1.2,.3,0),texture,cardFlightDuration+cardArrivalPause);
         },
         animateMovement(event) {
