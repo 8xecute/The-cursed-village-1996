@@ -13,19 +13,8 @@ export function prepareVillagerModels(scene) {
         root.traverse(mesh => {
             if (!mesh.isMesh) return;
             const geometry = mesh.geometry.clone().applyMatrix4(placement.clone().multiply(mesh.matrixWorld));
-            // Lift the forearms over the raised rim, tapering back down onto
-            // the flat tabletop. Move the continuous skin/cloth, not just hands.
-            const positions = geometry.attributes.position;
-            for (let i = 0; i < positions.count; i++) {
-                const x = positions.getX(i), y = positions.getY(i), z = positions.getZ(i);
-                if (Math.abs(x) < .17 || y < -.3 || y > .65 || z > -.10) continue;
-                const armWeight = THREE.MathUtils.smoothstep(Math.abs(x), .17, .25);
-                const heightWeight = THREE.MathUtils.smoothstep(y, -.3, -.15) * (1 - THREE.MathUtils.smoothstep(y, .4, .65));
-                const ramp = THREE.MathUtils.smoothstep(-z, .12, .32);
-                const rim = Math.exp(-(((z + .41) / .19) ** 2));
-                positions.setY(i, y + armWeight * heightWeight * ramp * (.025 + .09 * rim));
-            }
-            geometry.computeVertexNormals();
+            // Preserve the authored wrists and sleeves. The table no longer
+            // has a raised rim, so no local arm deformation is necessary.
             const material = mesh.material.clone();
             const part = new THREE.Mesh(geometry, material);
             part.name = mesh.name;
@@ -56,12 +45,40 @@ export function instantiateVillager(parent, models, color, alive, variant) {
         if (/top|casualsuit|bottom/i.test(material.name))
             material.color.lerp(new THREE.Color(color), .3);
         if (!alive && source.name !== 'chair') material.color.multiplyScalar(.45);
-        const part = new THREE.Mesh(source.geometry, material);
+        const ownedGeometry = !alive && source.name !== 'chair';
+        const geometry = ownedGeometry ? slumpedGeometry(source.geometry) : source.geometry;
+        const part = new THREE.Mesh(geometry, material);
+        part.userData.ownedGeometry = ownedGeometry;
         part.name = source.name;
         part.castShadow = part.receiveShadow = true;
         parent.add(part);
         return part;
     });
+}
+
+function slumpedGeometry(source) {
+    const geometry = source.clone(), positions = geometry.attributes.position;
+    const pivot = new THREE.Vector3(0, .05, .015);
+    const point = new THREE.Vector3(), rotation = new THREE.Quaternion();
+    const axis = new THREE.Vector3(1, 0, 0);
+    // Bend at the hips toward the centre of the table. A smooth transition
+    // leaves the thighs/feet in their seated pose and keeps the chair upright.
+    for (let i = 0; i < positions.count; i++) {
+        const x = positions.getX(i), y = positions.getY(i), z = positions.getZ(i);
+        let weight = THREE.MathUtils.smoothstep(y, -.37, -.06);
+        // Leave hands/forearms on the table instead of folding them through
+        // it together with the chest. Blend the upper arms at the shoulders.
+        if (y < .65) weight *= 1 - THREE.MathUtils.smoothstep(-z, .10, .35);
+        if (!weight) continue;
+        rotation.setFromAxisAngle(axis, -1.30 * weight);
+        point.set(x, y, z).sub(pivot).applyQuaternion(rotation).add(pivot);
+        // The tabletop in pawn coordinates is y=.018. Keep the face, hair
+        // and arms resting just above it, including at the outer edge.
+        if (y > .65 && point.z < -.36) point.y = Math.max(.037, point.y);
+        positions.setXYZ(i, point.x, point.y, point.z);
+    }
+    geometry.computeVertexNormals(); geometry.computeBoundingBox(); geometry.computeBoundingSphere();
+    return geometry;
 }
 
 export function disposeVillagerModels(models, disposeTextures = false) {

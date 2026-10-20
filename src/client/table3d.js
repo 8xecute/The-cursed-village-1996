@@ -88,9 +88,8 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
     buildCeremonialRoom(scene, wood);
     const tableMaterial = new THREE.MeshStandardMaterial({ map: wood, bumpMap: wood, bumpScale: .035, roughness: .78, color: 0xb4a38b });
     mesh(new THREE.CylinderGeometry(6.2, 6.2, 0.35, 80), tableMaterial, scene, [0, -0.2, 0]);
-    const rim = mesh(new THREE.TorusGeometry(6.12, 0.12, 8, 96),
-        new THREE.MeshStandardMaterial({ color: 0x331b0c, roughness: 0.7 }), scene, [0, 0.01, 0]);
-    rim.rotation.x = Math.PI / 2;
+    // Keep the tabletop flat through its outer edge so wrists cannot be
+    // occluded by a raised decorative rail.
     mesh(new THREE.CylinderGeometry(2.35, 2.35, 0.02, 64),
         new THREE.MeshStandardMaterial({ map: cloth, bumpMap: cloth, bumpScale: .008, roughness: 1 }), scene, [0, 0.006, 0]);
     mesh(new THREE.CylinderGeometry(0.4, 0.45, 0.11, 24),
@@ -349,7 +348,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             const pawn = new THREE.Group(); pawn.position.z = 2.05; pawn.position.y = -.1; seat.add(pawn);
             actorPawns.set(player.uniqueId, pawn);
             pawn.scale.setScalar(1.4);
-            // Eliminated players stay seated; do not tip the chair and full body onto the table.
+            // The model's dead pose folds the upper body; chair and legs stay seated.
             const modelKey = `${index}:${player.alive}:${!!villagerModels}`;
             if (!characterCache.has(modelKey)) {
                 const template = new THREE.Group();
@@ -595,7 +594,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             cancelAnimationFrame(renderFrame);
             resizeObserver.disconnect(); clearDynamic();
             scene.traverse(object => { object.geometry?.dispose(); object.material?.dispose(); });
-            characterCache.forEach(parts => parts.forEach(part => { if (!villagerModels) part.geometry.dispose(); part.material.dispose(); }));
+            characterCache.forEach(parts => parts.forEach(part => { if (!villagerModels || part.userData.ownedGeometry) part.geometry.dispose(); part.material.dispose(); }));
             characterCache.clear();
             if (villagerModels) disposeVillagerModels(villagerModels, true);
             flameGlowTexture.dispose(); wood.dispose(); cloth.dispose(); back.dispose(); textures.forEach(texture => texture.dispose());
