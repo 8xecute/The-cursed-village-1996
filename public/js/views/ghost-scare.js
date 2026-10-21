@@ -65,7 +65,7 @@ export function initialize() {
         // Reinsert so a later scare restarts its single zoom/fade animation.
         overlay.remove(); (document.fullscreenElement || document.body).appendChild(overlay); overlay.hidden = false;
         client.actions.playGhostScareSound?.();
-        timer = setTimeout(stop, Math.max(500, Math.min(1800, Number(event.duration) || 1400)));
+        timer = setTimeout(stop, Math.max(500, Math.min(3800, Number(event.duration) || 3400)));
     });
     client.state.socket.on('room left', () => { generation++; pending = false; state = null; close(); stop(); render(); });
     client.state.socket.on('disconnect', () => { generation++; pending = false; close(); stop(); controls.hidden = true; });

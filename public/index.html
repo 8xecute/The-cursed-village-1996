@@ -26,6 +26,18 @@
         <span class="top-nav-icon">📜</span>
         <span class="top-nav-text">เนื้อเรื่อง</span>
       </button>
+      <button id="show-guide-picker-btn" class="top-nav-btn" type="button">📖 คู่มือและการ์ด</button>
+
+      <button id="show-training-btn" class="top-nav-btn" type="button">
+        <span class="top-nav-icon">🎓</span>
+        <span class="top-nav-text">สอนเล่น</span>
+      </button>
+      <a class="top-nav-btn" href="patch-notes.html">อัพเดท</a>
+    </div>
+
+    <dialog id="guide-picker" aria-labelledby="guide-picker-title">
+      <header><h2 id="guide-picker-title">คู่มือและการ์ด</h2><button id="guide-picker-close" type="button" aria-label="ปิดคู่มือและการ์ด">✕</button></header>
+      <p>เลือกสิ่งที่ต้องการดู</p>
       <button id="show-cards-btn" class="top-nav-btn btn-cards" title="ดูสารบัญการ์ดทั้งหมด 18 ใบ">
         <span class="top-nav-icon">📖</span>
         <span class="top-nav-text">อธิบายการ์ด</span>
@@ -34,14 +46,7 @@
         <span class="top-nav-icon">⚖️</span>
         <span class="top-nav-text">คู่มือการเล่น</span>
       </button>
-      <button id="show-training-btn" class="top-nav-btn" type="button">
-        <span class="top-nav-icon">🎓</span>
-        <span class="top-nav-text">ฝึกเล่น 2D / 3D</span>
-      </button>
-      <a class="top-nav-btn" href="patch-notes.html">อัปเดตการเล่น</a>
-    </div>
-
-    
+    </dialog>
     <!-- Interactive Overlay for Music Start -->
     <div id="music-overlay" class="music-overlay">
       <div class="music-overlay-content" style="background: #181818; color: #fff; border-radius: 16px; max-width: 700px; width:95vw; margin:auto; box-shadow: 0 8px 32px rgba(0,0,0,0.5); padding:0 0 32px 0; display:flex; flex-direction:column; align-items:center;">
@@ -60,7 +65,7 @@
           </p>
           <div style="text-align:center; margin-top:24px;">
             <button id="enter-village-btn" class="enter-village-btn" style="font-size:1.1em; padding: 12px 36px;">เข้าสู่หมู่บ้านต้องสาป</button>
-            <button id="intro-training-btn" class="top-nav-btn" type="button">🎓 ฝึกเล่น 2D / 3D</button>
+            <button id="intro-training-btn" class="top-nav-btn" type="button">🎓 สอนเล่น</button>
             <a class="intro-patch-link" href="patch-notes.html">มีอะไรใหม่ · 18–21 ต.ค.</a>
           </div>
         </div>
@@ -70,7 +75,7 @@
 
     <dialog id="training-dialog" aria-labelledby="training-title">
       <header class="training-header">
-        <h2 id="training-title">🎓 ฝึกเล่นหมู่บ้านต้องสาป</h2>
+        <h2 id="training-title">🎓 สอนเล่นหมู่บ้านต้องสาป</h2>
         <button id="training-close" type="button" aria-label="ปิดโหมดฝึก">✕</button>
       </header>
       <div id="training-body"></div>

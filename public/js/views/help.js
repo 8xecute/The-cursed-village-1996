@@ -1,6 +1,15 @@
 import { client } from '../core/client.js';
 
 export function initialize() {
+  const picker = document.getElementById('guide-picker');
+  document.getElementById('show-guide-picker-btn').onclick = () => picker.showModal();
+  document.getElementById('guide-picker-close').onclick = () => picker.close();
+  for (const [buttonId, modalId] of [['show-cards-btn','card-explain-modal'],['show-rules-btn','game-rules-modal']]) {
+      document.getElementById(buttonId).addEventListener('click', () => {
+          picker.close(); document.getElementById(modalId).style.display = 'flex';
+      }, {capture:true});
+  }
+
   client.state.cardNameMap = {
       'Accusation': 'ข้อกล่าวหา',
       'Evidence': 'หลักฐาน',

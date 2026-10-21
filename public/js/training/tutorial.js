@@ -25,7 +25,18 @@ export function initialize() {
     let opener;
     let triedProtection = false;
     let waitingToLeave = false;
-    let view = '2d', lifeChoice = null;
+    let view = '2d', lifeChoice = null, trainingNativeFullscreen = false;
+    function leaveTrainingFullscreen() {
+        if (trainingNativeFullscreen && document.fullscreenElement) document.exitFullscreen?.().catch(()=>{});
+        trainingNativeFullscreen = false;
+    }
+    function enterTrainingFullscreen() {
+        if (document.fullscreenElement || !document.documentElement.requestFullscreen) return;
+        trainingNativeFullscreen = true;
+        document.documentElement.requestFullscreen().then(() => {
+            if (!dialog.open || view !== '3d' || !scene) leaveTrainingFullscreen();
+        }).catch(()=>{ trainingNativeFullscreen=false; });
+    }
     try { view = localStorage.getItem('villageTrainingView') === '3d' ? '3d' : '2d'; } catch (_) {}
     const trainingTable = createTrainingTable({
         imageFor: name => client.actions.createCardImage(name).src,
@@ -42,7 +53,7 @@ export function initialize() {
             const pick = button(`ฝึก ${mode.toUpperCase()}`, () => {
                 view = mode;
                 try { localStorage.setItem('villageTrainingView', mode); } catch (_) {}
-                if (scene) render(); else showIntro();
+                if (scene) { render(); if(view==='3d') enterTrainingFullscreen(); } else showIntro();
             }, bar);
             pick.setAttribute('aria-pressed', String(view === mode));
         }
@@ -82,6 +93,7 @@ export function initialize() {
         triedProtection = false;
         lifeChoice = null;
         save(); render();
+        if (view === '3d') enterTrainingFullscreen();
     }
     function complete() {
         finished = true;
@@ -147,6 +159,7 @@ export function initialize() {
         return { life: 'card', draw: 'draw', end: 'end', night: 'night', dawn: 'dawn' }[lesson.kind] || '';
     }
     function updateCoach(override) {
+        const lesson = lessons[index];
         body.querySelectorAll('[data-training-next]').forEach(element => element.removeAttribute('data-training-next'));
         const key = override || nextAction();
         const element = [...body.querySelectorAll('[data-training-action]')].find(button => button.dataset.trainingAction === key && !button.disabled);
@@ -154,7 +167,14 @@ export function initialize() {
         element.dataset.trainingNext = 'true';
         const coach = body.querySelector('.training-coach');
         const label = element.querySelector('strong')?.textContent || element.textContent;
-        if (coach) coach.textContent = `กดตรงที่มีกรอบเน้น: ${label.trim()}`;
+        if (coach) coach.textContent = view === '3d'
+            ? key === 'card' ? (lesson.kind === 'life' ? 'แตะการ์ดชีวิตของคุณบนโต๊ะ' : 'แตะไพ่ในมือบนโต๊ะ')
+              : key.startsWith('target-') ? `แตะผู้เล่น ${scene.players[Number(key.slice(7))]?.name || ''} บนโต๊ะ`
+              : key.startsWith('life') ? 'แตะการ์ดชีวิตที่มีกรอบ แล้วแตะใบเดิมเพื่อยืนยัน'
+              : key === 'draw' || key === 'infection' || key === 'night' ? 'แตะกองจั่วบนโต๊ะ'
+              : key.startsWith('effect-') ? 'แตะการ์ดสถานะหน้าผู้เล่นบนโต๊ะ'
+              : `ขั้นต่อไป: ${label.trim()}`
+            : `กดตรงที่มีกรอบเน้น: ${label.trim()}`;
         if (!dialog.open || view === '3d') return;
         element.focus({ preventScroll: true });
         const bounds = element.getBoundingClientRect();
@@ -231,7 +251,7 @@ export function initialize() {
             }
             parent.appendChild(node('p', 'การ์ดที่ใช้ฝึกในบทนี้'));
             const row = node('div', '', 'training-card-row');
-            const choice = cardButton(lesson.card, () => { selected = true; message = lesson.targets === 0 ? 'เครื่องเซ่นวางหน้าตัวเองได้' : 'เลือกผู้เล่นบนกระดานด้านบน'; render(); }, row);
+            const choice = cardButton(lesson.card, () => { selected = true; message = lesson.targets === 0 ? 'เครื่องเซ่นวางหน้าตัวเองได้' : view === '3d' ? 'เลือกตัวละครบนโต๊ะ' : 'เลือกผู้เล่นบนกระดานด้านบน'; render(); }, row);
             choice.setAttribute('aria-pressed', String(selected));
             parent.appendChild(row);
             const count = lesson.targets ?? 1;
@@ -321,9 +341,15 @@ export function initialize() {
         button(finished ? (index === lessons.length - 1 ? 'ดูสรุปการฝึก' : 'บทถัดไป →') : 'ข้ามบทนี้ →', () => startLesson(index + 1), footer, false, 'next');
         body.appendChild(footer);
         if (view === '3d') {
-            board.before(trainingTable.root);
-            board.classList.add('training-board-fallback');
-            body.appendChild(node('p', '3D: ลากหมุน · จีบนิ้วซูม · แตะการ์ดแล้วแตะผู้เล่นซ้ำเพื่อยืนยัน · จบเทิร์นที่แถวปุ่มใต้กลับโต๊ะ · ใช้ปุ่มบทฝึกด้านล่างได้เช่นกัน', 'training-3d-help'));
+            const picker = body.querySelector('.training-view-picker');
+            const coachPanel = node('aside', '', 'training-3d-coach');
+            for (const element of [...body.children]) {
+                if (![picker,board,actions,feedback,footer].includes(element)) coachPanel.appendChild(element);
+            }
+            const actionPanel = node('aside', '', 'training-3d-actions');
+            actionPanel.append(actions, feedback, footer);
+            board.hidden = true;
+            body.replaceChildren(trainingTable.root, picker, coachPanel, actionPanel, board);
             const life = body.querySelector('[data-training-life]');
             const options = lesson.card === 'Alibi' ? scene.players[1].accusations : scene.players[1].effects;
             const effectOffset = lesson.card === 'Alibi' ? scene.players[1].effects.filter(name=>name!=='constable-protected').length : 0;
@@ -336,10 +362,11 @@ export function initialize() {
                 effectSelection:selectedCards.map(i=>i+effectOffset),
                 drawAction:!finished ? ({draw:'draw',infection:step==='start'?'infection':null,night:'night'}[lesson.kind]) : null,
                 endAction:!finished && lesson.kind==='end', endLabel:taps ? 'ยืนยันจบเทิร์น' : 'จบเทิร์น'});
-        } else trainingTable.pause();
+        } else { trainingTable.pause(); leaveTrainingFullscreen(); }
         updateCoach();
     }
     function summary() {
+        delete dialog.dataset.trainingView; leaveTrainingFullscreen();
         trainingTable.pause();
         body.replaceChildren();
         const practiced = new Set(lessons.filter(lesson => completed.has(lesson.id)).map(lesson => lesson.card).filter(Boolean));
@@ -355,6 +382,7 @@ export function initialize() {
         updateCoach(remaining.length ? `review-${remaining[0].id}` : 'restart');
     }
     function showRoomBlock() {
+        delete dialog.dataset.trainingView; leaveTrainingFullscreen();
         trainingTable.pause();
         dialog.dataset.trainingBlocked = 'true';
         body.replaceChildren();
@@ -369,6 +397,7 @@ export function initialize() {
         updateCoach('leave-to-train');
     }
     function showIntro() {
+        delete dialog.dataset.trainingView; leaveTrainingFullscreen();
         trainingTable.pause(); scene = null;
         dialog.dataset.trainingBlocked = 'false';
         waitingToLeave = false;
@@ -409,7 +438,7 @@ export function initialize() {
             showRoomBlock();
         }
     });
-    dialog.addEventListener('close', () => { waitingToLeave = false; trainingTable.dispose(); opener?.focus(); });
+    dialog.addEventListener('close', () => { delete dialog.dataset.trainingView; leaveTrainingFullscreen(); waitingToLeave = false; trainingTable.dispose(); opener?.focus(); });
     document.addEventListener('visibilitychange', () => {
         if (document.hidden) trainingTable.pause();
         else if (dialog.open && scene && view === '3d' && dialog.dataset.trainingBlocked !== 'true') render();

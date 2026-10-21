@@ -21,3 +21,9 @@
 @media(prefers-reduced-motion:reduce) { .setup-deck,.setup-seat.is-dealt { animation:none; } }
 
 .setup-flying-card { position:absolute; width:30px; height:44px; border:2px solid #c5a576; border-radius:3px; background:#29170e; pointer-events:none; z-index:2; }
+
+/* Role borders remain visible in both confirmation layouts and disabled states. */
+#life-setup-panel .setup-own-lives button[data-life-role="Witch"] { border:3px solid #ff355b !important; }
+#life-setup-panel .setup-own-lives button[data-life-role="Constable"] { border:3px solid #46aaff !important; }
+#life-setup-panel .setup-own-lives button[data-life-role="Not A Witch"] { border:3px solid #b7b0a5 !important; }
+#life-setup-panel .setup-own-lives button[aria-pressed="true"] { outline:2px solid #ffdf79; outline-offset:3px; }

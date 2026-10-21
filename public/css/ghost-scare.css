@@ -7,10 +7,20 @@
 #ghost-scare-panel select { width:100%; box-sizing:border-box; margin:8px 0; padding:10px; border:1px solid #82618e; background:#17111b; color:#f7eaff; border-radius:8px; }
 #ghost-scare-panel button + button { margin-left:8px; background:#2a252c; }
 #ghost-scare-controls { display:flex; flex-direction:column-reverse; align-items:flex-end; }
-#ghost-scare-overlay { position:fixed; inset:0; z-index:2147483000; overflow:hidden; pointer-events:none; background:radial-gradient(ellipse, #220b13bb, #050205f2 75%); display:grid; place-items:center; animation:ghost-scare-screen 1.4s ease-out both; }
-.ghost-scare-face { position:absolute; width:min(76vmin, 620px); aspect-ratio:1; overflow:hidden; border-radius:45%; mask-image:radial-gradient(ellipse, #000 28%, transparent 70%); -webkit-mask-image:radial-gradient(ellipse, #000 28%, transparent 70%); animation:ghost-scare-face 1.4s cubic-bezier(.16,.8,.2,1) both; }
-.ghost-scare-face img { position:absolute; width:155%; max-width:none; height:auto; left:-27.5%; top:-20%; filter:contrast(1.35) saturate(.55) drop-shadow(0 0 18px #8e1636); }
+#ghost-scare-overlay { position:fixed; inset:0; z-index:2147483000; overflow:hidden; pointer-events:none; background:radial-gradient(ellipse, #220b13bb, #050205f2 75%); display:grid; place-items:center; animation:ghost-scare-screen 3.4s ease-out both; }
+.ghost-scare-face { position:absolute; width:min(96vmin, 900px); aspect-ratio:1; overflow:hidden; border-radius:45%; mask-image:radial-gradient(ellipse, #000 28%, transparent 70%); -webkit-mask-image:radial-gradient(ellipse, #000 28%, transparent 70%); animation:ghost-scare-face 3.4s cubic-bezier(.16,.8,.2,1) both; }
+.ghost-scare-face img { position:absolute; width:155%; max-width:none; height:auto; left:-27.5%; top:-20%; filter:contrast(1.65) saturate(.32) drop-shadow(0 0 18px #8e1636); }
 .ghost-scare-caption { position:absolute; bottom:12%; left:12px; right:12px; text-align:center; color:#f1d7df; font-size:clamp(20px, 4vw, 38px); font-weight:bold; text-shadow:0 3px 14px #000; }
-@keyframes ghost-scare-face { 0% { transform:scale(.48); opacity:0; } 12% { transform:scale(1.12); opacity:1; } 65% { transform:scale(1.05); opacity:1; } 100% { transform:scale(1.1); opacity:0; } }
-@keyframes ghost-scare-screen { 0% { opacity:0; } 8%, 70% { opacity:1; } 100% { opacity:0; } }
 @media (prefers-reduced-motion:reduce) { #ghost-scare-overlay, .ghost-scare-face { animation:none; } }
+
+#ghost-scare-overlay { background:radial-gradient(ellipse,#260810aa 15%,#060207fa 70%); }
+#ghost-scare-overlay::after { content:""; position:absolute; inset:0; pointer-events:none; background:radial-gradient(ellipse,transparent 30%,#4c071655 65%,#050105 100%); box-shadow:inset 0 0 100px #6d0c28 !important; }
+@keyframes ghost-scare-face {
+  0% { transform:scale(.55) rotate(-4deg); opacity:0; }
+  7% { transform:scale(1.19) rotate(2deg); opacity:1; }
+  38% { transform:scale(1.08) rotate(-2deg); opacity:1; }
+  62% { transform:scale(1.3) rotate(1deg); opacity:1; }
+  88% { transform:scale(1.22); opacity:1; }
+  100% { transform:scale(1.3); opacity:0; }
+}
+@keyframes ghost-scare-screen { 0% {opacity:0;} 6%,88% {opacity:1;} 100% {opacity:0;} }

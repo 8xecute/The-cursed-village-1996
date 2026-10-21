@@ -13,8 +13,8 @@ module.exports = function registerGhostScare(socket, game) {
         if (target.ghostScareUntil > now) return reply({ ok: false, message: 'คนนี้กำลังโดนหลอกอยู่ ลองเลือกใหม่อีกครั้ง' });
         // Commit before emitting, so double clicks/reconnects cannot grant another use.
         player.ghostScareUsed = true;
-        target.ghostScareUntil = now + 1800;
-        game.io.to(target.id).emit('ghost scare received', { actorName: player.name, duration: 1400 });
+        target.ghostScareUntil = now + 3800;
+        game.io.to(target.id).emit('ghost scare received', { actorName: player.name, duration: 3400 });
         reply({ ok: true, targetName: target.name });
         game.emitRoomState(room.name);
     });

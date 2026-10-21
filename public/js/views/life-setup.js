@@ -86,6 +86,7 @@ function render() {
     const row = document.createElement('div'); row.className = 'setup-own-lives';
     (me.tryalCards || []).forEach((card, index) => {
         const button = document.createElement('button'); button.type = 'button'; button.disabled = !editable();
+        button.dataset.lifeRole = card.name || '';
         button.setAttribute('aria-pressed', String(firstChoice === index)); button.setAttribute('aria-label', 'ชีวิตใบที่ ' + (index + 1));
         if (card.name) button.append(client.actions.createCardImage(card.name));
         button.draggable = editable();
