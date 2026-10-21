@@ -61,13 +61,45 @@ function accessories(profile) {
         add(new THREE.CylinderGeometry(.132,.136,.022,24,1,true),band,'hat_band',[0,.873,-.015]);
     }
     if(profile.scarf) {
-        const canvas=document.createElement('canvas');canvas.width=canvas.height=64;const ctx=canvas.getContext('2d');
-        ctx.fillStyle=profile.scarf;ctx.fillRect(0,0,64,64);ctx.strokeStyle='#d8c49b';ctx.globalAlpha=.22;ctx.lineWidth=2;
-        for(let i=0;i<64;i+=16){ctx.beginPath();ctx.moveTo(i,0);ctx.lineTo(i,64);ctx.moveTo(0,i);ctx.lineTo(64,i);ctx.stroke();}
+        const canvas=document.createElement('canvas');canvas.width=canvas.height=128;const ctx=canvas.getContext('2d');
+        ctx.fillStyle=profile.scarf;ctx.fillRect(0,0,128,128);
+        // Fine woven threads, rather than large grid lines across a smooth dome.
+        ctx.strokeStyle='#e3cda5';ctx.globalAlpha=.12;ctx.lineWidth=1;
+        for(let i=0;i<128;i+=4){ctx.beginPath();ctx.moveTo(i,0);ctx.lineTo(i,128);ctx.moveTo(0,i);ctx.lineTo(128,i);ctx.stroke();}
+        ctx.globalAlpha=.2;ctx.lineWidth=3;
+        for(const i of [8,16,112,120]){ctx.beginPath();ctx.moveTo(0,i);ctx.lineTo(128,i);ctx.stroke();}
         const map=new THREE.CanvasTexture(canvas);map.colorSpace=THREE.SRGBColorSpace;
         const cloth=new THREE.MeshStandardMaterial({map,roughness:1,side:THREE.DoubleSide});
-        add(new THREE.SphereGeometry(.15,28,16,0,Math.PI*2,0,1.5),cloth,'scarf_cap',[0,.61,-.02],[.93,1,1]);
-        add(new THREE.SphereGeometry(.15,28,16,0,Math.PI,1.2,1.4),cloth,'scarf_back',[0,.61,-.02],[.93,1.25,1]);
+        const surface=(rows,columns,point)=>{
+            const positions=[],uv=[],indices=[];
+            for(let r=0;r<=rows;r++)for(let c=0;c<=columns;c++){
+                positions.push(...point(r/rows,c/columns));uv.push(c/columns,r/rows);
+            }
+            for(let r=0;r<rows;r++)for(let c=0;c<columns;c++){
+                const i=r*(columns+1)+c;indices.push(i,i+1,i+columns+1,i+1,i+columns+2,i+columns+1);
+            }
+            const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
+            geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));geometry.setIndex(indices);geometry.computeVertexNormals();return geometry;
+        };
+        // A loose crown with small gathered folds; the front edge stays above the eyes.
+        add(surface(14,48,(v,u)=>{
+            const a=u*Math.PI*2,back=(1-Math.cos(a))/2,t=v*(1.30+back*.42);
+            const fold=Math.sin(a*9+v*3)*.004*Math.sin(t)**2;
+            return [Math.sin(a)*(.143+fold)*Math.sin(t),.61+.153*Math.cos(t),-.018-Math.cos(a)*(.158+fold)*Math.sin(t)];
+        }),cloth,'scarf_crown');
+        add(surface(4,48,(v,u)=>{
+            const a=u*Math.PI*2,back=(1-Math.cos(a))/2,fold=Math.sin(a*7+v*5)*.002;
+            return [Math.sin(a)*(.151-v*.004+fold),.647-back*.057+(v-.5)*.038+Math.sin(a)*.005,-.018-Math.cos(a)*(.165-v*.004+fold)];
+        }),cloth,'scarf_folded_band');
+        // Knot and two draping ends at the back, clear of the ears and shoulders.
+        add(new THREE.SphereGeometry(1,16,10),cloth,'scarf_knot',[.091,.603,.12],[.032,.017,.025],[0,0,.25]);
+        for(const side of [-1,1]) {
+            add(surface(10,4,(v,u)=>[
+                .091+side*v*.035+(u-.5)*(.043-v*.015),
+                .595-v*(side<0?.15:.12),
+                .135+Math.sin(v*Math.PI)*.023+Math.sin(v*8+u*2)*.004
+            ]),cloth,`scarf_tail_${side}`);
+        }
     }
     return parts;
 }

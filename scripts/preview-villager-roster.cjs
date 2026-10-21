@@ -27,17 +27,22 @@ const root=path.resolve(__dirname,'..');
    }));
    const renderer=new T.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});renderer.setSize(374,360);
    renderer.toneMapping=T.ACESFilmicToneMapping;renderer.outputColorSpace=T.SRGBColorSpace;
-   window.renderRoster=async(dead=false)=>{
+   window.renderRoster=async(dead=false,details=false)=>{
     document.getElementById('roster').replaceChildren();
-    for(let i=0;i<models.length;i++){
+    document.getElementById('roster').style.gridTemplateColumns=details?'repeat(3,1fr)':'repeat(4,1fr)';
+    document.querySelector('h1').textContent=details?'ผ้าโพกหัวแบบใหม่':'ชาวบ้านทั้ง 12 แบบ';
+    const entries=details?[5,5,5,11,11,11]:models.map((_,i)=>i);
+    for(const [view,i] of entries.entries()){
      const scene=new T.Scene();scene.background=new T.Color('#30251c');scene.add(new T.HemisphereLight('#fff0da','#66574b',2));
      const light=new T.DirectionalLight('#ffeddb',2.7);light.position.set(-2,4,-3);scene.add(light);
      const group=new T.Group();scene.add(group);instantiateVillager(group,models,0x596b55,!dead,i);
      const camera=new T.PerspectiveCamera(38,374/360,.01,30);camera.position.set(.95,.75,-2.7);camera.lookAt(0,.27,0);
+     if(details){camera.position.fromArray([[.38,.73,-.85],[.85,.73,.08],[.25,.73,.85]][view%3]);camera.lookAt(0,.58,0);}
      renderer.render(scene,camera);
      const tile=document.createElement('section');tile.className='figure';
      const canvas=document.createElement('canvas');canvas.width=374;canvas.height=360;canvas.getContext('2d').drawImage(renderer.domElement,0,0);
      const name=document.createElement('div');name.className='name';name.textContent=`${String(i+1).padStart(2,'0')} · ${models[i].characterName||'ชาวบ้าน'}`;
+     if(details)name.textContent+=' · '+['ด้านหน้า','ด้านข้าง','ด้านหลัง'][view%3];
      tile.append(canvas,name);document.getElementById('roster').appendChild(tile);
     }
    };
@@ -47,5 +52,7 @@ const root=path.resolve(__dirname,'..');
   await page.screenshot({path:path.join(output,'villager-roster-12.png'),fullPage:true});
   await page.evaluate(()=>window.renderRoster(true));
   await page.screenshot({path:path.join(output,'villager-roster-dead.png'),fullPage:true});
+  await page.evaluate(()=>window.renderRoster(false,true));
+  await page.screenshot({path:path.join(output,'villager-headscarves.png'),fullPage:true});
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
