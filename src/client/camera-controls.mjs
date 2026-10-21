@@ -12,7 +12,7 @@ export function createCameraControls({ camera, renderer, cameraMode, requestRend
     // Rotation is a turntable around the table's world centre, not a free orbit
     // around the off-centre seat target. Vertical drags must not tilt the view.
     controls.enableRotate = false;
-    controls.mouseButtons = { LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.PAN, RIGHT: THREE.MOUSE.PAN };
+    controls.mouseButtons = { LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.PAN, RIGHT: null };
     controls.touches = { ONE: cameraMode === 'pan' ? THREE.TOUCH.PAN : THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN };
     if (cameraMode === 'pan') controls.mouseButtons.LEFT = THREE.MOUSE.PAN;
     renderer.domElement.style.touchAction = 'none';
@@ -21,7 +21,7 @@ export function createCameraControls({ camera, renderer, cameraMode, requestRend
     controls.minDistance = 3;
     controls.maxDistance = 24;
     controls.minPolarAngle = .05;
-    controls.maxPolarAngle = Math.PI / 2.05;
+    controls.maxPolarAngle = Math.PI - .1;
     // Walking translates camera + target. Zoom changes only the lens, so it
     // cannot dolly the camera through the same space as W/S movement.
     controls.enableZoom = false;
@@ -69,17 +69,27 @@ export function createCameraControls({ camera, renderer, cameraMode, requestRend
     }
     function tableDown(event) {
         if (touches.size > 1) { tableDrag = null; return; }
-        if (panMode || event.button !== 0 || event.shiftKey || event.ctrlKey || event.metaKey ||
+        const looking = event.button === 2 && event.pointerType === 'mouse';
+        if ((!looking && (panMode || event.button !== 0)) || event.shiftKey || event.ctrlKey || event.metaKey ||
             !isActive() || isDisposed() || !controls.enabled) return;
         // Flush leftover pan damping before taking over the camera position.
         controls.enableDamping = false; controls.update(); controls.enableDamping = true;
-        tableDrag = { id:event.pointerId, x:event.clientX, y:event.clientY, lastX:event.clientX, moving:false };
+        tableDrag = { id:event.pointerId, x:event.clientX, y:event.clientY, lastX:event.clientX,
+            lastY:event.clientY, looking, depth:camera.position.distanceTo(controls.target), moving:false };
     }
     function tableMove(event) {
         if (!tableDrag || event.pointerId !== tableDrag.id || !isActive() || isDisposed() || !controls.enabled) return;
         if (touches.size > 1) { tableDrag = null; return; }
         if (!tableDrag.moving && Math.hypot(event.clientX-tableDrag.x,event.clientY-tableDrag.y) <= 7) return;
         tableDrag.moving = true;
+        if (tableDrag.looking) {
+            // Pitch the view at a fixed camera position; horizontal right-drag
+            // does not turn the table or move the camera sideways.
+            controls.target.y = THREE.MathUtils.clamp(controls.target.y -
+                (event.clientY-tableDrag.lastY) * tableDrag.depth * 2 / Math.max(1,canvas.clientHeight), -8, 12);
+            tableDrag.lastY = event.clientY;
+            controls.update(); requestRender(); return;
+        }
         const angle = -(event.clientX-tableDrag.lastX) * Math.PI * 2 / Math.max(1,canvas.clientWidth);
         tableDrag.lastX = event.clientX;
         camera.position.applyAxisAngle(tableAxis, angle);
@@ -152,7 +162,7 @@ export function createCameraControls({ camera, renderer, cameraMode, requestRend
         const target=controls.target.clone();
         controls.target.x=THREE.MathUtils.clamp(controls.target.x,-8,8);
         controls.target.z=THREE.MathUtils.clamp(controls.target.z,-8,8);
-        controls.target.y=THREE.MathUtils.clamp(controls.target.y,-.4,8);
+        controls.target.y=THREE.MathUtils.clamp(controls.target.y,-8,12);
         camera.position.add(controls.target.clone().sub(target));
         camera.position.y=THREE.MathUtils.clamp(camera.position.y,.35,28);
     }

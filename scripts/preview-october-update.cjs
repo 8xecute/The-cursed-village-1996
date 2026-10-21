@@ -85,6 +85,13 @@ const publicRoot = path.resolve(__dirname, '../public');
         await page.mouse.up();
         await page.waitForTimeout(200);
         await page.screenshot({path:path.join(output,'turntable-after.png')});
+        await page.evaluate(()=>window.previewEngine.resetCamera());
+        await page.mouse.move(tableBounds.x+tableBounds.width*.5,tableBounds.y+tableBounds.height*.5);
+        await page.mouse.down({button:'right'});
+        await page.mouse.move(tableBounds.x+tableBounds.width*.5,tableBounds.y+tableBounds.height*.66,{steps:20});
+        await page.mouse.up({button:'right'});
+        await page.waitForTimeout(200);
+        await page.screenshot({path:path.join(output,'right-drag-look-down.png')});
         if(process.argv.includes('--turntable-only')) return;
         await page.evaluate(()=>window.previewEngine.resetCamera());
         await page.evaluate(()=>{
