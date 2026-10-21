@@ -1,4 +1,5 @@
 // state: game services. Dependencies are injected through game.
+const { assignCharacterIds } = require('./character-roster');
 module.exports = function createServices(game) {
   function sendGameMessage(roomName, message, color = 'black', bold = false) {
       const room = game.rooms[roomName];
@@ -27,6 +28,7 @@ module.exports = function createServices(game) {
           queueMicrotask(() => { room.replacementRestoreQueued = false; game.restoreReplacementPlayers(room); });
       }
       if (!room) return;
+      if (room.gameStarted) assignCharacterIds(Object.values(room.players), game.shuffleArray);
 
       // Team members know one another immediately, including daytime infections.
       game.rememberWitchTeammates(room);
@@ -44,6 +46,7 @@ module.exports = function createServices(game) {
               id: player.id, // socket id
               name: player.name,
               uniqueId: player.uniqueId,
+              characterId: player.characterId ?? null,
               isHost: player.isHost,
               isBot: !!player.isBot,
               isReplacementBot: !!player.isReplacementBot,

@@ -24,7 +24,7 @@ const publicRoot = path.resolve(__dirname, '../public');
         await page.goto('http://preview.test/');
         await page.screenshot({path:path.join(output,'halloween-home.png')});
         await page.addScriptTag({url:'/table3d.bundle.js'});
-        await page.evaluate(async () => {
+        await page.evaluate(async (rosterPreview) => {
             const {client} = await import('/js/core/client.js'); window.previewClient = client;
             const handlers = new Map();
             client.state.socket = {connected:true, on(name, handler) { if (!handlers.has(name)) handlers.set(name,[]); handlers.get(name).push(handler); }, emit() {}};
@@ -35,8 +35,8 @@ const publicRoot = path.resolve(__dirname, '../public');
             await import('/js/cards/translations.js'); await import('/js/cards/hand.js');
             client.actions.getTable3DInteraction=()=>null; client.actions.handleTable3DPlayer=()=>{};
             const hand=['Accusation','Evidence','Stocks','Accusation','Alibi','Scapegoat','Matchmaker','Arson','Piety','Curse','Accusation','Robbery'].map(name=>({name,color:['Accusation','Evidence'].includes(name)?'Red':['Matchmaker','Piety'].includes(name)?'Blue':'Green'}));
-            const players=Object.fromEntries(Array.from({length:4},(_,i)=>['p'+i,{
-                uniqueId:'p'+i,name:['คุณ','คำปัน','มาลี','แก้ว'][i],alive:true,handSize:i?5:hand.length,tryalCardCount:5,
+            const players=Object.fromEntries(Array.from({length:rosterPreview?12:4},(_,i)=>['p'+i,{
+                uniqueId:'p'+i,name:rosterPreview?`ชาวบ้าน ${i+1}`:['คุณ','คำปัน','มาลี','แก้ว'][i],characterId:i,alive:true,handSize:i?5:hand.length,tryalCardCount:5,
                 tryalCards:['Witch','Constable','Not A Witch','Not A Witch','Not A Witch'].map(name=>({name:i?null:name})),
                 inPlayCards:i===1?[{name:'Evidence',color:'Red'},{name:'Piety',color:'Blue'},{name:'Stocks',color:'Green'}]:[],revealedTryalCards:[]
             }]));
@@ -68,7 +68,18 @@ const publicRoot = path.resolve(__dirname, '../public');
             client.actions.addGameMessage('คุณ ใช้พันธนาการใส่ แก้ว','green');
             document.getElementById('table3d-log').open=true;
             previewEvent('card action feedback',{actorName:'คำปัน',targetName:'คุณ',cardName:'Evidence',result:'ข้อกล่าวหา +3 แต้ม'});
-        });
+        }, process.argv.includes('--roster-only'));
+        if (process.argv.includes('--roster-only')) {
+            await page.waitForTimeout(1800);
+            await page.evaluate(()=>{
+                document.getElementById('table3d-log').open=false;
+                window.previewOptions.handLowered=true;window.previewEngine.update(window.previewOptions);
+                window.previewEngine.resetCamera();
+            });
+            await page.waitForTimeout(300);
+            await page.screenshot({path:path.join(output,'villager-roster-table.png')});
+            return;
+        }
         await page.waitForTimeout(1300);
         await page.screenshot({path:path.join(output,'oct21-table-desktop.png')});
         await page.evaluate(()=>{

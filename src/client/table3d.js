@@ -352,12 +352,13 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             actorPawns.set(player.uniqueId, pawn);
             pawn.scale.setScalar(1.4);
             // The model's dead pose folds the upper body; chair and legs stay seated.
-            const modelKey = `${index}:${player.alive}:${!!villagerModels}`;
+            const characterId = Number.isInteger(player.characterId) && player.characterId >= 0 && player.characterId < 12 ? player.characterId : index % 12;
+            const modelKey = `${characterId}:${player.alive}:${!!villagerModels}`;
             if (!characterCache.has(modelKey)) {
                 const template = new THREE.Group();
                 characterCache.set(modelKey, villagerModels
-                    ? instantiateVillager(template, villagerModels, COLORS[index % COLORS.length], player.alive, index)
-                    : createRitualBust(template, COLORS[index % COLORS.length], player.alive, index));
+                    ? instantiateVillager(template, villagerModels, COLORS[characterId % COLORS.length], player.alive, characterId)
+                    : createRitualBust(template, COLORS[characterId % COLORS.length], player.alive, characterId));
             }
             const parts = characterCache.get(modelKey).map(source => {
                 const part = new THREE.Mesh(source.geometry, source.material.clone());

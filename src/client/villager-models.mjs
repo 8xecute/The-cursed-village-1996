@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { createVillagerVariants } from './villager-variants.mjs';
 
 const greyMaps = new WeakMap();
 function greyMap(texture) {
@@ -29,7 +30,7 @@ function greyMap(texture) {
 // face, eyes, hair, clothes and hands; never add the old head/body underneath.
 export function prepareVillagerModels(scene) {
     scene.updateMatrixWorld(true);
-    return ['villager-0', 'villager-1'].map((name, index) => {
+    const bases = ['villager-0', 'villager-1'].map((name, index) => {
         const root = scene.getObjectByName(name);
         if (!root) throw new Error(`Missing ${name}`);
         const parts = [];
@@ -61,13 +62,14 @@ export function prepareVillagerModels(scene) {
         for (const x of [-.16, 0, .16]) chair([.04, .58, .04], [x, seatY + .39, .30]);
         return parts;
     });
+    return createVillagerVariants(bases);
 }
 
 export function instantiateVillager(parent, models, color, alive, variant) {
     return models[variant % models.length].filter(source => alive || !/teeth|tongue/i.test(source.name + source.material.name)).map(source => {
         const material = source.material.clone();
         // Tint cloth only. Preserve photographic skin and eye colors.
-        if (/top|casualsuit|bottom/i.test(material.name))
+        if (models[variant % models.length].characterId == null && /top|casualsuit|bottom/i.test(material.name))
             material.color.lerp(new THREE.Color(color), .3);
         if (!alive && source.name !== 'chair') {
             material.color.setHex(0xaaaaaa);
@@ -75,7 +77,7 @@ export function instantiateVillager(parent, models, color, alive, variant) {
             material.roughness = 1;
         }
         const ownedGeometry = !alive && source.name !== 'chair';
-        const headPart = /eyebrow|eyelash|low-poly|short01|bob01|scalp|hair/i.test(source.name);
+        const headPart = /head_accessory|eyebrow|eyelash|low-poly|short01|bob01|scalp|hair/i.test(source.name);
         const geometry = ownedGeometry ? slumpedGeometry(source.geometry, headPart) : source.geometry;
         const part = new THREE.Mesh(geometry, material);
         part.userData.ownedGeometry = ownedGeometry;

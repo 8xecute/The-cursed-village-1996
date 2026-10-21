@@ -1,5 +1,6 @@
 // phases: game services. Dependencies are injected through game.
 const { usageLog } = require('../usage-log');
+const { assignCharacterIds } = require('./character-roster');
 module.exports = function createServices(game) {
   function startPhaseTimer(roomName, duration) {
       const room = game.rooms[roomName];
@@ -162,6 +163,7 @@ module.exports = function createServices(game) {
           return;
       }
       room.gameStarted = true;
+      assignCharacterIds(alivePlayers, game.shuffleArray, true);
       room.firstTurnStarted = false;
       room.pendingDraw = null;
       room.removedGameCards = [];
