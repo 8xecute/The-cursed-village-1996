@@ -79,7 +79,7 @@ module.exports = function createServices(game) {
       }
 
       if (player.tryalCards.length === 0) {
-          game.io.to(player.id).emit('game message', 'คุณไม่มี Tryal Card ให้เปิดเผย.', 'red');
+          game.io.to(player.id).emit('game message', 'คุณไม่มีการ์ดชีวิต ให้เปิดเผย.', 'red');
           return;
       }
 

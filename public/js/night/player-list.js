@@ -149,7 +149,7 @@ client.actions.updatePlayersGrid = function updatePlayersGrid(roomState, myUniqu
         }
         header += `${player.name}`;
         if (isWitchView && player.hasBeenWitch) header += ' <span style="color:#ff1744;font-size:0.95em;font-weight:bold;">(ทีมปอบ)</span>';
-        if (player.isHost) header += ' <span style="color:#ff4500;">(Host)</span>';
+        if (player.isHost) header += ' <span style="color:#ff4500;">(โฮสต์)</span>';
         if (player.isBlackCatHolder) header += ' <span style="color:#ffd700;">(เครื่องเซ่น)</span>';
         if (!player.alive) header += ' <span class="player-dead-badge">💀 เสียชีวิตแล้ว</span>';
         if (roomState.currentTurnPlayerUniqueId === player.uniqueId) header += ' <span style="color:#2196f3;font-weight:bold;">[เทิร์น]</span>';

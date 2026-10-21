@@ -124,7 +124,7 @@ export function initialize() {
           if (myPlayer && myPlayer.hasBeenWitch && player.hasBeenWitch) {
               html += ' <span style="color:#ff1744;font-size:0.95em;font-weight:bold;">(ทีมปอบ)</span>';
           }
-          html += ` ${player.isHost ? '(Host)' : ''} ${player.isBlackCatHolder ? ' (เครื่องเซ่น)' : ''}`;
+          html += ` ${player.isHost ? '(โฮสต์)' : ''} ${player.isBlackCatHolder ? ' (เครื่องเซ่น)' : ''}`;
           if (player.isBot) html += ' <span class="bot-player-badge">🤖 บอท</span>';
           if (!player.alive) {
               html += ' <span class="player-dead-badge-sm">💀 เสียชีวิตแล้ว</span>';
@@ -240,7 +240,7 @@ export function initialize() {
 
           client.dom.currentPhaseDisplay.textContent = client.actions.getPhaseNameTH(roomState.currentPhase);
           client.dom.dayNumberDisplay.textContent = roomState.dayNumber;
-          client.dom.currentTurnPlayerDisplay.textContent = roomState.currentTurnPlayerName || 'N/A';
+          client.dom.currentTurnPlayerDisplay.textContent = roomState.currentTurnPlayerName || 'ยังไม่มี';
           
           // Update deck information
           if (roomState.deckCount !== undefined) {
@@ -519,10 +519,10 @@ export function initialize() {
       }
       // Special handling for duplicate room or join-not-found
       if (message.includes('ชื่อห้องนี้ถูกใช้แล้ว')) {
-          alert('Cannot create room: Room name already exists!');
+          alert('สร้างห้องไม่ได้: มีชื่อห้องนี้แล้ว');
       }
       if (message.includes('ไม่พบห้องนี้.')) {
-          alert('Cannot join: Room not found!');
+          alert('เข้าห้องไม่ได้: ไม่พบห้องนี้');
       }
   });
 

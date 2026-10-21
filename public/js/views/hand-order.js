@@ -11,8 +11,18 @@ export function initialize() {
     const row = document.querySelector('#table3d-section .table3d-hand-controls');
     const button = document.createElement('button'); button.type = 'button'; button.id = 'table3d-reorder-hand';
     const note = document.createElement('span'); note.id = 'table3d-reorder-hint'; note.setAttribute('role','status');
-    const actions = row.querySelector('.table3d-card-row');
-    actions.insertBefore(button, actions.querySelector('.table3d-end-turn'));
+    let views = row.querySelector('.table3d-view-row');
+    let actions = row.querySelector('.table3d-card-row');
+    if (!views) { views = document.createElement('div'); views.className = 'table3d-control-row table3d-view-row'; row.appendChild(views); }
+    if (!actions) { actions = document.createElement('div'); actions.className = 'table3d-control-row table3d-card-row'; row.appendChild(actions); }
+    for (const id of ['table3d-seat-left','table3d-reset','table3d-seat-right']) {
+        const control = document.getElementById(id); if (control) views.appendChild(control);
+    }
+    const handToggle = document.getElementById('table3d-hand-toggle');
+    if (handToggle) actions.prepend(handToggle);
+    const endTurn = document.querySelector('#table3d-section .table3d-end-turn');
+    actions.appendChild(button);
+    if (endTurn) actions.appendChild(endTurn);
     row.appendChild(note);
     let pending = false, previousHand = JSON.stringify(client.state.myCurrentHand || []);
     function refresh() {

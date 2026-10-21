@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Cursed Village 1996</title>
+    <title>หมู่บ้านต้องสาป 1996 · Halloween Edition</title>
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,11 +13,11 @@
     <link rel="stylesheet" href="style.css?v=2.2">
 </head>
 <body>
-    <h1 class="game-title">หมู่บ้านต้องสาป 1996</h1>
+    <h1 class="game-title halloween-title">หมู่บ้านต้องสาป 1996 <small class="halloween-edition">Halloween Edition</small></h1>
     
     <!-- Background Music Controls -->
     <div class="music-controls">
-        <details id="game-preferences"><summary aria-label="ตั้งค่าภาพและเสียง">⚙</summary><div id="game-preferences-content"><label class="music-setting-row">เพลง <input id="music-volume-slider" type="range" min="0" max="100" value="20" step="1" class="music-slider"><span id="music-volume-label" class="music-volume-label">20%</span></label><button id="card-artwork-toggle" class="card-artwork-toggle" type="button" aria-pressed="false" aria-label="สลับภาพการ์ดเก่าและใหม่" title="สลับภาพการ์ดเก่าและใหม่">▧</button><label class="graphics-setting-row" for="graphics-quality">คุณภาพ 3D <select id="graphics-quality"><option value="low">ต่ำ</option><option value="medium" selected>กลาง</option><option value="high">สูง</option></select></label></div></details>
+        <details id="game-preferences"><summary aria-label="ตั้งค่าภาพและเสียง">⚙</summary><div id="game-preferences-content"><label class="music-setting-row">เพลง <input id="music-volume-slider" type="range" min="0" max="100" value="20" step="1" class="music-slider"><span id="music-volume-label" class="music-volume-label">20%</span></label><label class="graphics-setting-row" for="graphics-quality">คุณภาพ 3D <select id="graphics-quality"><option value="low">ต่ำ</option><option value="medium" selected>กลาง</option><option value="high">สูง</option></select></label></div></details>
     </div>
     
     <!-- Top Navigation Buttons (Salem Themed) -->
@@ -47,7 +47,7 @@
       <div class="music-overlay-content" style="background: #181818; color: #fff; border-radius: 16px; max-width: 700px; width:95vw; margin:auto; box-shadow: 0 8px 32px rgba(0,0,0,0.5); padding:0 0 32px 0; display:flex; flex-direction:column; align-items:center;">
         <img src="Background/story.jpg" alt="เนื้อเรื่องหมู่บ้านต้องสาป" style="width:100%; max-height:400px; object-fit:cover; border-radius: 16px 16px 0 0; display:block;">
         <div style="padding: 28px 24px 0 24px; width:100%; box-sizing:border-box;">
-          <h2 style="margin-top:0; color:#ff9800; font-family:'Creepster','Noto Serif Thai',serif; text-align:center;">หมู่บ้านต้องสาป 1996</h2>
+          <h2 style="margin-top:0; color:#ff9800; font-family:'Creepster','Noto Serif Thai',serif; text-align:center;" class="halloween-title">หมู่บ้านต้องสาป 1996 <small class="halloween-edition">Halloween Edition</small></h2>
           <p style="font-size:1.1em; color:#ffe0b2; line-height:1.7; text-align:center;">
             <b>ปี ค.ศ. 1996 ณ เมืองลับแล จังหวัดอุตรดิตถ์</b><br>
             ความชั่วร้ายได้แฝงตัวอยู่ในเงามืดของหมู่บ้าน<br>
@@ -92,9 +92,9 @@
                         <span class="profile-label">👤 ชื่อของคุณ:</span>
                         <span id="player-name-display" class="profile-name">ผู้เล่นใหม่</span>
                     </div>
-                    <div id="player-uuid-row" class="player-uuid-badge" title="รหัสประจำตัวผู้เล่น (ใช้สำหรับ Reconnect อัตโนมัติ)">
+                    <div id="player-uuid-row" class="player-uuid-badge" title="รหัสประจำตัวผู้เล่น (ใช้สำหรับ เชื่อมต่อกลับอัตโนมัติ)">
                         <span class="uuid-icon">🪪</span>
-                        <span class="uuid-label">ID:</span>
+                        <span class="uuid-label">รหัส:</span>
                         <span id="player-unique-id-display" class="uuid-value"></span>
                     </div>
                 </div>
@@ -265,7 +265,7 @@
 
                     <!-- Center: Main Game Content (Hand, Action Buttons, Tryal Cards) -->
                     <div class="main-game-content" id="game-main-content">
-                        <h3 style="color: #ff7f50;">การ์ดเล่นในมือ (<span id="hand-card-count">0</span> cards)</h3>
+                        <h3 style="color: #ff7f50;">การ์ดเล่นในมือ (<span id="hand-card-count">0</span> ใบ)</h3>
                         <div id="player-hand"></div>
                         <section id="selected-card-summary" class="selected-card-summary" hidden aria-label="การ์ดที่เลือก">
                             <div><strong id="selected-card-name"></strong><p id="selected-card-description"></p><small id="selected-card-next"></small></div>
@@ -297,14 +297,14 @@
                         </div>
 
                         <div id="turn-controls" class="section" style="display: none;">
-                            <h3 style="color: #ff7f50;">Turn Controls</h3>
-                            <button id="end-turn-button-alt" style="background-color: #dc3545; color: white; padding: 15px 30px; font-size: 1.2em; font-weight: bold;">End Turn</button>
+                            <h3 style="color: #ff7f50;">ควบคุมการเล่น</h3>
+                            <button id="end-turn-button-alt" style="background-color: #dc3545; color: white; padding: 15px 30px; font-size: 1.2em; font-weight: bold;">จบเทิร์น</button>
                         </div>
 
                         <div id="confess-section" style="display: none;">
                             <h3>สารภาพบาป</h3>
-                            <button id="confess-button">Confess (Reveal Tryal Card)</button>
-                            <button id="skip-confess-button" style="background-color: #666; margin-left: 10px;">Skip Confession</button>
+                            <button id="confess-button">สารภาพ · เปิดการ์ดชีวิต</button>
+                            <button id="skip-confess-button" style="background-color: #666; margin-left: 10px;">ข้ามการสารภาพ</button>
                         </div>
 
                         <div class="host-controls" id="host-controls-game" style="display: none;">
@@ -316,12 +316,12 @@
                             <div id="assign-black-cat-action" style="display: none;">
                                 <p>เลือกผู้เล่นที่จะรับการ์ดเครื่องเซ่น:</p>
                                 <select id="black-cat-target-select"></select>
-                                <button id="confirm-black-cat-button">Confirm</button>
+                                <button id="confirm-black-cat-button">ยืนยัน</button>
                             </div>
                         </div>
 
                         <div id="night-action-section" class="section night-action-section" style="display: none;">
-                            <h3 id="night-action-title">Night Action</h3>
+                            <h3 id="night-action-title">การกระทำกลางคืน</h3>
                             <div class="night-action-timer" id="night-action-timer"></div>
                             <div class="night-action-instruction" id="night-action-instruction"></div>
                             <p>คลิกที่ชื่อผู้เล่นในรายการด้านขวาเพื่อเลือกเป้าหมาย:</p>
@@ -343,7 +343,7 @@
                             </div>
                             <div class="chat-input-container">
                                 <input type="text" id="witch-chat-input" placeholder="พิมพ์ข้อความที่จะส่งไปยังทีมปอบ..." maxlength="200">
-                                <button id="witch-chat-send">Send</button>
+                                <button id="witch-chat-send">ส่ง</button>
                             </div>
                         </div>
                     </div>
@@ -388,7 +388,7 @@
                 <div class="faction-header">
                   <span class="faction-badge badge-town">🛡️ ฝ่ายชาวบ้าน</span>
                 </div>
-                <p class="faction-desc">ร่วมมือกันตามหาและเปิดเผยการ์ด "ปอบ (Witch)" ให้ครบทุกใบที่ยังซ่อนอยู่ในหมู่บ้าน</p>
+                <p class="faction-desc">ร่วมมือกันตามหาและเปิดเผยการ์ด "ปอบ " ให้ครบทุกใบที่ยังซ่อนอยู่ในหมู่บ้าน</p>
               </div>
             </div>
           </div>
@@ -397,7 +397,7 @@
           <div class="rule-card">
             <h3 class="rule-card-title">🃏 การตั้งค่าบทบาท & การเริ่มเกม</h3>
             <ol class="rule-ordered-list">
-              <li><b>แจกการ์ดชีวิต (Tryal Cards)</b> คนละ 5 ใบคว่ำไว้ (ผู้เล่น 4-5 คน มีปอบ 1 ใบ / 6 คนขึ้นไป มีปอบ 2 ใบ และมีหมอผี 1 ใบเสมอ)</li>
+              <li><b>แจกการ์ดชีวิต </b> คนละ 5 ใบคว่ำไว้ (ผู้เล่น 4-5 คน มีปอบ 1 ใบ / 6 คนขึ้นไป มีปอบ 2 ใบ และมีหมอผี 1 ใบเสมอ)</li>
               <li>ผู้เล่นแอบดูการ์ดชีวิตของตนเอง <b>ห้ามบอกใครเด็ดขาด</b> หากมีการ์ดปอบแม้แต่ใบเดียว คุณคือฝ่ายปอบทันที!</li>
               <li><b>พิธีมอบเครื่องเซ่น:</b> ฝ่ายปอบจะเลือกมอบการ์ด "เครื่องเซ่น (แมวดำ)" ให้ผู้เล่น 1 คน (สามารถวางให้ทีมตัวเองได้)</li>
               <li>ผู้ที่ได้รับเครื่องเซ่นจะได้ <b>เริ่มเล่นเป็นคนแรก</b> และเกมจะดำเนินวนตามเข็มนาฬิกา</li>
@@ -406,7 +406,7 @@
 
           <!-- 3. การเล่นในแต่ละเทิร์น -->
           <div class="rule-card">
-            <h3 class="rule-card-title">🔄 การเล่นในแต่ละเทิร์น (Turn Flow)</h3>
+            <h3 class="rule-card-title">🔄 การเล่นในแต่ละเทิร์น </h3>
             <p class="rule-intro-text">เมื่อถึงเทิร์นของคุณ ผู้เล่นต้องเลือกทำ 1 อย่างต่อไปนี้:</p>
             <div class="rule-turn-options">
               <div class="turn-option-pill">
@@ -451,9 +451,9 @@
           <div class="rule-card rule-card-crimson">
             <h3 class="rule-card-title">🌙 เหตุการณ์พิเศษและยามวิกาล</h3>
             <ul class="rule-bullet-list">
-              <li><b>พิธีเซ่นไหว้ (Conspiracy):</b> ผู้ถือเครื่องเซ่นต้องเปิดการ์ดชีวิต 1 ใบ จากนั้นทุกคนจะหยิบการ์ดชีวิตจากคนซ้ายมือ 1 ใบ (หากหยิบได้การ์ดปอบ คุณจะติดเชื้อกลายเป็นปอบทันที!)</li>
-              <li><b>ยามวิกาล (Night Phase):</b> ฝ่ายปอบจะร่วมกันเลือกเหยื่อ 1 คนเพื่อสังหาร และหมอผีจะเลือกผู้เล่น 1 คนเพื่อสวดคุ้มครอง</li>
-              <li><b>การสารภาพบาป (Confession):</b> ก่อนรุ่งสาง ผู้เล่นที่กำลังจะถูกสังหารมีโอกาสรอดตายได้ 1 ครั้ง โดยต้องยอมเปิดเผยการ์ดชีวิตของตนเอง 1 ใบ</li>
+              <li><b>พิธีเซ่นไหว้:</b> ผู้ถือเครื่องเซ่นต้องเปิดการ์ดชีวิต 1 ใบ จากนั้นทุกคนจะหยิบการ์ดชีวิตจากคนซ้ายมือ 1 ใบ (หากหยิบได้การ์ดปอบ คุณจะติดเชื้อกลายเป็นปอบทันที!)</li>
+              <li><b>ยามวิกาล :</b> ฝ่ายปอบจะร่วมกันเลือกเหยื่อ 1 คนเพื่อสังหาร และหมอผีจะเลือกผู้เล่น 1 คนเพื่อสวดคุ้มครอง</li>
+              <li><b>การสารภาพบาป:</b> ก่อนรุ่งสาง ผู้เล่นที่กำลังจะถูกสังหารมีโอกาสรอดตายได้ 1 ครั้ง โดยต้องยอมเปิดเผยการ์ดชีวิตของตนเอง 1 ใบ</li>
             </ul>
           </div>
 
@@ -611,7 +611,7 @@
                 <span class="card-type-tag tag-green">🟢 สีเขียว (แอ็กชัน)</span>
               </div>
               <p class="card-quantity-text">ในกองเริ่มต้น: 3 ใบ</p>
-              <p class="card-info-text">กักขังผู้เล่นเป้าหมาย บังคับให้ข้ามรอบเล่น (Turn) ของตนเองไป 1 ครั้ง</p>
+              <p class="card-info-text">กักขังผู้เล่นเป้าหมาย บังคับให้ข้ามรอบเล่น  ของตนเองไป 1 ครั้ง</p>
             </div>
           </div>
 
@@ -722,10 +722,10 @@
             </div>
             <div class="card-details-wrap">
               <div class="card-meta-row">
-                <span class="card-name-text">ปอบ (Witch)</span>
+                <span class="card-name-text">ปอบ </span>
                 <span class="card-type-tag tag-role-witch">🎴 การ์ดชีวิต (ฝ่ายปอบ)</span>
               </div>
-              <p class="card-quantity-text">อัตโนมัติ: 1–5 คน 1 ใบ · ตั้งแต่ 6 คน 2 ใบ (โฮสปรับ custom ได้สูงสุด 4 ใบ)</p>
+              <p class="card-quantity-text">อัตโนมัติ: 1–5 คน 1 ใบ · ตั้งแต่ 6 คน 2 ใบ (โฮสต์กำหนดเอง ได้สูงสุด 4 ใบ)</p>
               <p class="card-info-text">ผู้ที่ได้รับการ์ดใบนี้จะกลายเป็นฝ่ายปอบตลอดทั้งเกม เป้าหมายคือกำจัดชาวบ้านให้หมดหรือแพร่เชื้อให้ทุกคน</p>
             </div>
           </div>
@@ -736,7 +736,7 @@
             </div>
             <div class="card-details-wrap">
               <div class="card-meta-row">
-                <span class="card-name-text">ชาวบ้าน (Villager)</span>
+                <span class="card-name-text">ชาวบ้าน</span>
                 <span class="card-type-tag tag-role-villager">🎴 การ์ดชีวิต (ฝ่ายชาวบ้าน)</span>
               </div>
               <p class="card-quantity-text">เริ่มต้นตามจำนวนคน 4/5/6/7/8/9/10/11/12: 18/23/27/32/29/33/27/30/33 ใบ (ลดหรือเพิ่มตามจำนวนปอบที่โฮสตั้ง)</p>
@@ -750,7 +750,7 @@
             </div>
             <div class="card-details-wrap">
               <div class="card-meta-row">
-                <span class="card-name-text">หมอผี (Constable)</span>
+                <span class="card-name-text">หมอผี</span>
                 <span class="card-type-tag tag-role-constable">🎴 การ์ดชีวิต (ฝ่ายชาวบ้าน)</span>
               </div>
               <p class="card-quantity-text">เริ่มต้น: 1 ใบ ทุกจำนวนผู้เล่น</p>
@@ -792,7 +792,7 @@
                                 <th>ผู้เล่น</th>
                                 <th>บทบาทที่แท้จริง</th>
                                 <th>สถานะ</th>
-                                <th>การ์ดชีวิต (Tryal Cards)</th>
+                                <th>การ์ดชีวิต </th>
                             </tr>
                         </thead>
                         <tbody id="roles-reveal-tbody">
@@ -816,7 +816,7 @@
         <span id="close-story-modal" class="close" style="position: absolute; right: 18px; top: 12px; color: #fff; font-size: 2em; cursor: pointer; z-index:2;">&times;</span>
         <img src="Background/story.jpg" alt="เนื้อเรื่องหมู่บ้านต้องสาป" style="width:100%; max-height:400px; object-fit:cover; border-radius: 16px 16px 0 0; display:block;">
         <div style="padding: 28px 24px 0 24px;">
-          <h2 style="margin-top:0; color:#ff9800; font-family:'Creepster','Noto Serif Thai',serif;">หมู่บ้านต้องสาป 1996</h2>
+          <h2 style="margin-top:0; color:#ff9800; font-family:'Creepster','Noto Serif Thai',serif;" class="halloween-title">หมู่บ้านต้องสาป 1996 <small class="halloween-edition">Halloween Edition</small></h2>
           <p style="font-size:1.1em; color:#ffe0b2; line-height:1.7;">
             ปี ค.ศ. 1996 ณ เมืองลับแล จังหวัดอุตรดิตถ์<br>
             ความชั่วร้ายได้แฝงตัวอยู่ในเงามืดของหมู่บ้าน<br>

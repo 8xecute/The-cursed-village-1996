@@ -53,7 +53,7 @@ module.exports = function createServices(game) {
               maxPlayers: game.PLAYER_LIMIT,
               gameStarted: !!room.gameStarted,
               gameOver: !!room.gameOver,
-              hostName: room.players?.[room.hostUniqueId]?.name || 'Unknown'
+              hostName: room.players?.[room.hostUniqueId]?.name || 'ไม่ทราบชื่อ'
           }))
           .sort((a, b) => a.name.localeCompare(b.name));
   }

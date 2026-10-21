@@ -4,6 +4,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { prepareVillagerModels, instantiateVillager, disposeVillagerModels } from './villager-models.mjs';
 import { createGunShot } from './gun-shot.mjs';
 import { addLifeCardFrame, lifeBorderColor } from './life-card-frame.mjs';
+import { lifeSlots } from '../../public/js/cards/life-slots.mjs';
 import { createCameraControls } from './camera-controls.mjs';
 import { timberTexture, ceremonialCloth, buildCeremonialRoom, createRitualBust } from './ritual-scene.mjs';
 
@@ -278,7 +279,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
         return face;
     }
 
-    function label(parent, text, position, color = '#eddbb7', size = .23) {
+    function label(parent, text, position, color = '#eddbb7', size = .23, glowing = false) {
         const font = 'bold 32px "Noto Serif Thai", sans-serif';
         const measure = document.createElement('canvas').getContext('2d');
         measure.font = font;
@@ -288,10 +289,11 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             ctx.fillStyle = 'rgba(19,15,12,.86)';
             ctx.beginPath(); ctx.roundRect(1, 1, w - 2, h - 2, 12); ctx.fill();
             ctx.font = font; ctx.fillStyle = color;
+            if (glowing) { ctx.shadowColor = '#ffad32'; ctx.shadowBlur = 14; }
             ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
             ctx.fillText(text, w / 2, h / 2, w - 28);
         });
-        const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, depthTest: false }));
+        const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, depthTest: false, toneMapped: false }));
         sprite.userData.disposableTexture = texture;
         sprite.position.set(...position);
         sprite.scale.set(width / height * size, size, 1);
@@ -371,8 +373,9 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
                 part.material.emissive.set(selectedTarget ? 0xb47e34 : 0x597b70);
                 part.material.emissiveIntensity = selectedTarget ? .9 : .55;
             });
+            const activeTurn = player.alive && !state.gameOver && state.currentPhase === 'DAY' && state.currentTurnPlayerUniqueId === player.uniqueId;
             const nameLabel = label(seat, `${selectedTarget ? '✓ ' : ''}${player.name}${player.uniqueId === me ? ' (คุณ)' : ''}${state.players?.[me]?.hasBeenWitch && player.hasBeenWitch ? ' · ทีมปอบ' : ''}${player.isReplacementBot ? ' · บอทเล่นแทน' : player.reconnectDeadline ? ' · รอเชื่อมต่อ' : ''}${!player.alive ? ' · เสียชีวิต' : ''}`, [0, 1.55, 2.05],
-                eligibleTarget ? selectedTarget ? '#ffe1a0' : '#a9e0c9' : player.alive ? '#eddbb7' : '#a39b91');
+                activeTurn ? '#ffe9a8' : eligibleTarget ? selectedTarget ? '#ffe1a0' : '#a9e0c9' : player.alive ? '#eddbb7' : '#a39b91', activeTurn ? .28 : .23, activeTurn);
             // Our identity is already in the HUD; the nearby sprite covers raised cards.
             nameLabel.visible = player.uniqueId !== me;
             nameLabel.userData.playerId = player.uniqueId;
@@ -397,17 +400,20 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
                 label(seat, interaction.kind === 'life' ? 'เลือกการ์ดชีวิต 1 ใบ' : 'เลือกการ์ดที่วางอยู่', [0, 2.15, 0], '#d8c4a0');
             }
             const revealed = player.revealedTryalCards || [];
-            const lifeTotal = lives + revealed.length;
-            const lifePosition = index => [(index - (lifeTotal - 1) / 2) * CARD_SPACING, .06, -.85];
+            const slots = lifeSlots(player);
+            const lifeTotal = slots.length, lifeScale = 1.25;
+            const remainingSlots = slots.filter(slot=>!slot.opened), openedSlots = slots.filter(slot=>slot.opened);
+            const lifePosition = index => [(index - (lifeTotal - 1) / 2) * (CARD_WIDTH * lifeScale + .025), .06, -.85];
             for (let life = 0; life < lives; life++) {
                 const revealedName = player.tryalCards?.[life]?.name;
-                const lifeCard = card(seat, lifePosition(life), [-Math.PI / 2, 0, 0],
+                const lifeCard = card(seat, lifePosition(remainingSlots[life].slot), [-Math.PI / 2, 0, 0],
                     revealedName ? cardTexture(imageFor(revealedName)) : back, { playerId: player.uniqueId, lifeIndex: life, resting: true });
+                lifeCard.scale.setScalar(lifeScale);
                 addLifeCardFrame(lifeCard, lifeBorderColor(revealedName));
                 if (interaction?.kind === 'life' && interaction.owner === player.uniqueId && interaction.eligible.includes(life))
                     addLifeCardFrame(lifeCard, interaction.selected?.includes(life) ? 0xffd359 : 0x6ee7d2, { selected: true, inset: .015 });
                 if (interaction?.kind === 'life' && interaction.owner === player.uniqueId && interaction.eligible.includes(life)) {
-                    label(seat, `${interaction.selected?.includes(life) ? '✓ ' : ''}${life + 1}`, [(life - (lifeTotal - 1) / 2) * CARD_SPACING, .24, -.85], '#ffe2a0');
+                    label(seat, `${interaction.selected?.includes(life) ? '✓ ' : ''}${remainingSlots[life].slot + 1}`, [lifePosition(remainingSlots[life].slot)[0], .24, -.85], '#ffe2a0');
                 }
             }
             const effects = player.inPlayCards || [];
@@ -423,10 +429,17 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
                     -1.55 - row * (CARD_HEIGHT + .02) * publicScale];
             }
             revealed.forEach((revealedCard, i) => {
-                const face = card(seat, lifePosition(lives + i), [-Math.PI/2,0,0],
+                const face = card(seat, lifePosition(openedSlots.find(slot=>slot.revealedIndex===i).slot), [-Math.PI/2,0,0],
                     cardTexture(imageFor(revealedCard.name)), { playerId: player.uniqueId, revealedIndex: i, resting: true });
+                face.scale.setScalar(lifeScale);
                 addLifeCardFrame(face, lifeBorderColor(revealedCard.name));
-                label(seat, 'เปิดเผยแล้ว', [(lives + i - (lifeTotal - 1) / 2) * CARD_SPACING, .045, -.85 + CARD_HEIGHT / 2 + .26], '#d9c7a5', .075);
+                const length = Math.hypot(CARD_WIDTH, CARD_HEIGHT) * .86;
+                for (const angle of [-1, 1]) {
+                    const cross = new THREE.Mesh(new THREE.PlaneGeometry(length, .025), new THREE.MeshBasicMaterial({color:0xdb675b, transparent:true, opacity:.88, depthWrite:false, toneMapped:false}));
+                    cross.rotation.z = angle * Math.atan2(CARD_HEIGHT, CARD_WIDTH);
+                    cross.position.z = .012; face.add(cross);
+                }
+                label(seat, 'เปิดเผยแล้ว', [lifePosition(openedSlots.find(slot=>slot.revealedIndex===i).slot)[0], .045, -.85 + CARD_HEIGHT * lifeScale / 2 + .26], '#d9c7a5', .075);
             });
             const own = player.uniqueId === me;
             const count = state.currentPhase === 'SETUP' || interaction?.kind === 'life' ? 0 : own ? hand.length : Number(player.handSize) || 0;

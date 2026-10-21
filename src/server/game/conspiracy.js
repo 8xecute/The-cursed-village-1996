@@ -7,7 +7,7 @@ module.exports = function createServices(game) {
       const alivePlayers = game.getAlivePlayers(room);
       if (alivePlayers.length <= 1) {
           room.awaitingLeftTryalSelections = false;
-          game.sendGameMessage(room.name, 'จำนวนผู้เล่นไม่พอที่จะส่ง Tryal Card.', 'grey');
+          game.sendGameMessage(room.name, 'จำนวนผู้เล่นไม่พอที่จะส่งการ์ดชีวิต.', 'grey');
           game.emitRoomState(roomName);
           return;
       }

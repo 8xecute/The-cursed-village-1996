@@ -64,28 +64,47 @@ export function createShootingArm(pawn) {
 export function createGunShot({ scene, from, to, getPawn, raiseDuration = 900, bulletDuration = 4200 }) {
     const group = new THREE.Group(), gun = new THREE.Group(); scene.add(group); group.add(gun);
     gun.scale.setScalar(.7);
-    const metal = new THREE.MeshStandardMaterial({ color: 0x383e42, metalness: .88, roughness: .28 });
+    const metal = new THREE.MeshStandardMaterial({ color: 0x55504a, metalness: .75, roughness: .67 });
     const dark = new THREE.MeshStandardMaterial({ color: 0x171a1c, metalness: .5, roughness: .52 });
-    const grip = new THREE.MeshStandardMaterial({ color: 0x30271f, roughness: .82 });
+    const grip = new THREE.MeshStandardMaterial({ color: 0x62402a, roughness: .92 });
     function add(geometry, material, position, parent = gun) {
         const part = new THREE.Mesh(geometry, material); part.position.set(...position); parent.add(part); return part;
     }
-    // Barrel, slide, recessed bore, grip, trigger guard and sights.
-    const slide = add(new THREE.BoxGeometry(.105, .105, .40), metal, [0, .075, .12]);
-    const barrel = add(new THREE.CylinderGeometry(.032, .032, .40, 16), metal, [0, .055, .13]); barrel.rotation.x = Math.PI / 2;
-    const bore = add(new THREE.CircleGeometry(.022, 16), dark, [0, .055, .333]);
-    const handle = add(new THREE.BoxGeometry(.085, .23, .12), grip, [0, -.09, -.015]); handle.rotation.x = -.2;
-    const guard = add(new THREE.TorusGeometry(.065, .009, 6, 14), dark, [0, -.06, .11]); guard.rotation.y = Math.PI / 2;
-    for (const z of [-.025, .285]) add(new THREE.BoxGeometry(.018, .025, .025), dark, [0, .14, z]);
-    for (let i = 0; i < 5; i++) add(new THREE.BoxGeometry(.108, .055, .006), dark, [0, .08, -.025 + i * .013]);
-    const flash = add(new THREE.ConeGeometry(.08, .28, 7), new THREE.MeshBasicMaterial({ color: 0xffe5af, transparent: true, toneMapped: false }), [0, .055, .46]); flash.rotation.x = Math.PI / 2;
-    const light = new THREE.PointLight(0xffb966, 0, 3); light.position.set(0, .055, .38); gun.add(light);
+    // An aged break-action double-barrel shotgun, with a walnut stock.
+    add(new THREE.BoxGeometry(.17, .14, .23), metal, [0, .05, .05]);
+    const stock = add(new THREE.BoxGeometry(.13, .22, .42, 2, 2, 4), grip, [0, -.045, -.29]);
+    stock.rotation.x = -.16;
+    add(new THREE.BoxGeometry(.14, .23, .025), dark, [0, -.075, -.50]);
+    const handle = add(new THREE.BoxGeometry(.09, .17, .13), grip, [0, -.09, -.055]); handle.rotation.x = -.32;
+    const forearm = add(new THREE.BoxGeometry(.15, .085, .37), grip, [0, -.025, .35]); forearm.rotation.x = -.025;
+    for (const x of [-.047, .047]) {
+        const barrel = add(new THREE.CylinderGeometry(.042, .048, .85, 18), metal, [x, .075, .52]); barrel.rotation.x = Math.PI / 2;
+        add(new THREE.CircleGeometry(.031, 18), dark, [x, .075, .948]);
+        for (const z of [.24, .62]) {
+            const band = add(new THREE.TorusGeometry(.044, .005, 5, 18), dark, [x, .075, z]);
+            band.rotation.z = Math.PI / 2;
+        }
+    }
+    add(new THREE.BoxGeometry(.015, .014, .78), dark, [0, .108, .53]);
+    add(new THREE.SphereGeometry(.012, 8, 6), metal, [0, .128, .90]);
+    const guard = add(new THREE.TorusGeometry(.065, .009, 6, 14), dark, [0, -.065, .045]); guard.rotation.y = Math.PI / 2;
+    const trigger = add(new THREE.BoxGeometry(.016, .065, .018), dark, [0, -.04, .03]); trigger.rotation.x = -.3;
+    for (let i = 0; i < 5; i++) add(new THREE.BoxGeometry(.152, .004, .008), dark, [0, -.05, .22 + i * .055]);
+    const flash = add(new THREE.ConeGeometry(.15, .38, 9), new THREE.MeshBasicMaterial({ color: 0xffddb2, transparent: true, toneMapped: false }), [0, .075, 1.13]); flash.rotation.x = Math.PI / 2;
+    const light = new THREE.PointLight(0xffb966, 0, 4); light.position.set(0, .075, .98); gun.add(light);
     const bullet = new THREE.Group(); group.add(bullet);
-    const copper = new THREE.MeshStandardMaterial({ color: 0xb87536, metalness: .85, roughness: .24 });
-    const body = add(new THREE.CylinderGeometry(.026, .026, .09, 12), copper, [0, 0, 0], bullet); body.rotation.x = Math.PI / 2;
-    const tip = add(new THREE.SphereGeometry(.026, 12, 8), copper, [0, 0, .045], bullet); tip.scale.set(1, 1, 1.8);
-    const trail = add(new THREE.CylinderGeometry(.004, .015, .45, 8), new THREE.MeshBasicMaterial({ color: 0xd8b47b, transparent: true, opacity: .25, depthWrite: false }), [0, 0, -.24], bullet); trail.rotation.x = Math.PI / 2;
-    const shell = add(new THREE.CylinderGeometry(.025, .025, .09, 10), new THREE.MeshStandardMaterial({ color: 0xc8a555, metalness: .8, roughness: .3 }), [0, 0, 0], group);
+    const lead = new THREE.MeshStandardMaterial({color:0xc2b7a1, metalness:.82, roughness:.36});
+    const pellets = [];
+    for (let i = 0; i < 12; i++) {
+        const angle = i * 2.39996, radius = i ? Math.sqrt(i / 11) : 0;
+        const pellet = add(new THREE.SphereGeometry(.028, 8, 6), lead, [0, 0, 0], bullet);
+        pellet.userData.spread = [Math.cos(angle) * radius, Math.sin(angle) * radius];
+        pellets.push(pellet);
+    }
+    const shell = new THREE.Group(); group.add(shell);
+    const caseMaterial = new THREE.MeshStandardMaterial({color:0x83382a, roughness:.8});
+    add(new THREE.CylinderGeometry(.037, .037, .14, 12), caseMaterial, [0,0,0], shell);
+    add(new THREE.CylinderGeometry(.04, .04, .03, 12), new THREE.MeshStandardMaterial({color:0xb89b52, metalness:.8, roughness:.4}), [0,-.07,0], shell);
     const smoke = add(new THREE.SphereGeometry(.09, 10, 8), new THREE.MeshBasicMaterial({ color: 0xaaaaa3, transparent: true, opacity: .1, depthWrite: false }), [0, 0, 0], group);
     let pawn = null, arm = null;
     const direction = to.clone().sub(from).normalize();
@@ -103,12 +122,14 @@ export function createGunShot({ scene, from, to, getPawn, raiseDuration = 900, b
             gun.position.copy(hand || from.clone().add(new THREE.Vector3(0, -.45 * (1 - lift), 0)));
             gun.position.y += .065;
             gun.lookAt(to); gun.rotateX((1 - lift) * .95); gun.translateZ(-.055 * recoil);
-            slide.position.z = .12 - .065 * recoil;
             gun.updateWorldMatrix(true, true);
-            if (after >= 0 && !fired) { fired = true; muzzle.copy(gun.localToWorld(new THREE.Vector3(0, .055, .34))); eject.copy(gun.position); }
+            if (after >= 0 && !fired) { fired = true; muzzle.copy(gun.localToWorld(new THREE.Vector3(0, .075, .96))); eject.copy(gun.position); }
             flash.visible = after >= 0 && after < 65; light.intensity = flash.visible ? 7 : 0;
             bullet.visible = after >= 0 && after < bulletDuration;
-            bullet.position.lerpVectors(muzzle, to, THREE.MathUtils.clamp(after / bulletDuration, 0, 1)); bullet.lookAt(to.clone().add(direction));
+            const travel = THREE.MathUtils.clamp(after / bulletDuration, 0, 1);
+            bullet.position.lerpVectors(muzzle, to, travel); bullet.lookAt(to.clone().add(direction));
+            const spread = Math.min(.55, muzzle.distanceTo(to) * .04) * travel;
+            for (const pellet of pellets) pellet.position.set(pellet.userData.spread[0] * spread, pellet.userData.spread[1] * spread, 0);
             shell.visible = after >= 0 && after < 750;
             if (shell.visible) { const t = after / 1000; shell.position.copy(eject).add(new THREE.Vector3(t * 1.1, .2 + t * 1.8 - t * t * 4, t * .4)); shell.rotation.set(t * 14, t * 9, t * 5); }
             smoke.visible = after >= 0 && after < 650;
@@ -117,7 +138,7 @@ export function createGunShot({ scene, from, to, getPawn, raiseDuration = 900, b
         },
         dispose() {
             arm?.dispose(); scene.remove(group);
-            const materials = new Set(); group.traverse(part => { part.geometry?.dispose(); if (part.material) materials.add(part.material); }); materials.forEach(material => material.dispose());
+            const materials = new Set(), geometries = new Set(); group.traverse(part => { if (part.geometry) geometries.add(part.geometry); if (part.material) materials.add(part.material); }); geometries.forEach(geometry=>geometry.dispose()); materials.forEach(material => material.dispose());
         }
     };
 }

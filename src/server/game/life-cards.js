@@ -3,9 +3,15 @@ module.exports = function createLifeCardServices(game) {
   function openLifeCard(room, player, index) {
     if (!room || room.gameOver || !player?.alive || !Number.isInteger(index) ||
         index < 0 || index >= player.tryalCards.length) return null;
+    const history = player.revealedTryalCards ||= [];
+    const total = player.tryalCards.length + history.length;
+    history.forEach((opened, i) => { if (!Number.isInteger(opened.slot)) opened.slot = player.tryalCards.length + i; });
+    const used = new Set(history.map(opened => opened.slot));
+    const slots = Array.from({length:total}, (_,i)=>i).filter(slot=>!used.has(slot));
+    const slot = slots[index];
     const card = player.tryalCards.splice(index, 1)[0];
     game.onTryalRevealed(room, card);
-    (player.revealedTryalCards ||= []).push({ name: card.name });
+    history.push({ name: card.name, slot });
     player.revealedTryalCardIndexes.add(card.name);
     return card;
   }

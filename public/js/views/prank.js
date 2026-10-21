@@ -4,20 +4,20 @@ export function initialize() {
     const bar = document.createElement('div'); bar.id = 'prank-controls'; bar.hidden = true;
     const admin = document.createElement('details');
     const summary = document.createElement('summary'); summary.textContent = '⋯'; summary.title = 'เมนูลับโฮส';
-    const label = document.createElement('strong'); label.textContent = '🔫 ปืนแกล้งเพื่อน · 1 นัด';
+    const label = document.createElement('strong'); label.textContent = '🔫 ลูกซองเทพทรู · 1 นัด';
     const select = document.createElement('select'); select.setAttribute('aria-label', 'ผู้เล่นที่จะมอบหรือถอนปืน');
     const grant = document.createElement('button'); grant.textContent = 'มอบปืน';
     const revoke = document.createElement('button'); revoke.textContent = 'ถอนปืน';
     grant.onclick = () => { if (select.value) client.state.socket.emit('prank gun grant', select.value, true); };
     revoke.onclick = () => { if (select.value) client.state.socket.emit('prank gun grant', select.value, false); };
     admin.append(summary, label, select, grant, revoke);
-    const gun = document.createElement('button'); gun.textContent = '🔫 ใช้ปืน (1 นัด)';
+    const gun = document.createElement('button'); gun.textContent = '🔫 ใช้ลูกซอง (1 นัด)';
     bar.append(admin, gun); document.body.appendChild(bar);
     const cue = document.createElement('div'); cue.id = 'prank-shot-cue'; cue.hidden = true; cue.setAttribute('role', 'status'); document.body.appendChild(cue);
     let selecting = false, selected = null, cueTimer;
     const originalInteraction = client.actions.getTable3DInteraction;
     const originalPlayer = client.actions.handleTable3DPlayer;
-    function clearSelection() { selecting = false; selected = null; gun.textContent = '🔫 ใช้ปืน (1 นัด)'; }
+    function clearSelection() { selecting = false; selected = null; gun.textContent = '🔫 ใช้ลูกซอง (1 นัด)'; }
     function shoot(id) {
         client.state.socket.emit('prank gun shoot', id);
         clearSelection(); client.actions.syncTable3D();

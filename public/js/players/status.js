@@ -42,7 +42,7 @@ client.actions.updateSpectatorUI = function updateSpectatorUI(isSpec) {
             specBanner = document.createElement('div');
             specBanner.id = 'spectator-status-banner';
             specBanner.className = 'spectator-status-banner';
-            specBanner.innerHTML = '<span>👁️ <strong>โหมดผู้ชม (Spectator)</strong> — คุณกำลังเฝ้าดูการเล่น ไม่สามารถกระทำแอ็กชัน และไม่เห็นบทบาทลับ</span>';
+            specBanner.innerHTML = '<span>👁️ <strong>โหมดผู้ชม </strong> — คุณกำลังเฝ้าดูการเล่น ไม่สามารถกระทำแอ็กชัน และไม่เห็นบทบาทลับ</span>';
             const gamePage = document.getElementById('game-page');
             if (gamePage) gamePage.insertBefore(specBanner, gamePage.firstChild);
         } else {

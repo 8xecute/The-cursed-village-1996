@@ -1,5 +1,5 @@
 import { client } from '../core/client.js';
-import { lifeTile } from '../cards/life-display.js';
+import { lifeSlots } from '../cards/life-slots.mjs';
 
 client.actions.updatePlayersBoardGrid = function updatePlayersBoardGrid(roomState, myUniqueId) {
     const section = document.getElementById('players-board-section');
@@ -32,14 +32,14 @@ client.actions.updatePlayersBoardGrid = function updatePlayersBoardGrid(roomStat
         if (knowsWitchTeam && player.hasBeenWitch) header += ' <span style="color:#ff1744;font-weight:bold;">(ทีมปอบ)</span>';
         if (player.isReplacementBot) header += ' <span>· บอทเล่นแทน</span>';
         else if (player.reconnectDeadline) header += `<span class="reconnect-countdown" data-deadline="${Number(player.reconnectDeadline)}"></span>`;
-        if (player.isHost) header += ' <span style="color:#ff4500;">(Host)</span>';
+        if (player.isHost) header += ' <span style="color:#ff4500;">(โฮสต์)</span>';
         if (player.isBlackCatHolder) header += ' <span style="color:#ffd700;">(เครื่องเซ่น)</span>';
         if (!player.alive) header += ' <span class="player-dead-badge">💀 เสียชีวิตแล้ว</span>';
         if (roomState.currentTurnPlayerUniqueId === player.uniqueId) header += ' <span style="color:#2196f3;font-weight:bold;">[เทิร์น]</span>';
         header += '</div>';
         // Status
         let status = `<div class='player-board-status'>`;
-        status += `การ์ดในมือ: ${player.handSize} | ข้อกล่าวหา: ${player.accusationPoints}`;
+        status += `การ์ดในมือ: ${player.handSize} | ข้อกล่าวหา: ${player.accusationPoints || 0}`;
         // --- Effect: Blue, Green, and now Red cards ---
         let blueEffectCards = [];
         let greenEffectCards = [];
@@ -120,10 +120,17 @@ client.actions.updatePlayersBoardGrid = function updatePlayersBoardGrid(roomStat
         let tryals = `<div class='player-board-tryals'>การ์ดชีวิตที่เหลือ: <b>${player.tryalCardCount}</b> ใบ</div>`;
         card.innerHTML = header + status + tryals;
         const lifeRow = document.createElement('div'); lifeRow.className = 'player-board-life-row';
-        for (let index = 0; index < (player.tryalCardCount || 0); index++) {
-            lifeRow.appendChild(lifeTile(player.tryalCards?.[index]?.name));
+        for (const slot of lifeSlots(player)) {
+            const item = document.createElement('figure'); item.className = 'player-life-slot';
+            const known = slot.opened || !player.alive || roomState.gameOver;
+            item.classList.toggle('is-opened', slot.opened);
+            const mini = document.createElement('span'); mini.className = 'player-life-mini';
+            mini.textContent = slot.opened ? '×' : String(slot.slot + 1);
+            const caption = document.createElement('figcaption');
+            caption.textContent = known && slot.card?.name ? client.actions.displayCardName(slot.card.name) : `ใบที่ ${slot.slot + 1}`;
+            item.title = `ใบที่ ${slot.slot + 1}${slot.opened ? ' · เปิดเผยแล้ว' : ''}${known && slot.card?.name ? ' · ' + client.actions.displayCardName(slot.card.name) : ''}`;
+            item.append(mini, caption); lifeRow.appendChild(item);
         }
-        (player.revealedTryalCards || []).forEach(opened => lifeRow.appendChild(lifeTile(opened.name, true)));
         card.appendChild(lifeRow);
         list.appendChild(card);
     });

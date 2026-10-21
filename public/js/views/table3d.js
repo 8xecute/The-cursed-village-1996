@@ -7,6 +7,8 @@ client.actions.updateTable3DFocus = function updateTable3DFocus() {
     const status = document.getElementById('table3d-player-status');
     const nextName = `${player.name}${player.uniqueId === client.state.myUniqueId ? ' (คุณ)' : ''}`;
     if (name.textContent !== nextName) name.textContent = nextName;
+    name.parentElement.classList.toggle('is-current-turn', player.alive && !client.state.currentRoomState.gameOver &&
+        client.state.currentRoomState.currentPhase === 'DAY' && client.state.currentRoomState.currentTurnPlayerUniqueId === player.uniqueId);
     const team = player.hasBeenWitch ? ' · ทีมปอบ' : '';
     const nextStatus = `${player.alive ? 'ยังมีชีวิต' : 'เสียชีวิตแล้ว'} · ชีวิต ${player.tryalCardCount} · การ์ด ${player.handSize} · ข้อกล่าวหา ${player.accusationPoints || 0}${team}`;
     if (status.textContent !== nextStatus) status.textContent = nextStatus;

@@ -82,7 +82,7 @@ module.exports = function createServices(game) {
       if (nextPhase !== 'DAY' && room.awaitingCurseSelection) {
           const selector = room.players[room.awaitingCurseSelection.selector];
           if (selector) {
-              game.io.to(selector.id).emit('game message', 'หมดช่วงเลือกการ์ดจาก Curse แล้ว การเลือกถูกยกเลิก.', 'orange');
+              game.io.to(selector.id).emit('game message', 'หมดช่วงเลือกการ์ดจากคำสาปแล้ว การเลือกถูกยกเลิก.', 'orange');
           }
           delete room.awaitingCurseSelection;
       }
@@ -153,7 +153,7 @@ module.exports = function createServices(game) {
       if (room.customWitchCardCount != null && (!Number.isInteger(room.customWitchCardCount) ||
           room.customWitchCardCount < 1 || room.customWitchCardCount > Math.min(4, alivePlayers.length - 1))) {
           const host = Object.values(room.players).find(player => player.isHost);
-          if (host) game.io.to(host.id).emit('game message', 'จำนวนปอบ custom ต้องไม่เกิน 4 ใบ และน้อยกว่าจำนวนผู้เล่น กรุณาตั้งใหม่ก่อนเริ่มเกม', 'orange');
+          if (host) game.io.to(host.id).emit('game message', 'จำนวนปอบที่กำหนดเอง ต้องไม่เกิน 4 ใบ และน้อยกว่าจำนวนผู้เล่น กรุณาตั้งใหม่ก่อนเริ่มเกม', 'orange');
           return;
       }
       if (room.customLifeCardCount != null && (!Number.isInteger(room.customLifeCardCount) || room.customLifeCardCount < 1 || room.customLifeCardCount > 5)) {

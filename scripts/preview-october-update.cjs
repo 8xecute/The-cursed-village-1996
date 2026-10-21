@@ -16,12 +16,13 @@ const publicRoot = path.resolve(__dirname, '../public');
             const file = path.resolve(publicRoot, '.' + decodeURIComponent(url.pathname === '/' ? '/index.html' : url.pathname));
             if (!file.startsWith(publicRoot + path.sep) || !fs.existsSync(file)) return route.abort();
             const extension = path.extname(file);
-            const type = {'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8', '.png':'image/png','.jpg':'image/jpeg','.svg':'image/svg+xml','.glb':'model/gltf-binary'}[extension] || 'application/octet-stream';
+            const type = {'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.mjs':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8', '.png':'image/png','.jpg':'image/jpeg','.svg':'image/svg+xml','.glb':'model/gltf-binary'}[extension] || 'application/octet-stream';
             let body = fs.readFileSync(file);
             if (extension === '.html') body = body.toString().replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '');
             return route.fulfill({contentType:type,body});
         });
         await page.goto('http://preview.test/');
+        await page.screenshot({path:path.join(output,'halloween-home.png')});
         await page.addScriptTag({url:'/table3d.bundle.js'});
         await page.evaluate(async () => {
             const {client} = await import('/js/core/client.js'); window.previewClient = client;
@@ -38,9 +39,9 @@ const publicRoot = path.resolve(__dirname, '../public');
                 tryalCards:['Witch','Constable','Not A Witch','Not A Witch','Not A Witch'].map(name=>({name:i?null:name})),
                 inPlayCards:i===1?[{name:'Evidence',color:'Red'},{name:'Piety',color:'Blue'},{name:'Stocks',color:'Green'}]:[],revealedTryalCards:[]
             }]));
-            const state={gameStarted:true,currentPhase:'DAY',players,hostUniqueId:'p0',currentTurnPlayerUniqueId:'p0',playerCount:4,maxPlayers:12,deckCount:16,discardPileCount:9,
+            const state={gameStarted:true,currentPhase:'DAY',players,hostUniqueId:'p0',currentTurnPlayerUniqueId:'p3',playerCount:4,maxPlayers:12,deckCount:16,discardPileCount:9,
                 prankGunAdmin:Object.values(players).map(p=>({id:p.uniqueId,name:p.name,armed:false}))};
-            players.p0.revealedTryalCards=players.p0.tryalCards.splice(3,2); players.p0.tryalCardCount=3;
+            players.p0.revealedTryalCards=players.p0.tryalCards.splice(3,2).map((card,i)=>({...card,slot:3+i})); players.p0.tryalCardCount=3;
             client.state.myCurrentHand=hand; client.actions.clearCardSelection=()=>{};
             client.state.currentRoomState=state; window.previewState=state;
             for (const name of ['messages','table3d-log','play-experience','prank']) (await import('/js/views/'+name+'.js')).initialize();
@@ -58,7 +59,7 @@ const publicRoot = path.resolve(__dirname, '../public');
             const engine=window.VillageTable3D.create({container:document.getElementById('table3d-canvas'),quality:'high'});
             const options={state,me:'p0',hand,handLowered:false,imageFor:name=>client.actions.createCardImage(name).src};
             client.state.table3D=engine; client.actions.syncTable3D=()=>engine.update(options);
-            window.previewEngine=engine; engine.setActive(true); engine.update(options);
+            window.previewOptions=options; window.previewEngine=engine; engine.setActive(true); engine.update(options);
             (await import('/js/views/hand-order.js')).initialize();
             previewEvent('room state update',state);
             client.actions.addGameMessage('คำปัน เล่นหลักฐานใส่ คุณ · ข้อกล่าวหา +3 แต้ม','orange');
@@ -69,7 +70,16 @@ const publicRoot = path.resolve(__dirname, '../public');
         });
         await page.waitForTimeout(1300);
         await page.screenshot({path:path.join(output,'oct21-table-desktop.png')});
-        await page.evaluate(()=>{document.getElementById('table3d-log').open=false;window.previewEngine.stepSeat(2);});
+        await page.evaluate(()=>{
+            document.getElementById('table3d-log').open=false;
+            window.previewOptions.handLowered=true; window.previewEngine.update(window.previewOptions);
+            window.previewEngine.animateShot({actorId:'p1',targetId:'p3',raiseDuration:900,bulletDuration:4200});
+        });
+        await page.waitForTimeout(1050);
+        await page.screenshot({path:path.join(output,'halloween-shotgun-raised.png')});
+        await page.waitForTimeout(1500);
+        await page.screenshot({path:path.join(output,'halloween-shotgun-pellets.png')});
+        await page.evaluate(()=>{window.previewOptions.handLowered=false;window.previewEngine.update(window.previewOptions);window.previewEngine.stepSeat(2);});
         await page.waitForTimeout(200);
         await page.screenshot({path:path.join(output,'oct21-female-hands.png')});
         await page.setViewportSize({width:390,height:844});
@@ -105,7 +115,14 @@ const publicRoot = path.resolve(__dirname, '../public');
             client.actions.updateTryalCardDisplay();
             await import('/js/players/board.js');
             client.actions.updatePlayersBoardGrid(window.previewState,'p0');
+            const hand=document.getElementById('player-hand'); hand.replaceChildren();
+            for(const c of client.state.myCurrentHand) {const face=document.createElement('div');face.className='card card-'+c.color.toLowerCase();face.appendChild(client.actions.createCardImage(c.name));hand.appendChild(face);}
+            document.getElementById('hand-card-count').textContent=client.state.myCurrentHand.length;
+            document.getElementById('game-view-description').textContent='มุมมอง 2D';
+            for(const id of ['name-section','room-management-section']) document.getElementById(id).style.display='none';
         });
+        await page.setViewportSize({width:1600,height:1000});
+        await page.locator('#game-section').screenshot({path:path.join(output,'halloween-board-2d.png')});
         await page.locator('#my-tryal-cards-list').screenshot({path:path.join(output,'oct21-life-2d.png')});
         await page.goto('http://preview.test/patch-notes.html');
         await page.setViewportSize({width:390,height:844});

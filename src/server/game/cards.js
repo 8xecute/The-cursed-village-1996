@@ -93,7 +93,7 @@ module.exports = function createServices(game) {
       }
 
       if (room.awaitingCurseSelection?.selector === playerUniqueId) {
-          game.io.to(player.id).emit('game message', 'กรุณาเลือกการ์ดจาก Curse ให้เสร็จก่อนทำ action อื่น.', 'orange');
+          game.io.to(player.id).emit('game message', 'กรุณาเลือกการ์ดจากคำสาปให้เสร็จก่อนทำอย่างอื่น.', 'orange');
           return;
       }
 

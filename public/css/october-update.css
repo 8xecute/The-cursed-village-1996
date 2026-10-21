@@ -2,7 +2,7 @@
 #table3d-canvas { position:relative; }
 body.game-view-3d #table3d-section .table3d-hand-controls,
 body.game-view-3d #table3d-section .table3d-hand-controls:has(#table3d-reorder-hint:not([hidden])) {
-    display:flex; flex-direction:column; gap:5px; width:max-content;
+    display:flex; flex-direction:column; gap:4px; width:max-content;
     max-width:calc(100% - 16px); padding:6px 8px;
     top:auto; bottom:calc(100% - var(--table3d-canvas-height,75dvh) + 8px);
 }
@@ -10,8 +10,8 @@ body.game-view-3d #table3d-section .table3d-hand-controls:has(#table3d-reorder-h
 body.game-view-3d #table3d-section .table3d-hand-controls button {
     position:static; inset:auto; transform:none; flex:0 0 auto;
     width:auto !important; min-width:32px !important; max-width:none;
-    min-height:34px !important; height:auto !important;
-    padding:6px 10px !important; margin:0 !important;
+    min-height:30px !important; height:auto !important;
+    padding:5px 8px !important; margin:0 !important;
     white-space:nowrap; font-size:.8rem !important; line-height:1.25 !important;
 }
 #table3d-reorder-hint { max-width:280px; }
@@ -57,5 +57,16 @@ body.game-view-3d #play-result-toast {
 .life-tile-revealed .card { cursor:default; }
 #my-tryal-cards-list { align-items:flex-start; }
 .player-board-life-row { display:flex; align-items:flex-start; flex-wrap:wrap; gap:5px; margin-top:8px; }
-.player-board-life-row .life-tile .card { width:48px !important; height:71px !important; min-width:0 !important; margin:0 !important; padding:0; }
+.player-board-life-row .life-tile .card { width:48px !important; height:71px !important; min-height:71px !important; max-height:71px !important; min-width:0 !important; margin:0 !important; padding:0; }
 .player-board-life-row .life-tile img { object-fit:cover; }
+
+/* The end-turn action belongs to the card row, never to a scene anchor. */
+body.game-view-3d #table3d-section .table3d-card-row > .table3d-end-turn {
+    position:static !important; inset:auto !important; transform:none !important;
+    width:auto !important; margin:0 !important;
+}
+.player-board-life-row { flex-wrap:nowrap; gap:4px; }
+.player-life-slot { margin:0; width:40px; display:flex; flex-direction:column; align-items:center; flex:0 0 40px; }
+.player-life-mini { width:28px; height:38px; border:1px solid #9d8157; border-radius:3px; background:#231a12; display:grid; place-items:center; color:#ba9c70; font-size:10px; }
+.player-life-slot.is-opened .player-life-mini { color:#e89787; border-color:#b96254; background:#39221c; }
+.player-life-slot figcaption { margin-top:3px; font-size:9px; line-height:1.4; color:#d9c8ad; text-align:center; }

@@ -16,10 +16,10 @@ client.actions.enableNightTargetSelection = function enableNightTargetSelection(
     const confirmButton = document.getElementById('confirm-night-action-button');
 
     if (actionType === 'witch') {
-        nightActionTitle.textContent = 'Witch Action - เลือกเป้าหมายที่จะสังหาร';
+        nightActionTitle.textContent = 'ปอบ · เลือกเป้าหมายที่จะสังหาร';
         nightActionInstruction.textContent = 'คุณเป็นปอบ! เลือกผู้เล่นที่มีชีวิตอยู่ที่จะสังหารในคืนนี้:';
     } else if (actionType === 'constable') {
-        nightActionTitle.textContent = 'Constable Action - เลือกผู้เล่นที่จะปกป้อง';
+        nightActionTitle.textContent = 'หมอผี · เลือกผู้เล่นที่จะปกป้อง';
         // Check if player is also a witch
         if (client.state.currentRoomState && client.state.currentRoomState.players[client.state.myUniqueId] && client.state.currentRoomState.players[client.state.myUniqueId].isWitch) {
             nightActionInstruction.textContent = 'คุณเป็นทั้งปอบและหมอผี! ตอนนี้คุณใช้สิทธิ์หมอผีเพื่อปกป้องผู้เล่น:';

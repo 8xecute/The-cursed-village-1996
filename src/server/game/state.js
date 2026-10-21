@@ -50,7 +50,7 @@ module.exports = function createServices(game) {
               connected: !!player.connected,
               reconnectDeadline: player.reconnectDeadline || null,
               handSize: player.hand.length,
-              revealedTryalCards: (player.revealedTryalCards || []).map(card => ({ name: card.name })),
+              revealedTryalCards: (player.revealedTryalCards || []).map(card => ({ name: card.name, slot: card.slot })),
               tryalCardCount: player.tryalCards.length, // Send total count of Tryal Cards
               tryalCards: player.tryalCards.map((card, index) => (
                   room.gameOver || !player.alive || (isSelf && !viewer?.isSpectator && !dealingLives) || revealedIndexes.has(index)

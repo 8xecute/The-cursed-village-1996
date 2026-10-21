@@ -19,7 +19,7 @@ client.actions.updateCardSelectionSummary = function updateCardSelectionSummary(
     }
     const batch=client.actions.selectedRedBatch();
     document.getElementById('selected-card-name').textContent = batch.length ? `การ์ดแดง ${batch.length} ใบ · ${client.actions.selectedRedPoints()}/7 แต้ม` : client.actions.displayCardName(card.name);
-    document.getElementById('selected-card-description').textContent = batch.length ? 'แตะการ์ดแดงเพิ่มเพื่อเลือกหลายใบ · แตะใบที่เลือกเพื่อเอาออก · รวมกับเป้าหมายไม่เกิน 7 แต้ม' : client.actions.displayCardDescription(card.name);
+    document.getElementById('selected-card-description').textContent = batch.length ? 'แตะการ์ดแดงเพิ่มเพื่อเลือกหลายใบ · แตะใบที่เลือกเพื่อเอาออก · จากมือเราไม่เกิน 7 แต้มต่อครั้ง' : client.actions.displayCardDescription(card.name);
     const two = client.state.CARDS_NEED_TWO_TARGETS.includes(card.name);
     const target = two || client.state.CARDS_NEED_TARGET.includes(card.name);
     document.getElementById('selected-card-next').textContent = two
@@ -65,7 +65,7 @@ client.actions.showCardDescription = function showCardDescription(card, cardElem
     // Show card description on hover
     cardElement.addEventListener('mouseover', () => {
             if (card.description && client.dom.cardDescriptionPopup) {
-                client.dom.cardDescriptionPopup.textContent = card.description;
+                client.dom.cardDescriptionPopup.textContent = client.actions.displayCardDescription(card.name);
                 client.dom.cardDescriptionPopup.classList.add('show');
             }
         });
@@ -266,8 +266,8 @@ client.actions.createCardImage = function createCardImage(cardName) {
 };
 
 client.actions.populateCardTargetSelect = function populateCardTargetSelect(playersData, myUniqueId, selectedCardObj = null) {
-    client.dom.cardTargetSelect.innerHTML = '<option value="">Select Target</option>';
-    client.dom.cardSecondTargetSelect.innerHTML = '<option value="">Select Second Target</option>';
+    client.dom.cardTargetSelect.innerHTML = '<option value="">เลือกเป้าหมาย</option>';
+    client.dom.cardSecondTargetSelect.innerHTML = '<option value="">เลือกเป้าหมายที่สอง</option>';
     
     // Check if card needs 2 targets
     const needsTwoTargets = selectedCardObj && client.state.CARDS_NEED_TWO_TARGETS.includes(selectedCardObj.name);
