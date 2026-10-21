@@ -323,7 +323,7 @@ export function initialize() {
         if (view === '3d') {
             board.before(trainingTable.root);
             board.classList.add('training-board-fallback');
-            body.appendChild(node('p', '3D: ลากหมุน · จีบนิ้วซูม · แตะการ์ดแล้วแตะผู้เล่นซ้ำเพื่อยืนยัน · จบเทิร์นที่ฐานเทียน · ใช้ปุ่มบทฝึกด้านล่างได้เช่นกัน', 'training-3d-help'));
+            body.appendChild(node('p', '3D: ลากหมุน · จีบนิ้วซูม · แตะการ์ดแล้วแตะผู้เล่นซ้ำเพื่อยืนยัน · จบเทิร์นที่แถวปุ่มใต้กลับโต๊ะ · ใช้ปุ่มบทฝึกด้านล่างได้เช่นกัน', 'training-3d-help'));
             const life = body.querySelector('[data-training-life]');
             const options = lesson.card === 'Alibi' ? scene.players[1].accusations : scene.players[1].effects;
             const effectOffset = lesson.card === 'Alibi' ? scene.players[1].effects.filter(name=>name!=='constable-protected').length : 0;

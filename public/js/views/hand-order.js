@@ -11,7 +11,9 @@ export function initialize() {
     const row = document.querySelector('#table3d-section .table3d-hand-controls');
     const button = document.createElement('button'); button.type = 'button'; button.id = 'table3d-reorder-hand';
     const note = document.createElement('span'); note.id = 'table3d-reorder-hint'; note.setAttribute('role','status');
-    row.append(button, note);
+    const actions = row.querySelector('.table3d-card-row');
+    actions.insertBefore(button, actions.querySelector('.table3d-end-turn'));
+    row.appendChild(note);
     let pending = false, previousHand = JSON.stringify(client.state.myCurrentHand || []);
     function refresh() {
         if (!allowed()) { client.state.table3DReorderMode = false; client.state.table3DReorderIndex = null; pending = false; }

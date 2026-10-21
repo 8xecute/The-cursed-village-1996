@@ -1,5 +1,6 @@
 import { registerLifeInteraction } from '../core/interaction.js';
 import { client } from '../core/client.js';
+import { lifeTile } from './life-display.js';
 
 client.actions.showAccusedTryalSelection = function showAccusedTryalSelection(accusedUniqueId, tryalCount) {
     // Remove any existing popups to prevent overlapping
@@ -167,6 +168,8 @@ client.actions.updateTryalCardDisplay = function updateTryalCardDisplay() {
             });
             tryalCardsList.appendChild(cardDiv);
         });
+        const opened = client.state.currentRoomState?.players?.[client.state.myUniqueId]?.revealedTryalCards || [];
+        opened.forEach(card => tryalCardsList.appendChild(lifeTile(card.name, true)));
     }
     // Use hasBeenWitch for team display and update witch chat
     const myPlayer = client.state.currentRoomState && client.state.currentRoomState.players && client.state.currentRoomState.players[client.state.myUniqueId];

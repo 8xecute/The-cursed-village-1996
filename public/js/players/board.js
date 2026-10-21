@@ -1,4 +1,5 @@
 import { client } from '../core/client.js';
+import { lifeTile } from '../cards/life-display.js';
 
 client.actions.updatePlayersBoardGrid = function updatePlayersBoardGrid(roomState, myUniqueId) {
     const section = document.getElementById('players-board-section');
@@ -118,6 +119,12 @@ client.actions.updatePlayersBoardGrid = function updatePlayersBoardGrid(roomStat
         // Tryal Cards
         let tryals = `<div class='player-board-tryals'>การ์ดชีวิตที่เหลือ: <b>${player.tryalCardCount}</b> ใบ</div>`;
         card.innerHTML = header + status + tryals;
+        const lifeRow = document.createElement('div'); lifeRow.className = 'player-board-life-row';
+        for (let index = 0; index < (player.tryalCardCount || 0); index++) {
+            lifeRow.appendChild(lifeTile(player.tryalCards?.[index]?.name));
+        }
+        (player.revealedTryalCards || []).forEach(opened => lifeRow.appendChild(lifeTile(opened.name, true)));
+        card.appendChild(lifeRow);
         list.appendChild(card);
     });
 };

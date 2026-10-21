@@ -1,14 +1,28 @@
-/* Candle controls stay attached to the projected world position in every view. */
-#table3d-canvas { position: relative; }
-body.game-view-3d #table3d-section #table3d-canvas .table3d-end-turn {
-    position: absolute; top: var(--candle-y, 50%); left: var(--candle-x, 50%);
-    right: auto; bottom: auto; transform: translate(-50%, 8px); z-index: 5;
-    min-height: 38px !important; height: auto !important;
-    border: 1px solid #edc673; background: #503717ed; color: #fff0c0;
-    white-space: nowrap; box-shadow: 0 2px 10px #0008;
+/* Two compact rows share the same existing game action handlers. */
+#table3d-canvas { position:relative; }
+body.game-view-3d #table3d-section .table3d-hand-controls,
+body.game-view-3d #table3d-section .table3d-hand-controls:has(#table3d-reorder-hint:not([hidden])) {
+    display:flex; flex-direction:column; gap:5px; width:max-content;
+    max-width:calc(100% - 16px); padding:6px 8px;
+    top:auto; bottom:calc(100% - var(--table3d-canvas-height,75dvh) + 8px);
 }
-body.game-view-3d #table3d-section #table3d-canvas .table3d-end-turn:disabled { opacity: .55; }
-#table3d-canvas .table3d-end-turn[hidden] { display: none !important; }
+.table3d-control-row { display:flex; align-items:center; justify-content:center; gap:5px; }
+body.game-view-3d #table3d-section .table3d-hand-controls button {
+    position:static; inset:auto; transform:none; flex:0 0 auto;
+    width:auto !important; min-width:32px !important; max-width:none;
+    min-height:34px !important; height:auto !important;
+    padding:6px 10px !important; margin:0 !important;
+    white-space:nowrap; font-size:.8rem !important; line-height:1.25 !important;
+}
+#table3d-reorder-hint { max-width:280px; }
+@media(max-width:768px) {
+    body.game-view-3d #table3d-section .table3d-hand-controls,
+    body.game-view-3d #table3d-section .table3d-hand-controls:has(#table3d-reorder-hint:not([hidden])) {
+        position:relative; inset:auto; transform:none; margin:0 auto;
+        width:max-content; min-height:0; padding:6px 8px;
+    }
+    body.game-view-3d #table3d-section .table3d-hand-controls button { min-height:38px !important; }
+}
 #prank-controls details[open] { max-height: 40dvh; overflow: auto; }
 #prank-controls details[open] select { display: block; width: 100%; margin: 8px 0; }
 #prank-controls details[open] button { min-height: 38px; }
@@ -37,3 +51,11 @@ body.game-view-3d #play-result-toast {
 .lobby-rules-note { margin:10px 0; font-size:.82rem; color:#cfbea3; }
 .lobby-rules-note summary { cursor:pointer; color:#e5c58e; }
 .lobby-rules-note p { margin:6px 0; }
+
+.life-tile { display:inline-flex; flex-direction:column; align-items:center; margin:0; flex:0 0 auto; vertical-align:top; }
+.life-tile figcaption { font-size:10px; line-height:1.4; color:#cdbb9c; text-align:center; margin-top:1px; white-space:nowrap; }
+.life-tile-revealed .card { cursor:default; }
+#my-tryal-cards-list { align-items:flex-start; }
+.player-board-life-row { display:flex; align-items:flex-start; flex-wrap:wrap; gap:5px; margin-top:8px; }
+.player-board-life-row .life-tile .card { width:48px !important; height:71px !important; min-width:0 !important; margin:0 !important; padding:0; }
+.player-board-life-row .life-tile img { object-fit:cover; }

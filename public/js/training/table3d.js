@@ -28,8 +28,12 @@ export function createTrainingTable({ imageFor, action, onError }) {
     const handToggle = control('วางไพ่', () => { lowered = !lowered; handToggle.textContent = lowered ? 'ยกไพ่' : 'วางไพ่'; sync(); });
     control('กลับโต๊ะ', () => engine?.resetCamera());
     control('▶', () => engine?.stepSeat(1)).setAttribute('aria-label', 'ดูผู้เล่นทางขวา');
-    const end = control('จบเทิร์น', () => action('end'));
-    end.className = 'training-candle-button'; canvas.appendChild(end);
+    const viewRow = document.createElement('div'); viewRow.className = 'table3d-control-row';
+    const actionRow = document.createElement('div'); actionRow.className = 'table3d-control-row';
+    const original = [...controls.children];
+    viewRow.append(original[0], original[2], original[3]); actionRow.appendChild(handToggle);
+    const end = control('จบเทิร์น', () => action('end')); actionRow.appendChild(end);
+    controls.replaceChildren(viewRow, actionRow);
     function sync() {
         if (!engine || !snapshot || !visible) return;
         const { scene, lesson, selected, targets, finished, lifeOwner, lifeChoice, lifeCount, effectChoices, effectSelection, drawAction, endAction, endLabel } = snapshot;
@@ -52,7 +56,7 @@ export function createTrainingTable({ imageFor, action, onError }) {
         const hand = lesson.kind === 'card' && !finished ? [{ name:lesson.card, color:category(lesson.card) }] : [];
         end.hidden = !endAction; end.textContent = endLabel || 'จบเทิร์น';
         engine.update({state:{gameStarted:true, currentPhase:scene.phase === 'กลางคืน' ? 'NIGHT':'DAY', players, deckCount:scene.deck, discardPileCount:scene.discard},
-            me:'0', hand, selected:selected ? 0:null, imageFor, handLowered:lowered, interaction, canDraw:!!drawAction, canEndTurn:!!endAction});
+            me:'0', hand, selected:selected ? 0:null, imageFor, handLowered:lowered, interaction, canDraw:!!drawAction});
     }
     return {
         root,
@@ -63,16 +67,13 @@ export function createTrainingTable({ imageFor, action, onError }) {
                 await loadBundle();
                 if (!visible || version !== generation) return;
                 if (!engine) engine = window.VillageTable3D.create({container:canvas, quality:'low',
-                    onCard:()=>action('card'), onDraw:()=>action(snapshot.drawAction), onEndTurn:()=>action('end'),
+                    onCard:()=>action('card'), onDraw:()=>action(snapshot.drawAction),
                     onPlayer:id=>action(`target-${id}`), onLife:(id,i)=>{
                         if (snapshot.lesson.kind === 'life' && id === '0') action('card');
                         else if (snapshot.lifeOwner != null && id === String(snapshot.lifeOwner)) action(`life-${i}`);
                     },
                     onEffect:(_,i)=>action(`effect-${snapshot.effectMap[i]}`),
-                    onCandleAnchor:({x,y,visible:inView})=>{
-                        end.style.left=`${x.toFixed(2)}%`; end.style.top=`${y.toFixed(2)}%`;
-                        end.hidden = !inView || !snapshot?.endAction;
-                    }, onError:()=>onError()});
+                    onError:()=>onError()});
                 engine.setActive(true); sync();
             } catch (_) { if (visible && version === generation) onError(); }
         },
