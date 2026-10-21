@@ -72,6 +72,22 @@ const publicRoot = path.resolve(__dirname, '../public');
         await page.waitForTimeout(1300);
         await page.screenshot({path:path.join(output,'oct21-table-desktop.png')});
         await page.evaluate(()=>{
+            document.getElementById('table3d-log').open=false;
+            window.previewOptions.handLowered=true;window.previewEngine.update(window.previewOptions);
+            window.previewEngine.resetCamera();
+        });
+        await page.waitForTimeout(200);
+        await page.screenshot({path:path.join(output,'turntable-before.png')});
+        const tableBounds=await page.locator('#table3d-canvas canvas').boundingBox();
+        await page.mouse.move(tableBounds.x+tableBounds.width*.5,tableBounds.y+tableBounds.height*.6);
+        await page.mouse.down();
+        await page.mouse.move(tableBounds.x+tableBounds.width*.75,tableBounds.y+tableBounds.height*.6,{steps:30});
+        await page.mouse.up();
+        await page.waitForTimeout(200);
+        await page.screenshot({path:path.join(output,'turntable-after.png')});
+        if(process.argv.includes('--turntable-only')) return;
+        await page.evaluate(()=>window.previewEngine.resetCamera());
+        await page.evaluate(()=>{
             const state=window.previewState;
             state.currentPhase='SETUP'; state.lifeSetup={id:'preview',stage:'arrange',order:Object.keys(state.players),confirmed:[],total:20,dealt:20};
             previewEvent('room state update',state);

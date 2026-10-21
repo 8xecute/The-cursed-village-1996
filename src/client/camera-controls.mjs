@@ -9,8 +9,11 @@ export function createCameraControls({ camera, renderer, cameraMode, requestRend
     controls.screenSpacePanning = false;
     controls.panSpeed = .9;
     controls.rotateSpeed = .65;
+    // Rotation is a turntable around the table's world centre, not a free orbit
+    // around the off-centre seat target. Vertical drags must not tilt the view.
+    controls.enableRotate = false;
     controls.mouseButtons = { LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.PAN, RIGHT: THREE.MOUSE.PAN };
-    controls.touches = { ONE: cameraMode === 'pan' ? THREE.TOUCH.PAN : THREE.TOUCH.ROTATE, TWO: cameraMode === 'pan' ? THREE.TOUCH.DOLLY_ROTATE : THREE.TOUCH.DOLLY_PAN };
+    controls.touches = { ONE: cameraMode === 'pan' ? THREE.TOUCH.PAN : THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN };
     if (cameraMode === 'pan') controls.mouseButtons.LEFT = THREE.MOUSE.PAN;
     renderer.domElement.style.touchAction = 'none';
     controls.enableDamping = true;
@@ -33,6 +36,8 @@ export function createCameraControls({ camera, renderer, cameraMode, requestRend
         lensZoom(camera.fov * Math.exp(THREE.MathUtils.clamp(delta, -120, 120) * .0015));
     }
     const touches = new Map();
+    let tableDrag = null, panMode = cameraMode === 'pan';
+    const tableAxis = new THREE.Vector3(0, 1, 0);
     let pinchDistance = 0, pinchFov = 43;
     function touchDown(event) {
         if (event.pointerType !== 'touch') return;
@@ -47,6 +52,41 @@ export function createCameraControls({ camera, renderer, cameraMode, requestRend
         }
     }
     function touchEnd(event) { touches.delete(event.pointerId); if (touches.size !== 2) pinchDistance = 0; }
+    function nearestSeat() {
+        const angle = Math.atan2(camera.position.x, camera.position.z);
+        let nearest = null, distance = Infinity;
+        for (const player of seatOrder) {
+            const seat = getSeatPosition(player.uniqueId);
+            if (!seat) continue;
+            const difference = angle - Math.atan2(seat.x, seat.z);
+            const delta = Math.abs(Math.atan2(Math.sin(difference), Math.cos(difference)));
+            if (delta < distance) { distance = delta; nearest = player; }
+        }
+        if (nearest && focusedSeatId !== nearest.uniqueId) {
+            focusedSeatId = nearest.uniqueId;
+            onSeatFocus?.(focusedSeatId === ownSeatId ? 'มุมของคุณ' : nearest.name);
+        }
+    }
+    function tableDown(event) {
+        if (touches.size > 1) { tableDrag = null; return; }
+        if (panMode || event.button !== 0 || event.shiftKey || event.ctrlKey || event.metaKey ||
+            !isActive() || isDisposed() || !controls.enabled) return;
+        // Flush leftover pan damping before taking over the camera position.
+        controls.enableDamping = false; controls.update(); controls.enableDamping = true;
+        tableDrag = { id:event.pointerId, x:event.clientX, y:event.clientY, lastX:event.clientX, moving:false };
+    }
+    function tableMove(event) {
+        if (!tableDrag || event.pointerId !== tableDrag.id || !isActive() || isDisposed() || !controls.enabled) return;
+        if (touches.size > 1) { tableDrag = null; return; }
+        if (!tableDrag.moving && Math.hypot(event.clientX-tableDrag.x,event.clientY-tableDrag.y) <= 7) return;
+        tableDrag.moving = true;
+        const angle = -(event.clientX-tableDrag.lastX) * Math.PI * 2 / Math.max(1,canvas.clientWidth);
+        tableDrag.lastX = event.clientX;
+        camera.position.applyAxisAngle(tableAxis, angle);
+        controls.target.applyAxisAngle(tableAxis, angle);
+        controls.update(); nearestSeat(); requestRender();
+    }
+    function tableEnd(event) { if (tableDrag?.id === event.pointerId) tableDrag = null; }
     const canvas = renderer.domElement;
     canvas.addEventListener('wheel', wheelZoom, { capture: true, passive: false });
     canvas.addEventListener('pointerdown', touchDown);
@@ -54,6 +94,11 @@ export function createCameraControls({ camera, renderer, cameraMode, requestRend
     canvas.addEventListener('pointerup', touchEnd);
     canvas.addEventListener('pointercancel', touchEnd);
     canvas.addEventListener('lostpointercapture', touchEnd);
+    canvas.addEventListener('pointerdown', tableDown);
+    canvas.addEventListener('pointermove', tableMove);
+    canvas.addEventListener('pointerup', tableEnd);
+    canvas.addEventListener('pointercancel', tableEnd);
+    canvas.addEventListener('lostpointercapture', tableEnd);
 
     controls.addEventListener('change', requestRender);
     let seatOrder = [];
@@ -67,7 +112,7 @@ export function createCameraControls({ camera, renderer, cameraMode, requestRend
         const radius = portrait ? 12.8 : 10.8;
         controls.target.set(direction.x * 4.3, .35, direction.z * 4.3);
         camera.position.set(direction.x * radius, portrait ? 4.5 : 3.7, direction.z * radius);
-        controls.enableRotate = true; controls.enablePan = true;
+        controls.enableRotate = false; controls.enablePan = true;
         controls.update(); requestRender();
     }
     function focusSeat(id) {
@@ -87,7 +132,7 @@ export function createCameraControls({ camera, renderer, cameraMode, requestRend
     const movementKeys = new Set(['KeyW','KeyA','KeyS','KeyD','Space','KeyQ','ControlLeft','ControlRight']);
     let keyboardLocked = false;
     let previousMovementTime = 0;
-    function clearMovement() { pressedKeys.clear(); touches.clear(); pinchDistance = 0; previousMovementTime = 0; }
+    function clearMovement() { pressedKeys.clear(); touches.clear(); tableDrag = null; pinchDistance = 0; previousMovementTime = 0; }
     function typing(target) { return !!target?.closest?.('input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="textbox"]'); }
     function keyDown(event) {
         const ctrlEnabled = keyboardLocked && !!document.fullscreenElement;
@@ -140,9 +185,10 @@ export function createCameraControls({ camera, renderer, cameraMode, requestRend
         setSeats(players, me) { seatOrder = players; ownSeatId = me; },
         setCameraMode(mode) {
             const pan=mode==='pan';
+            panMode = pan; tableDrag = null;
             controls.mouseButtons.LEFT=pan?THREE.MOUSE.PAN:THREE.MOUSE.ROTATE;
             controls.touches.ONE=pan?THREE.TOUCH.PAN:THREE.TOUCH.ROTATE;
-            controls.touches.TWO=pan?THREE.TOUCH.DOLLY_ROTATE:THREE.TOUCH.DOLLY_PAN;
+            controls.touches.TWO=THREE.TOUCH.DOLLY_PAN;
             onModeChange?.();
         },
         stopMovement: clearMovement,
@@ -185,6 +231,11 @@ export function createCameraControls({ camera, renderer, cameraMode, requestRend
             canvas.removeEventListener('pointerup', touchEnd);
             canvas.removeEventListener('pointercancel', touchEnd);
             canvas.removeEventListener('lostpointercapture', touchEnd);
+            canvas.removeEventListener('pointerdown', tableDown);
+            canvas.removeEventListener('pointermove', tableMove);
+            canvas.removeEventListener('pointerup', tableEnd);
+            canvas.removeEventListener('pointercancel', tableEnd);
+            canvas.removeEventListener('lostpointercapture', tableEnd);
             controls.dispose();
         }
     };

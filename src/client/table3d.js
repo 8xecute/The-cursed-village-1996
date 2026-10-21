@@ -41,7 +41,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
     renderer.domElement.setAttribute('aria-label', 'โต๊ะเกม 3D ลากเพื่อหมุน เลื่อนล้อเมาส์หรือใช้ปุ่มเพื่อซูม');
     renderer.domElement.setAttribute('role', 'img');
     renderer.domElement.tabIndex = 0;
-    renderer.domElement.setAttribute('aria-label', 'โต๊ะ 3D ลากหมุน ลากสองนิ้วเพื่อเลื่อน WASD เคลื่อนกล้อง Space ขึ้น Q ลง');
+    renderer.domElement.setAttribute('aria-label', 'โต๊ะ 3D ลากซ้ายขวาเพื่อหมุนรอบขอบโต๊ะ ลากสองนิ้วเพื่อเลื่อน จีบนิ้วเพื่อซูม');
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x151713);
