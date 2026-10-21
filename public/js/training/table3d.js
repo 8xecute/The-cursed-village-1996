@@ -64,7 +64,7 @@ export function createTrainingTable({ imageFor, action, onError }) {
             snapshot = next; visible = true;
             const version = ++generation;
             try {
-                await loadBundle();
+                await Promise.all([loadBundle(), document.fonts?.load('600 32px "Village Sarabun"').catch(() => {})]);
                 if (!visible || version !== generation) return;
                 if (!engine) engine = window.VillageTable3D.create({container:canvas, quality:'low',
                     onCard:()=>action('card'), onDraw:()=>action(snapshot.drawAction),

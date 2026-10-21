@@ -100,6 +100,9 @@ const publicRoot = path.resolve(__dirname, '../public');
         await page.evaluate(()=>window.previewEngine.resetCamera());
         await page.waitForTimeout(250);
         await page.screenshot({path:path.join(output,'oct21-table-mobile.png')});
+        await page.setViewportSize({width:320,height:740});
+        await page.waitForTimeout(250);
+        await page.screenshot({path:path.join(output,'thai-table-small-mobile.png')});
         await page.setViewportSize({width:1100,height:900});
         await page.evaluate(()=>{
             const client=window.previewClient;
@@ -108,6 +111,10 @@ const publicRoot = path.resolve(__dirname, '../public');
         });
         await page.waitForTimeout(450);
         await page.screenshot({path:path.join(output,'oct21-game-summary.png')});
+        await page.setViewportSize({width:390,height:844});
+        await page.waitForTimeout(250);
+        await page.screenshot({path:path.join(output,'thai-summary-mobile.png')});
+        await page.setViewportSize({width:1100,height:900});
         await page.evaluate(()=>{
             document.getElementById('game-over-modal').style.display='none'; window.previewEngine.setActive(false);
             document.body.classList.remove('in-game','game-view-3d','table3d-fullscreen');
@@ -124,9 +131,13 @@ const publicRoot = path.resolve(__dirname, '../public');
         await page.setViewportSize({width:390,height:844});
         await page.waitForTimeout(250);
         await page.screenshot({path:path.join(output,'oct21-training-mobile.png')});
+        await page.setViewportSize({width:844,height:390});
+        await page.waitForTimeout(250);
+        await page.screenshot({path:path.join(output,'thai-training-landscape.png')});
         await page.setViewportSize({width:1100,height:900});
         await page.evaluate(async()=>{
             document.getElementById('training-dialog').close();
+            document.body.classList.add('in-game');
             const client=window.previewClient; client.state.currentRoomState=window.previewState;
             client.state.myTryalCards=window.previewState.players.p0.tryalCards;
             client.dom.myRoleDisplay=document.getElementById('my-role-display');
@@ -144,6 +155,21 @@ const publicRoot = path.resolve(__dirname, '../public');
         await page.setViewportSize({width:1600,height:1000});
         await page.locator('#game-section').screenshot({path:path.join(output,'halloween-board-2d.png')});
         await page.locator('#my-tryal-cards-list').screenshot({path:path.join(output,'oct21-life-2d.png')});
+        await page.setViewportSize({width:390,height:844});
+        await page.evaluate(async()=>{
+            (await import('/js/views/mobile-tabs.js')).initialize();
+            document.getElementById('current-phase-display').textContent='กลางวัน';
+            document.getElementById('day-number-display').textContent='1';
+            document.getElementById('current-turn-player-display').textContent='แก้ว';
+        });
+        await page.waitForTimeout(300);
+        console.log('2D mobile layout',await page.evaluate(()=>({viewport:innerWidth,page:document.documentElement.scrollWidth,
+            actions:[...document.querySelectorAll('.action-buttons-row button')].map(e=>({id:e.id,width:Math.round(e.getBoundingClientRect().width),right:Math.round(e.getBoundingClientRect().right),height:Math.round(e.getBoundingClientRect().height)}))})));
+        await page.screenshot({path:path.join(output,'thai-2d-hand-mobile.png'),fullPage:true});
+        await page.evaluate(()=>document.getElementById('mobile-tab-players-btn').click());
+        await page.screenshot({path:path.join(output,'thai-2d-players-mobile.png'),fullPage:true});
+        await page.evaluate(()=>document.getElementById('mobile-tab-chat-btn').click());
+        await page.screenshot({path:path.join(output,'thai-2d-log-mobile.png'),fullPage:true});
         await page.goto('http://preview.test/patch-notes.html');
         await page.setViewportSize({width:390,height:844});
         await page.screenshot({path:path.join(output,'oct21-patch-notes-mobile.png'),fullPage:true});

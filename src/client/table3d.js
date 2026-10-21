@@ -280,7 +280,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
     }
 
     function label(parent, text, position, color = '#eddbb7', size = .23, glowing = false) {
-        const font = 'bold 32px "Noto Serif Thai", sans-serif';
+        const font = '600 32px "Village Sarabun", sans-serif';
         const measure = document.createElement('canvas').getContext('2d');
         measure.font = font;
         const width = Math.ceil(Math.min(420, Math.max(76, measure.measureText(text).width + 28)));

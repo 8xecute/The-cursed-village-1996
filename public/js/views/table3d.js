@@ -49,7 +49,7 @@ client.actions.syncTable3D = async function syncTable3D() {
                 document.head.appendChild(script);
             }).catch(error => { client.state.table3DBundle = null; throw error; });
         }
-        await client.state.table3DBundle;
+        await Promise.all([client.state.table3DBundle, document.fonts?.load('600 32px "Village Sarabun"').catch(() => {})]);
         if (!document.body.classList.contains('game-view-3d') || !client.state.currentRoomState?.gameStarted) return;
         if (!client.state.table3D) {
             client.state.table3D = window.VillageTable3D.create({

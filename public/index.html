@@ -5,12 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>หมู่บ้านต้องสาป 1996 · Halloween Edition</title>
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Creepster&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Thai:wght@400;700&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preload" href="fonts/Sarabun-Regular.ttf" as="font" type="font/ttf" crossorigin>
+    <link rel="preload" href="fonts/Chonburi-Regular.ttf" as="font" type="font/ttf" crossorigin>
     <link rel="stylesheet" href="style.css?v=2.2">
 </head>
 <body>
@@ -235,7 +231,7 @@
                     </div>
                     <p id="table3d-loading" class="table3d-loading" role="status">กำลังเตรียมโต๊ะ 3D…</p>
 
-                    <p class="table3d-instructions">ลากหมุน · ลากสองนิ้วหรือ Shift+ลากเพื่อเลื่อน · WASD เดินและเลื่อนตำแหน่งกล้อง · Space ขึ้น / Q ลง · ล้อเมาส์หรือจีบนิ้วปรับซูมเลนส์ · แตะการ์ดเพื่อเลือก · แตะผู้เล่นเพื่อใช้การ์ด · แตะกองเรืองแสงเพื่อจั่ว</p>
+                    <p class="table3d-instructions"><span class="table3d-help-desktop">ลากหมุน · ลากสองนิ้วหรือ Shift+ลากเพื่อเลื่อน · WASD เดินและเลื่อนตำแหน่งกล้อง · Space ขึ้น / Q ลง · ล้อเมาส์หรือจีบนิ้วปรับซูมเลนส์ · แตะการ์ดเพื่อเลือก · แตะผู้เล่นเพื่อใช้การ์ด · แตะกองเรืองแสงเพื่อจั่ว</span><span class="table3d-help-touch">ลากเพื่อหมุน · จีบนิ้วเพื่อซูม · แตะไพ่หรือผู้เล่นเพื่อเลือก</span></p>
                     <div id="table3d-phase-panel" class="table3d-phase-panel" hidden aria-live="polite"></div>
                     <details id="table3d-log" class="table3d-log">
                         <summary>เหตุการณ์ <span id="table3d-log-unread" hidden></span></summary>
