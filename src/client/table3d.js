@@ -148,6 +148,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
     let disposed = false;
     let renderFrame = 0;
     const characterCache = new Map();
+    const playerLabels = [], labelPosition = new THREE.Vector3();
     let flameTimer;
     let ritualActive = false;
     let lifeSetupStage = null, lifeSetupPile = null;
@@ -191,6 +192,12 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             const now = performance.now();
             cameraRig.moveCamera(now);
             cameraRig.constrainCamera();
+            for (const name of playerLabels) {
+                name.getWorldPosition(labelPosition);
+                // The seat being viewed already has a HUD caption. Hide its near
+                // world label so it cannot grow over the cards while circling.
+                name.visible = name.userData.playerId !== lastSceneOptions?.me && camera.position.distanceTo(labelPosition) > 4.4;
+            }
             if (!reducedMotion.matches) {
                 const time = now * .001;
                 if (lifeSetupPile && lifeSetupStage === 'shuffle') {
@@ -309,13 +316,15 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
         });
         dynamic.clear();
         targets = [];
+        playerLabels.length = 0;
     }
 
     function update(options) {
         lastSceneOptions = options;
-        const { state, me, hand, selected, selectedCards = [], imageFor, interaction = null, canDraw = false, drawConfirming = false, handLowered = false, artwork = 'new', reorderIndex = null } = options;
+        const { state, me, hand, selected, selectedCards = [], imageFor, interaction = null, canDraw = false, drawConfirming = false, handLowered = false, artwork = 'new', reorderIndex = null, cardSizes = {} } = options;
+        const sizeFor = key => Math.max(.65, Math.min(1.3, (Number(cardSizes[key]) || 100) / 100));
         if (!state) return;
-        const nextSignature = JSON.stringify([state.currentPhase, state.gameOver, state.lifeSetup, state.awaitingLeftTryalSelections, state.playerForcedToRevealTryal, state.players, state.currentTurnPlayerUniqueId, state.deckCount, state.discardPileCount, state.witchNightState, hand, selected, selectedCards, me, interaction, canDraw, drawConfirming, handLowered, artwork, reorderIndex]);
+        const nextSignature = JSON.stringify([state.currentPhase, state.gameOver, state.lifeSetup, state.awaitingLeftTryalSelections, state.playerForcedToRevealTryal, state.players, state.currentTurnPlayerUniqueId, state.deckCount, state.discardPileCount, state.witchNightState, hand, selected, selectedCards, me, interaction, canDraw, drawConfirming, handLowered, artwork, reorderIndex, cardSizes]);
         if (signature === nextSignature) return;
         signature = nextSignature;
         lifeSetupStage = state.lifeSetup?.stage || null;
@@ -375,11 +384,13 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
                 part.material.emissiveIntensity = selectedTarget ? .9 : .55;
             });
             const activeTurn = player.alive && !state.gameOver && state.currentPhase === 'DAY' && state.currentTurnPlayerUniqueId === player.uniqueId;
-            const nameLabel = label(seat, `${selectedTarget ? '✓ ' : ''}${player.name}${player.uniqueId === me ? ' (คุณ)' : ''}${state.players?.[me]?.hasBeenWitch && player.hasBeenWitch ? ' · ทีมปอบ' : ''}${player.isReplacementBot ? ' · บอทเล่นแทน' : player.reconnectDeadline ? ' · รอเชื่อมต่อ' : ''}${!player.alive ? ' · เสียชีวิต' : ''}`, [0, 1.55, 2.05],
+            const nameLabel = label(seat, `${selectedTarget ? '✓ ' : ''}${player.name}${player.uniqueId === me ? ' (คุณ)' : ''}${state.players?.[me]?.hasBeenWitch && player.hasBeenWitch ? ' · ทีมปอบ' : ''}${player.isReplacementBot ? ' · บอทเล่นแทน' : player.reconnectDeadline ? ' · รอเชื่อมต่อ' : ''}${!player.alive ? ' · เสียชีวิต' : ''}`, [0, 1.85, 2.65],
                 activeTurn ? '#ffe9a8' : eligibleTarget ? selectedTarget ? '#ffe1a0' : '#a9e0c9' : player.alive ? '#eddbb7' : '#a39b91', activeTurn ? .28 : .23, activeTurn);
             // Our identity is already in the HUD; the nearby sprite covers raised cards.
             nameLabel.visible = player.uniqueId !== me;
             nameLabel.userData.playerId = player.uniqueId;
+            nameLabel.material.depthTest = true;
+            playerLabels.push(nameLabel);
             if (player.uniqueId !== me) targets.push(nameLabel);
             if (interaction?.kind === 'player') {
                 const eligible = interaction.eligible.includes(player.uniqueId);
@@ -402,9 +413,15 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             }
             const revealed = player.revealedTryalCards || [];
             const slots = lifeSlots(player);
-            const lifeTotal = slots.length, lifeScale = 1.25;
+            const lifeTotal = slots.length, lifeScale = 1.25 * sizeFor('life');
+            const sectorWidth = players.length > 2 ? 2 * 3.8 * Math.sin(Math.PI / players.length) - .12 : 5;
+            const lifeColumns = Math.max(1, Math.min(lifeTotal || 1, Math.floor(sectorWidth / (CARD_WIDTH * lifeScale + .025))));
+            const lifeRows = Math.ceil(lifeTotal / lifeColumns);
             const remainingSlots = slots.filter(slot=>!slot.opened), openedSlots = slots.filter(slot=>slot.opened);
-            const lifePosition = index => [(index - (lifeTotal - 1) / 2) * (CARD_WIDTH * lifeScale + .025), .06, -.85];
+            const lifePosition = index => {
+                const row = Math.floor(index / lifeColumns), columns = Math.min(lifeColumns, lifeTotal - row * lifeColumns);
+                return [(index % lifeColumns - (columns - 1) / 2) * (CARD_WIDTH * lifeScale + .025), .06, -.85 - row * (CARD_HEIGHT * lifeScale + .10)];
+            };
             for (let life = 0; life < lives; life++) {
                 const revealedName = player.tryalCards?.[life]?.name;
                 const lifeCard = card(seat, lifePosition(remainingSlots[life].slot), [-Math.PI / 2, 0, 0],
@@ -414,20 +431,23 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
                 if (interaction?.kind === 'life' && interaction.owner === player.uniqueId && interaction.eligible.includes(life))
                     addLifeCardFrame(lifeCard, interaction.selected?.includes(life) ? 0xffd359 : 0x6ee7d2, { selected: true, inset: .015 });
                 if (interaction?.kind === 'life' && interaction.owner === player.uniqueId && interaction.eligible.includes(life)) {
-                    label(seat, `${interaction.selected?.includes(life) ? '✓ ' : ''}${remainingSlots[life].slot + 1}`, [lifePosition(remainingSlots[life].slot)[0], .24, -.85], '#ffe2a0');
+                    const position = lifePosition(remainingSlots[life].slot);
+                    label(seat, `${interaction.selected?.includes(life) ? '✓ ' : ''}${remainingSlots[life].slot + 1}`, [position[0], .24, position[2]], '#ffe2a0');
                 }
             }
             const effects = player.inPlayCards || [];
             const publicCount = effects.length;
-            const publicColumns = Math.min(8, publicCount);
-            const publicRows = Math.ceil(publicCount / 8);
-            const publicScale = Math.min(1, 1.15 / Math.max(1, publicRows));
+            const publicColumns = Math.max(1, Math.min(8, publicCount, Math.floor(sectorWidth / (CARD_SPACING * sizeFor('status')))));
+            const publicRows = Math.ceil(publicCount / publicColumns);
+            const publicScale = Math.min(1, 1.15 / Math.max(1, publicRows)) * sizeFor('status');
+            const statusGap = .14;
+            const statusStart = -.85 - Math.max(0, lifeRows - 1) * (CARD_HEIGHT * lifeScale + .10) - CARD_HEIGHT * lifeScale / 2 - statusGap - CARD_HEIGHT * publicScale / 2;
             // Bound the public-card area outside the central piles, even after many effects.
             function publicPosition(index) {
                 const row = Math.floor(index / publicColumns);
                 const columns = Math.min(publicColumns, publicCount - row * publicColumns);
                 return [(index % publicColumns - (columns - 1) / 2) * CARD_SPACING * publicScale, .075,
-                    -1.55 - row * (CARD_HEIGHT + .02) * publicScale];
+                    statusStart - row * (CARD_HEIGHT + .04) * publicScale];
             }
             revealed.forEach((revealedCard, i) => {
                 const face = card(seat, lifePosition(openedSlots.find(slot=>slot.revealedIndex===i).slot), [-Math.PI/2,0,0],
@@ -440,32 +460,36 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
                     cross.rotation.z = angle * Math.atan2(CARD_HEIGHT, CARD_WIDTH);
                     cross.position.z = .012; face.add(cross);
                 }
-                label(seat, 'เปิดเผยแล้ว', [lifePosition(openedSlots.find(slot=>slot.revealedIndex===i).slot)[0], .045, -.85 + CARD_HEIGHT * lifeScale / 2 + .26], '#d9c7a5', .075);
+                const position = lifePosition(openedSlots.find(slot=>slot.revealedIndex===i).slot);
+                label(seat, 'เปิดเผยแล้ว', [position[0], .045, position[2] + CARD_HEIGHT * lifeScale / 2 + .07], '#d9c7a5', .075);
             });
             const own = player.uniqueId === me;
             const count = state.currentPhase === 'SETUP' || interaction?.kind === 'life' ? 0 : own ? hand.length : Number(player.handSize) || 0;
             // Own hand uses separate rows so every title remains visible.
-            const seatColumns = Math.max(3, Math.floor((Math.PI * 2 * 4.7 / players.length - .3) / CARD_SPACING));
+            const handSize = sizeFor('hand');
+            const seatColumns = Math.max(3, Math.floor((Math.PI * 2 * 4.7 / players.length - .3) / (CARD_SPACING * handSize)));
             const maxColumns = own && !handLowered && container.clientHeight > container.clientWidth ? 4 : Math.min(8, seatColumns);
             const columns = Math.ceil(count / Math.max(1, Math.ceil(count / maxColumns)));
-            const spacing = CARD_SPACING;
+            const spacing = CARD_SPACING * handSize;
             const handScale = Math.min(1, 2 / Math.max(1, Math.ceil(count / Math.max(1, columns))));
             for (let i = 0; i < count; i++) {
                 const row = Math.floor(i / Math.max(1, columns));
                 const rowCount = Math.min(columns, count - row * columns);
                 const offset = i % columns - (rowCount - 1) / 2;
                 const lowered = !own || handLowered;
-                const position = lowered ? [offset * spacing * handScale, .08, .75 - row * (CARD_HEIGHT + .025) * handScale]
-                    : [offset * spacing, .95 + row * (CARD_HEIGHT + .035) + (own && (selected === i || selectedCards.includes(i)) ? .16 : 0), -.1 + Math.abs(offset) * .025];
+                const handRowStep = (CARD_HEIGHT + .035) * handSize;
+                const loweredStart = Math.max(.75, -.85 + CARD_HEIGHT * lifeScale / 2 + .14 + CARD_HEIGHT * handSize * handScale / 2 + Math.max(0, Math.ceil(count / Math.max(1, columns)) - 1) * handRowStep * handScale);
+                const position = lowered ? [offset * spacing * handScale, .08, loweredStart - row * handRowStep * handScale]
+                    : [offset * spacing, .72 + CARD_HEIGHT * handSize / 2 + row * handRowStep + (own && (selected === i || selectedCards.includes(i)) ? .16 : 0), -.1 + Math.abs(offset) * .025];
                 const rotation = lowered ? [-Math.PI / 2, 0, 0] : [-.12, 0, own ? 0 : -offset * Math.min(.045, .35 / Math.max(1, count))];
                 const face = card(seat, position, rotation,
                     own ? cardTexture(imageFor(hand[i].name)) : back,
                     own ? { cardIndex: i, category: hand[i].color, resting: lowered } : { playerId: player.uniqueId, resting: lowered });
-                if (lowered) face.scale.setScalar(handScale);
+                face.scale.setScalar(handSize * (lowered ? handScale : 1));
                 if (own && (selected === i || selectedCards.includes(i))) face.material.color.set(0xb9a687);
                 if (own && reorderIndex === i) outline(face, 0xffdc73);
             }
-            // Public effects share the bounded area with opened life cards.
+            // Effects begin beyond the innermost life row, with a size-aware gap.
             effects.forEach((effect, i) => {
                 const effectCard = card(seat, publicPosition(i),
                     [-Math.PI / 2, 0, 0], cardTexture(imageFor(effect.name)), { playerId: player.uniqueId, effectIndex: i, category: effect.color, resting: true });

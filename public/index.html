@@ -2,6 +2,7 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
+    <script>try { if (sessionStorage.getItem('villageEntered') === 'true' || sessionStorage.getItem('currentRoomName')) document.documentElement.classList.add('returning-session'); } catch (_) {}</script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>หมู่บ้านต้องสาป 1996 · Halloween Edition</title>
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
@@ -10,7 +11,7 @@
     <link rel="stylesheet" href="style.css?v=2.2">
 </head>
 <body>
-    <h1 class="game-title halloween-title">หมู่บ้านต้องสาป 1996 <small class="halloween-edition">Halloween Edition</small></h1>
+    <h1 class="game-title halloween-title">หมู่บ้านต้องสาป <span class="game-year">1996<small class="halloween-edition edition-curve"><svg viewBox="0 0 180 48" role="img" aria-label="Halloween Edition"><path id="edition-arc-1" d="M8 9 Q90 57 172 9" fill="none"/><text><textPath href="#edition-arc-1" startOffset="50%" text-anchor="middle">Halloween Edition</textPath></text></svg></small></span></h1>
     
     <!-- Background Music Controls -->
     <div class="music-controls">
@@ -50,7 +51,7 @@
         <img src="Background/story.jpg" alt="เนื้อเรื่องหมู่บ้านต้องสาป" style="width:100%; max-height:400px; object-fit:cover; border-radius: 16px 16px 0 0; display:block;">
         <div class="welcome-copy">
           <span class="village-eyebrow">ลับแล · อุตรดิตถ์ · พ.ศ. 2539</span>
-          <h2 style="margin-top:0; color:#ff9800; font-family:'Creepster','Noto Serif Thai',serif; text-align:center;" class="halloween-title">หมู่บ้านต้องสาป 1996 <small class="halloween-edition">Halloween Edition</small></h2>
+          <h2 style="margin-top:0; color:#ff9800; font-family:'Creepster','Noto Serif Thai',serif; text-align:center;" class="halloween-title">หมู่บ้านต้องสาป <span class="game-year">1996<small class="halloween-edition edition-curve"><svg viewBox="0 0 180 48" role="img" aria-label="Halloween Edition"><path id="edition-arc-2" d="M8 9 Q90 57 172 9" fill="none"/><text><textPath href="#edition-arc-2" startOffset="50%" text-anchor="middle">Halloween Edition</textPath></text></svg></small></span></h2>
           <p>ใครคือเพื่อนบ้าน… ใครคือปอบ?<br>จั่วไพ่ จับพิรุธ และร่วมมือกับคนที่คุณไว้ใจ<br>ก่อนความมืดจะมาถึงหมู่บ้าน</p>
           <div class="welcome-tags"><span>4–12 คน</span><span>เล่นกับเพื่อน</span><span>กระดาน 2D / 3D</span></div>
           <div class="welcome-actions">
@@ -220,6 +221,7 @@
                         <div class="table3d-control-row table3d-view-row">
                             <button type="button" id="table3d-seat-left" aria-label="ดูผู้เล่นทางซ้าย">◀</button>
                             <button type="button" id="table3d-reset" title="คืนกล้องไปยังมุมเริ่มต้น">กลับโต๊ะ</button>
+                            <details id="table3d-card-sizes"><summary aria-label="ปรับขนาดการ์ด">ขนาดไพ่</summary><div class="card-size-panel"></div></details>
                             <button type="button" id="table3d-seat-right" aria-label="ดูผู้เล่นทางขวา">▶</button>
                         </div>
                         <div class="table3d-control-row table3d-card-row">
@@ -827,7 +829,7 @@
         <span id="close-story-modal" class="close" style="position: absolute; right: 18px; top: 12px; color: #fff; font-size: 2em; cursor: pointer; z-index:2;">&times;</span>
         <img src="Background/story.jpg" alt="เนื้อเรื่องหมู่บ้านต้องสาป" style="width:100%; max-height:400px; object-fit:cover; border-radius: 16px 16px 0 0; display:block;">
         <div style="padding: 28px 24px 0 24px;">
-          <h2 style="margin-top:0; color:#ff9800; font-family:'Creepster','Noto Serif Thai',serif;" class="halloween-title">หมู่บ้านต้องสาป 1996 <small class="halloween-edition">Halloween Edition</small></h2>
+          <h2 style="margin-top:0; color:#ff9800; font-family:'Creepster','Noto Serif Thai',serif;" class="halloween-title">หมู่บ้านต้องสาป <span class="game-year">1996<small class="halloween-edition edition-curve"><svg viewBox="0 0 180 48" role="img" aria-label="Halloween Edition"><path id="edition-arc-3" d="M8 9 Q90 57 172 9" fill="none"/><text><textPath href="#edition-arc-3" startOffset="50%" text-anchor="middle">Halloween Edition</textPath></text></svg></small></span></h2>
           <p style="font-size:1.1em; color:#ffe0b2; line-height:1.7;">
             ปี ค.ศ. 1996 ณ เมืองลับแล จังหวัดอุตรดิตถ์<br>
             ความชั่วร้ายได้แฝงตัวอยู่ในเงามืดของหมู่บ้าน<br>

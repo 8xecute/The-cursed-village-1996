@@ -281,6 +281,7 @@ export function initialize() {
               return;
           }
           client.state.myPlayerName = name;
+          try { sessionStorage.setItem('playerName', name); } catch (_) {}
           client.dom.playerNameDisplay.textContent = client.state.myPlayerName;
           client.dom.nameInputContainer.style.display = 'flex';
           client.state.socket.emit('set player name', client.state.myPlayerName);

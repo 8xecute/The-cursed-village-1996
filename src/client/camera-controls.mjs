@@ -119,9 +119,9 @@ export function createCameraControls({ camera, renderer, cameraMode, requestRend
         const surface = renderer.domElement.parentElement || renderer.domElement;
         const portrait = surface.clientHeight > surface.clientWidth;
         lensZoom(portrait ? 58 : 43);
-        const radius = portrait ? 12.8 : 10.8;
-        controls.target.set(direction.x * 4.3, .35, direction.z * 4.3);
-        camera.position.set(direction.x * radius, portrait ? 4.5 : 3.7, direction.z * radius);
+        const radius = portrait ? 11.3 : 9.8;
+        controls.target.set(direction.x * 2.4, .35, direction.z * 2.4);
+        camera.position.set(direction.x * radius, portrait ? 4.1 : 3.7, direction.z * radius);
         controls.enableRotate = false; controls.enablePan = true;
         controls.update(); requestRender();
     }

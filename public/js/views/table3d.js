@@ -1,4 +1,5 @@
 import { client } from '../core/client.js';
+import { initializeCardSizes } from './card-sizes.js';
 
 client.actions.updateTable3DFocus = function updateTable3DFocus() {
     const player = client.state.currentRoomState?.players?.[client.state.myUniqueId];
@@ -101,6 +102,7 @@ client.actions.syncTable3D = async function syncTable3D() {
             interaction: client.actions.getTable3DInteraction(),
             canDraw: client.actions.canUseTable3DHand() && !document.getElementById('draw-card-button')?.disabled,
             handLowered: !!client.state.table3DHandLowered,
+            cardSizes: client.state.table3DCardSizes,
             artwork: client.state.cardArtwork,
             reorderIndex: client.state.table3DReorderIndex ?? null,
             drawConfirming: document.getElementById('draw-card-button')?.classList.contains('confirming') });
@@ -145,6 +147,7 @@ client.actions.closeTable3DFullscreen = function closeTable3DFullscreen() {
 };
 
 export function initialize() {
+  initializeCardSizes();
   const keyboardStatus = document.createElement('span');
   keyboardStatus.id = 'table3d-keyboard-status';
   keyboardStatus.textContent = 'Space ขึ้น · Q ลง';

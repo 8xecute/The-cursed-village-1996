@@ -64,7 +64,8 @@ export function initialize() {
 
   client.state.socket.on('room joined', (roomName) => {
       client.state.currentRoomName = roomName;
-      try { sessionStorage.setItem('currentRoomName', roomName); } catch (e) {}
+      try { sessionStorage.setItem('currentRoomName', roomName); sessionStorage.setItem('villageEntered', 'true'); } catch (e) {}
+      document.getElementById('music-overlay').style.display = 'none';
       client.dom.currentRoomDisplay.textContent = roomName || 'ไม่มี';
       client.dom.roomManagementSection.style.display = 'none';
       client.dom.roomLobbySection.style.display = 'block';
@@ -95,6 +96,7 @@ export function initialize() {
       const registeredName = roomState.players?.[client.state.myUniqueId]?.name;
       if (registeredName) {
           client.state.myPlayerName = registeredName;
+          try { sessionStorage.setItem('playerName', registeredName); } catch (_) {}
           client.dom.playerNameDisplay.textContent = registeredName;
           client.dom.nameInput.value = registeredName;
       }

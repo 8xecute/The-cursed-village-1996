@@ -156,17 +156,21 @@ export function initialize() {
       const enterBtn = document.getElementById('enter-village-btn');
       // แสดง overlay เฉพาะหน้าแรก (ก่อน join/create lobby)
       let hasEnteredVillage = false;
+      try { hasEnteredVillage = sessionStorage.getItem('villageEntered') === 'true' || !!sessionStorage.getItem('currentRoomName'); } catch (_) {}
+      if (overlay && hasEnteredVillage) overlay.style.display = 'none';
       if (overlay) {
           // Hide overlay permanently afterเข้า lobby ครั้งแรก
           window.hideMusicOverlayIfNeeded = function(phase) {
-              if (phase && phase !== 'LOBBY') {
+              if (phase) {
                   overlay.style.display = 'none';
                   hasEnteredVillage = true;
+                  try { sessionStorage.setItem('villageEntered', 'true'); } catch (_) {}
               }
           };
       }
       if (overlay && enterBtn) {
           enterBtn.addEventListener('click', () => {
+              try { sessionStorage.setItem('villageEntered', 'true'); } catch (_) {}
               overlay.style.opacity = '0';
               setTimeout(() => overlay.style.display = 'none', 500);
               //               client.actions.startMusic?.();

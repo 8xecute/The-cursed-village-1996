@@ -5,9 +5,8 @@ import { client } from './client.js';
 export function initialize() {
   client.state.myUniqueId = localStorage.getItem('uniqueId');
 
-  client.state.myPlayerName = null;
-  try { localStorage.removeItem('playerName'); } catch (_) { /* Storage may be disabled. */ }
-  client.dom.nameInput.value = '';
+  try { client.state.myPlayerName = sessionStorage.getItem('playerName') || null; } catch (_) { client.state.myPlayerName = null; }
+  client.dom.nameInput.value = client.state.myPlayerName || '';
   client.dom.newRoomNameInput.value = '';
 
   client.state.currentRoomName = (function() { try { return sessionStorage.getItem('currentRoomName'); } catch(e) { return null; } })();

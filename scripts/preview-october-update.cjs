@@ -21,10 +21,11 @@ const publicRoot = path.resolve(__dirname, '../public');
             if (extension === '.html') body = body.toString().replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '');
             return route.fulfill({contentType:type,body});
         });
-        await page.goto('http://preview.test/');
+        await page.goto('http://preview.test/' + (process.argv.includes('--refinements-only') ? '?refinements' : ''));
         await page.screenshot({path:path.join(output,'halloween-home.png')});
         await page.addScriptTag({url:'/table3d.bundle.js'});
         await page.evaluate(async (rosterPreview) => {
+            const refinements = location.search.includes('refinements');
             const {client} = await import('/js/core/client.js'); window.previewClient = client;
             const handlers = new Map();
             client.state.socket = {connected:true, on(name, handler) { if (!handlers.has(name)) handlers.set(name,[]); handlers.get(name).push(handler); }, emit() {}};
@@ -35,8 +36,9 @@ const publicRoot = path.resolve(__dirname, '../public');
             await import('/js/cards/translations.js'); await import('/js/cards/hand.js');
             client.actions.getTable3DInteraction=()=>null; client.actions.handleTable3DPlayer=()=>{};
             const hand=['Accusation','Evidence','Stocks','Accusation','Alibi','Scapegoat','Matchmaker','Arson','Piety','Curse','Accusation','Robbery'].map(name=>({name,color:['Accusation','Evidence'].includes(name)?'Red':['Matchmaker','Piety'].includes(name)?'Blue':'Green'}));
-            const players=Object.fromEntries(Array.from({length:rosterPreview?12:4},(_,i)=>['p'+i,{
-                uniqueId:'p'+i,name:rosterPreview?`ชาวบ้าน ${i+1}`:['คุณ','คำปัน','มาลี','แก้ว'][i],characterId:i,alive:true,handSize:i?5:hand.length,tryalCardCount:5,
+            if(refinements)hand.splice(3);
+            const players=Object.fromEntries(Array.from({length:rosterPreview?12:refinements?6:4},(_,i)=>['p'+i,{
+                uniqueId:'p'+i,name:rosterPreview?`ชาวบ้าน ${i+1}`:['คุณ','คำปัน','มาลี','แก้ว','บุญมา','สายหยุด'][i],characterId:i,isHost:i===0,alive:true,handSize:i?5:hand.length,tryalCardCount:5,
                 tryalCards:['Witch','Constable','Not A Witch','Not A Witch','Not A Witch'].map(name=>({name:i?null:name})),
                 inPlayCards:i===1?[{name:'Evidence',color:'Red'},{name:'Piety',color:'Blue'},{name:'Stocks',color:'Green'}]:[],revealedTryalCards:[]
             }]));
@@ -59,7 +61,8 @@ const publicRoot = path.resolve(__dirname, '../public');
             const end=document.querySelector('.table3d-end-turn'); end.disabled=false;
             const engine=window.VillageTable3D.create({container:document.getElementById('table3d-canvas'),quality:'high'});
             const options={state,me:'p0',hand,handLowered:false,imageFor:name=>client.actions.createCardImage(name).src};
-            client.state.table3D=engine; client.actions.syncTable3D=()=>engine.update(options);
+            client.state.table3D=engine; client.actions.syncTable3D=()=>{options.cardSizes=client.state.table3DCardSizes;engine.update(options);};
+            (await import('/js/views/card-sizes.js')).initializeCardSizes();
             window.previewOptions=options; window.previewEngine=engine; engine.setActive(true); engine.update(options);
             (await import('/js/views/hand-order.js')).initialize();
             previewEvent('room state update',state);
@@ -69,6 +72,27 @@ const publicRoot = path.resolve(__dirname, '../public');
             document.getElementById('table3d-log').open=true;
             previewEvent('card action feedback',{actorName:'คำปัน',targetName:'คุณ',cardName:'Evidence',result:'ข้อกล่าวหา +3 แต้ม'});
         }, process.argv.includes('--roster-only'));
+        if(process.argv.includes('--refinements-only')) {
+            await page.waitForTimeout(1000);
+            await page.evaluate(()=>{document.getElementById('table3d-log').open=false;document.querySelector('.table3d-end-turn').disabled=false;window.previewEngine.resetCamera();});
+            await page.waitForTimeout(200);
+            await page.screenshot({path:path.join(output,'table-refined-desktop.png')});
+            await page.evaluate(()=>document.getElementById('table3d-card-sizes').open=true);
+            await page.screenshot({path:path.join(output,'table-card-size-controls.png')});
+            await page.setViewportSize({width:390,height:844});
+            await page.evaluate(()=>window.previewEngine.resetCamera());
+            await page.waitForTimeout(200);
+            await page.screenshot({path:path.join(output,'table-refined-mobile.png')});
+            return;
+        }
+        if (process.argv.includes('--host-settings-only')) {
+            await page.evaluate(()=>{document.getElementById('game-preferences').open=true;document.getElementById('table3d-log').open=false;});
+            await page.waitForTimeout(800);
+            await page.screenshot({path:path.join(output,'host-gun-settings-desktop.png')});
+            await page.setViewportSize({width:390,height:844});
+            await page.screenshot({path:path.join(output,'host-gun-settings-mobile.png')});
+            return;
+        }
         if (process.argv.includes('--roster-only')) {
             await page.waitForTimeout(1800);
             await page.evaluate(()=>{
