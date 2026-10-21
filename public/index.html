@@ -10,6 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Creepster&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Thai:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css?v=2.2">
 </head>
 <body>
@@ -49,24 +50,17 @@
     </dialog>
     <!-- Interactive Overlay for Music Start -->
     <div id="music-overlay" class="music-overlay">
-      <div class="music-overlay-content" style="background: #181818; color: #fff; border-radius: 16px; max-width: 700px; width:95vw; margin:auto; box-shadow: 0 8px 32px rgba(0,0,0,0.5); padding:0 0 32px 0; display:flex; flex-direction:column; align-items:center;">
+      <div class="music-overlay-content welcome-card">
         <img src="Background/story.jpg" alt="เนื้อเรื่องหมู่บ้านต้องสาป" style="width:100%; max-height:400px; object-fit:cover; border-radius: 16px 16px 0 0; display:block;">
-        <div style="padding: 28px 24px 0 24px; width:100%; box-sizing:border-box;">
+        <div class="welcome-copy">
+          <span class="village-eyebrow">ลับแล · อุตรดิตถ์ · พ.ศ. 2539</span>
           <h2 style="margin-top:0; color:#ff9800; font-family:'Creepster','Noto Serif Thai',serif; text-align:center;" class="halloween-title">หมู่บ้านต้องสาป 1996 <small class="halloween-edition">Halloween Edition</small></h2>
-          <p style="font-size:1.1em; color:#ffe0b2; line-height:1.7; text-align:center;">
-            <b>ปี ค.ศ. 1996 ณ เมืองลับแล จังหวัดอุตรดิตถ์</b><br>
-            ความชั่วร้ายได้แฝงตัวอยู่ในเงามืดของหมู่บ้าน<br>
-            คุณเชื่อว่าเพื่อนบ้านบางคนของคุณคือปอบ!<br>
-            <br>
-            ตลอดทั้งเกม คุณจะได้จั่วและเล่นการ์ดเพื่อกล่าวหาผู้เล่นที่คุณไม่ไว้ใจ และช่วยเหลือผู้เล่นที่คุณเชื่อว่าอยู่ฝ่ายเดียวกับคุณ
-            เมื่อกองการ์ดหมดลงและการ์ดยามวิกาลถูกเปิดขึ้น เหล่าปอบจะพยายามสังหารผู้เล่นที่ชาวบ้านบริสุทธิ์<br>
-            <br>
-            คุณจะสามารถเอาชีวิตรอดจากหมู่บ้านต้องสาปแห่งนี้ได้หรือไม่?
-          </p>
-          <div style="text-align:center; margin-top:24px;">
+          <p>ใครคือเพื่อนบ้าน… ใครคือปอบ?<br>จั่วไพ่ จับพิรุธ และร่วมมือกับคนที่คุณไว้ใจ<br>ก่อนความมืดจะมาถึงหมู่บ้าน</p>
+          <div class="welcome-tags"><span>4–12 คน</span><span>เล่นกับเพื่อน</span><span>กระดาน 2D / 3D</span></div>
+          <div class="welcome-actions">
             <button id="enter-village-btn" class="enter-village-btn" style="font-size:1.1em; padding: 12px 36px;">เข้าสู่หมู่บ้านต้องสาป</button>
             <button id="intro-training-btn" class="top-nav-btn" type="button">🎓 สอนเล่น</button>
-            <a class="intro-patch-link" href="patch-notes.html">มีอะไรใหม่ · 18–21 ต.ค.</a>
+            <a class="intro-patch-link" href="patch-notes.html">ดูอัพเดทล่าสุด ↗</a>
           </div>
         </div>
       </div>
@@ -84,10 +78,24 @@
     <!-- Background Music Audio Element -->
     <audio id="background-music" loop preload="none"></audio>
 
+    <section class="village-hero" aria-labelledby="village-hero-title">
+      <div class="village-hero-copy">
+        <span class="village-eyebrow">คืนหนึ่งในหมู่บ้านลับแล</span>
+        <h2 id="village-hero-title">ไว้ใจใครได้บ้าง<br><em>ในหมู่บ้านนี้?</em></h2>
+        <p>ชวนเพื่อนมาจับพิรุธ เปิดไพ่ความจริง<br>แล้วรอดไปด้วยกัน… ถ้าไว้ใจถูกคน</p>
+        <div class="welcome-tags"><span>4–12 คน</span><span>2D / 3D</span><span>เล่นผ่านเบราว์เซอร์</span></div>
+      </div>
+      <div class="village-hero-art" aria-hidden="true">
+        <img src="cards/notawitch.png" alt="" loading="lazy">
+        <img src="cards/witch.png" alt="" loading="lazy">
+      </div>
+    </section>
     <div class="container">
         <div class="main-game-content">
             <div id="name-section" class="section">
-                <h2>ข้อมูลผู้เล่น</h2>
+                <span class="village-step">01 · เตรียมตัว</span>
+                <h2>คุณชื่ออะไร?</h2>
+                <p class="section-description">ใช้ชื่อที่เพื่อนจำได้ แล้วไปเจอกันในหมู่บ้าน</p>
                 <div id="name-input-container" class="room-input-group">
                     <input type="text" id="name-input" placeholder="กรอกชื่อของคุณ" autocomplete="off" spellcheck="false">
                     <button id="set-name-button">ตั้งชื่อ</button>
@@ -116,7 +124,9 @@
                     <span id="invited-room-name" style="font-weight: bold; font-size: 1.1em; color: #4fc3f7; margin-left: 6px;"></span>
                     <p style="margin: 6px 0 0 0; font-size: 0.9em; color: #cfd8dc;">กำลังเข้าห้องให้คุณอัตโนมัติ · เปลี่ยนชื่อได้ในล็อบบี้ · หากเกมเริ่มแล้วจะเข้าร่วมเป็นผู้ชม</p>
                 </div>
-                <h2>จัดการห้อง</h2>
+                <span class="village-step">02 · รวมตัว</span>
+                <h2>เลือกห้องของคุณ</h2>
+                <p class="section-description">สร้างห้องแล้วส่งลิงก์ให้เพื่อน หรือเข้าร่วมห้องด้านล่าง</p>
                 <div class="room-input-group" style="margin-bottom: 10px;">
                     <input type="text" id="new-room-name-input" placeholder="ชื่อห้องใหม่" autocomplete="off" spellcheck="false">
                     <button id="create-room-button">สร้างห้อง</button>
@@ -140,6 +150,7 @@
                     คัดลอกลิงก์แล้ว
                 </div>
                 <p>ผู้เล่น: <span id="lobby-player-count"></span>/<span id="lobby-max-players"></span></p>
+                <div class="lobby-settings-grid">
                 <div class="lobby-witch-setting">
                     <label for="lobby-witch-count">ไพ่ปอบ</label>
                     <select id="lobby-witch-count" disabled><option value="auto">อัตโนมัติ</option></select>
@@ -153,6 +164,7 @@
                         <option value="3">คนละ 3 ใบ</option><option value="4">คนละ 4 ใบ</option><option value="5">คนละ 5 ใบ</option>
                     </select>
                     <small id="lobby-life-count-help">อัตโนมัติ: 4–7 คน 5 ใบ · 8–9 คน 4 ใบ · 10–12 คน 3 ใบ</small>
+                </div>
                 </div>
                 <details class="lobby-rules-note"><summary>ค่ามาตรฐาน</summary>
                     <p>ชีวิต: 4–7 คน 5 ใบ · 8–9 คน 4 ใบ · 10–12 คน 3 ใบ</p>
