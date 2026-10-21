@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { prepareVillagerModels, instantiateVillager, disposeVillagerModels } from './villager-models.mjs';
 import { createGunShot } from './gun-shot.mjs';
+import { createShotgun } from './shotgun-model.mjs';
 import { addLifeCardFrame, lifeBorderColor } from './life-card-frame.mjs';
 import { lifeSlots } from '../../public/js/cards/life-slots.mjs';
 import { createCameraControls } from './camera-controls.mjs';
@@ -28,7 +29,7 @@ function canvasTexture(width, height, draw) {
     return texture;
 }
 
-function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError, onInspect, onSeatFocus, quality = 'medium', cameraMode = 'rotate' }) {
+function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError, onInspect, onSeatFocus, onShotgun, quality = 'medium', cameraMode = 'rotate' }) {
     const qualityLevel = normalizeQuality(quality);
     const renderer = new THREE.WebGLRenderer({ antialias: false, alpha: false, powerPreference: 'default' });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, QUALITY_PRESETS[qualityLevel].pixelRatio));
@@ -164,6 +165,8 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
     let inspected = false;
     const seatPositions = new Map();
     const actorPawns = new Map();
+    const parkedGuns = new Map();
+    let lastShotId = null;
     let feedbackImageFor;
     const flights = [];
     const gunShots = [];
@@ -324,7 +327,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
         const { state, me, hand, selected, selectedCards = [], imageFor, interaction = null, canDraw = false, drawConfirming = false, handLowered = false, artwork = 'new', reorderIndex = null, cardSizes = {} } = options;
         const sizeFor = key => Math.max(.65, Math.min(1.3, (Number(cardSizes[key]) || 100) / 100));
         if (!state) return;
-        const nextSignature = JSON.stringify([state.currentPhase, state.gameOver, state.lifeSetup, state.awaitingLeftTryalSelections, state.playerForcedToRevealTryal, state.players, state.currentTurnPlayerUniqueId, state.deckCount, state.discardPileCount, state.witchNightState, hand, selected, selectedCards, me, interaction, canDraw, drawConfirming, handLowered, artwork, reorderIndex, cardSizes]);
+        const nextSignature = JSON.stringify([state.currentPhase, state.gameOver, state.lifeSetup, state.awaitingLeftTryalSelections, state.playerForcedToRevealTryal, state.players, state.currentTurnPlayerUniqueId, state.deckCount, state.discardPileCount, state.witchNightState, state.prankGunHolderId, state.prankShotActive, hand, selected, selectedCards, me, interaction, canDraw, drawConfirming, handLowered, artwork, reorderIndex, cardSizes]);
         if (signature === nextSignature) return;
         signature = nextSignature;
         lifeSetupStage = state.lifeSetup?.stage || null;
@@ -342,7 +345,10 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
         glow.material.color.set(night ? 0xff3028 : 0xffffff);
         candleLight.color.set(night ? 0xff3038 : 0xffa04c);
         clearDynamic();
-        seatPositions.clear(); actorPawns.clear(); feedbackImageFor = imageFor;
+        if (!state.prankShotActive && gunShots.length) {
+            gunShots.forEach(removeGunShot); gunShots.length = 0;
+        }
+        seatPositions.clear(); actorPawns.clear(); parkedGuns.clear(); feedbackImageFor = imageFor;
         const players = Object.values(state.players || {});
         cameraRig.setSeats(players, me);
         const ownIndex = players.findIndex(player => player.uniqueId === me);
@@ -360,6 +366,10 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             const pawn = new THREE.Group(); pawn.position.z = 2.05; pawn.position.y = -.1; seat.add(pawn);
             actorPawns.set(player.uniqueId, pawn);
             pawn.scale.setScalar(1.4);
+            if (state.prankGunHolderId === player.uniqueId) {
+                const parked = createShotgun(); parked.position.set(.9, -.6, 2.3); parked.rotation.set(-1.35, 0, -.15); parked.scale.setScalar(1.05);
+                parked.visible = !state.prankShotActive; seat.add(parked); parkedGuns.set(player.uniqueId, parked);
+            }
             // The model's dead pose folds the upper body; chair and legs stay seated.
             const characterId = Number.isInteger(player.characterId) && player.characterId >= 0 && player.characterId < 12 ? player.characterId : index % 12;
             const modelKey = `${characterId}:${player.alive}:${!!villagerModels}`;
@@ -498,6 +508,19 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             });
         });
 
+        if (state.gameStarted && !state.gameOver && !state.prankGunHolderId) {
+            const mount = new THREE.Group(); mount.position.set(-3.6, 2.1, -11.25); dynamic.add(mount);
+            const wallAngle = -Math.max(0, ownIndex) * Math.PI * 2 / Math.max(1, players.length);
+            mount.position.applyAxisAngle(new THREE.Vector3(0,1,0), wallAngle); mount.rotation.y = wallAngle;
+            mesh(new THREE.BoxGeometry(2.35,.55,.10),new THREE.MeshStandardMaterial({color:0x3c2a1b,roughness:.95}),mount,[0,0,0]);
+            for (const x of [-.65,.65]) mesh(new THREE.BoxGeometry(.05,.16,.22),new THREE.MeshStandardMaterial({color:0x6f614a,metalness:.55,roughness:.7}),mount,[x,-.14,.15]);
+            const wallGun = createShotgun(); wallGun.position.set(-.25,0,.21); wallGun.rotation.y=Math.PI/2; wallGun.scale.setScalar(1.25); mount.add(wallGun);
+            const pickup = mesh(new THREE.BoxGeometry(2.4,.65,.5),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}),mount,[0,0,.22]);
+            pickup.userData.shotgun = true;
+            if (!state.isSpectator && state.players?.[me]?.alive && state.currentPhase === 'DAY' && !state.prankShotActive) targets.push(pickup);
+        }
+        if (state.prankShot && state.prankShot.startedAt !== lastShotId) animateShot(state.prankShot);
+
         if (state.currentPhase === 'SETUP' && lifeSetupStage !== 'arrange') {
             const stack = new THREE.Group(); dynamic.add(stack);
             stack.position.set(0, 1.45, 0);
@@ -550,7 +573,8 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
         const hit = raycaster.intersectObjects(targets, false)[0];
         if (!hit) return;
         const data = hit.object.userData;
-        if (Number.isInteger(data.cardIndex)) onCard(data.cardIndex);
+        if (data.shotgun) onShotgun?.();
+        else if (Number.isInteger(data.cardIndex)) onCard(data.cardIndex);
         else if (data.draw) onDraw?.();
         else if (Number.isInteger(data.revealedIndex)) onInspect?.(data);
         else if (Number.isInteger(data.lifeIndex) && onLife) onLife(data.playerId, data.lifeIndex);
@@ -592,6 +616,16 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
     resizeObserver.observe(container);
     setQuality(qualityLevel);
     resetCamera();
+    function animateShot(event) {
+        if (!active || disposed || event.startedAt === lastShotId) return;
+        const from = seatPositions.get(event.actorId)?.clone(), to = seatPositions.get(event.targetId)?.clone();
+        if (!from || !to) return;
+        lastShotId = event.startedAt;
+        from.multiplyScalar(1.35).setY(.9); to.multiplyScalar(1.35).setY(.7);
+        gunShots.push(createGunShot({ scene, from, to, getPawn: () => lastSceneOptions?.state.players?.[event.actorId]?.alive ? actorPawns.get(event.actorId) : null, getParkedGun: () => parkedGuns.get(event.actorId),
+            startedAt: event.startedAt, raiseDuration: event.raiseDuration || 2800, bulletDuration: event.bulletDuration || 4200, recoveryDuration: event.recoveryDuration || 900 }));
+        requestRender();
+    }
     return {
         update,
         setActive(value) {
@@ -605,16 +639,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
         setCameraMode: cameraRig.setCameraMode,
         stopMovement: cameraRig.stopMovement,
         setMovement: cameraRig.setMovement,
-        animateShot(event) {
-            if (!active || disposed || reducedMotion.matches) return;
-            const from = seatPositions.get(event.actorId)?.clone();
-            const to = seatPositions.get(event.targetId)?.clone();
-            if (!from || !to) return;
-            from.multiplyScalar(1.35).setY(.9); to.multiplyScalar(1.35).setY(.7);
-            gunShots.push(createGunShot({ scene, from, to, getPawn: () => actorPawns.get(event.actorId),
-                raiseDuration: event.raiseDuration || 900, bulletDuration: event.bulletDuration || 4200 }));
-            requestRender();
-        },
+        animateShot,
         setKeyboardLocked: cameraRig.setKeyboardLocked,
         stepSeat: cameraRig.stepSeat,
         animateCard(event) {

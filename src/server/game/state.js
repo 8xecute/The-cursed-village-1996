@@ -83,6 +83,9 @@ module.exports = function createServices(game) {
       };
 
       const publicState = {
+          prankGunHolderId: Object.values(room.players).find(player => player.alive && player.prankGun)?.uniqueId || null,
+          prankShotActive: !!room.prankShot,
+          prankShot: room.prankShot || null,
           name: room.name,
           playerCount: Object.keys(room.players).length,
           maxPlayers: game.PLAYER_LIMIT,
@@ -129,11 +132,8 @@ module.exports = function createServices(game) {
               game.io.to(player.id).emit('room state update', {
                   ...publicState,
                   players: buildPlayersStateFor(player),
-                  prankGun: !!player.prankGun,
+                  prankGun: player.alive && !!player.prankGun,
                   ghostScareAvailable: !!room.gameStarted && !room.gameOver && player.alive === false && !player.ghostScareUsed && !player.isBot,
-                  prankGunAdmin: room.hostUniqueId === player.uniqueId && player.isHost
-                      ? Object.values(room.players).filter(p => p.alive).map(p => ({ id: p.uniqueId, name: p.name, armed: !!p.prankGun })) : null,
-                  prankShotActive: !!room.prankShot,
                   witchNightState: room.currentPhase === 'NIGHT' && player.alive && (player.hasBeenWitch || player.isWitch)
                       ? { nightId: room.witchNightId, marks: { ...(room.witchNightMarks || {}) }, committed: game.hasNightActionChosen(room, 'witchKill'),
                           members: game.getAlivePlayers(room).filter(p => p.hasBeenWitch || p.isWitch).map(p => ({ uniqueId: p.uniqueId, name: p.name, isBot: !!p.isBot })) }

@@ -21,7 +21,7 @@ const publicRoot = path.resolve(__dirname, '../public');
             if (extension === '.html') body = body.toString().replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '');
             return route.fulfill({contentType:type,body});
         });
-        await page.goto('http://preview.test/' + (process.argv.includes('--refinements-only') ? '?refinements' : ''));
+        await page.goto('http://preview.test/' + (process.argv.includes('--refinements-only') || process.argv.includes('--shotgun-only') ? '?refinements' : ''));
         await page.screenshot({path:path.join(output,'halloween-home.png')});
         await page.addScriptTag({url:'/table3d.bundle.js'});
         await page.evaluate(async (rosterPreview) => {
@@ -72,6 +72,30 @@ const publicRoot = path.resolve(__dirname, '../public');
             document.getElementById('table3d-log').open=true;
             previewEvent('card action feedback',{actorName:'คำปัน',targetName:'คุณ',cardName:'Evidence',result:'ข้อกล่าวหา +3 แต้ม'});
         }, process.argv.includes('--roster-only'));
+        if(process.argv.includes('--shotgun-only')) {
+            await page.waitForTimeout(1000);
+            await page.evaluate(()=>{
+                document.getElementById('table3d-log').open=false;
+                document.getElementById('play-result-toast').hidden=true;
+                window.previewState.prankGunHolderId=null;window.previewState.prankShotActive=false;
+                window.previewEngine.update(window.previewOptions);window.previewEngine.resetCamera();
+            });
+            await page.waitForTimeout(200);
+            await page.screenshot({path:path.join(output,'shotgun-on-wall.png')});
+            await page.evaluate(()=>{
+                window.previewState.prankGunHolderId='p2';window.previewEngine.update(window.previewOptions);
+            });
+            await page.waitForTimeout(200);
+            await page.screenshot({path:path.join(output,'shotgun-by-chair.png')});
+            await page.evaluate(()=>{
+                const shot={actorId:'p2',targetId:'p0',actorName:'มาลี',targetName:'คุณ',startedAt:Date.now(),raiseDuration:2800,bulletDuration:4200,recoveryDuration:900,duration:7900};
+                window.previewState.prankShotActive=true;window.previewState.prankShot=shot;
+                window.previewEngine.update(window.previewOptions);
+            });
+            await page.waitForTimeout(2600);
+            await page.screenshot({path:path.join(output,'shotgun-aiming-at-table.png')});
+            return;
+        }
         if(process.argv.includes('--refinements-only')) {
             await page.waitForTimeout(1000);
             await page.evaluate(()=>{document.getElementById('table3d-log').open=false;document.querySelector('.table3d-end-turn').disabled=false;window.previewEngine.resetCamera();});

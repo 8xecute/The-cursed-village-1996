@@ -70,6 +70,7 @@ client.actions.syncTable3D = async function syncTable3D() {
                     } else cards[index]?.click();
                 },
                 onDraw: () => { if (client.actions.canUseTable3DHand()) { const draw = document.getElementById('draw-card-button'); if (draw && !draw.disabled) draw.click(); } },
+                onShotgun: () => client.actions.pickupWallShotgun?.(),
                 onSeatFocus: name => {
                     const label = document.getElementById('table3d-seat-label');
                     if (label && label.textContent !== name) label.textContent = name;

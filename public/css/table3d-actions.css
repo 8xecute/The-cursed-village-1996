@@ -336,6 +336,7 @@ body.game-view-3d .table3d-docked .popup-collapse-toggle { display: none !import
 #prank-controls select { max-width: 200px; }
 #prank-shot-cue { position: fixed; top: 18%; left: 50%; transform: translateX(-50%); z-index: 15000; max-width: 85vw; padding: 16px 24px; background: #251b15ee; color: #ffe2a0; border: 1px solid #d9a45b; border-radius: 10px; pointer-events: none; text-align: center; }
 #prank-shot-cue::after { content: '•'; display: block; text-align: left; color: #ffe2a0; animation: prank-bullet var(--shot-duration, 2200ms) ease-in-out forwards; }
+#prank-shot-cue.is-pickup::after { display:none; }
 @keyframes prank-bullet { from { transform: translateX(0); } to { transform: translateX(90%); } }
 @media (prefers-reduced-motion: reduce) { #prank-shot-cue::after { animation: none; } }
 body:not(.game-view-3d) #game-messages {
