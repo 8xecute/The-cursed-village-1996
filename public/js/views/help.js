@@ -169,20 +169,8 @@ export function initialize() {
           enterBtn.addEventListener('click', () => {
               overlay.style.opacity = '0';
               setTimeout(() => overlay.style.display = 'none', 500);
-              // บังคับเปิดเพลง lobby-music แค่ตอนนี้เท่านั้น (ก่อนเข้า lobby/game)
-              if (!client.state.isMusicPlaying && !client.state.userPausedMusic) {
-                  if (!client.dom.backgroundMusic.src || !client.dom.backgroundMusic.src.includes('lobby-music.mp3')) {
-                      client.dom.backgroundMusic.src = 'audio/lobby-music.mp3';
-                  }
-                  client.dom.backgroundMusic.play().then(()=>{
-                      client.state.isMusicPlaying = true;
-                      client.state.hasUserStartedMusic = true; // เซ็ต flag ว่า user เคยกดเริ่มเพลงเองแล้ว
-                      client.actions.updateMusicUI();
-                  }).catch(()=>{});
-              } else if (!client.state.userPausedMusic) {
-                  client.state.hasUserStartedMusic = true; // เซ็ต flag แม้จะเล่นอยู่แล้ว
-              }
-              hasEnteredVillage = true;
+              //               client.actions.startMusic?.();
+hasEnteredVillage = true;
           });
       }
       // ถ้า reload แล้วอยู่ใน lobby/game ไม่ต้องแสดง overlay
