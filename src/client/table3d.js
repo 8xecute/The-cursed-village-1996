@@ -63,9 +63,9 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
     });
     const { controls, resetCamera } = cameraRig;
 
-    const ambient = new THREE.HemisphereLight(0xc8d5d9, 0x584332, .9);
+    const ambient = new THREE.HemisphereLight(0xa5bbc9, 0x342a26, .55);
     scene.add(ambient);
-    const key = new THREE.DirectionalLight(0xe4e9e3, 2.3);
+    const key = new THREE.DirectionalLight(0xb5c8d5, 1.05);
     key.position.set(-5, 9, 4);
     key.castShadow = true;
     key.shadow.mapSize.set(QUALITY_PRESETS[qualityLevel].shadowSize, QUALITY_PRESETS[qualityLevel].shadowSize);
@@ -77,7 +77,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
     const candleLight = new THREE.PointLight(0xffbd7a, 10, 18, 2);
     candleLight.position.set(0, 1.2, 0);
     scene.add(candleLight);
-    const moonFill = new THREE.DirectionalLight(0xa9c5d2, 0.7);
+    const moonFill = new THREE.DirectionalLight(0x829fb8, .45);
     moonFill.position.set(5, 6, -6);
     scene.add(moonFill);
     // Warm bounced candlelight keeps silhouettes readable after the house lamps
@@ -382,17 +382,17 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
         ritualActive = state.currentPhase === 'BLACKCAT_TRYAL' || !!state.awaitingLeftTryalSelections;
         const choosingLife = ritualActive || !!state.playerForcedToRevealTryal || state.currentPhase === 'PRE_DAWN' || interaction?.kind === 'life';
         roomLighting.setNight(night);
-        ambient.intensity = night ? 0 : choosingLife ? 1.2 : .9;
-        key.intensity = night ? 0 : choosingLife ? 2.6 : 2.3;
-        moonFill.intensity = night ? 0 : .7;
+        ambient.intensity = night ? 0 : choosingLife ? .85 : .55;
+        key.intensity = night ? 0 : choosingLife ? 1.5 : 1.05;
+        moonFill.intensity = night ? 0 : .45;
         ambient.visible = key.visible = moonFill.visible = !night;
         candleBounce.intensity = night ? .45 : 0;
-        scene.environmentIntensity = night ? 0 : .3;
+        scene.environmentIntensity = night ? 0 : .14;
         wax.material.emissiveIntensity = night ? .18 : .02;
-        scene.background.set(night ? 0x080605 : 0x3b4545);
+        scene.background.set(night ? 0x080605 : 0x1d282f);
         scene.fog.color.copy(scene.background);
         candleLight.distance = night ? 22 : 12;
-        candleBaseIntensity = night ? 42 : choosingLife ? 12 : 10;
+        candleBaseIntensity = night ? 42 : choosingLife ? 16 : 14;
         candleLight.intensity = candleBaseIntensity;
         outerFlame.material.color.set(0xff8b26);
         innerFlame.material.color.set(0xffe5a0);
@@ -553,11 +553,11 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
                     own ? cardTexture(imageFor(hand[i].name)) : back,
                     own ? { cardIndex: i, category: hand[i].color, resting: lowered } : { playerId: player.uniqueId, resting: lowered });
                 face.scale.setScalar(handSize * (lowered ? handScale : 1));
-                if (own && !lowered && night) {
+                if (own && !lowered) {
                     // Keep private card text readable without lighting the room.
                     face.material.emissiveMap=face.material.map;
-                    face.material.emissive.setHex(0xffddb0);
-                    face.material.emissiveIntensity=.5;
+                    face.material.emissive.setHex(night ? 0xffddb0 : 0xe0e7ed);
+                    face.material.emissiveIntensity=night ? .5 : .18;
                 }
                 if (own && (selected === i || selectedCards.includes(i))) face.material.color.set(0xb9a687);
                 if (own && reorderIndex === i) outline(face, 0xffdc73);
@@ -688,7 +688,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
         lastShotId = event.startedAt;
         from.multiplyScalar(1.35).setY(.9); to.multiplyScalar(1.35).setY(.7);
         gunShots.push(createGunShot({ scene, from, to, getPawn: () => lastSceneOptions?.state.players?.[event.actorId]?.alive ? actorPawns.get(event.actorId) : null, getParkedGun: () => parkedGuns.get(event.actorId),
-            startedAt: event.startedAt, raiseDuration: event.raiseDuration || 2800, speechStart:event.speechStart, speechDuration:event.speechDuration, speechText:event.speechText, bulletDuration: event.bulletDuration || 3400, recoveryDuration: event.recoveryDuration || 900 }));
+            startedAt: event.startedAt, raiseDuration: event.raiseDuration || 2800, speechStart:event.speechStart, speechDuration:event.speechDuration, speechText:event.speechText, bulletDuration: event.bulletDuration || 450, recoveryDuration: event.recoveryDuration || 900 }));
         requestRender();
     }
     return {

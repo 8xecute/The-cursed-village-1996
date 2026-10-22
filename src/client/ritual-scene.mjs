@@ -78,7 +78,7 @@ export function buildCeremonialRoom(scene, wood, lowPower = false) {
         sky.beginPath();sky.moveTo(x-17,top+67);sky.lineTo(x+2,top-12);sky.lineTo(x+21,top+67);sky.fill();
     }
     const outsideMap=new THREE.CanvasTexture(outside);outsideMap.colorSpace=THREE.SRGBColorSpace;
-    const windowMaterial=new THREE.MeshBasicMaterial({map:outsideMap,color:0xc7d2d4});
+    const windowMaterial=new THREE.MeshBasicMaterial({map:outsideMap,color:0x8195a6});
     const paper=new THREE.MeshStandardMaterial({color:0xbca16e,emissive:0xffbb6f,emissiveIntensity:.45,roughness:.94});
     const roomLights=[];
     for(let side=0;side<4;side++) {
@@ -118,7 +118,7 @@ export function buildCeremonialRoom(scene, wood, lowPower = false) {
     beam([7,.15,.18],[0,-1.02,0]);beam([.18,.15,7],[0,-1.02,0]);
     return {
         setNight(night) {
-            windowMaterial.color.setHex(night?0x020304:0xc7d2d4);
+            windowMaterial.color.setHex(night?0x020304:0x8195a6);
             paper.emissiveIntensity=night?0:.45;
             paper.color.setHex(night?0x32291e:0xbca16e);
             roomLights.forEach(light=>{light.intensity=night?0:7;light.userData.nightDisabled=night;light.visible=!night && light.userData.qualityAllowed!==false;});

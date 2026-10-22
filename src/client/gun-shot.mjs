@@ -4,7 +4,7 @@ import { createStandingShooter } from './shooting-pose.mjs';
 
 const smooth = t => { t = THREE.MathUtils.clamp(t, 0, 1); return t * t * (3 - 2 * t); };
 
-export function createGunShot({ scene, from, to, getPawn, getParkedGun = () => null, startedAt = Date.now(), raiseDuration = 2800, speechStart = 900, speechDuration = 0, speechText = '', bulletDuration = 3400, recoveryDuration = 900 }) {
+export function createGunShot({ scene, from, to, getPawn, getParkedGun = () => null, startedAt = Date.now(), raiseDuration = 2800, speechStart = 900, speechDuration = 0, speechText = '', bulletDuration = 450, recoveryDuration = 900 }) {
     const group = new THREE.Group(), gun = createShotgun(); scene.add(group); group.add(gun);
     gun.scale.setScalar(1.05);
     const canvas=document.createElement('canvas');canvas.width=768;canvas.height=220;
