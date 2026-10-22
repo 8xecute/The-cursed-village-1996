@@ -16,13 +16,15 @@ export function initialize() {
     let actions = row.querySelector('.table3d-card-row');
     if (!views) { views = document.createElement('div'); views.className = 'table3d-control-row table3d-view-row'; row.appendChild(views); }
     if (!actions) { actions = document.createElement('div'); actions.className = 'table3d-control-row table3d-card-row'; row.appendChild(actions); }
-    for (const id of ['table3d-seat-left','table3d-reset','table3d-card-sizes','table3d-seat-right']) {
+    for (const id of ['table3d-seat-left','table3d-reset','table3d-seat-right']) {
         const control = document.getElementById(id); if (control) views.appendChild(control);
     }
     const handToggle = document.getElementById('table3d-hand-toggle');
     if (handToggle) actions.prepend(handToggle);
     const endTurn = document.querySelector('#table3d-section .table3d-end-turn');
     actions.appendChild(button);
+    const cardSizes = document.getElementById('table3d-card-sizes');
+    if (cardSizes) actions.appendChild(cardSizes);
     if (endTurn) actions.appendChild(endTurn);
     row.appendChild(note);
     let pending = false, previousHand = JSON.stringify(client.state.myCurrentHand || []);

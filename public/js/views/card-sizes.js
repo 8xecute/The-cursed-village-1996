@@ -5,7 +5,7 @@ export function initializeCardSizes() {
     let saved = {};
     try { saved = JSON.parse(localStorage.getItem('table3DCardSizes') || '{}') || {}; } catch (_) {}
     client.state.table3DCardSizes = Object.fromEntries(Object.entries(defaults).map(([key, value]) =>
-        [key, Number.isFinite(saved[key]) ? Math.max(65, Math.min(130, saved[key])) : value]));
+        [key, Number.isFinite(saved[key]) ? Math.max(50, Math.min(200, saved[key])) : value]));
     const menu = document.getElementById('table3d-card-sizes');
     const panel = menu.querySelector('.card-size-panel');
     const inputs = [];
@@ -17,7 +17,7 @@ export function initializeCardSizes() {
     }
     for (const [key, title] of [['life', 'การ์ดชีวิต'], ['hand', 'การ์ดในมือ'], ['status', 'การ์ดสถานะ']]) {
         const label = document.createElement('label'); label.textContent = title;
-        const input = document.createElement('input'); input.type = 'range'; input.min = 65; input.max = 130; input.step = 5;
+        const input = document.createElement('input'); input.type = 'range'; input.min = 50; input.max = 200; input.step = 5;
         input.value = client.state.table3DCardSizes[key];
         const value = document.createElement('output'); value.textContent = `${input.value}%`;
         input.oninput = () => { client.state.table3DCardSizes[key] = Number(input.value); value.textContent = `${input.value}%`; save(); };

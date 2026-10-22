@@ -25,7 +25,7 @@ export function createTrainingTable({ imageFor, action, onError }) {
         button.onclick = handler; controls.appendChild(button); return button;
     }
     control('◀', () => engine?.stepSeat(-1)).setAttribute('aria-label', 'ดูผู้เล่นทางซ้าย');
-    const handToggle = control('ลดไพ่', () => { lowered = !lowered; handToggle.textContent = lowered ? 'ยกไพ่' : 'ลดไพ่'; sync(); });
+    const handToggle = control('วางไพ่', () => { lowered = !lowered; handToggle.textContent = lowered ? 'หยิบไพ่' : 'วางไพ่'; sync(); });
     control('กลับโต๊ะ', () => engine?.resetCamera());
     control('▶', () => engine?.stepSeat(1)).setAttribute('aria-label', 'ดูผู้เล่นทางขวา');
     const viewRow = document.createElement('div'); viewRow.className = 'table3d-control-row';

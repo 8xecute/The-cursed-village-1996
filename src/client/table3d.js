@@ -326,7 +326,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
     function update(options) {
         lastSceneOptions = options;
         const { state, me, hand, selected, selectedCards = [], imageFor, interaction = null, canDraw = false, drawConfirming = false, handLowered = false, artwork = 'new', reorderIndex = null, cardSizes = {} } = options;
-        const sizeFor = key => Math.max(.65, Math.min(1.3, (Number(cardSizes[key]) || 100) / 100));
+        const sizeFor = key => Math.max(.5, Math.min(2, (Number(cardSizes[key]) || 100) / 100));
         if (!state) return;
         const nextSignature = JSON.stringify([state.currentPhase, state.gameOver, state.lifeSetup, state.awaitingLeftTryalSelections, state.playerForcedToRevealTryal, state.players, state.currentTurnPlayerUniqueId, state.deckCount, state.discardPileCount, state.witchNightState, state.prankGunHolderId, state.prankShotActive, hand, selected, selectedCards, me, interaction, canDraw, drawConfirming, handLowered, artwork, reorderIndex, cardSizes]);
         if (signature === nextSignature) return;
