@@ -1,5 +1,6 @@
 import { initialize as initializeHandOrder } from './js/views/hand-order.js';
 import { initialize as initializeLifeSetup } from './js/views/life-setup.js';
+import { initialize as initializeLifeReveal } from './js/views/life-reveal.js';
 import { initialize as initializePrank } from './js/views/prank.js';
 import { initialize as initializeGhostScare } from './js/views/ghost-scare.js';
 import { initialize as initializeRoomSettings } from './js/rooms/settings.js';
@@ -77,6 +78,7 @@ initializeTable3DActions();
 initializeArtwork();
 
 initializePlayExperience();
+initializeLifeReveal();
 
 initializeTable3DLog();
 

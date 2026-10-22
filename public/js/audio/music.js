@@ -2,6 +2,11 @@ import { client } from '../core/client.js';
 import { createBackgroundPlayer } from './background-player.js';
 
 let player;
+let revealDucking = false;
+client.actions.setRevealMusicDucking = value => {
+    revealDucking = !!value;
+    player?.setVolume(client.state.currentVolume * .3 * (revealDucking ? .25 : 1));
+};
 client.actions.updateMusicUI = () => {
     const percent = Math.round(client.state.currentVolume * 100);
     client.dom.musicVolumeLabel.textContent = `${percent}%`;
@@ -10,7 +15,7 @@ client.actions.updateMusicUI = () => {
 client.actions.setMusicVolume = value => {
     client.state.currentVolume = Number.isFinite(value) ? Math.max(0, Math.min(1, value)) : 0;
     client.state.userPausedMusic = client.state.currentVolume === 0;
-    player?.setVolume(client.state.currentVolume * .3);
+    player?.setVolume(client.state.currentVolume * .3 * (revealDucking ? .25 : 1));
     try { localStorage.setItem('musicVolume', String(client.state.currentVolume)); } catch (_) {}
     client.actions.updateMusicUI();
 };

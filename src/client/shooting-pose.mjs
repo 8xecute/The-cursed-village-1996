@@ -29,8 +29,8 @@ export function createStandingShooter(pawn) {
     const point = new THREE.Vector3(), aimPoint = new THREE.Vector3(.20, shoulderY + .01, -.48);
     let previous = '';
     return {
-        pose(stand, pickup, aim, yaw, recoil = 0) {
-            const key = [stand, pickup, aim, yaw, recoil].map(n => n.toFixed(3)).join(':');
+        pose(stand, pickup, aim, yaw, recoil = 0, mouth = 0) {
+            const key = [stand, pickup, aim, yaw, recoil, mouth].map(n => n.toFixed(3)).join(':');
             const lift = .58 * stand, turn = yaw * aim;
             const targets = [-1, 1].map((side, index) => {
                 const joints = sourceJoints[index].map(p => p.clone());
@@ -60,6 +60,12 @@ export function createStandingShooter(pawn) {
                 for (let i = 0; i < positions.count; i++) {
                     const x = base[i * 3], y = base[i * 3 + 1], z = base[i * 3 + 2];
                     point.set(x, y, z);
+                    // A small local lip/chin deformation on this shooter's private geometry.
+                    const lipY=male ? .625 : .50;
+                    if(/body|teeth|tongue/i.test(part.material.name) && Math.abs(x)<.075 && z<-.10) {
+                        const weight=(1-smooth(Math.abs(x),.035,.075))*(1-smooth(Math.abs(y-lipY),.012,.065));
+                        point.y+=(y<lipY ? -.022 : .004)*mouth*weight;
+                    }
                     if (legs || (y < -.18 && /body\.body/i.test(part.material.name))) {
                         const weight = (legs ? 1 : smooth(-y, .18, .32)) * stand;
                         const originalPoint = legPoint.copy(point);

@@ -652,7 +652,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
         lastShotId = event.startedAt;
         from.multiplyScalar(1.35).setY(.9); to.multiplyScalar(1.35).setY(.7);
         gunShots.push(createGunShot({ scene, from, to, getPawn: () => lastSceneOptions?.state.players?.[event.actorId]?.alive ? actorPawns.get(event.actorId) : null, getParkedGun: () => parkedGuns.get(event.actorId),
-            startedAt: event.startedAt, raiseDuration: event.raiseDuration || 2800, bulletDuration: event.bulletDuration || 3400, recoveryDuration: event.recoveryDuration || 900 }));
+            startedAt: event.startedAt, raiseDuration: event.raiseDuration || 2800, speechStart:event.speechStart, speechDuration:event.speechDuration, speechText:event.speechText, bulletDuration: event.bulletDuration || 3400, recoveryDuration: event.recoveryDuration || 900 }));
         requestRender();
     }
     return {

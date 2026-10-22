@@ -13,6 +13,11 @@ module.exports = function createLifeCardServices(game) {
     game.onTryalRevealed(room, card);
     history.push({ name: card.name, slot });
     player.revealedTryalCardIndexes.add(card.name);
+    // This runs only for public reveals, never while a confession choice is private.
+    game.io.to(room.name).emit('life card revealed', {
+      playerId: player.uniqueId, playerName: player.name, cardName: card.name,
+      slot, remaining: player.tryalCards.length, phase: room.currentPhase
+    });
     return card;
   }
 

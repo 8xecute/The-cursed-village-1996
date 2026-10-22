@@ -1,0 +1,20 @@
+#life-reveal[hidden] { display:none; }
+#life-reveal, #life-reveal * { box-sizing:border-box; }
+#life-reveal { position:fixed; inset:0; z-index:2147483000; display:grid; place-items:center; padding:14px; background:#090705b8; pointer-events:none; }
+#life-reveal .reveal-panel { width:min(380px,100%); max-height:calc(100dvh - 28px); overflow:auto; text-align:center; padding:22px; background:#241a14f7; border:1px solid #ad8959; border-radius:16px; color:#f2e5cf; }
+#life-reveal .reveal-eyebrow { color:#dbb77f; font-size:13px; margin:0; }
+#life-reveal h2 { font-size:24px; line-height:1.5; overflow-wrap:anywhere; margin:6px 0; border:0; }
+#life-reveal .reveal-context { font-size:14px; margin:0 0 14px; color:#cdbb9c; }
+#life-reveal .reveal-card { position:relative; width:156px; height:232px; margin:auto; transform-style:preserve-3d; transform:perspective(900px) rotateY(0deg); transition:transform .65s ease; }
+#life-reveal .reveal-card > div { position:absolute; inset:0; border-radius:7px; border:3px solid #c4ad83; backface-visibility:hidden; overflow:hidden; background:#21130c; }
+#life-reveal .reveal-back { background:#21130c url('../cards/back.svg') center/100% 100% no-repeat !important; }
+#life-reveal .reveal-front { transform:rotateY(180deg); }
+#life-reveal .reveal-front img { display:block; width:100% !important; height:100% !important; object-fit:contain; }
+#life-reveal.is-open .reveal-card { transform:perspective(900px) rotateY(180deg); }
+#life-reveal[data-card="Witch"] .reveal-front { border-color:#cf625b; }
+#life-reveal[data-card="Constable"] .reveal-front { border-color:#77afd6; }
+#life-reveal .reveal-result { min-height:48px; font-size:16px; line-height:1.65; margin:16px 0 0; color:#f1d4a4; }
+#life-reveal button { pointer-events:auto; width:auto; min-height:44px; margin:8px 0 0; padding:8px 14px; border:1px solid #8b6d47; border-radius:7px; background:#38281a; color:#e8d5b5; font-size:13px; cursor:pointer; }
+#life-reveal.is-open[data-card="Witch"] .reveal-result { color:#f1a09a; }
+@media(max-height:500px) { #life-reveal .reveal-panel { padding:12px; } #life-reveal .reveal-card { width:95px; height:141px; } #life-reveal h2 { font-size:19px; } #life-reveal .reveal-result { min-height:26px; margin-top:9px; font-size:14px; } }
+@media(prefers-reduced-motion:reduce) { #life-reveal .reveal-card { transition:none; } }

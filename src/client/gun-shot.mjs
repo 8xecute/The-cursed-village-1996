@@ -4,9 +4,18 @@ import { createStandingShooter } from './shooting-pose.mjs';
 
 const smooth = t => { t = THREE.MathUtils.clamp(t, 0, 1); return t * t * (3 - 2 * t); };
 
-export function createGunShot({ scene, from, to, getPawn, getParkedGun = () => null, startedAt = Date.now(), raiseDuration = 2800, bulletDuration = 3400, recoveryDuration = 900 }) {
+export function createGunShot({ scene, from, to, getPawn, getParkedGun = () => null, startedAt = Date.now(), raiseDuration = 2800, speechStart = 900, speechDuration = 0, speechText = '', bulletDuration = 3400, recoveryDuration = 900 }) {
     const group = new THREE.Group(), gun = createShotgun(); scene.add(group); group.add(gun);
     gun.scale.setScalar(1.05);
+    const canvas=document.createElement('canvas');canvas.width=768;canvas.height=220;
+    const context=canvas.getContext('2d');context.fillStyle='#f2e5cf';context.beginPath();context.roundRect(4,4,760,188,24);context.fill();
+    context.beginPath();context.moveTo(360,187);context.lineTo(382,217);context.lineTo(404,187);context.fill();
+    context.fillStyle='#302318';context.textAlign='center';context.font='600 48px "Village Sarabun", sans-serif';
+    context.fillText('ประตูมีกลอน',384,80);context.fillText('คนคอนมีปืน',384,146);
+    const speechTexture=new THREE.CanvasTexture(canvas);
+    speechTexture.colorSpace=THREE.SRGBColorSpace;
+    const bubble=new THREE.Sprite(new THREE.SpriteMaterial({map:speechTexture,depthTest:false,toneMapped:false}));
+    bubble.scale.set(2.9,.83,1);bubble.renderOrder=100;group.add(bubble);bubble.visible=false;
     function add(geometry, material, position, parent = gun) {
         const part = new THREE.Mesh(geometry, material); part.position.set(...position); parent.add(part); return part;
     }
@@ -42,14 +51,20 @@ export function createGunShot({ scene, from, to, getPawn, getParkedGun = () => n
                 parked.visible = false;
             }
             const elapsed = now - start, firedAt = raiseDuration;
+            const speaking=!!speechText && speechDuration>0 && elapsed>=speechStart && elapsed<speechStart+speechDuration;
+            bubble.visible=speaking && !!pawn;
+            if(pawn)bubble.position.copy(pawn.localToWorld(new THREE.Vector3(0,1.68,-.35)));
+            const poseElapsed=elapsed-Math.min(speechDuration,Math.max(0,elapsed-speechStart));
+            const baseRaise=raiseDuration-speechDuration;
             const settle = 1 - smooth((elapsed - raiseDuration - bulletDuration) / recoveryDuration);
-            const stand = smooth(elapsed / (raiseDuration * .30)) * settle;
-            const pickup = smooth((elapsed - raiseDuration * .22) / (raiseDuration * .24)) * settle;
-            const lift = smooth((elapsed - raiseDuration * .48) / (raiseDuration * .32)) * settle;
+            const stand = smooth(poseElapsed / (baseRaise * .30)) * settle;
+            const pickup = smooth((poseElapsed - baseRaise * .22) / (baseRaise * .24)) * settle;
+            const lift = smooth((poseElapsed - baseRaise * .48) / (baseRaise * .32)) * settle;
             const after = elapsed - firedAt, recoil = after >= 0 ? Math.exp(-after / 100) : 0;
             const localTarget = pawn ? pawn.worldToLocal(to.clone()) : new THREE.Vector3(0, 0, -1);
             const yaw = Math.atan2(-localTarget.x, -localTarget.z);
-            const hand = arm?.pose(stand, pickup, lift, yaw, recoil) || from;
+            const mouth=speaking ? Math.max(0,Math.sin((elapsed-speechStart)*.019))*(.65+.35*Math.sin(elapsed*.007)**2) : 0;
+            const hand = arm?.pose(stand, pickup, lift, yaw, recoil, mouth) || from;
             gun.position.copy(parkedPosition).lerp(hand, lift);
             gun.lookAt(to); const aimingRotation = gun.quaternion.clone();
             gun.quaternion.copy(parkedRotation).slerp(aimingRotation, lift);
@@ -69,7 +84,7 @@ export function createGunShot({ scene, from, to, getPawn, getParkedGun = () => n
             return elapsed < raiseDuration + bulletDuration + recoveryDuration;
         },
         dispose() {
-            arm?.dispose(); scene.remove(group);
+            arm?.dispose(); scene.remove(group);speechTexture.dispose();
             const parked = getParkedGun(); if (parked) parked.visible = true;
             const materials = new Set(), geometries = new Set(); group.traverse(part => { if (part.geometry) geometries.add(part.geometry); if (part.material) materials.add(part.material); }); geometries.forEach(geometry=>geometry.dispose()); materials.forEach(material => material.dispose());
         }

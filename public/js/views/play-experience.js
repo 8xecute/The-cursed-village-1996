@@ -200,6 +200,7 @@ export function initialize() {
         }
     }
     let stopGhostSound;
+    client.actions.playGameSound = sound;
     client.actions.stopGhostScareSound = () => { stopGhostSound?.(); stopGhostSound = null; };
     client.actions.playGhostScareSound = () => { client.actions.stopGhostScareSound(); stopGhostSound = sound('ghost'); };
     document.addEventListener('pointerdown', () => {
@@ -266,7 +267,7 @@ export function initialize() {
     });
     client.state.socket.on('update hand', () => sound('flip'));
     client.state.socket.on('prank gun shot', event => {
-        sound('mechanism',Math.max(0,(event.raiseDuration || 2800)*.4/1000));
+        sound('mechanism',Math.max(0,((event.raiseDuration || 2800)-(event.speechDuration||0))*.4/1000+(event.speechDuration||0)/1000));
         sound('mechanism',Math.max(0,(event.raiseDuration || 2800)/1000-.10));
         sound('gun', (event.raiseDuration || 900) / 1000);
     });

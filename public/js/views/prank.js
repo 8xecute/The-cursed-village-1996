@@ -14,6 +14,14 @@ export function initialize() {
     placeOverlays();
     new MutationObserver(placeOverlays).observe(document.body, {attributes:true, attributeFilter:['class']});
     let selecting = false, selected = null, cueTimer, pickupTap = 0;
+    let speechTimer, speechStopTimer, ownSpeech;
+    window.speechSynthesis?.getVoices();
+    function stopSpeech() {
+        clearTimeout(speechTimer);clearTimeout(speechStopTimer);
+        if(ownSpeech)window.speechSynthesis?.cancel();ownSpeech=null;
+    }
+    client.state.socket.on('disconnect',stopSpeech);
+    document.addEventListener('visibilitychange',()=>{if(document.hidden)stopSpeech();});
     client.actions.pickupWallShotgun = () => {
         const state = client.state.currentRoomState;
         if (!state?.gameStarted || state.gameOver || state.isSpectator || !state.players?.[client.state.myUniqueId]?.alive || state.prankGunHolderId || state.prankShotActive || state.currentPhase !== 'DAY') return;
@@ -64,6 +72,21 @@ export function initialize() {
         if (state.prankGunHolderId && pickupTap) { pickupTap = 0; cue.hidden = true; clearTimeout(cueTimer); }
     });
     client.state.socket.on('prank gun shot', event => {
+        stopSpeech();
+        if(event.speechText && window.speechSynthesis) {
+            const elapsed=Math.max(0,Date.now()-event.startedAt);
+            const delay=Math.max(0,(event.speechStart||0)-elapsed);
+            if(elapsed<(event.speechStart||0)+event.speechDuration)speechTimer=setTimeout(()=>{
+                if(document.hidden)return;
+                const voice=window.speechSynthesis.getVoices().find(voice=>voice.lang.toLowerCase().startsWith('th'));
+                // Without a Thai voice, keep the bubble/mouth rather than mispronouncing it.
+                if(!voice)return;
+                ownSpeech=new SpeechSynthesisUtterance(event.speechText);ownSpeech.voice=voice;ownSpeech.lang='th-TH';
+                try{const volume=Number(localStorage.getItem('villageSfxVolume')??.5);ownSpeech.volume=Number.isFinite(volume)?Math.max(0,Math.min(1,volume)):.5;}catch(_){ownSpeech.volume=.5;}
+                window.speechSynthesis.speak(ownSpeech);
+                speechStopTimer=setTimeout(stopSpeech,Math.max(0,(event.speechStart||0)+event.speechDuration-Math.max(0,Date.now()-event.startedAt)));
+            },delay);
+        }
         clearSelection(); clearTimeout(cueTimer);
         cue.classList.remove('is-pickup');
         cue.textContent = `🔫 ${event.actorName} → ${event.targetName} 💥`; cue.hidden = false;
@@ -71,5 +94,5 @@ export function initialize() {
         if (document.body.classList.contains('game-view-3d')) client.state.table3D?.animateShot?.(event);
         cueTimer = setTimeout(() => { cue.hidden = true; }, event.duration + 500);
     });
-    client.state.socket.on('room left', () => { clearSelection(); pickupTap = 0; bar.hidden = true; cue.hidden = true; clearTimeout(cueTimer); });
+    client.state.socket.on('room left', () => { stopSpeech();clearSelection(); pickupTap = 0; bar.hidden = true; cue.hidden = true; clearTimeout(cueTimer); });
 }

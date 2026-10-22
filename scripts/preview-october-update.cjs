@@ -93,6 +93,14 @@ const publicRoot = path.resolve(__dirname, '../public');
             document.getElementById('table3d-log').open=true;
             previewEvent('card action feedback',{actorName:'คำปัน',targetName:'คุณ',cardName:'Evidence',result:'ข้อกล่าวหา +3 แต้ม'});
         }, process.argv.includes('--roster-only'));
+        if(process.argv.includes('--life-reveal-only')) {
+            await page.evaluate(async()=>{(await import('/js/views/life-reveal.js')).initialize();previewEvent('life card revealed',{playerId:'p2',playerName:'มาลี',cardName:'Witch',slot:2,remaining:4,phase:'DAY'});});
+            await page.waitForTimeout(1900);
+            await page.screenshot({path:path.join(output,'life-reveal-desktop.png')});
+            await page.setViewportSize({width:390,height:844});
+            await page.screenshot({path:path.join(output,'life-reveal-mobile.png')});
+            return;
+        }
         if(process.argv.includes('--atmosphere-only')) {
             await page.waitForTimeout(1000);
             await page.evaluate(()=>{document.getElementById('table3d-log').open=false;document.getElementById('play-result-toast').hidden=true;window.previewEngine.resetCamera();});
@@ -173,12 +181,14 @@ const publicRoot = path.resolve(__dirname, '../public');
             await page.waitForTimeout(200);
             await page.screenshot({path:path.join(output,'shotgun-by-chair.png')});
             await page.evaluate(()=>{
-                const shot={actorId:'p2',targetId:'p0',actorName:'มาลี',targetName:'คุณ',startedAt:Date.now(),raiseDuration:2800,bulletDuration:3400,recoveryDuration:900,duration:7100};
+                const shot={actorId:'p2',targetId:'p0',actorName:'มาลี',targetName:'คุณ',startedAt:Date.now(),raiseDuration:5800,speechStart:900,speechDuration:3000,speechText:'ประตูมีกลอน คนคอนมีปืน',bulletDuration:3400,recoveryDuration:900,duration:10100};
                 window.previewState.prankShotActive=true;window.previewState.prankShot=shot;
                 window.previewEngine.update(window.previewOptions);
             });
             await page.waitForTimeout(2600);
             await page.screenshot({path:path.join(output,'shotgun-aiming-at-table.png')});
+            await page.waitForTimeout(3400);
+            await page.screenshot({path:path.join(output,'shotgun-after-speech.png')});
             return;
         }
         if(process.argv.includes('--refinements-only')) {

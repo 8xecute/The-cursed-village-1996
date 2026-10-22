@@ -17,7 +17,8 @@ module.exports = function registerPrank(socket, game) {
         const target = room.players[id];
         if (!target?.alive || id === player.uniqueId) return;
         const shot = { actorId: player.uniqueId, targetId: id, actorName: player.name, targetName: target.name,
-            startedAt: Date.now(), raiseDuration: 2800, bulletDuration: 3400, recoveryDuration: 900 };
+            startedAt: Date.now(), raiseDuration: 5800, speechStart: 900, speechDuration: 3000,
+            speechText: 'ประตูมีกลอน คนคอนมีปืน', bulletDuration: 3400, recoveryDuration: 900 };
         shot.duration = shot.raiseDuration + shot.bulletDuration + shot.recoveryDuration;
         room.prankShot = shot;
         game.io.to(room.name).emit('prank gun shot', shot);
