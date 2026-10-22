@@ -328,20 +328,25 @@ input[type="text"], input[type="number"] {
 
 button {
     padding: 10px 15px;
-    border-radius: 5px;
-    border: none;
-    background-color: #ff4500;
-    color: white;
+    border-radius: 8px;
+    border: 1px solid #967044;
+    background-color: #5c422a;
+    color: #f4e5cf;
+    box-sizing: border-box;
+    font-size: .95rem;
+    line-height: 1.5;
     cursor: pointer;
     transition: background-color 0.2s ease;
 }
 
 button:hover {
-    background-color: #e63900;
+    background-color: #765436;
 }
 
 button:disabled {
-    background-color: #555;
+    background-color: #38312a;
+    color: #b8aa96;
+    border-color: #66543f;
     cursor: not-allowed;
 }
 

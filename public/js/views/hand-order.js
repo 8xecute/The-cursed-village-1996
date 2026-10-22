@@ -10,6 +10,7 @@ function allowed() {
 export function initialize() {
     const row = document.querySelector('#table3d-section .table3d-hand-controls');
     const button = document.createElement('button'); button.type = 'button'; button.id = 'table3d-reorder-hand';
+    button.title = 'สลับตำแหน่งไพ่ในมือ โดยไม่ใช้การ์ด';
     const note = document.createElement('span'); note.id = 'table3d-reorder-hint'; note.setAttribute('role','status');
     let views = row.querySelector('.table3d-view-row');
     let actions = row.querySelector('.table3d-card-row');

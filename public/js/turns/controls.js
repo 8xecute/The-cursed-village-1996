@@ -8,7 +8,7 @@ client.actions.resetDrawCardButton = function resetDrawCardButton() {
     client.state.drawCardConfirming = false;
     if (client.dom.drawCardButton) {
         client.dom.drawCardButton.classList.remove('confirming');
-        client.dom.drawCardButton.innerHTML = '🃏 จั่วการ์ด';
+        client.dom.drawCardButton.textContent = 'จั่ว 2 ใบ';
     }
 };
 
@@ -20,7 +20,7 @@ client.actions.resetEndTurnButton = function resetEndTurnButton() {
     client.state.endTurnConfirming = false;
     if (client.dom.endTurnButton) {
         client.dom.endTurnButton.classList.remove('confirming');
-        client.dom.endTurnButton.innerHTML = '🛑 จบเทิร์น';
+        client.dom.endTurnButton.textContent = 'จบเทิร์น';
     }
 };
 
@@ -93,7 +93,7 @@ export function initialize() {
       if (!client.state.drawCardConfirming) {
           client.state.drawCardConfirming = true;
           client.dom.drawCardButton.classList.add('confirming');
-          client.dom.drawCardButton.innerHTML = '⚠️ แตะยืนยันจั่ว?';
+          client.dom.drawCardButton.textContent = 'ยืนยันจั่ว';
           if (client.state.drawCardPendingTimeout) clearTimeout(client.state.drawCardPendingTimeout);
           client.state.drawCardPendingTimeout = setTimeout(() => {
               client.actions.resetDrawCardButton();
@@ -197,7 +197,7 @@ export function initialize() {
       if (!client.state.endTurnConfirming) {
           client.state.endTurnConfirming = true;
           client.dom.endTurnButton.classList.add('confirming');
-          client.dom.endTurnButton.innerHTML = '⚠️ แตะยืนยัน?';
+          client.dom.endTurnButton.textContent = 'ยืนยันจบเทิร์น';
           if (client.state.endTurnPendingTimeout) clearTimeout(client.state.endTurnPendingTimeout);
           client.state.endTurnPendingTimeout = setTimeout(() => {
               client.actions.resetEndTurnButton();

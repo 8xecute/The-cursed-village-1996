@@ -10,18 +10,19 @@ function highlightOwnName(row) {
 
 client.actions.addGameMessage = function addGameMessage(message, color, bold = false) {
     message = client.actions.replaceCardNamesInMessage(message);
-    // กำหนดสีให้อ่านง่ายและเหมาะกับสถานการณ์ (สดและตัดกับพื้นหลัง)
+    // Muted semantic colors stay legible on the dark wood log surface.
     const colorMap = {
-        red:      '#ef5350',   // สดขึ้น
-        green:    '#66bb6a',   // สดขึ้น
-        blue:     '#42a5f5',   // ฟ้าอ่อนสด
-        gold:     '#ffb300',   // เหลืองทองเข้ม
-        gray:     '#e0e0e0',   // เทาอ่อน
-        orange:   '#ffb74d',   // ส้มสด
-        purple:   '#ba68c8',   // ม่วงสด
-        darkred:  '#c62828',   // แดงเข้ม
-        darkblue: '#3949ab',   // น้ำเงินเข้ม
-        black:    '#fff',      // ขาว
+        red:      '#e2aaa1',
+        green:    '#acc6a7',
+        blue:     '#aec5d6',
+        gold:     '#ddc08c',
+        gray:     '#c7bbae',
+        grey:     '#c7bbae',
+        orange:   '#dfb68f',
+        purple:   '#c7b4d6',
+        darkred:  '#e5a39b',
+        darkblue: '#a9b8d7',
+        black:    '#eadfcd',
     };
     let useColor = colorMap[color] || colorMap.black;
 

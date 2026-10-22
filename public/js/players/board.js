@@ -26,16 +26,16 @@ client.actions.updatePlayersBoardGrid = function updatePlayersBoardGrid(roomStat
         // Header
         let header = `<div class='player-board-header'>`;
         if (roomState.currentTurnPlayerUniqueId === player.uniqueId) {
-            header += `<span style="color:#ffd700;font-size:1.2em;margin-right:6px;vertical-align:middle;">🔥</span>`;
+            header += `<span class="board-turn" aria-hidden="true">▶</span>`;
         }
         header += `${player.name}`;
-        if (knowsWitchTeam && player.hasBeenWitch) header += ' <span style="color:#ff1744;font-weight:bold;">(ทีมปอบ)</span>';
+        if (knowsWitchTeam && player.hasBeenWitch) header += ' <span class="board-team">(ทีมปอบ)</span>';
         if (player.isReplacementBot) header += ' <span>· บอทเล่นแทน</span>';
         else if (player.reconnectDeadline) header += `<span class="reconnect-countdown" data-deadline="${Number(player.reconnectDeadline)}"></span>`;
-        if (player.isHost) header += ' <span style="color:#ff4500;">(โฮสต์)</span>';
-        if (player.isBlackCatHolder) header += ' <span style="color:#ffd700;">(เครื่องเซ่น)</span>';
+        if (player.isHost) header += ' <span class="board-host">(โฮสต์)</span>';
+        if (player.isBlackCatHolder) header += ' <span class="board-offering">(เครื่องเซ่น)</span>';
         if (!player.alive) header += ' <span class="player-dead-badge">💀 เสียชีวิตแล้ว</span>';
-        if (roomState.currentTurnPlayerUniqueId === player.uniqueId) header += ' <span style="color:#2196f3;font-weight:bold;">[เทิร์น]</span>';
+        if (roomState.currentTurnPlayerUniqueId === player.uniqueId) header += ' <span class="board-turn">กำลังเล่น</span>';
         header += '</div>';
         // Status
         let status = `<div class='player-board-status'>`;

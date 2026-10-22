@@ -225,7 +225,7 @@
                             <button type="button" id="table3d-seat-right" aria-label="ดูผู้เล่นทางขวา">▶</button>
                         </div>
                         <div class="table3d-control-row table3d-card-row">
-                            <button type="button" id="table3d-hand-toggle" aria-pressed="false">วางไพ่</button>
+                            <button type="button" id="table3d-hand-toggle" aria-pressed="false" title="ลดไพ่ในมือลงบนโต๊ะ โดยยังไม่เล่นการ์ด">ลดไพ่</button>
                             <button type="button" class="table3d-end-turn" data-table-action="end-turn-button" disabled>จบเทิร์น</button>
                         </div>
                     </div>
@@ -294,9 +294,9 @@
                                 </select>
                             </div>
                             <div class="action-buttons-row">
-                                <button id="draw-card-button" class="btn-action btn-draw" title="จั่วการ์ด 2 ใบ">📥 จั่วการ์ด 2 ใบ</button>
-                                <button id="play-card-button" class="btn-action btn-play" title="เล่นการ์ดที่เลือก">⚡ เล่นการ์ดที่เลือก</button>
-                                <button id="end-turn-button" class="btn-action btn-end" title="จบเทิร์น (แตะ 2 ครั้งเพื่อยืนยัน)">🛑 จบเทิร์น</button>
+                                <button id="draw-card-button" class="btn-action btn-draw" title="จั่วการ์ด 2 ใบ แล้วจบเทิร์น">จั่ว 2 ใบ</button>
+                                <button id="play-card-button" class="btn-action btn-play" title="ใช้การ์ดที่เลือก แล้วเลือกเป้าหมายตามคำแนะนำ">เล่นการ์ดที่เลือก</button>
+                                <button id="end-turn-button" class="btn-action btn-end" title="จบเทิร์น (แตะ 2 ครั้งเพื่อยืนยัน)">จบเทิร์น</button>
                             </div>
                         </div>
 
@@ -798,7 +798,8 @@
             <!-- Player Roles & Final Tryal Cards Reveal -->
             <div class="roles-reveal-section">
                 <h3 class="section-title">📜 เปิดเผยตัวตนและการ์ดชีวิตของผู้เล่นทุกคน</h3>
-                <div class="roles-table-wrapper">
+                <p class="summary-scroll-hint">เลื่อนตารางซ้าย–ขวาเพื่อดูการ์ดชีวิตทั้งหมด</p>
+                <div class="roles-table-wrapper" tabindex="0" aria-label="ตารางสรุปผู้เล่น เลื่อนซ้ายขวาเพื่อดูข้อมูลทั้งหมด">
                     <table class="roles-table">
                         <thead>
                             <tr>

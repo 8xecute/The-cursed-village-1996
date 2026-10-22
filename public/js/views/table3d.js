@@ -190,7 +190,7 @@ export function initialize() {
       if (state.gameStarted && (!gameWasStarted || freshSetup || (previousPhase === 'SETUP' && state.currentPhase !== 'SETUP'))) {
           client.state.table3DHandLowered = false;
           const toggle = document.getElementById('table3d-hand-toggle');
-          if (toggle) { toggle.textContent = 'วางไพ่'; toggle.setAttribute('aria-pressed', 'false'); }
+          if (toggle) { toggle.textContent = 'ลดไพ่'; toggle.setAttribute('aria-pressed', 'false'); toggle.title = 'ลดไพ่ลงบนโต๊ะ โดยยังไม่เล่นการ์ด'; }
           client.state.table3D?.resetCamera();
       }
       previousPhase = state.currentPhase;
@@ -230,7 +230,8 @@ export function initialize() {
 
   document.getElementById('table3d-hand-toggle')?.addEventListener('click', event => {
       client.state.table3DHandLowered = !client.state.table3DHandLowered;
-      event.currentTarget.textContent = client.state.table3DHandLowered ? 'ยกไพ่' : 'วางไพ่';
+      event.currentTarget.textContent = client.state.table3DHandLowered ? 'ยกไพ่' : 'ลดไพ่';
+      event.currentTarget.title = client.state.table3DHandLowered ? 'ยกไพ่ขึ้นเพื่ออ่านและเลือกการ์ด' : 'ลดไพ่ลงบนโต๊ะ โดยยังไม่เล่นการ์ด';
       event.currentTarget.setAttribute('aria-pressed', String(client.state.table3DHandLowered));
       client.actions.syncTable3D();
   });

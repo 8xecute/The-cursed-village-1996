@@ -23,6 +23,20 @@ const publicRoot = path.resolve(__dirname, '../public');
         });
         await page.goto('http://preview.test/' + (process.argv.includes('--refinements-only') || process.argv.includes('--shotgun-only') ? '?refinements' : ''));
         await page.screenshot({path:path.join(output,'halloween-home.png')});
+        if (process.argv.includes('--ui-static-only')) {
+            await page.evaluate(()=>document.getElementById('music-overlay').style.display='none');
+            for (const width of [1440,390,320]) {
+                await page.setViewportSize({width,height:900});
+                await page.screenshot({path:path.join(output,`ui-home-${width}.png`),fullPage:true});
+                for (const id of ['card-explain-modal','game-rules-modal']) {
+                    await page.evaluate(id=>document.getElementById(id).style.display='flex',id);
+                    await page.screenshot({path:path.join(output,`ui-${id}-${width}.png`)});
+                    console.log(id,width,await page.evaluate(id=>({viewport:innerWidth,page:document.documentElement.scrollWidth,dialog:Math.round(document.getElementById(id).getBoundingClientRect().width)}),id));
+                    await page.evaluate(id=>document.getElementById(id).style.display='none',id);
+                }
+            }
+            return;
+        }
         await page.addScriptTag({url:'/table3d.bundle.js'});
         await page.evaluate(async (rosterPreview) => {
             const refinements = location.search.includes('refinements');
@@ -196,6 +210,7 @@ const publicRoot = path.resolve(__dirname, '../public');
         await page.setViewportSize({width:390,height:844});
         await page.waitForTimeout(250);
         await page.screenshot({path:path.join(output,'thai-summary-mobile.png')});
+        console.log('Summary layout',await page.locator('.roles-table').evaluate(e=>({width:e.getBoundingClientRect().width,min:getComputedStyle(e).minWidth,display:getComputedStyle(e).display,page:document.documentElement.scrollWidth})));
         await page.setViewportSize({width:1100,height:900});
         await page.evaluate(()=>{
             document.getElementById('game-over-modal').style.display='none'; window.previewEngine.setActive(false);

@@ -22,7 +22,7 @@ function getGuide(state) {
     if (document.querySelector('.select-player-modal')) return guide('เลือกเป้าหมายของการ์ด', 'เลือกผู้เล่นตามคำแนะนำในหน้าต่าง', true);
     if (document.getElementById('must-play-night-popup')) return guide('เล่นการ์ดยามวิกาล', 'กดยืนยันในหน้าต่างเพื่อเข้าสู่กลางคืน', true);
     if (state.currentPhase === 'NIGHT') {
-        if (state.witchNightState && !state.witchNightState.committed) return guide('เลือกเป้าหมายของทีมปอบ', 'แตะมาร์คเพื่อปรึกษาทีม → กดฆ่า → ยืนยันอีกครั้ง', true);
+        if (state.witchNightState && !state.witchNightState.committed) return guide('เลือกเป้าหมายของทีมปอบ', 'ทำเครื่องหมายเป้าหมายเพื่อคุยกับทีม → กดฆ่า → ยืนยันอีกครั้ง', true);
         if (me.isConstable && document.getElementById('night-action-popup')) return guide('เลือกคนที่จะปกป้อง', 'เลือกผู้เล่นในหน้าต่าง แล้วกดยืนยัน', true);
         return guide('รอสรุปการเลือกกลางคืน', 'ยังไม่ต้องทำอะไร');
     }
