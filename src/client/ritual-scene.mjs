@@ -3,29 +3,34 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 // Deterministic, locally generated materials: no external model or texture downloads.
 export function timberTexture() {
-    const canvas = document.createElement('canvas'); canvas.width = canvas.height = 512;
+    const canvas = document.createElement('canvas'); canvas.width = canvas.height = 1024;
     const ctx = canvas.getContext('2d');
     let seed = 1996;
     const random = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
-    ctx.fillStyle = '#39271e'; ctx.fillRect(0, 0, 512, 512);
-    for (let plank = 0; plank < 8; plank++) {
-        const y = plank * 64;
-        ctx.fillStyle = `rgba(${random() > .5 ? '109,78,48' : '9,7,5'},.14)`; ctx.fillRect(0,y,512,64);
-        for (let line = 0; line < 58; line++) {
-            const origin = y + random() * 64;
-            ctx.strokeStyle = line % 3 ? 'rgba(12,8,5,.22)' : 'rgba(182,140,94,.15)';
-            ctx.lineWidth = .4 + random(); ctx.beginPath();
-            for (let x = 0; x <= 512; x += 8) {
-                const grain = origin + Math.sin(x * .018 + line) * 1.8 + Math.sin(x*.049+plank)*.5;
+    ctx.fillStyle = '#715038'; ctx.fillRect(0, 0, 1024, 1024);
+    for (let plank = 0; plank < 12; plank++) {
+        const y = plank * 1024 / 12, height = 1024 / 12;
+        const shade = Math.round(100 + random() * 24);
+        ctx.fillStyle = `rgba(${shade},${Math.round(shade*.69)},${Math.round(shade*.46)},.32)`;
+        ctx.fillRect(0,y,1024,height);
+        const knotX = random()*800+100, knotY = y + height*.45;
+        for (let line = 0; line < 100; line++) {
+            const origin = y + random() * height, phase = random()*6;
+            ctx.strokeStyle = line % 4 ? `rgba(33,20,12,${.045+random()*.09})` : 'rgba(211,166,111,.12)';
+            ctx.lineWidth = .35 + random()*.7; ctx.beginPath();
+            for (let x = 0; x <= 1024; x += 4) {
+                const knot = Math.exp(-(((x-knotX)/75)**2)) * Math.sin((origin-knotY)/height*Math.PI)*7;
+                const grain = origin + Math.sin(x * .009 + phase)*1.5 + Math.sin(x*.026+phase)*.6 + knot;
                 if (!x) ctx.moveTo(x,grain); else ctx.lineTo(x,grain);
             }
             ctx.stroke();
         }
-        ctx.fillStyle = 'rgba(7,5,4,.65)'; ctx.fillRect(0,y,512,2);
-        ctx.fillStyle = 'rgba(163,121,77,.24)'; ctx.fillRect(0,y+2,512,1);
-        for (const x of [14,498]) { ctx.fillStyle='#15110d'; ctx.beginPath(); ctx.arc(x,y+12,1.4,0,Math.PI*2); ctx.fill(); }
-        const knotX = random()*420+40;
-        for(let ring=0;ring<5;ring++) { ctx.strokeStyle='rgba(10,7,5,.22)';ctx.beginPath();ctx.ellipse(knotX,y+34,8+ring*5,1.8+ring*1.5,0,0,Math.PI*2);ctx.stroke(); }
+        ctx.fillStyle = 'rgba(28,17,10,.38)'; ctx.fillRect(0,y,1024,1.5);
+        ctx.fillStyle = 'rgba(199,154,99,.14)'; ctx.fillRect(0,y+1.5,1024,.7);
+        if (plank%3===1) for(let ring=0;ring<4;ring++) {
+            ctx.strokeStyle='rgba(44,26,15,.15)';ctx.lineWidth=.65;
+            ctx.beginPath();ctx.ellipse(knotX,knotY,5+ring*7,1+ring*1.2,0,0,Math.PI*2);ctx.stroke();
+        }
     }
     const texture = new THREE.CanvasTexture(canvas); texture.colorSpace=THREE.SRGBColorSpace;
     texture.anisotropy = 4;
@@ -34,23 +39,31 @@ export function timberTexture() {
 
 export function ceremonialCloth() {
     const canvas=document.createElement('canvas');canvas.width=canvas.height=512;
-    const ctx=canvas.getContext('2d');ctx.fillStyle='#302821';ctx.fillRect(0,0,512,512);
-    for(let i=0;i<512;i+=3) { ctx.fillStyle=i%2?'rgba(9,6,4,.17)':'rgba(157,131,93,.11)';ctx.fillRect(i,0,1,512);ctx.fillRect(0,i,512,1); }
-    for(const radius of [226,232,241]) { ctx.strokeStyle='rgba(163,132,78,.40)';ctx.lineWidth=radius===232?3:1;ctx.beginPath();ctx.arc(256,256,radius,0,Math.PI*2);ctx.stroke(); }
-    for(let i=0;i<32;i++) { const a=i*Math.PI/16;ctx.save();ctx.translate(256+Math.sin(a)*211,256+Math.cos(a)*211);ctx.rotate(-a);ctx.strokeStyle='rgba(164,133,83,.34)';ctx.strokeRect(-3,-5,6,10);ctx.restore(); }
+    const ctx=canvas.getContext('2d');ctx.fillStyle='#443c31';ctx.fillRect(0,0,512,512);
+    for(let i=0;i<512;i+=2) { ctx.fillStyle=i%4?'rgba(12,9,6,.07)':'rgba(171,146,104,.07)';ctx.fillRect(i,0,1,512);ctx.fillRect(0,i,512,1); }
+    for(const radius of [224,230,239,244]) { ctx.strokeStyle='rgba(180,151,96,.45)';ctx.lineWidth=radius===230?2:1;ctx.beginPath();ctx.arc(256,256,radius,0,Math.PI*2);ctx.stroke(); }
+    for(let i=0;i<48;i++) {
+        const a=i*Math.PI/24;ctx.save();ctx.translate(256+Math.sin(a)*213,256+Math.cos(a)*213);ctx.rotate(-a);
+        ctx.strokeStyle='rgba(180,151,96,.38)';ctx.beginPath();ctx.moveTo(0,-6);ctx.lineTo(4,0);ctx.lineTo(0,6);ctx.lineTo(-4,0);ctx.closePath();ctx.stroke();ctx.restore();
+    }
     const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;return texture;
 }
 
 export function buildCeremonialRoom(scene, wood, lowPower = false) {
-    const material = new THREE.MeshStandardMaterial({map:wood,bumpMap:wood,bumpScale:.025,color:0x938574,roughness:.96});
-    const dark = new THREE.MeshStandardMaterial({color:0x201a15,roughness:.92});
+    // Separate UV repeats prevent metre-wide grain on the floor and walls.
+    const floorMap=wood.clone(), wallMap=wood.clone();
+    for(const map of [floorMap,wallMap]) { map.wrapS=map.wrapT=THREE.RepeatWrapping;map.needsUpdate=true; }
+    floorMap.repeat.set(4,4);wallMap.repeat.set(2,1.5);
+    const material = new THREE.MeshStandardMaterial({map:wallMap,bumpMap:wallMap,bumpScale:.009,color:0x9a8270,roughness:.88,envMapIntensity:.2});
+    const floorMaterial = new THREE.MeshStandardMaterial({map:floorMap,bumpMap:floorMap,bumpScale:.008,color:0xa18a74,roughness:.78,envMapIntensity:.2});
+    const dark = new THREE.MeshStandardMaterial({map:wallMap,color:0x564538,roughness:.8});
     const bronze = new THREE.MeshStandardMaterial({color:0x77603b,roughness:.6,metalness:.65});
     const add=(geometry,mat,position)=>{const part=new THREE.Mesh(geometry,mat);part.position.set(...position);part.receiveShadow=true;scene.add(part);return part;};
     const beam=(size,position)=>add(new THREE.BoxGeometry(...size),dark,position);
-    add(new THREE.PlaneGeometry(48,48),material,[0,-1.35,0]).rotation.x=-Math.PI/2;
+    add(new THREE.PlaneGeometry(48,48),floorMaterial,[0,-1.35,0]).rotation.x=-Math.PI/2;
     // Repeat the same inward-facing room wall on all four sides. Leaving the
     // ceiling open preserves overhead play; walls disappear when viewed outside.
-    const pottery=new THREE.MeshStandardMaterial({color:0x3b3930,roughness:.98});
+    const pottery=new THREE.MeshStandardMaterial({color:0x514a3c,roughness:.58,envMapIntensity:.4});
     const outside=document.createElement('canvas');outside.width=256;outside.height=256;
     const sky=outside.getContext('2d');
     const haze=sky.createLinearGradient(0,0,0,256);haze.addColorStop(0,'#9ba7ac');haze.addColorStop(.6,'#75888b');haze.addColorStop(1,'#41575a');
@@ -66,7 +79,7 @@ export function buildCeremonialRoom(scene, wood, lowPower = false) {
     }
     const outsideMap=new THREE.CanvasTexture(outside);outsideMap.colorSpace=THREE.SRGBColorSpace;
     const windowMaterial=new THREE.MeshBasicMaterial({map:outsideMap,color:0xc7d2d4});
-    const paper=new THREE.MeshStandardMaterial({color:0x9c733e,emissive:0xffa345,emissiveIntensity:.6,roughness:.8});
+    const paper=new THREE.MeshStandardMaterial({color:0xbca16e,emissive:0xffbb6f,emissiveIntensity:.45,roughness:.94});
     const roomLights=[];
     for(let side=0;side<4;side++) {
         const angle=side*Math.PI/2;
@@ -106,11 +119,11 @@ export function buildCeremonialRoom(scene, wood, lowPower = false) {
     return {
         setNight(night) {
             windowMaterial.color.setHex(night?0x020304:0xc7d2d4);
-            paper.emissiveIntensity=night?0:.6;
-            paper.color.setHex(night?0x32291e:0x9c733e);
+            paper.emissiveIntensity=night?0:.45;
+            paper.color.setHex(night?0x32291e:0xbca16e);
             roomLights.forEach(light=>{light.intensity=night?0:7;light.userData.nightDisabled=night;light.visible=!night && light.userData.qualityAllowed!==false;});
         },
-        dispose() { outsideMap.dispose(); }
+        dispose() { outsideMap.dispose();floorMap.dispose();wallMap.dispose(); }
     };
 }
 

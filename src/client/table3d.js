@@ -11,6 +11,7 @@ import { addLifeCardFrame, lifeBorderColor } from './life-card-frame.mjs';
 import { lifeSlots } from '../../public/js/cards/life-slots.mjs';
 import { createCameraControls } from './camera-controls.mjs';
 import { timberTexture, ceremonialCloth, buildCeremonialRoom, createRitualBust } from './ritual-scene.mjs';
+import { createRoomReflection, createPaperEdges, addTableContact } from './scene-finishes.mjs';
 
 // World heights match the tabletop and the ritual cloth geometry below.
 const TABLE_TOP_Y = -.025;
@@ -40,17 +41,20 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
     renderer.shadowMap.enabled = QUALITY_PRESETS[qualityLevel].shadows;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.15;
+    renderer.toneMappingExposure = 1.12;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     container.appendChild(renderer.domElement);
     renderer.domElement.setAttribute('aria-label', 'โต๊ะเกม 3D ลากเพื่อหมุน เลื่อนล้อเมาส์หรือใช้ปุ่มเพื่อซูม');
     renderer.domElement.setAttribute('role', 'img');
     renderer.domElement.tabIndex = 0;
-    renderer.domElement.setAttribute('aria-label', 'โต๊ะ 3D ลากเมาส์ซ้ายหมุนรอบโต๊ะ ลากเมาส์ขวาขึ้นลงเพื่อเงยหรือก้ม ลากสองนิ้วเพื่อเลื่อน จีบนิ้วเพื่อซูม');
+    renderer.domElement.setAttribute('aria-label', 'โต๊ะ 3D ลากเมาส์ซ้ายหมุนรอบโต๊ะ ลากเมาส์ขวาขึ้นลงเพื่อเงยหรือก้ม จีบสองนิ้วเพื่อซูม');
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x151713);
     scene.fog = new THREE.Fog(0x151713, 17, 36);
+    const reflection = createRoomReflection(renderer);
+    scene.environment = reflection.texture;
+    scene.environmentIntensity = .3;
     const camera = new THREE.PerspectiveCamera(43, 1, 0.1, 60);
     const cameraRig = createCameraControls({ camera, renderer, cameraMode, requestRender,
         isActive: () => active, isDisposed: () => disposed,
@@ -59,33 +63,57 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
     });
     const { controls, resetCamera } = cameraRig;
 
-    const ambient = new THREE.HemisphereLight(0xc0ceda, 0x302016, 1.25);
+    const ambient = new THREE.HemisphereLight(0xc8d5d9, 0x584332, .9);
     scene.add(ambient);
-    const key = new THREE.DirectionalLight(0xffd9b0, 2.4);
-    key.position.set(-4, 10, 5);
+    const key = new THREE.DirectionalLight(0xe4e9e3, 2.3);
+    key.position.set(-5, 9, 4);
     key.castShadow = true;
     key.shadow.mapSize.set(QUALITY_PRESETS[qualityLevel].shadowSize, QUALITY_PRESETS[qualityLevel].shadowSize);
     key.shadow.camera.left = key.shadow.camera.bottom = -8;
     key.shadow.camera.right = key.shadow.camera.top = 8;
     key.shadow.normalBias = 0.035;
+    key.shadow.radius = 3;
     scene.add(key);
-    const candleLight = new THREE.PointLight(0xffa04c, 10, 9, 2);
-    candleLight.position.set(0, 1.1, 0);
+    const candleLight = new THREE.PointLight(0xffbd7a, 10, 18, 2);
+    candleLight.position.set(0, 1.2, 0);
     scene.add(candleLight);
-    const moonFill = new THREE.DirectionalLight(0x9bb8d4, 0.85);
+    const moonFill = new THREE.DirectionalLight(0xa9c5d2, 0.7);
     moonFill.position.set(5, 6, -6);
     scene.add(moonFill);
+    // Warm bounced candlelight keeps silhouettes readable after the house lamps
+    // are extinguished. No extra shadow map or per-player light is required.
+    const candleBounce = new THREE.HemisphereLight(0xa8784e, 0x2b1c14, 0);
+    scene.add(candleBounce);
     key.shadow.bias = -0.0002;
 
     const wood = timberTexture();
     const cloth = ceremonialCloth();
-    const back = canvasTexture(192, 288, (ctx, w, h) => {
-        ctx.fillStyle = '#29170e'; ctx.fillRect(0, 0, w, h);
-        ctx.strokeStyle = '#b87736'; ctx.lineWidth = 5; ctx.strokeRect(8, 8, w - 16, h - 16);
-        ctx.lineWidth = 1; ctx.strokeRect(17, 17, w - 34, h - 34);
-        ctx.strokeStyle = '#a3612e'; ctx.beginPath(); ctx.arc(w / 2, h / 2, 38, 0, Math.PI * 2); ctx.stroke();
-        ctx.font = 'bold 25px serif'; ctx.fillStyle = '#ce9956'; ctx.textAlign = 'center'; ctx.fillText('1996', w / 2, h / 2 + 9);
+    const paperEdges = createPaperEdges();
+    const tableContact = addTableContact(scene);
+    const back = canvasTexture(256, 384, (ctx, w, h) => {
+        const patina=ctx.createRadialGradient(w/2,h/2,15,w/2,h/2,h*.65);
+        patina.addColorStop(0,'#3b2b1e');patina.addColorStop(1,'#16130f');
+        ctx.fillStyle=patina;ctx.fillRect(0,0,w,h);
+        // Muted woven diamonds and corner flourishes match the aged card faces.
+        ctx.strokeStyle='rgba(180,144,87,.09)';ctx.lineWidth=1;
+        for(let y=-32;y<h+32;y+=32)for(let x=0;x<w;x+=32) {
+            ctx.beginPath();ctx.moveTo(x,y-16);ctx.lineTo(x+16,y);ctx.lineTo(x,y+16);ctx.lineTo(x-16,y);ctx.closePath();ctx.stroke();
+        }
+        ctx.strokeStyle='#aa8c58';ctx.lineWidth=3;ctx.strokeRect(9,9,w-18,h-18);
+        ctx.strokeStyle='#76613f';ctx.lineWidth=1;ctx.strokeRect(17,17,w-34,h-34);
+        for(const [x,y,sx,sy] of [[23,23,1,1],[w-23,23,-1,1],[23,h-23,1,-1],[w-23,h-23,-1,-1]]) {
+            ctx.save();ctx.translate(x,y);ctx.scale(sx,sy);ctx.strokeStyle='#b69a64';
+            ctx.beginPath();ctx.moveTo(0,34);ctx.quadraticCurveTo(0,0,34,0);ctx.moveTo(0,21);ctx.quadraticCurveTo(14,22,12,10);ctx.quadraticCurveTo(21,13,21,0);ctx.stroke();ctx.restore();
+        }
+        ctx.fillStyle='#291f16';ctx.beginPath();ctx.ellipse(w/2,h/2,81,56,0,0,Math.PI*2);ctx.fill();
+        for(const radius of [75,81]) {
+            ctx.strokeStyle='#9c8050';ctx.beginPath();ctx.ellipse(w/2,h/2,radius, radius*.64,0,0,Math.PI*2);ctx.stroke();
+        }
+        ctx.textAlign='center';ctx.fillStyle='#bc9f6a';
+        ctx.font='500 17px "Village Sarabun", serif';ctx.fillText('หมู่บ้านต้องสาป',w/2,h/2-9);
+        ctx.font='bold 29px serif';ctx.fillText('1996',w/2,h/2+25);
     });
+    back.anisotropy = Math.min(4,renderer.capabilities.getMaxAnisotropy());
 
     function mesh(geometry, material, parent, position) {
         const object = new THREE.Mesh(geometry, material);
@@ -96,16 +124,21 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
         return object;
     }
     const roomLighting = buildCeremonialRoom(scene, wood);
-    const tableMaterial = new THREE.MeshStandardMaterial({ map: wood, bumpMap: wood, bumpScale: .035, roughness: .78, color: 0xb4a38b });
-    mesh(new THREE.CylinderGeometry(6.2, 6.2, 0.35, 80), tableMaterial, scene, [0, -0.2, 0]);
+    const tableMaterial = new THREE.MeshStandardMaterial({ map: wood, bumpMap: wood, bumpScale: .009, roughness: .56, color: 0xc7b49b, envMapIntensity: .65 });
+    const apronMaterial = new THREE.MeshStandardMaterial({ map: wood, color: 0x66503b, roughness: .64, envMapIntensity: .4 });
+    mesh(new THREE.CylinderGeometry(6.2, 6.16, .35, 96, 1, true), apronMaterial, scene, [0, -.2, 0]);
+    mesh(new THREE.CircleGeometry(6.2, 96), tableMaterial, scene, [0, TABLE_TOP_Y, 0]).rotation.x = -Math.PI / 2;
+    // A recessed inlay on the apron adds craftsmanship without a raised hand rail.
+    mesh(new THREE.CylinderGeometry(6.187, 6.185, .016, 96, 1, true),
+        new THREE.MeshStandardMaterial({color:0x8c7350,metalness:.45,roughness:.55}),scene,[0,-.15,0]);
     // Keep the tabletop flat through its outer edge so wrists cannot be
     // occluded by a raised decorative rail.
     mesh(new THREE.CylinderGeometry(2.35, 2.35, 0.02, 64),
-        new THREE.MeshStandardMaterial({ map: cloth, bumpMap: cloth, bumpScale: .008, roughness: 1 }), scene, [0, 0.006, 0]);
+        new THREE.MeshStandardMaterial({ map: cloth, bumpMap: cloth, bumpScale: .003, roughness: .98, envMapIntensity: .1 }), scene, [0, 0.006, 0]);
     mesh(new THREE.CylinderGeometry(0.4, 0.45, 0.11, 24),
-        new THREE.MeshStandardMaterial({ color: 0x8d7446, metalness: 0.72, roughness: 0.52 }), scene, [0, 0.08, 0]);
+        new THREE.MeshStandardMaterial({ color: 0xb69a60, metalness: .78, roughness: .34, envMapIntensity:.9 }), scene, [0, 0.08, 0]);
     const wax = mesh(new THREE.CylinderGeometry(0.17, 0.2, 0.65, 20),
-        new THREE.MeshStandardMaterial({ color: 0xc4b58d, emissive:0xc4b58d, emissiveIntensity:.02, roughness: 0.96 }), scene, [0, 0.45, 0]);
+        new THREE.MeshStandardMaterial({ color: 0xe0d5b8, emissive:0xf4b966, emissiveIntensity:.02, roughness: .78 }), scene, [0, 0.45, 0]);
     const flame = new THREE.Group(); flame.position.set(0,.79,0); scene.add(flame);
     const profile = [[0,0],[.032,.02],[.065,.09],[.047,.18],[.015,.27],[0,.34]].map(([r,y]) => new THREE.Vector2(r,y));
     const outerFlame = mesh(new THREE.LatheGeometry(profile,20),new THREE.MeshBasicMaterial({color:0xff8b26,transparent:true,opacity:.72,depthWrite:false,toneMapped:false}),flame,[0,0,0]);
@@ -123,7 +156,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
     const glow = new THREE.Sprite(new THREE.SpriteMaterial({map:flameGlowTexture,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,toneMapped:false}));
     glow.position.set(0,.15,0); glow.scale.set(.33,.52,1); flame.add(glow);
     // The hand contact area stays flat, including the former thin trim rings.
-    const waxMaterial = new THREE.MeshStandardMaterial({color:0xc4b58d,roughness:.96});
+    const waxMaterial = new THREE.MeshStandardMaterial({color:0xe0d5b8,roughness:.78});
     for(let i=0;i<7;i++) {
         const angle=i*2.4;
         const drip=mesh(new THREE.SphereGeometry(.025,8,6),waxMaterial,scene,[Math.sin(angle)*.175,.37+(i%3)*.12,Math.cos(angle)*.175]);
@@ -266,6 +299,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
         if (!textures.has(url)) {
             const texture = loader.load(url, requestRender, undefined, () => { textures.delete(url); });
             texture.colorSpace = THREE.SRGBColorSpace;
+            texture.anisotropy = Math.min(4,renderer.capabilities.getMaxAnisotropy());
             textures.set(url, texture);
         }
         return textures.get(url) || back;
@@ -273,7 +307,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
 
     function card(parent, position, rotation, texture, data) {
         const size = CARD_WIDTH;
-        const material = new THREE.MeshStandardMaterial({ map: texture, side: THREE.DoubleSide, roughness: 0.86 });
+        const material = new THREE.MeshStandardMaterial({ map: texture, side: THREE.DoubleSide, roughness: .94, envMapIntensity: .15 });
         const face = mesh(new THREE.PlaneGeometry(size, size * 1.48), material, parent, position);
         face.rotation.set(...rotation);
         face.castShadow = face.receiveShadow = false;
@@ -348,21 +382,23 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
         ritualActive = state.currentPhase === 'BLACKCAT_TRYAL' || !!state.awaitingLeftTryalSelections;
         const choosingLife = ritualActive || !!state.playerForcedToRevealTryal || state.currentPhase === 'PRE_DAWN' || interaction?.kind === 'life';
         roomLighting.setNight(night);
-        ambient.intensity = night ? 0 : choosingLife ? 1.8 : 1.25;
-        key.intensity = night ? 0 : choosingLife ? 3 : 2.4;
-        moonFill.intensity = night ? 0 : .85;
+        ambient.intensity = night ? 0 : choosingLife ? 1.2 : .9;
+        key.intensity = night ? 0 : choosingLife ? 2.6 : 2.3;
+        moonFill.intensity = night ? 0 : .7;
         ambient.visible = key.visible = moonFill.visible = !night;
+        candleBounce.intensity = night ? .45 : 0;
+        scene.environmentIntensity = night ? 0 : .3;
         wax.material.emissiveIntensity = night ? .18 : .02;
-        scene.background.set(night ? 0x020202 : 0x303b40);
+        scene.background.set(night ? 0x080605 : 0x3b4545);
         scene.fog.color.copy(scene.background);
-        candleLight.distance = night ? 13 : 9;
-        candleBaseIntensity = night ? 34 : choosingLife ? 12 : 10;
+        candleLight.distance = night ? 22 : 12;
+        candleBaseIntensity = night ? 42 : choosingLife ? 12 : 10;
         candleLight.intensity = candleBaseIntensity;
         outerFlame.material.color.set(0xff8b26);
         innerFlame.material.color.set(0xffe5a0);
         core.material.color.set(0xfff6da);
         glow.material.color.set(0xffffff);
-        candleLight.color.set(0xffa04c);
+        candleLight.color.set(0xffbd7a);
         handMotion.begin();
         clearDynamic();
         if (!state.prankShotActive && gunShots.length) {
@@ -559,7 +595,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
 
         function pile(x, count, title, clickable) {
             const height = Math.max(.04, Math.min(.52, count * .01));
-            const box = mesh(new THREE.BoxGeometry(CARD_WIDTH, height, CARD_HEIGHT), new THREE.MeshStandardMaterial({ color: 0x9e8764 }), dynamic, [x, CLOTH_TOP_Y + height / 2, 0]);
+            const box = mesh(new THREE.BoxGeometry(CARD_WIDTH, height, CARD_HEIGHT), new THREE.MeshStandardMaterial({ map:paperEdges,color:0xe2d2b4,roughness:.94,envMapIntensity:.1 }), dynamic, [x, CLOTH_TOP_Y + height / 2, 0]);
             box.castShadow = box.receiveShadow = false;
             const top = card(dynamic, [x, CLOTH_TOP_Y + height + PAPER_FACE_OFFSET, 0], [-Math.PI / 2, 0, 0], back, { draw: clickable });
             if (clickable && canDraw) {
@@ -714,6 +750,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             characterCache.clear();
             if (villagerModels) disposeVillagerModels(villagerModels, true);
             roomLighting.dispose();
+            reflection.dispose();paperEdges.dispose();tableContact.dispose();
             flameGlowTexture.dispose(); wood.dispose(); cloth.dispose(); back.dispose(); textures.forEach(texture => texture.dispose());
             renderer.dispose(); renderer.domElement.remove();
         },

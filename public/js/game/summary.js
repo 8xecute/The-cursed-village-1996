@@ -10,6 +10,7 @@ client.actions.resetGameOverSummary = function resetGameOverSummary() {
 
 client.actions.showGameOverModal = function showGameOverModal(data) {
     if (!data) return;
+    client.actions.changePhaseMusic?.('GAME_OVER');
     const summary = data.gameSummary || data;
     client.state.latestGameOverSummary = summary;
     if (client.state.gameOverSummaryDismissed) return;
@@ -108,6 +109,27 @@ client.actions.showGameOverModal = function showGameOverModal(data) {
         const opened = playerList.reduce((n,p) => n+(p.revealedTryalCards || []).filter(c=>cardName(c)==='Witch').length,0);
         countNote.textContent = `${summary.initialWitchCardCount != null ? `ปอบเริ่มต้น ${summary.initialWitchCardCount} ใบ · ` : ''}เปิดระหว่างเกม ${opened} ใบ · อยู่ในไพ่ที่เหลือตอนจบ ${remaining} ใบ`;
 
+    }
+
+    let infections = document.getElementById('summary-infections');
+    if (!infections) {
+        infections = document.createElement('section'); infections.id='summary-infections';
+        rolesRevealTbody?.closest('table')?.after(infections);
+    }
+    infections.replaceChildren();
+    const heading=document.createElement('h3');heading.textContent='เส้นทางแพร่เชื้อปอบ';infections.append(heading);
+    const log=summary.infectionLog || data.infectionLog || [];
+    if(log.length) {
+        const list=document.createElement('ol');
+        for(const event of log) {
+            const item=document.createElement('li');
+            item.textContent=`วันที่ ${event.day ?? '?'} · ${event.from} → ${event.to}`;
+            list.append(item);
+        }
+        infections.append(list);
+        const note=document.createElement('p');note.textContent='ลูกศรแสดงผู้ส่ง → ผู้รับการ์ดปอบจากพิธีเซ่นไหว้ ตามลำดับเหตุการณ์';infections.append(note);
+    } else {
+        const empty=document.createElement('p');empty.textContent='ไม่มีการส่งต่อการ์ดปอบจากพิธีเซ่นไหว้ในเกมนี้';infections.append(empty);
     }
 
     // Rematch Actions

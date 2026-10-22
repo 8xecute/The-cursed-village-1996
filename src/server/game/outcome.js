@@ -62,6 +62,7 @@ module.exports = function createServices(game) {
           color: color,
           daysSurvived: room.dayNumber,
           initialWitchCardCount: room.initialWitchCardCount ?? null,
+          infectionLog: (room.infectionLog || []).map(event => ({ from:event.from, to:event.to, day:event.day })),
           players: playersArr.map(p => ({
               name: p.name,
               alive: !!p.alive,

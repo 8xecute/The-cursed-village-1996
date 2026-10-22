@@ -25,7 +25,7 @@ client.actions.startMusic = () => {
 };
 client.actions.changePhaseMusic = (phase, roomState = client.state.currentRoomState) => {
     client.state.lastMusicPhase = phase;
-    const track = phase === 'SETUP' ? '' : roomState?.isAssigningBlackCat
+    const track = phase === 'SETUP' || phase === 'GAME_OVER' || roomState?.gameOver ? '' : roomState?.isAssigningBlackCat
         ? client.state.phaseMusic?.OFFERING : client.state.phaseMusic?.[phase] || client.state.phaseMusic?.LOBBY;
     player?.setTrack(track || '');
 };
@@ -38,7 +38,7 @@ export function initialize() {
     client.state.phaseMusic = {
         LOBBY: 'audio/lobby-music.mp3', SETUP: '', OFFERING: 'audio/night-music.mp3',
         DAY: 'audio/day-music.mp3', NIGHT: 'audio/night-music.mp3',
-        PRE_DAWN: 'audio/predawn-music.mp3', GAME_OVER: 'audio/lobby-music.mp3'
+        PRE_DAWN: 'audio/predawn-music.mp3', GAME_OVER: ''
     };
     player = createBackgroundPlayer(playing => { client.state.isMusicPlaying = playing; });
     let saved = null, legacyPaused = false;

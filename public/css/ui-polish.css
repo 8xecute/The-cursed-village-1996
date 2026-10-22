@@ -64,6 +64,11 @@ body #table3d-card-sizes .card-size-panel label { font-size:14px; line-height:1.
 body #game-preferences-content :is(label,strong) { line-height:1.6; }
 body #game-preferences-content :is(.music-setting-row,.graphics-setting-row) { font-size:14px; }
 body .table3d-instructions { line-height:1.65; }
+#summary-infections { margin:16px 0; padding:14px; border:1px solid #76563a; border-radius:9px; background:#241b15; overflow-wrap:anywhere; }
+#summary-infections h3 { margin:0 0 8px; font-size:17px; color:#edcd9d; }
+#summary-infections ol { padding-left:24px; margin:8px 0; }
+#summary-infections li { padding:5px 0; line-height:1.7; }
+#summary-infections p { font-size:13px; color:#cab795; }
 body.game-view-3d #table3d-canvas { position:relative; }
 body.game-view-3d #table3d-canvas #prank-controls {
   position:absolute; top:auto; right:auto; left:12px; bottom:12px;

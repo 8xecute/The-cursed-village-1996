@@ -13,7 +13,7 @@ export function createCameraControls({ camera, renderer, cameraMode, requestRend
     // around the off-centre seat target. Vertical drags must not tilt the view.
     controls.enableRotate = false;
     controls.mouseButtons = { LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.PAN, RIGHT: null };
-    controls.touches = { ONE: cameraMode === 'pan' ? THREE.TOUCH.PAN : THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN };
+    controls.touches = { ONE: cameraMode === 'pan' ? THREE.TOUCH.PAN : THREE.TOUCH.ROTATE, TWO: null };
     if (cameraMode === 'pan') controls.mouseButtons.LEFT = THREE.MOUSE.PAN;
     renderer.domElement.style.touchAction = 'none';
     controls.enableDamping = true;
@@ -38,11 +38,14 @@ export function createCameraControls({ camera, renderer, cameraMode, requestRend
     const touches = new Map();
     let tableDrag = null, panMode = cameraMode === 'pan';
     const tableAxis = new THREE.Vector3(0, 1, 0);
-    let pinchDistance = 0, pinchFov = 43;
+    let pinchDistance = 0, pinchFov = 43, pinching = false;
     function touchDown(event) {
         if (event.pointerType !== 'touch') return;
         touches.set(event.pointerId, new THREE.Vector2(event.clientX, event.clientY));
-        if (touches.size === 2) { const [a, b] = [...touches.values()]; pinchDistance = a.distanceTo(b); pinchFov = camera.fov; }
+        if (touches.size === 2) {
+            const [a, b] = [...touches.values()]; pinchDistance = a.distanceTo(b); pinchFov = camera.fov;
+            pinching = true; tableDrag = null; controls.enablePan = false;
+        }
     }
     function touchMove(event) {
         if (!touches.has(event.pointerId) || !isActive() || isDisposed()) return;
@@ -51,7 +54,11 @@ export function createCameraControls({ camera, renderer, cameraMode, requestRend
             const [a, b] = [...touches.values()]; lensZoom(pinchFov * pinchDistance / Math.max(1, a.distanceTo(b)));
         }
     }
-    function touchEnd(event) { touches.delete(event.pointerId); if (touches.size !== 2) pinchDistance = 0; }
+    function touchEnd(event) {
+        touches.delete(event.pointerId); if (touches.size !== 2) pinchDistance = 0;
+        // Do not reinterpret the remaining finger as a new pan/rotation gesture.
+        if (!touches.size) { pinching = false; controls.enablePan = true; }
+    }
     function nearestSeat() {
         const angle = Math.atan2(camera.position.x, camera.position.z);
         let nearest = null, distance = Infinity;
@@ -68,7 +75,7 @@ export function createCameraControls({ camera, renderer, cameraMode, requestRend
         }
     }
     function tableDown(event) {
-        if (touches.size > 1) { tableDrag = null; return; }
+        if (pinching || touches.size > 1) { tableDrag = null; return; }
         const looking = event.button === 2 && event.pointerType === 'mouse';
         if ((!looking && (panMode || event.button !== 0)) || event.shiftKey || event.ctrlKey || event.metaKey ||
             !isActive() || isDisposed() || !controls.enabled) return;
@@ -79,7 +86,7 @@ export function createCameraControls({ camera, renderer, cameraMode, requestRend
     }
     function tableMove(event) {
         if (!tableDrag || event.pointerId !== tableDrag.id || !isActive() || isDisposed() || !controls.enabled) return;
-        if (touches.size > 1) { tableDrag = null; return; }
+        if (pinching || touches.size > 1) { tableDrag = null; return; }
         if (!tableDrag.moving && Math.hypot(event.clientX-tableDrag.x,event.clientY-tableDrag.y) <= 7) return;
         tableDrag.moving = true;
         if (tableDrag.looking) {
@@ -142,7 +149,7 @@ export function createCameraControls({ camera, renderer, cameraMode, requestRend
     const movementKeys = new Set(['KeyW','KeyA','KeyS','KeyD','Space','KeyQ','ControlLeft','ControlRight']);
     let keyboardLocked = false;
     let previousMovementTime = 0;
-    function clearMovement() { pressedKeys.clear(); touches.clear(); tableDrag = null; pinchDistance = 0; previousMovementTime = 0; }
+    function clearMovement() { pressedKeys.clear(); touches.clear(); tableDrag = null; pinchDistance = 0; pinching = false; controls.enablePan = true; previousMovementTime = 0; }
     function typing(target) { return !!target?.closest?.('input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="textbox"]'); }
     function keyDown(event) {
         const ctrlEnabled = keyboardLocked && !!document.fullscreenElement;
@@ -198,7 +205,7 @@ export function createCameraControls({ camera, renderer, cameraMode, requestRend
             panMode = pan; tableDrag = null;
             controls.mouseButtons.LEFT=pan?THREE.MOUSE.PAN:THREE.MOUSE.ROTATE;
             controls.touches.ONE=pan?THREE.TOUCH.PAN:THREE.TOUCH.ROTATE;
-            controls.touches.TWO=THREE.TOUCH.DOLLY_PAN;
+            controls.touches.TWO=null;
             onModeChange?.();
         },
         stopMovement: clearMovement,

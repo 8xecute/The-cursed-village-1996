@@ -21,7 +21,7 @@ const publicRoot = path.resolve(__dirname, '../public');
             if (extension === '.html') body = body.toString().replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '');
             return route.fulfill({contentType:type,body});
         });
-        await page.goto('http://preview.test/' + (process.argv.includes('--mobile-review') ? '?mobile-review' : ['--refinements-only','--shotgun-only','--atmosphere-only'].some(flag=>process.argv.includes(flag)) ? '?refinements' : ''));
+        await page.goto('http://preview.test/' + (process.argv.includes('--mobile-review') ? '?mobile-review' : ['--refinements-only','--shotgun-only','--atmosphere-only','--visual-polish-only'].some(flag=>process.argv.includes(flag)) ? '?refinements' : ''));
         await page.screenshot({path:path.join(output,'halloween-home.png')});
         if (process.argv.includes('--ui-static-only')) {
             await page.evaluate(()=>document.getElementById('music-overlay').style.display='none');
@@ -93,6 +93,55 @@ const publicRoot = path.resolve(__dirname, '../public');
             document.getElementById('table3d-log').open=true;
             previewEvent('card action feedback',{actorName:'คำปัน',targetName:'คุณ',cardName:'Evidence',result:'ข้อกล่าวหา +3 แต้ม'});
         }, process.argv.includes('--roster-only'));
+        if(process.argv.includes('--visual-polish-only')) {
+            await page.waitForTimeout(1200);
+            await page.evaluate(()=>{
+                document.getElementById('table3d-log').open=false;
+                document.getElementById('play-result-toast').hidden=true;
+                previewEngine.resetCamera();
+            });
+            for(const quality of ['high','medium','low']) {
+                await page.evaluate(quality=>previewEngine.setQuality(quality),quality);
+                await page.waitForTimeout(150);
+                await page.screenshot({path:path.join(output,`day-${quality}.png`)});
+            }
+            await page.evaluate(()=>{previewEngine.setQuality('high');previewEngine.stepSeat(2);});
+            await page.waitForTimeout(300);
+            await page.screenshot({path:path.join(output,'villagers-and-cards.png')});
+            await page.evaluate(()=>{previewState.currentPhase='NIGHT';previewEngine.update(previewOptions);previewEngine.resetCamera();});
+            await page.waitForTimeout(200);
+            await page.screenshot({path:path.join(output,'night-high.png')});
+            await page.setViewportSize({width:390,height:844});
+            await page.evaluate(()=>{previewEngine.setQuality('low');previewEngine.resetCamera();});
+            await page.waitForTimeout(200);
+            await page.screenshot({path:path.join(output,'night-mobile.png')});
+            await page.evaluate(()=>{previewState.currentPhase='DAY';previewEngine.update(previewOptions);});
+            await page.waitForTimeout(200);
+            await page.screenshot({path:path.join(output,'day-mobile.png')});
+            await page.evaluate(()=>previewEngine.dispose());
+            return;
+        }
+        if(process.argv.includes('--gameover-only')) {
+            await page.evaluate(()=>{
+                document.getElementById('table3d-log').open=false;
+                document.getElementById('play-result-toast').hidden=true;
+                const players=Object.values(previewState.players).map(p=>({...p,hasBeenWitch:p.uniqueId!=='p3',tryalCards:p.tryalCards.map(c=>({name:c.name||'Not A Witch'}))}));
+                previewClient.actions.showGameOverModal({winner:'Townsfolk',players,infectionLog:[{from:'มาลี',to:'คำปัน',day:1},{from:'คำปัน',to:'คุณ',day:2}]});
+                document.getElementById('summary-infections').scrollIntoView({block:'center'});
+            });
+            await page.screenshot({path:path.join(output,'infection-summary-desktop.png')});
+            await page.setViewportSize({width:390,height:844});
+            await page.evaluate(()=>document.getElementById('summary-infections').scrollIntoView({block:'center'}));
+            await page.screenshot({path:path.join(output,'infection-summary-mobile.png')});
+            await page.evaluate(()=>document.getElementById('game-over-modal').style.display='none');
+            const touch=await page.context().newCDPSession(page);
+            await touch.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:90,y:230},{x:290,y:480}]});
+            await touch.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:140,y:290},{x:250,y:430}]});
+            await touch.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+            await page.waitForTimeout(250);
+            await page.screenshot({path:path.join(output,'pinch-mobile.png')});
+            return;
+        }
         if(process.argv.includes('--life-reveal-only')) {
             await page.evaluate(async()=>{(await import('/js/views/life-reveal.js')).initialize();previewEvent('life card revealed',{playerId:'p2',playerName:'มาลี',cardName:'Witch',slot:2,remaining:4,phase:'DAY'});});
             await page.waitForTimeout(1900);

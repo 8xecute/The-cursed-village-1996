@@ -42,6 +42,18 @@ export function prepareVillagerModels(scene) {
             // Preserve the authored wrists and sleeves. The table no longer
             // has a raised rim, so no local arm deformation is necessary.
             const material = mesh.material.clone();
+            // Skin, cotton and eyes should not all share the same plastic sheen.
+            const surface = `${mesh.name} ${material.name}`;
+            material.envMapIntensity = .35;
+            if (/cotton|casualsuit|\| top\.|\| bottom\./i.test(surface)) {
+                material.roughness = .94;material.envMapIntensity = .2;
+            } else if (/low-poly/i.test(surface)) {
+                material.roughness = .28;material.envMapIntensity = .8;
+            } else if (/body\.\d/i.test(material.name)) {
+                material.roughness = .66;material.envMapIntensity = .5;
+            } else if (/bob01|short01|hair|eyebrow|eyelash/i.test(surface)) {
+                material.roughness = .82;
+            }
             const part = new THREE.Mesh(geometry, material);
             part.name = mesh.name;
             parts.push(part);
