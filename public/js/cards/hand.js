@@ -53,7 +53,7 @@ client.actions.clearCardSelection = function clearCardSelection() {
     }
     if (client.dom.playCardButton) {
         client.dom.playCardButton.classList.remove('can-play');
-        client.dom.playCardButton.innerHTML = '⚡ เล่นการ์ดที่เลือก';
+        client.dom.playCardButton.textContent = 'เล่นการ์ดที่เลือก';
         client.dom.playCardButton.disabled = true;
     }
     client.actions.resetEndTurnButton();

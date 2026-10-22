@@ -1,4 +1,5 @@
 import { client } from '../core/client.js';
+import { initializeMobilePlay } from './mobile-play.js';
 
 client.actions.switchMobileGameTab = function switchMobileGameTab(tabName) {
     client.state.currentMobileGameTab = tabName;
@@ -7,6 +8,9 @@ client.actions.switchMobileGameTab = function switchMobileGameTab(tabName) {
     if (client.dom.mobileTabHandBtn) client.dom.mobileTabHandBtn.classList.toggle('active', tabName === 'hand');
     if (client.dom.mobileTabPlayersBtn) client.dom.mobileTabPlayersBtn.classList.toggle('active', tabName === 'players');
     if (client.dom.mobileTabChatBtn) client.dom.mobileTabChatBtn.classList.toggle('active', tabName === 'chat');
+    for (const button of [client.dom.mobileTabHandBtn, client.dom.mobileTabPlayersBtn, client.dom.mobileTabChatBtn]) {
+        if (button) button.setAttribute('aria-pressed', String(button.classList.contains('active')));
+    }
 
     if (tabName === 'chat' && client.dom.tabChatBadge) {
         client.dom.tabChatBadge.style.display = 'none';
@@ -14,6 +18,7 @@ client.actions.switchMobileGameTab = function switchMobileGameTab(tabName) {
 };
 
 export function initialize() {
+  initializeMobilePlay();
   client.dom.mobileGameTabs = document.getElementById('mobile-game-tabs');
 
   client.dom.mobileTabHandBtn = document.getElementById('mobile-tab-hand-btn');
@@ -41,4 +46,5 @@ export function initialize() {
   if (client.dom.mobileTabChatBtn) {
       client.dom.mobileTabChatBtn.addEventListener('click', () => client.actions.switchMobileGameTab('chat'));
   }
+  client.actions.switchMobileGameTab('hand');
 }

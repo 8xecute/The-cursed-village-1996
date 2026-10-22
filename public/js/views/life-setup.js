@@ -46,6 +46,7 @@ function render() {
     if (panel.isConnected && panel.parentElement === mount && signature === previousRender) return;
     previousRender = signature;
     if (panel.parentElement !== mount) mount.prepend(panel);
+    const seatsExpanded = panel.querySelector('.setup-readiness')?.open ?? !matchMedia('(max-width:768px), (max-width:950px) and (max-height:520px)').matches;
     panel.replaceChildren(); panel.dataset.stage = setup.stage;
     const title = document.createElement('h3');
     title.textContent = setup.stage === 'shuffle' ? 'กำลังสับการ์ดชีวิต…' : setup.stage === 'deal' ? 'แจกการ์ดชีวิตวนรอบวง · ' + setup.dealt + '/' + setup.total : 'ดูฝั่งของคุณและจัดตำแหน่งชีวิต';
@@ -62,7 +63,12 @@ function render() {
         const cards = document.createElement('span'); cards.className = 'setup-card-count'; cards.textContent = '▰ '.repeat(player.tryalCardCount);
         seat.dataset.setupSeat = id;
         seat.append(name, cards); seats.append(seat);
-    }); panel.append(seats);
+    });
+    if (setup.stage === 'arrange') {
+        const readiness = document.createElement('details'); readiness.className = 'setup-readiness'; readiness.open = seatsExpanded;
+        const summary = document.createElement('summary'); summary.textContent = `ยืนยันแล้ว ${setup.confirmed.length}/${setup.order.length} คน · ดูรายชื่อ`;
+        readiness.append(summary, seats); panel.append(readiness);
+    } else panel.append(seats);
     if (!mode3d && setup.stage === 'deal' && setup.lastDeal && lastAnimated !== setup.id + ':' + setup.lastDeal.sequence && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
         lastAnimated = setup.id + ':' + setup.lastDeal.sequence;
         const destination = [...seats.children].find(seat => seat.dataset.setupSeat === setup.lastDeal.playerId);

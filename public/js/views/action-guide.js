@@ -17,7 +17,7 @@ function getGuide(state) {
         : guide('รอคนอื่นเลือกการ์ด', `เลือกแล้ว ${state.leftTryalSelectedCount || 0}/${state.leftTryalTotalCount || 0} คน`);
     if (document.getElementById('accused-tryal-select-overlay')) return guide('เลือกการ์ดชีวิตที่จะเปิด', 'แตะการ์ดของผู้ถูกกล่าวหา 1 ใบ', true);
     if (document.getElementById('blackcat-tryal-overlay')) return guide('เปิดการ์ดของผู้ถือเครื่องเซ่น', 'เลือกการ์ดชีวิต 1 ใบในหน้าต่าง', true);
-    if (document.getElementById('alibi-redcard-select-popup')) return guide('เลือกข้อกล่าวหาที่จะนำออก', 'เลือกได้สูงสุด 3 ใบ แล้วกดยืนยัน', true);
+    if (document.getElementById('alibi-redcard-select-popup')) return guide('เลือกข้อกล่าวหาที่จะนำออก', 'ลบสูงสุด 3 แต้ม · เลือกการ์ดชนิดเดียว แล้วกดยืนยัน', true);
     if (document.querySelector('.curse-target-modal')) return guide('เลือกการ์ดที่จะทำลาย', 'แตะการ์ดสีน้ำเงิน 1 ใบในหน้าต่างคำสาป', true);
     if (document.querySelector('.select-player-modal')) return guide('เลือกเป้าหมายของการ์ด', 'เลือกผู้เล่นตามคำแนะนำในหน้าต่าง', true);
     if (document.getElementById('must-play-night-popup')) return guide('เล่นการ์ดยามวิกาล', 'กดยืนยันในหน้าต่างเพื่อเข้าสู่กลางคืน', true);
@@ -35,7 +35,7 @@ function getGuide(state) {
     if (state.playerForcedToRevealTryal) return guide('รอเปิดการ์ดชีวิต', 'รอผู้เล่นเลือกการ์ดก่อนเล่นต่อ');
     if (state.currentTurnPlayerUniqueId !== me.uniqueId) return guide(`ตาของ ${state.currentTurnPlayerName || 'ผู้เล่นอื่น'}`, 'รอเทิร์นของคุณ · ดูกระดานหรือข้อความได้');
     const card = client.state.myCurrentHand?.[client.state.selectedCard];
-    if (card) return guide('เลือกเป้าหมายแล้วเล่นการ์ด', document.body.classList.contains('game-view-3d') ? 'แตะตัวผู้เล่นบนโต๊ะ → ยืนยันในแผงข้างโต๊ะ' : 'กดปุ่มเล่นใต้การ์ด → เลือกเป้าหมายตามที่หน้าต่างบอก', true, true);
+    if (card) return guide('เลือกเป้าหมายแล้วเล่นการ์ด', document.body.classList.contains('game-view-3d') ? 'แตะตัวผู้เล่นบนโต๊ะ → ยืนยันในแผงข้างโต๊ะ' : 'กดปุ่มเล่นด้านล่าง → เลือกเป้าหมายตามคำแนะนำ', true, true);
     if (me.hasPlayedCardsThisTurn) return guide('เล่นแล้ว · จบเทิร์นได้', 'เล่นการ์ดต่อได้ หรือแตะจบเทิร์น 2 ครั้ง', true, true);
     return guide('ถึงตาคุณแล้ว', 'เลือกอย่างใดอย่างหนึ่ง: จั่ว 2 ใบ หรือเลือกการ์ดเพื่อเล่น', true, true);
 }

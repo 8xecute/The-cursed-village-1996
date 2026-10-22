@@ -91,6 +91,7 @@ client.actions.showSelectPlayerPopup = function showSelectPlayerPopup(title, pla
     }
 
     const listDiv = document.createElement('div');
+    listDiv.className = 'target-player-list';
     listDiv.style.display = 'flex';
     listDiv.style.flexDirection = 'column';
     listDiv.style.justifyContent = 'center';

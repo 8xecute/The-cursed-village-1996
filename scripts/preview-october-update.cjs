@@ -21,7 +21,7 @@ const publicRoot = path.resolve(__dirname, '../public');
             if (extension === '.html') body = body.toString().replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '');
             return route.fulfill({contentType:type,body});
         });
-        await page.goto('http://preview.test/' + (process.argv.includes('--refinements-only') || process.argv.includes('--shotgun-only') ? '?refinements' : ''));
+        await page.goto('http://preview.test/' + (process.argv.includes('--mobile-review') ? '?mobile-review' : process.argv.includes('--refinements-only') || process.argv.includes('--shotgun-only') ? '?refinements' : ''));
         await page.screenshot({path:path.join(output,'halloween-home.png')});
         if (process.argv.includes('--ui-static-only')) {
             await page.evaluate(()=>document.getElementById('music-overlay').style.display='none');
@@ -45,7 +45,9 @@ const publicRoot = path.resolve(__dirname, '../public');
             client.state.socket = {connected:true, on(name, handler) { if (!handlers.has(name)) handlers.set(name,[]); handlers.get(name).push(handler); }, emit() {}};
             window.previewEvent = (name, data) => handlers.get(name)?.forEach(handler=>handler(data));
             client.state.myUniqueId='p0'; client.state.myPlayerName='คุณ';
-            for(const [key,id] of Object.entries({drawCardButton:'draw-card-btn',playCardButton:'play-card-btn',endTurnButton:'end-turn-btn'})) client.dom[key]=document.getElementById(id) || document.createElement('button');
+            client.state.CARDS_NEED_TARGET=['Accusation','Evidence','Witness','Curse','Alibi','Stocks','Arson','Asylum','Piety','Matchmaker','Black Cat'];
+            client.state.CARDS_NEED_TWO_TARGETS=['Scapegoat','Robbery'];
+            for(const [key,id] of Object.entries({drawCardButton:'draw-card-button',playCardButton:'play-card-button',endTurnButton:'end-turn-button'})) client.dom[key]=document.getElementById(id);
             client.state.cardNameMap={};
             await import('/js/cards/translations.js'); await import('/js/cards/hand.js');
             client.actions.getTable3DInteraction=()=>null; client.actions.handleTable3DPlayer=()=>{};
@@ -79,6 +81,11 @@ const publicRoot = path.resolve(__dirname, '../public');
             (await import('/js/views/card-sizes.js')).initializeCardSizes();
             window.previewOptions=options; window.previewEngine=engine; engine.setActive(true); engine.update(options);
             (await import('/js/views/hand-order.js')).initialize();
+            (await import('/js/views/mobile-play.js')).initializeMobilePlay();
+            if (location.search.includes('mobile-review')) {
+                (await import('/js/views/action-guide.js')).initialize();
+                (await import('/js/views/table3d-actions.js')).initialize();
+            }
             previewEvent('room state update',state);
             client.actions.addGameMessage('คำปัน เล่นหลักฐานใส่ คุณ · ข้อกล่าวหา +3 แต้ม','orange');
             client.actions.addGameMessage('มาลี จั่วการ์ด 2 ใบ','blue');
@@ -191,6 +198,13 @@ const publicRoot = path.resolve(__dirname, '../public');
         });
         await page.waitForTimeout(150);
         await page.screenshot({path:path.join(output,'oct21-setup-colors.png')});
+        if (process.argv.includes('--mobile-review')) {
+            await page.setViewportSize({width:390,height:844});
+            await page.evaluate(()=>{const readiness=document.querySelector('.setup-readiness');if(readiness)readiness.open=false;});
+            await page.waitForTimeout(150);
+            await page.screenshot({path:path.join(output,'mobile-3d-setup.png')});
+            await page.setViewportSize({width:1600,height:1000});
+        }
         await page.evaluate(()=>{window.previewState.currentPhase='DAY';delete window.previewState.lifeSetup;previewEvent('room state update',window.previewState);});
         await page.waitForTimeout(100);
         await page.evaluate(()=>previewEvent('ghost scare received',{actorName:'คำปัน',duration:3400}));
@@ -216,6 +230,21 @@ const publicRoot = path.resolve(__dirname, '../public');
         await page.setViewportSize({width:320,height:740});
         await page.waitForTimeout(250);
         await page.screenshot({path:path.join(output,'thai-table-small-mobile.png')});
+        if (process.argv.includes('--mobile-review')) {
+            await page.setViewportSize({width:390,height:844});
+            await page.evaluate(async()=>{
+                await import('/js/cards/target-selection.js');
+                const client=window.previewClient;
+                client.actions.showSelectPlayerPopup('เลือกเป้าหมาย',Object.values(window.previewState.players).filter(p=>p.uniqueId!=='p0'),()=>{},client.state.myCurrentHand[0]);
+            });
+            await page.waitForTimeout(200);
+            await page.screenshot({path:path.join(output,'mobile-3d-select-target.png')});
+            await page.evaluate(()=>document.querySelector('.select-player-modal').remove());
+            await page.setViewportSize({width:844,height:390});
+            await page.waitForTimeout(200);
+            await page.screenshot({path:path.join(output,'mobile-3d-landscape.png')});
+            console.log('3D viewport',await page.locator('#table3d-section').evaluate(e=>({height:e.getBoundingClientRect().height,viewport:innerHeight,scrolling:getComputedStyle(document.body).overflow})));
+        }
         await page.setViewportSize({width:1100,height:900});
         await page.evaluate(()=>{
             const client=window.previewClient;
@@ -284,6 +313,29 @@ const publicRoot = path.resolve(__dirname, '../public');
         await page.screenshot({path:path.join(output,'thai-2d-players-mobile.png'),fullPage:true});
         await page.evaluate(()=>document.getElementById('mobile-tab-chat-btn').click());
         await page.screenshot({path:path.join(output,'thai-2d-log-mobile.png'),fullPage:true});
+        if (process.argv.includes('--mobile-review')) {
+            await page.evaluate(()=>document.getElementById('mobile-tab-hand-btn').click());
+            for (const [width,height] of [[320,740],[390,844],[844,390]]) {
+                await page.setViewportSize({width,height});
+                await page.waitForTimeout(150);
+                console.log('2D viewport',await page.evaluate(()=>({width:innerWidth,page:document.documentElement.scrollWidth,height:innerHeight,scroll:Math.max(document.body.scrollHeight,document.documentElement.scrollHeight),actionBottom:document.querySelector('.hand-action-buttons').getBoundingClientRect().bottom})));
+                if(width===844)console.log('Landscape containers',await page.evaluate(()=>({body:{height:getComputedStyle(document.body).height,minHeight:getComputedStyle(document.body).minHeight,padding:getComputedStyle(document.body).padding,rect:document.body.getBoundingClientRect().height},html:document.documentElement.getBoundingClientRect().height,children:[...document.body.children].filter(e=>e.getBoundingClientRect().height>0).map(e=>({id:e.id,tag:e.tagName,top:e.getBoundingClientRect().top,height:e.getBoundingClientRect().height}))})));
+                await page.screenshot({path:path.join(output,`mobile-2d-${width}.png`),fullPage:true});
+            }
+            await page.setViewportSize({width:390,height:844});
+            await page.evaluate(()=>{document.getElementById('own-life-panel').open=true;});
+            await page.screenshot({path:path.join(output,'mobile-2d-lives-open.png'),fullPage:true});
+            await page.evaluate(async()=>{
+                document.getElementById('own-life-panel').open=false;
+                const client=window.previewClient;client.state.isMyTurn=true;client.state.selectedCard=0;client.actions.updateCardSelectionSummary();
+                await import('/js/cards/target-selection.js');
+                client.actions.showSelectPlayerPopup('เลือกเป้าหมาย',Array.from({length:11},(_,i)=>({...window.previewState.players.p3,uniqueId:'target'+i,name:`ชาวบ้าน ${i+1}`})),()=>{},client.state.myCurrentHand[0]);
+            });
+            await page.screenshot({path:path.join(output,'mobile-targets-12-players.png')});
+            await page.evaluate(()=>document.querySelector('.select-player-modal').remove());
+            await page.evaluate(()=>document.getElementById('mobile-game-menu').click());
+            await page.screenshot({path:path.join(output,'mobile-game-menu.png')});
+        }
         await page.goto('http://preview.test/patch-notes.html');
         await page.setViewportSize({width:390,height:844});
         await page.screenshot({path:path.join(output,'oct21-patch-notes-mobile.png'),fullPage:true});
