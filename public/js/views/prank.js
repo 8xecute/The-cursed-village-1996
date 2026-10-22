@@ -5,6 +5,14 @@ export function initialize() {
     const gun = document.createElement('button'); gun.type = 'button'; gun.textContent = '🔫 เล็งลูกซอง';
     bar.append(gun); document.body.appendChild(bar);
     const cue = document.createElement('div'); cue.id = 'prank-shot-cue'; cue.hidden = true; cue.setAttribute('role', 'status'); document.body.appendChild(cue);
+    // Keep the overlays attached to the scene, above its separate mobile controls.
+    function placeOverlays() {
+        const scene = document.body.classList.contains('game-view-3d') && document.getElementById('table3d-canvas');
+        const parent = scene || document.body;
+        for (const overlay of [bar, cue]) if (overlay.parentElement !== parent) parent.appendChild(overlay);
+    }
+    placeOverlays();
+    new MutationObserver(placeOverlays).observe(document.body, {attributes:true, attributeFilter:['class']});
     let selecting = false, selected = null, cueTimer, pickupTap = 0;
     client.actions.pickupWallShotgun = () => {
         const state = client.state.currentRoomState;

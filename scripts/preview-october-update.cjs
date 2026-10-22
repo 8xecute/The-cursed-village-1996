@@ -139,6 +139,24 @@ const publicRoot = path.resolve(__dirname, '../public');
             await page.screenshot({path:path.join(output,'death-blood-close.png')});
             return;
         }
+        if(process.argv.includes('--shotgun-layout-only')) {
+            await page.waitForTimeout(1000);
+            await page.evaluate(()=>{
+                document.getElementById('table3d-log').open=false;
+                document.getElementById('play-result-toast').hidden=true;
+                window.previewState.prankGun=true;
+                window.previewState.prankGunHolderId='p0';
+                previewEvent('room state update',window.previewState);
+                previewEvent('prank gun shot',{actorName:'คุณ',targetName:'มาลี',duration:30000});
+                window.previewEngine.resetCamera();
+            });
+            await page.screenshot({path:path.join(output,'shotgun-ui-desktop.png')});
+            await page.setViewportSize({width:390,height:844});
+            await page.evaluate(()=>window.previewEngine.resetCamera());
+            await page.waitForTimeout(200);
+            await page.screenshot({path:path.join(output,'shotgun-ui-mobile.png')});
+            return;
+        }
         if(process.argv.includes('--shotgun-only')) {
             await page.waitForTimeout(1000);
             await page.evaluate(()=>{
@@ -296,7 +314,7 @@ const publicRoot = path.resolve(__dirname, '../public');
         });
         await page.screenshot({path:path.join(output,'oct21-guide-picker.png')});
         await page.evaluate(()=>{document.getElementById('guide-picker').close();document.getElementById('show-training-btn').click();});
-        await page.getByRole('button',{name:'ฝึก 3D',exact:true}).click();
+        await page.getByRole('button',{name:'3D',exact:true}).click();
         await page.locator('[data-training-action="start"]').click();
         await page.waitForTimeout(1200);
         await page.screenshot({path:path.join(output,'oct21-training-3d.png')});

@@ -19,14 +19,19 @@ export function createTrainingTable({ imageFor, action, onError }) {
     const canvas = document.createElement('div'); canvas.className = 'training-table-canvas';
     const controls = document.createElement('div'); controls.className = 'training-table-controls';
     root.append(canvas, controls);
-    let engine, snapshot, generation = 0, lowered = false, visible = false;
+    let engine, snapshot, generation = 0, lowered = false, visible = false, lastLesson;
+    function resetView() {
+        engine?.resetCamera();
+        // A lesson uses a smaller canvas than the game; keep its cards easy to tap.
+        engine?.zoom('in');
+    }
     function control(label, handler) {
         const button = document.createElement('button'); button.type = 'button'; button.textContent = label;
         button.onclick = handler; controls.appendChild(button); return button;
     }
     control('◀', () => engine?.stepSeat(-1)).setAttribute('aria-label', 'ดูผู้เล่นทางซ้าย');
     const handToggle = control('วางไพ่', () => { lowered = !lowered; handToggle.textContent = lowered ? 'หยิบไพ่' : 'วางไพ่'; sync(); });
-    control('กลับโต๊ะ', () => engine?.resetCamera());
+    control('กลับโต๊ะ', resetView);
     control('▶', () => engine?.stepSeat(1)).setAttribute('aria-label', 'ดูผู้เล่นทางขวา');
     const viewRow = document.createElement('div'); viewRow.className = 'table3d-control-row';
     const actionRow = document.createElement('div'); actionRow.className = 'table3d-control-row';
@@ -43,7 +48,8 @@ export function createTrainingTable({ imageFor, action, onError }) {
             handSize: player.hand, tryalCardCount: player.life,
             tryalCards: Array.from({length: player.life}, (_, i) => ({ name: player.id === 0
                 ? (i === 0 && scene.role === 'ปอบ' ? 'Witch' : i === 0 && scene.role === 'หมอผี' ? 'Constable' : 'Not A Witch') : null })),
-            revealedTryalCards: [], accusationPoints: player.accusations.reduce((sum, name) => sum + ({Accusation:1, Evidence:3, Witness:7}[name] || 0), 0),
+            revealedTryalCards: player.revealed, hasBeenWitch:player.id===0 ? scene.role==='ปอบ' : scene.knownWitches?.includes(player.id),
+            accusationPoints: player.accusations.reduce((sum, name) => sum + ({Accusation:1, Evidence:3, Witness:7}[name] || 0), 0),
             inPlayCards: [...player.effects.filter(name => name !== 'constable-protected'), ...player.accusations].map(name => ({ name, color: category(name) }))
         }]));
         let interaction = null;
@@ -53,14 +59,23 @@ export function createTrainingTable({ imageFor, action, onError }) {
             kind:'player', eligible:scene.players.filter(p => p.alive && p.id !== 0).map(p=>String(p.id)),
             selected:targets.map(String), blocked:{'0':'คุณ'}, outcomes:{}
         };
+        if(interaction?.kind==='player' && ['Accusation','Evidence','Witness'].includes(lesson.card)) {
+            for(const player of scene.players.filter(player=>player.effects.includes('Piety'))) {
+                interaction.eligible=interaction.eligible.filter(id=>id!==String(player.id));
+                interaction.blocked[String(player.id)]='พลังศรัทธา · กันการ์ดแดง';
+            }
+        }
         const hand = lesson.kind === 'card' && !finished ? [{ name:lesson.card, color:category(lesson.card) }] : [];
         end.hidden = !endAction; end.textContent = endLabel || 'จบเทิร์น';
-        engine.update({state:{gameStarted:true, currentPhase:scene.phase === 'กลางคืน' ? 'NIGHT':'DAY', players, deckCount:scene.deck, discardPileCount:scene.discard},
-            me:'0', hand, selected:selected ? 0:null, imageFor, handLowered:lowered, interaction, canDraw:!!drawAction});
+        const phase={'เตรียมเกม':'SETUP','กลางคืน':'NIGHT','ก่อนรุ่งสาง':'PRE_DAWN','จบเกม':'GAME_OVER'}[scene.phase] || 'DAY';
+        engine.update({state:{gameStarted:true, currentPhase:phase, gameOver:phase==='GAME_OVER', currentTurnPlayerUniqueId:phase==='DAY'?'0':null, players, deckCount:scene.deck, discardPileCount:scene.discard},
+            me:'0', hand, selected:selected ? 0:null, imageFor, handLowered:lowered, cardSizes:{hand:180}, interaction, canDraw:!!drawAction});
     }
     return {
         root,
         async update(next) {
+            const newLesson=next.lesson.id!==lastLesson;
+            if(newLesson){lowered=false;handToggle.textContent='วางไพ่';lastLesson=next.lesson.id;}
             snapshot = next; visible = true;
             const version = ++generation;
             try {
@@ -74,7 +89,7 @@ export function createTrainingTable({ imageFor, action, onError }) {
                     },
                     onEffect:(_,i)=>action(`effect-${snapshot.effectMap[i]}`),
                     onError:()=>onError()});
-                engine.setActive(true); sync();
+                engine.setActive(true); sync();if(newLesson)resetView();
             } catch (_) { if (visible && version === generation) onError(); }
         },
         pause() { visible=false; generation++; engine?.setActive(false); },

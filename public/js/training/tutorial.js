@@ -1,8 +1,7 @@
 import { client } from '../core/client.js';
-import { lessons, cardNames, getTrainingCardCategory, createScene, applyTrainingCard } from './lessons.js';
+import { lessons as fullLessons, quickLessonIds, cardNames, getTrainingCardCategory, createScene, applyTrainingCard } from './lessons.js';
 import { createTrainingTable } from './table3d.js';
 
-const storageKey = 'village-training-v1';
 const actionLabels = {
     'เล่นการ์ด': 'play', 'ยืนยันนำการ์ดออก': 'effects-confirm',
     '🂠 จั่ว 2 ใบ': 'draw', 'ยืนยันจั่ว 2 ใบ': 'draw',
@@ -15,6 +14,10 @@ const actionLabels = {
 };
 
 export function initialize() {
+    let course = 'quick';
+    try { if(localStorage.getItem('villageTrainingCourse')==='full')course='full'; } catch(_) {}
+    let lessons = course==='quick' ? fullLessons.filter(lesson=>quickLessonIds.includes(lesson.id)) : fullLessons;
+    const storageKey = () => course==='full' ? 'village-training-v1' : 'village-training-quick-v1';
     const dialog = document.getElementById('training-dialog');
     const body = document.getElementById('training-body');
     const close = document.getElementById('training-close');
@@ -25,6 +28,9 @@ export function initialize() {
     let opener;
     let triedProtection = false;
     let waitingToLeave = false;
+    let keyboardNavigation = false;
+    document.addEventListener('pointerdown',()=>{keyboardNavigation=false;},{passive:true});
+    document.addEventListener('keydown',event=>{if(event.key==='Tab')keyboardNavigation=true;});
     let view = '2d', lifeChoice = null, trainingNativeFullscreen = false;
     function leaveTrainingFullscreen() {
         if (trainingNativeFullscreen && document.fullscreenElement) document.exitFullscreen?.().catch(()=>{});
@@ -50,7 +56,7 @@ export function initialize() {
     function viewPicker(parent) {
         const bar = node('div', '', 'training-view-picker');
         for (const mode of ['2d','3d']) {
-            const pick = button(`ฝึก ${mode.toUpperCase()}`, () => {
+            const pick = button(mode.toUpperCase(), () => {
                 view = mode;
                 try { localStorage.setItem('villageTrainingView', mode); } catch (_) {}
                 if (scene) { render(); if(view==='3d') enterTrainingFullscreen(); } else showIntro();
@@ -76,11 +82,11 @@ export function initialize() {
         return element;
     }
     function save() {
-        try { localStorage.setItem(storageKey, JSON.stringify({ index, completed: [...completed] })); } catch (_) {}
+        try { localStorage.setItem(storageKey(), JSON.stringify({ index, completed: [...completed] })); } catch (_) {}
     }
     function restore() {
         try {
-            const saved = JSON.parse(localStorage.getItem(storageKey));
+            const saved = JSON.parse(localStorage.getItem(storageKey()));
             index = Number.isInteger(saved?.index) ? Math.max(0, Math.min(lessons.length, saved.index)) : 0;
             completed = new Set(Array.isArray(saved?.completed) ? saved.completed.filter(id => lessons.some(lesson => lesson.id === id)) : []);
         } catch (_) { index = 0; completed = new Set(); }
@@ -110,6 +116,7 @@ export function initialize() {
     function cardButton(name, onClick, parent, label) {
         const element = button('', onClick, parent);
         element.classList.add('training-card', getTrainingCardCategory(name).className);
+        element.dataset.cardName = name;
         element.dataset.trainingAction = 'card';
         const image = client.actions.createCardImage(name);
         image.removeAttribute('title');
@@ -117,7 +124,7 @@ export function initialize() {
         element.append(image, node('span', label || cardNames[name]));
         return element;
     }
-    function showLife(parent, owner, reveal, name) {
+    function showLife(parent, owner, reveal, name, opened = true) {
         parent.appendChild(node('p', `${owner.name} · เลือกการ์ดชีวิต 1 ใบ`));
         const row = node('div', '', 'training-card-row');
         for (let i = 0; i < owner.life; i++) {
@@ -125,7 +132,12 @@ export function initialize() {
                 if (lifeChoice?.owner !== owner.id || lifeChoice.index !== i) {
                     lifeChoice = {owner:owner.id,index:i}; render(); return;
                 }
-                lifeChoice = null; reveal(name);
+                lifeChoice = null;
+                if(opened) {
+                    owner.revealed.push({name,slot:i});owner.life--;
+                    if(name==='Witch' || !owner.life)owner.alive=false;
+                }
+                reveal(name);
             }, row, false, i === 0 ? 'life' : `life-${i}`);
             choice.dataset.trainingLife = String(i);
             choice.dataset.trainingLifeOwner = String(owner.id);
@@ -165,17 +177,21 @@ export function initialize() {
         const element = [...body.querySelectorAll('[data-training-action]')].find(button => button.dataset.trainingAction === key && !button.disabled);
         if (!element) return;
         element.dataset.trainingNext = 'true';
-        const coach = body.querySelector('.training-coach');
         const label = element.querySelector('strong')?.textContent || element.textContent;
-        if (coach) coach.textContent = view === '3d'
+        const instruction = body.querySelector('.training-instruction');
+        if (instruction && !finished) instruction.textContent = view === '3d'
             ? key === 'card' ? (lesson.kind === 'life' ? 'แตะการ์ดชีวิตของคุณบนโต๊ะ' : 'แตะไพ่ในมือบนโต๊ะ')
               : key.startsWith('target-') ? `แตะผู้เล่น ${scene.players[Number(key.slice(7))]?.name || ''} บนโต๊ะ`
               : key.startsWith('life') ? 'แตะการ์ดชีวิตที่มีกรอบ แล้วแตะใบเดิมเพื่อยืนยัน'
-              : key === 'draw' || key === 'infection' || key === 'night' ? 'แตะกองจั่วบนโต๊ะ'
+              : key === 'draw' || key === 'infection' || key === 'night' ? taps ? 'แตะกองจั่วอีกครั้งเพื่อยืนยัน' : 'แตะกองจั่วบนโต๊ะ'
               : key.startsWith('effect-') ? 'แตะการ์ดสถานะหน้าผู้เล่นบนโต๊ะ'
+              : key === 'play' ? `แตะ ${scene.players[targets.at(-1)]?.name || 'ผู้เล่นที่เลือก'} อีกครั้งเพื่อใช้การ์ด`
+              : key === 'heal-confirm' ? 'แตะคำปันอีกครั้ง หรือกดยืนยันปกป้องด้านล่าง'
               : `ขั้นต่อไป: ${label.trim()}`
-            : `กดตรงที่มีกรอบเน้น: ${label.trim()}`;
-        if (!dialog.open || view === '3d') return;
+            : key.startsWith('life') ? 'แตะชีวิต 1 ใบ แล้วแตะใบเดิมอีกครั้งเพื่อยืนยัน'
+              : key.startsWith('target-') ? `เลือก ${scene.players[Number(key.slice(7))]?.name || ''}${lesson.targets===2 ? targets.length ? ' เป็นผู้รับ' : ' เป็นต้นทาง' : ''}`
+              : key === 'card' ? `แตะการ์ด${cardNames[lesson.card] || 'ชีวิตของคุณ'}` : `แตะ ${label.trim()}`;
+        if (!dialog.open || view === '3d' || !keyboardNavigation) return;
         element.focus({ preventScroll: true });
         const bounds = element.getBoundingClientRect();
         const visible = dialog.getBoundingClientRect();
@@ -201,15 +217,16 @@ export function initialize() {
             }
             if (id !== expected[targets.length]) { hint(`ฉากนี้ให้เลือก ${scene.players[expected[targets.length]].name}${targets.length ? ' เป็นผู้รับ' : ''}`); return; }
             if (lesson.protection) triedProtection = true;
-            targets.push(id); render();
+            targets.push(id); message = ''; render();
         } else if (lesson.kind === 'witch' || lesson.kind === 'healer') {
-            if (id !== 2) { hint('ฉากนี้ลองเลือกคำปัน เพื่อดูผลของการโจมตีและป้องกัน'); return; }
+            if (id !== 2) { hint(lesson.kind==='healer' && id===0 ? 'หมอผีปกป้องตัวเองไม่ได้ · ลองเลือกคำปัน' : 'ฉากนี้ให้เลือกคำปัน'); return; }
+            if(lesson.kind==='healer' && view==='3d' && targets[0]===id) {scene.players[id].effects.push('constable-protected');complete();return;}
             targets = [id]; step = 'marked'; message = lesson.kind === 'witch' ? '📍 มาร์คคำปันแล้ว ทีมปอบเห็นมาร์คนี้ · ยังไม่มีใครตาย' : 'เลือกคำปันแล้ว · กดยืนยันการป้องกัน'; render();
         } else if (lesson.kind === 'reveal' && id === 1) { step = 'reveal'; render(); }
     }
     function playCard() {
         const lesson = lessons[index];
-        if (lesson.card === 'Curse' || lesson.card === 'Alibi') { step = 'pick-effect'; render(); return; }
+        if (lesson.card === 'Curse' || lesson.card === 'Alibi') { step = 'pick-effect'; message = ''; render(); return; }
         if (!applyTrainingCard(scene, lesson.card, targets)) { hint('เป้าหมายนี้รับการ์ดไม่ได้ เลือกใหม่อีกครั้ง'); return; }
         if (lesson.card === 'Witness') { step = 'witness-life'; message = 'ข้อกล่าวหาถึง 7 แต้มแล้ว · เลือกเปิดการ์ดชีวิตของมาลี'; render(); }
         else complete();
@@ -226,7 +243,7 @@ export function initialize() {
         }
         if (lesson.kind === 'card') {
             if (step === 'witness-life') {
-                showLife(parent, scene.players[1], () => { scene.players[1].life--; complete(); }, 'Not A Witch'); return;
+                showLife(parent, scene.players[1], () => { scene.discard+=scene.players[1].accusations.length;scene.players[1].accusations=[];complete(); }, 'Not A Witch'); return;
             }
             if (step === 'pick-effect') {
                 const options = lesson.card === 'Curse' ? scene.players[1].effects : scene.players[1].accusations;
@@ -251,7 +268,7 @@ export function initialize() {
             }
             parent.appendChild(node('p', 'การ์ดที่ใช้ฝึกในบทนี้'));
             const row = node('div', '', 'training-card-row');
-            const choice = cardButton(lesson.card, () => { selected = true; message = lesson.targets === 0 ? 'เครื่องเซ่นวางหน้าตัวเองได้' : view === '3d' ? 'เลือกตัวละครบนโต๊ะ' : 'เลือกผู้เล่นบนกระดานด้านบน'; render(); }, row);
+            const choice = cardButton(lesson.card, () => { selected = true; message = ''; render(); }, row);
             choice.setAttribute('aria-pressed', String(selected));
             parent.appendChild(row);
             const count = lesson.targets ?? 1;
@@ -269,12 +286,12 @@ export function initialize() {
         case 'end':
             button(taps ? 'ยืนยันจบเทิร์น' : 'จบเทิร์น', () => { if (!taps++) render(); else complete(); }, parent); break;
         case 'infection':
-            if (step === 'start') button('🂠 จั่วพิธีเซ่นไหว้', () => { step = 'holder'; scene.players[1].effects.push('Black Cat'); message = 'มาลีถือเครื่องเซ่น · เลือกเปิดการ์ดชีวิตของเธอ'; render(); }, parent);
-            else if (step === 'holder') showLife(parent, scene.players[1], () => { scene.players[1].life--; step = 'left'; message = 'ต่อไป หยิบการ์ดชีวิตจากมาลีซึ่งอยู่ทางซ้ายมือคุณ'; render(); }, 'Not A Witch');
-            else showLife(parent, scene.players[1], () => { scene.role = 'ปอบ'; scene.knownWitches = [1]; complete(); }, 'Witch');
+            if (step === 'start') button(taps?'ยืนยันจั่วพิธีเซ่นไหว้':'🂠 จั่วพิธีเซ่นไหว้', () => { if(!taps++){render();return;}scene.deck--;scene.discard++;step = 'holder'; scene.players[1].effects.push('Black Cat'); message = 'มาลีถือเครื่องเซ่น · เลือกเปิดการ์ดชีวิตของเธอ'; render(); }, parent,false,'infection');
+            else if (step === 'holder') showLife(parent, scene.players[1], () => { step = 'left'; message = 'ทุกคนเลือกหยิบชีวิตจากคนทางซ้าย · คุณเลือกจากแก้ว'; render(); }, 'Not A Witch');
+            else showLife(parent, scene.players[3], () => { scene.role = 'ปอบ'; scene.knownWitches = [3];scene.deck--;scene.players[0].hand++;complete(); }, 'Witch', false);
             break;
         case 'night':
-            button('🂠 จั่วยามวิกาล', () => { scene.phase = 'กลางคืน'; scene.knownWitches = [1, 3]; complete(); }, parent); break;
+            button(taps?'ยืนยันจั่วยามวิกาล':'🂠 จั่วยามวิกาล', () => { if(!taps++){render();return;}scene.deck--;scene.discard++;scene.phase = 'กลางคืน'; scene.knownWitches = [1, 3]; complete(); }, parent,false,'night'); break;
         case 'witch':
             if (step === 'confirm') {
                 button('ยืนยันฆ่าคำปันจริง', complete, parent);
@@ -285,7 +302,7 @@ export function initialize() {
             cardButton('Constable', () => hint('หมอผีมีความสามารถป้องกัน แต่ยังอยู่ทีมชาวบ้านในฉากนี้'), parent);
             button('ยืนยันปกป้องคำปัน', () => { scene.players[2].effects.push('constable-protected'); complete(); }, parent, !targets.length); break;
         case 'confess':
-            if (step !== 'retry') showLife(parent, scene.players[0], () => { scene.players[0].life--; complete(); }, 'Not A Witch');
+            if (step !== 'retry') showLife(parent, scene.players[0], complete, 'Not A Witch');
             button('ลองข้ามการสารภาพ', () => { scene.players[0].alive = false; step = 'retry'; message = 'ฉากนี้ไม่มีการป้องกันอื่น คุณจึงถูกฆ่า · ลองสารภาพเพื่อดูอีกผลลัพธ์'; render(); }, parent, step === 'retry');
             if (step === 'retry') button('ลองสารภาพแทน', () => { scene.players[0].alive = true; step = 'start'; message = ''; render(); }, parent);
             break;
@@ -305,20 +322,24 @@ export function initialize() {
         body.appendChild(node('p', `${lesson.chapter} · บท ${index + 1}/${lessons.length}`, 'training-eyebrow'));
         const progress = node('progress'); progress.max = lessons.length; progress.value = index; progress.setAttribute('aria-label', 'ความคืบหน้าบทฝึก'); body.appendChild(progress);
         const heading = node('h3', lesson.title); heading.tabIndex = -1; body.appendChild(heading);
+        if(view==='3d' && index===0) {
+            const controls=node('details','','training-controls-help');
+            controls.append(node('summary','วิธีหมุนมุมมอง'),node('p','คอม: ลากเมาส์ซ้ายเพื่อหมุนรอบโต๊ะ · คลิกขวาค้างแล้วลากเพื่อเงย/ก้ม · ล้อเมาส์ซูม\nมือถือ: ลากนิ้วเดียวเพื่อหมุน · ใช้สองนิ้วถ่าง/หุบเพื่อซูม · กดกลับโต๊ะเพื่อคืนมุมเดิม'));
+            body.appendChild(controls);
+        }
         body.appendChild(node('p', `คุณเป็น: ${scene.role} · ช่วง: ${scene.phase} · จั่ว ${scene.deck} / ทิ้ง ${scene.discard}`, 'training-meta'));
         body.appendChild(node('p', finished ? '✓ ทำสำเร็จแล้ว' : lesson.prompt, 'training-instruction'));
         if (lesson.card) {
             const category = getTrainingCardCategory(lesson.card);
             const explanation = node('details', '', `training-card-explanation ${category.className}`);
-            explanation.open = view === '2d';
+            explanation.open = false;
             explanation.setAttribute('aria-label', 'ความสามารถของการ์ด');
             explanation.append(
                 node('summary', `${cardNames[lesson.card]} · ${category.label}`),
-                node('p', client.actions.displayCardDescription(lesson.card))
+                node('p', lesson.description || client.actions.displayCardDescription(lesson.card))
             );
             body.appendChild(explanation);
         }
-        const coach = node('p', '', 'training-coach'); coach.setAttribute('role', 'status'); body.appendChild(coach);
         const board = node('div', '', 'training-board');
         scene.players.forEach(player => {
             const interactive = (lesson.kind === 'card' && lesson.targets !== 0 && step === 'start') ||
@@ -335,6 +356,12 @@ export function initialize() {
         });
         body.appendChild(board);
         const actions = node('div', '', 'training-actions'); renderActions(actions, lesson); body.appendChild(actions);
+        if(view==='2d' && lesson.kind==='card' && step==='start' && !finished) {
+            // Read and select the hand card before choosing its target, in the same scroll direction.
+            const hand=actions.querySelector('.training-card-row');
+            if(hand)board.before(hand);
+            actions.querySelector(':scope > p')?.remove();
+        }
         const feedback = node('p', message, 'training-feedback'); feedback.setAttribute('role', 'status'); feedback.setAttribute('aria-live', 'polite'); body.appendChild(feedback);
         const footer = node('div', '', 'training-footer');
         button('← บทก่อน', () => startLesson(index - 1), footer, index === 0);
@@ -355,8 +382,8 @@ export function initialize() {
             const effectOffset = lesson.card === 'Alibi' ? scene.players[1].effects.filter(name=>name!=='constable-protected').length : 0;
             const effectChoices = step === 'pick-effect' ? options.map((_,i)=>i+effectOffset) : [];
             trainingTable.update({scene,lesson,selected,targets,finished,
-                lifeOwner:life ? Number(life.dataset.trainingLifeOwner) : null,
-                lifeCount:body.querySelectorAll('[data-training-life]').length,
+                lifeOwner:life ? Number(life.dataset.trainingLifeOwner) : lesson.kind==='life' && !finished ? 0 : null,
+                lifeCount:life ? body.querySelectorAll('[data-training-life]').length : lesson.kind==='life' ? scene.players[0].life : 0,
                 lifeChoice:lifeChoice?.index ?? null, effectChoices,
                 effectMap:Object.fromEntries(effectChoices.map(i=>[i,i-effectOffset])),
                 effectSelection:selectedCards.map(i=>i+effectOffset),
@@ -370,13 +397,14 @@ export function initialize() {
         trainingTable.pause();
         body.replaceChildren();
         const practiced = new Set(lessons.filter(lesson => completed.has(lesson.id)).map(lesson => lesson.card).filter(Boolean));
-        body.append(node('h3', 'สรุปการฝึก'), node('p', `ทำสำเร็จ ${completed.size}/${lessons.length} บท · ลองการ์ด ${practiced.size}/${Object.keys(cardNames).length} ชนิด`, 'training-instruction'));
-        body.appendChild(node('p', 'บทฝึกครอบคลุมชาวบ้าน ปอบ หมอผี และลำดับกลางวัน → กลางคืน → ก่อนรุ่งสาง → วันใหม่ → จบเกม'));
+        body.append(node('h3', course==='quick' ? 'จบการสอนแบบเร็ว' : 'สรุปการฝึก'), node('p', `ทำสำเร็จ ${completed.size}/${lessons.length} บท${course==='full' ? ` · ลองการ์ด ${practiced.size}/${Object.keys(cardNames).length} ชนิด` : ''}`, 'training-instruction'));
+        body.appendChild(node('p', 'จำ 3 อย่าง: ตาคุณเลือกจั่วหรือเล่น · ครบ 7 แต้มเปิดชีวิต 1 ใบ · เปิดปอบหรือหมดชีวิตคือตาย'));
         const remaining = lessons.filter(lesson => !completed.has(lesson.id));
         if (remaining.length) {
             body.appendChild(node('p', 'บทที่ยังไม่ได้ทำสำเร็จ · แตะเพื่อกลับไปลอง'));
             remaining.forEach(lesson => button(lesson.title, () => startLesson(lessons.indexOf(lesson)), body, false, `review-${lesson.id}`));
-        } else body.appendChild(node('p', '✓ ทำครบทุกบทและการ์ดทั้ง 18 ชนิดแล้ว พร้อมลองห้องจริงได้เลย'));
+        } else body.appendChild(node('p', course==='quick' ? '✓ เข้าใจพื้นฐานแล้ว ลองห้องจริงหรือฝึกการ์ดพิเศษต่อได้' : '✓ ทำครบทุกบทและการ์ดทั้ง 18 ชนิดแล้ว พร้อมลองห้องจริงได้เลย'));
+        if(course==='quick')button('ฝึกการ์ดพิเศษต่อ',()=>{course='full';lessons=fullLessons;try{localStorage.setItem('villageTrainingCourse',course);}catch(_){}restore();showIntro();},body);
         button('เริ่มฝึกใหม่', () => { completed.clear(); startLesson(0); }, body);
         button('กลับหน้าแรก', () => dialog.close(), body);
         updateCoach(remaining.length ? `review-${remaining[0].id}` : 'restart');
@@ -404,9 +432,14 @@ export function initialize() {
         body.replaceChildren();
         restore();
         viewPicker(body);
-        body.append(node('h3', 'ฝึกเล่นแบบลงมือทำ'), node('p', `${view.toUpperCase()} · ชาวบ้าน ปอบ หมอผี · การ์ดครบ 18 ชนิด`, 'training-instruction'),
-            node('p', 'แต่ละบทเป็นฉากจำลองสั้น ๆ ที่เตรียมไว้ ให้ลองกดเลือกการ์ด เลือกเป้าหมาย และเห็นผลทันที ไม่ต้องสร้างห้องหรือรอคนอื่น'));
-        body.appendChild(node('p', 'เกมจริงเริ่มด้วยการแจกการ์ดชีวิต ดูฝั่งของคุณ แล้วสลับตำแหน่งไพ่ได้ก่อนกดยืนยัน เมื่อทุกคนพร้อมจึงเริ่มมอบเครื่องเซ่น · บทฝึกด้านล่างจำลองแต่ละสถานการณ์แยกกัน'));
+        body.append(node('h3', 'เรียนด้วยการลองกด'),node('p','ชาวบ้าน: เปิดปอบให้ครบ · ปอบ: กำจัดฝ่ายชาวบ้าน'),node('p','ฝึกคนเดียวได้ แต่ละบทเป็นสถานการณ์จำลองแยกกัน'));
+        const courses=node('div','','training-course-picker');
+        for(const [key,label] of [['quick',`แบบเร็ว · ${quickLessonIds.length} บท`],['full','การ์ดครบ 18 แบบ']]) {
+            const pick=button(label,()=>{save();course=key;lessons=course==='quick'?fullLessons.filter(lesson=>quickLessonIds.includes(lesson.id)):fullLessons;try{localStorage.setItem('villageTrainingCourse',course);}catch(_){}showIntro();},courses);
+            pick.setAttribute('aria-pressed',String(course===key));
+        }
+        body.appendChild(courses);
+        body.appendChild(node('p','เกมจริง: แจกชีวิต → จัดตำแหน่งและยืนยัน → ปอบมอบเครื่องเซ่น → กลางคืน → สารภาพ → กลางวัน','training-start-order'));
         if (completed.size || index) button('ฝึกต่อจากครั้งก่อน', () => startLesson(index), body);
         button('เริ่มฝึกตั้งแต่ต้น', () => { completed.clear(); startLesson(0); }, body);
         updateCoach(completed.size || index ? 'resume' : 'start');
