@@ -86,6 +86,23 @@ const publicRoot = path.resolve(__dirname, '../public');
             document.getElementById('table3d-log').open=true;
             previewEvent('card action feedback',{actorName:'คำปัน',targetName:'คุณ',cardName:'Evidence',result:'ข้อกล่าวหา +3 แต้ม'});
         }, process.argv.includes('--roster-only'));
+        if(process.argv.includes('--blood-only')) {
+            await page.waitForTimeout(1200);
+            await page.evaluate(()=>{
+                document.getElementById('table3d-log').open=false;
+                document.getElementById('play-result-toast').hidden=true;
+                window.previewState.players.p2.alive=false;
+                window.previewOptions.handLowered=true;
+                window.previewEngine.update(window.previewOptions);
+                window.previewEngine.resetCamera();
+            });
+            await page.waitForTimeout(250);
+            await page.screenshot({path:path.join(output,'death-blood-table.png')});
+            await page.evaluate(()=>window.previewEngine.stepSeat(2));
+            await page.waitForTimeout(300);
+            await page.screenshot({path:path.join(output,'death-blood-close.png')});
+            return;
+        }
         if(process.argv.includes('--shotgun-only')) {
             await page.waitForTimeout(1000);
             await page.evaluate(()=>{
@@ -102,7 +119,7 @@ const publicRoot = path.resolve(__dirname, '../public');
             await page.waitForTimeout(200);
             await page.screenshot({path:path.join(output,'shotgun-by-chair.png')});
             await page.evaluate(()=>{
-                const shot={actorId:'p2',targetId:'p0',actorName:'มาลี',targetName:'คุณ',startedAt:Date.now(),raiseDuration:2800,bulletDuration:4200,recoveryDuration:900,duration:7900};
+                const shot={actorId:'p2',targetId:'p0',actorName:'มาลี',targetName:'คุณ',startedAt:Date.now(),raiseDuration:2800,bulletDuration:3400,recoveryDuration:900,duration:7100};
                 window.previewState.prankShotActive=true;window.previewState.prankShot=shot;
                 window.previewEngine.update(window.previewOptions);
             });

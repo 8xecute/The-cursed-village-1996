@@ -14,12 +14,25 @@ const root=path.resolve(__dirname,'..');
    const file=path.resolve(root,'.'+pathname);if(!file.startsWith(root+path.sep)||!fs.existsSync(file))return route.abort();
    return route.fulfill({contentType:{'.js':'text/javascript','.mjs':'text/javascript','.glb':'model/gltf-binary','.ttf':'font/ttf'}[path.extname(file)]||'application/octet-stream',body:fs.readFileSync(file)});
   });
-  await page.goto('http://shotgun.test/');
+  await page.goto('http://shotgun.test/'+(process.argv.includes('--blood')?'?blood':''));
   const diagnostics=await page.evaluate(async()=>{
    const T=await import('three'),{GLTFLoader}=await import('three/addons/loaders/GLTFLoader.js');
    const {prepareVillagerModels,instantiateVillager}=await import('/src/client/villager-models.mjs');
    const {createGunShot}=await import('/src/client/gun-shot.mjs'),{createShotgun}=await import('/src/client/shotgun-model.mjs');
    const models=prepareVillagerModels((await new GLTFLoader().loadAsync('/public/models/villagers-seated.glb')).scene);
+   if (location.search.includes('blood')) {
+    const {addBloodPool}=await import('/src/client/blood-pool.mjs');
+    document.querySelector('h1').textContent='กองเลือดบริเวณผู้ตายที่ฟุบลงบนโต๊ะ';
+    document.getElementById('stages').style.gridTemplateColumns='1fr';
+    const scene=new T.Scene();scene.background=new T.Color('#211a15');scene.add(new T.HemisphereLight('#ffedda','#544737',2));
+    const light=new T.DirectionalLight('#fff2de',3);light.position.set(-3,5,-4);scene.add(light);
+    const pawn=new T.Group();pawn.scale.setScalar(1.4);pawn.position.y=-.05;scene.add(pawn);instantiateVillager(pawn,models,0x596b55,false,0);
+    const table=new T.Mesh(new T.BoxGeometry(4,.35,3.4),new T.MeshStandardMaterial({color:0x503322,roughness:.82}));table.position.set(0,-.2,-2.2);scene.add(table);
+    const seat=new T.Group();seat.position.z=-2.05;scene.add(seat);addBloodPool(seat,-.025,0);
+    const renderer=new T.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});renderer.setSize(1100,760);renderer.toneMapping=T.ACESFilmicToneMapping;
+    const camera=new T.PerspectiveCamera(40,1100/760,.01,30);camera.position.set(1.7,1.9,-3.8);camera.lookAt(0,.03,-.65);
+    renderer.render(scene,camera);document.getElementById('stages').append(renderer.domElement);await document.fonts.ready;return [];
+   }
    const renderer=new T.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});renderer.setSize(470,460);renderer.toneMapping=T.ACESFilmicToneMapping;
    const diagnostics=[];
    for(const id of [1,0]){
@@ -48,6 +61,6 @@ const root=path.resolve(__dirname,'..');
    return diagnostics;
   });
   if(process.argv.includes('--inspect'))console.log(JSON.stringify(diagnostics));
-  await page.screenshot({path:path.join(output,'shotgun-standing-sequence.png'),fullPage:true});
+  await page.screenshot({path:path.join(output,process.argv.includes('--blood')?'death-blood-detail.png':'shotgun-standing-sequence.png'),fullPage:true});
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

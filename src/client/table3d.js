@@ -4,6 +4,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { prepareVillagerModels, instantiateVillager, disposeVillagerModels } from './villager-models.mjs';
 import { createGunShot } from './gun-shot.mjs';
 import { createShotgun } from './shotgun-model.mjs';
+import { addBloodPool } from './blood-pool.mjs';
 import { addLifeCardFrame, lifeBorderColor } from './life-card-frame.mjs';
 import { lifeSlots } from '../../public/js/cards/life-slots.mjs';
 import { createCameraControls } from './camera-controls.mjs';
@@ -363,6 +364,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             seat.rotation.y = angle;
             seatPositions.set(player.uniqueId, seat.position.clone().setY(1.3));
             dynamic.add(seat);
+            if (!player.alive) addBloodPool(seat, TABLE_TOP_Y - seat.position.y, index);
             const pawn = new THREE.Group(); pawn.position.z = 2.05; pawn.position.y = -.1; seat.add(pawn);
             actorPawns.set(player.uniqueId, pawn);
             pawn.scale.setScalar(1.4);
@@ -623,7 +625,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
         lastShotId = event.startedAt;
         from.multiplyScalar(1.35).setY(.9); to.multiplyScalar(1.35).setY(.7);
         gunShots.push(createGunShot({ scene, from, to, getPawn: () => lastSceneOptions?.state.players?.[event.actorId]?.alive ? actorPawns.get(event.actorId) : null, getParkedGun: () => parkedGuns.get(event.actorId),
-            startedAt: event.startedAt, raiseDuration: event.raiseDuration || 2800, bulletDuration: event.bulletDuration || 4200, recoveryDuration: event.recoveryDuration || 900 }));
+            startedAt: event.startedAt, raiseDuration: event.raiseDuration || 2800, bulletDuration: event.bulletDuration || 3400, recoveryDuration: event.recoveryDuration || 900 }));
         requestRender();
     }
     return {
