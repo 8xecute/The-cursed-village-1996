@@ -18,9 +18,11 @@ client.actions.startMusic = () => {
     client.state.hasUserStartedMusic = true;
     player?.unlock();
 };
-client.actions.changePhaseMusic = phase => {
+client.actions.changePhaseMusic = (phase, roomState = client.state.currentRoomState) => {
     client.state.lastMusicPhase = phase;
-    player?.setTrack(client.state.phaseMusic?.[phase] || client.state.phaseMusic?.LOBBY);
+    const track = phase === 'SETUP' ? '' : roomState?.isAssigningBlackCat
+        ? client.state.phaseMusic?.OFFERING : client.state.phaseMusic?.[phase] || client.state.phaseMusic?.LOBBY;
+    player?.setTrack(track || '');
 };
 
 export function initialize() {
@@ -29,7 +31,7 @@ export function initialize() {
     client.state.isMusicPlaying = false;
     client.state.hasUserStartedMusic = false;
     client.state.phaseMusic = {
-        LOBBY: 'audio/lobby-music.mp3', SETUP: 'audio/lobby-music.mp3',
+        LOBBY: 'audio/lobby-music.mp3', SETUP: '', OFFERING: 'audio/night-music.mp3',
         DAY: 'audio/day-music.mp3', NIGHT: 'audio/night-music.mp3',
         PRE_DAWN: 'audio/predawn-music.mp3', GAME_OVER: 'audio/lobby-music.mp3'
     };
@@ -58,5 +60,5 @@ export function initialize() {
     window.addEventListener('pageshow', () => { pageActive = true; updateVisibility(); });
     document.addEventListener('freeze', () => { pageActive = false; updateVisibility(); });
     document.addEventListener('resume', () => { pageActive = true; updateVisibility(); });
-    client.state.socket.on('room left', () => client.actions.changePhaseMusic('LOBBY'));
+    client.state.socket.on('room left', () => client.actions.changePhaseMusic('LOBBY', null));
 }

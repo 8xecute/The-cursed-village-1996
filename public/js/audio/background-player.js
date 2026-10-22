@@ -84,6 +84,7 @@ export function createBackgroundPlayer(onPlaying) {
     return {
         setTrack(next) {
             if (file !== next) { file = next; savedPosition = null; cancelLoad(); }
+            if (!file) { pause(); savedPosition = null; return; }
             if (allowed()) void sync();
         },
         setVolume(next) {

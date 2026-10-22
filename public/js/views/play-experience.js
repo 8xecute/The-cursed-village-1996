@@ -1,4 +1,6 @@
 import { client } from '../core/client.js';
+import { playSurfaceSound } from '../audio/surface-sounds.js';
+import { CARD_MOTION } from '../core/card-motion.mjs';
 
 const nameOf = card => typeof card === 'string' ? card : card.name;
 client.actions.cardOutcomePreview = function(card, target) {
@@ -122,6 +124,10 @@ export function initialize() {
     const shotSounds = new Set();
     function sound(kind, delay = 0) {
         if (!audio || audio.state !== 'running' || !saved || document.hidden) return;
+        if (['flip','place','deal','mechanism','turn'].includes(kind)) {
+            const stop=playSurfaceSound(audio,saved,kind,delay,()=>shotSounds.delete(stop));
+            shotSounds.add(stop);return stop;
+        }
         if (kind === 'ghost') {
             const when = audio.currentTime, mix = audio.createGain(); mix.connect(audio.destination);
             mix.gain.setValueAtTime(.001, when); mix.gain.exponentialRampToValueAtTime(saved * .22, when + .035);
@@ -145,7 +151,7 @@ export function initialize() {
             // A brief voiced groan with vocal formants and a breathy release.
             const when = audio.currentTime + Math.max(0, delay), duration = .9;
             const voice = audio.createOscillator(), envelope = audio.createGain();
-            voice.type = 'sawtooth'; voice.frequency.setValueAtTime(154, when);
+            voice.type = 'triangle'; voice.frequency.setValueAtTime(124, when);
             voice.frequency.exponentialRampToValueAtTime(63, when + .72);
             envelope.gain.setValueAtTime(.001, when);
             envelope.gain.exponentialRampToValueAtTime(saved * .22, when + .06);
@@ -159,8 +165,8 @@ export function initialize() {
             }
             const breath = audio.createBufferSource(), air = audio.createBiquadFilter(), airGain = audio.createGain();
             const buffer = audio.createBuffer(1,Math.ceil(audio.sampleRate * duration),audio.sampleRate);
-            const samples = buffer.getChannelData(0); for(let i=0;i<samples.length;i++) samples[i]=(Math.random()*2-1)*.1;
-            breath.buffer=buffer; air.type='lowpass'; air.frequency.value=1600; airGain.gain.value=.25;
+            const samples = buffer.getChannelData(0); for(let i=0;i<samples.length;i++) samples[i]=(Math.random()*2-1)*.3;
+            breath.buffer=buffer; air.type='lowpass'; air.frequency.value=1400; airGain.gain.value=.55;
             breath.connect(air); air.connect(airGain); airGain.connect(envelope); nodes.push(breath,air,airGain);
             let ended=false;
             const cleanup=()=>{if(ended)return;ended=true;nodes.forEach(node=>node.disconnect());shotSounds.delete(stop);};
@@ -192,13 +198,6 @@ export function initialize() {
             shotSounds.add(stop); bass.onended = cleanup;
             return;
         }
-        const osc = audio.createOscillator(), gain = audio.createGain();
-        osc.type = kind === 'turn' ? 'sine' : 'triangle';
-        osc.frequency.setValueAtTime(kind === 'turn' ? 620 : kind === 'flip' ? 330 : 160, audio.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(kind === 'turn' ? 830 : 85, audio.currentTime+.12);
-        gain.gain.setValueAtTime(saved*.12,audio.currentTime); gain.gain.exponentialRampToValueAtTime(.001,audio.currentTime+.18);
-        osc.connect(gain); gain.connect(audio.destination); osc.start(); osc.stop(audio.currentTime+.2);
-        osc.onended = () => { osc.disconnect(); gain.disconnect(); };
     }
     let stopGhostSound;
     client.actions.stopGhostScareSound = () => { stopGhostSound?.(); stopGhostSound = null; };
@@ -227,8 +226,10 @@ export function initialize() {
         const route = event.targetName ? `${event.actorName} → ${event.targetName}${event.secondTargetName ? ' → '+event.secondTargetName : ''}` : event.actorName;
         if (!event.batchIndex) {
             const title = event.batchCount > 1 ? `การ์ดแดง ${event.batchCount} ใบ (+${event.batchPoints} แต้ม)` : client.actions.displayCardName(event.cardName);
-            showFeedback(`${route} · ${title} · ${event.result}`); sound('place');
+            showFeedback(`${route} · ${title} · ${event.result}`);
+            sound('flip');
         }
+        if ((event.batchIndex || 0) < 3) sound('place',((event.delay || 0)+CARD_MOTION.play)/1000);
         if (document.body.classList.contains('game-view-3d')) client.state.table3D?.animateCard?.(event);
         else if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
             const actor = document.querySelector(`.player-board-card[data-player-id="${CSS.escape(event.actorId || '')}"]`);
@@ -237,10 +238,13 @@ export function initialize() {
                 const from = actor.getBoundingClientRect(), to = recipient.getBoundingClientRect();
                 const image = client.actions.createCardImage(event.cardName);
                 image.classList.add('flying-play-card'); document.body.appendChild(image);
+                const fx=from.x+from.width/2-29,fy=from.y+from.height/2-40,tx=to.x+to.width/2-29,ty=to.y+to.height/2-40;
                 const animation = image.animate([
-                    { transform: `translate(${from.x+from.width/2}px,${from.y+from.height/2}px) rotate(-10deg)`, opacity: .9 },
-                    { transform: `translate(${to.x+to.width/2}px,${to.y+to.height/2}px) rotate(8deg)`, opacity: 0 }
-                ], { duration:650, easing:'ease-in-out' });
+                    { transform:`translate(${fx}px,${fy}px) rotate(-5deg)`,opacity:1 },
+                    { transform:`translate(${(fx+tx)/2}px,${(fy+ty)/2-22}px) rotate(2deg)`,opacity:1,offset:.5 },
+                    { transform:`translate(${tx}px,${ty}px) rotate(0deg) scale(.95)`,opacity:1,offset:.88 },
+                    { transform:`translate(${tx}px,${ty}px) rotate(0deg) scale(.95)`,opacity:0 }
+                ], { duration:CARD_MOTION.play, easing:'cubic-bezier(.2,.65,.35,1)' });
                 animation.onfinish = animation.oncancel = () => image.remove();
             }
         }
@@ -249,6 +253,7 @@ export function initialize() {
     });
     client.state.socket.on('table card movement', event => {
         if (document.body.classList.contains('game-view-3d')) client.state.table3D?.animateMovement?.(event);
+        if (['life-deal','draw'].includes(event.kind)) sound('deal',(event.delay || 0)/1000);
         if (event.kind === 'conspiracy') { showFeedback('พิธีเซ่นไหว้ · ทุกคนส่งการ์ดชีวิตพร้อมกัน'); sound('flip'); }
     });
     client.state.socket.on('table phase cue', ({cardName}) => {
@@ -261,11 +266,15 @@ export function initialize() {
     });
     client.state.socket.on('update hand', () => sound('flip'));
     client.state.socket.on('prank gun shot', event => {
-        sound('place');
+        sound('mechanism',Math.max(0,(event.raiseDuration || 2800)*.4/1000));
+        sound('mechanism',Math.max(0,(event.raiseDuration || 2800)/1000-.10));
         sound('gun', (event.raiseDuration || 900) / 1000);
     });
+    document.getElementById('table3d-hand-toggle')?.addEventListener('click',()=>sound('flip'));
     client.state.socket.on('card play rejected', ({message}) => { showFeedback(message); sound('flip'); });
-    client.state.socket.on('game restarted', () => { previousAlive.clear(); feedback.hidden=true; feedback.textContent=''; feedbackQueue.length=0; clearTimeout(feedbackTimer); });
+    client.state.socket.on('game restarted', () => { shotSounds.forEach(stop=>stop());previousAlive.clear(); feedback.hidden=true; feedback.textContent=''; feedbackQueue.length=0; clearTimeout(feedbackTimer); });
     client.state.socket.on('room left', () => { previousAlive.clear(); shotSounds.forEach(stop => stop()); focused=null; status.hidden=true; closeInspect(); feedback.hidden=true; feedback.textContent=''; feedbackQueue.length=0; clearTimeout(feedbackTimer); previousPhase=previousTurn=null; });
-    window.addEventListener('pagehide', () => { audio?.suspend().catch(() => {}); });
+    const suspendSounds=()=>{shotSounds.forEach(stop=>stop());audio?.suspend().catch(()=>{});};
+    window.addEventListener('pagehide',suspendSounds);
+    document.addEventListener('visibilitychange',()=>{if(document.hidden)suspendSounds();});
 }

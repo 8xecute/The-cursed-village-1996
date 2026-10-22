@@ -5,6 +5,8 @@ import { prepareVillagerModels, instantiateVillager, disposeVillagerModels } fro
 import { createGunShot } from './gun-shot.mjs';
 import { createShotgun } from './shotgun-model.mjs';
 import { addBloodPool } from './blood-pool.mjs';
+import { createHandMotion } from './hand-motion.mjs';
+import { CARD_MOTION } from '../../public/js/core/card-motion.mjs';
 import { addLifeCardFrame, lifeBorderColor } from './life-card-frame.mjs';
 import { lifeSlots } from '../../public/js/cards/life-slots.mjs';
 import { createCameraControls } from './camera-controls.mjs';
@@ -17,6 +19,7 @@ const PAPER_FACE_OFFSET = .016; // .012-thick edge, plus a small anti-flicker ga
 const CARD_WIDTH = .44;
 const CARD_HEIGHT = CARD_WIDTH * 1.48;
 const CARD_SPACING = CARD_WIDTH + .02;
+const flightLandingY = point => (Math.hypot(point.x,point.z)<2.35 ? CLOTH_TOP_Y : TABLE_TOP_Y) + PAPER_FACE_OFFSET + .004;
 const COLORS = [0x526774, 0x795551, 0x88744e, 0x596b55, 0x716275, 0x8a806b,
     0x7e634e, 0x5c6974, 0x785d69, 0x727354, 0x56716d, 0x72675e];
 
@@ -92,7 +95,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
         parent.add(object);
         return object;
     }
-    buildCeremonialRoom(scene, wood);
+    const roomLighting = buildCeremonialRoom(scene, wood);
     const tableMaterial = new THREE.MeshStandardMaterial({ map: wood, bumpMap: wood, bumpScale: .035, roughness: .78, color: 0xb4a38b });
     mesh(new THREE.CylinderGeometry(6.2, 6.2, 0.35, 80), tableMaterial, scene, [0, -0.2, 0]);
     // Keep the tabletop flat through its outer edge so wrists cannot be
@@ -101,8 +104,8 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
         new THREE.MeshStandardMaterial({ map: cloth, bumpMap: cloth, bumpScale: .008, roughness: 1 }), scene, [0, 0.006, 0]);
     mesh(new THREE.CylinderGeometry(0.4, 0.45, 0.11, 24),
         new THREE.MeshStandardMaterial({ color: 0x8d7446, metalness: 0.72, roughness: 0.52 }), scene, [0, 0.08, 0]);
-    mesh(new THREE.CylinderGeometry(0.17, 0.2, 0.65, 20),
-        new THREE.MeshStandardMaterial({ color: 0xc4b58d, roughness: 0.96 }), scene, [0, 0.45, 0]);
+    const wax = mesh(new THREE.CylinderGeometry(0.17, 0.2, 0.65, 20),
+        new THREE.MeshStandardMaterial({ color: 0xc4b58d, emissive:0xc4b58d, emissiveIntensity:.02, roughness: 0.96 }), scene, [0, 0.45, 0]);
     const flame = new THREE.Group(); flame.position.set(0,.79,0); scene.add(flame);
     const profile = [[0,0],[.032,.02],[.065,.09],[.047,.18],[.015,.27],[0,.34]].map(([r,y]) => new THREE.Vector2(r,y));
     const outerFlame = mesh(new THREE.LatheGeometry(profile,20),new THREE.MeshBasicMaterial({color:0xff8b26,transparent:true,opacity:.72,depthWrite:false,toneMapped:false}),flame,[0,0,0]);
@@ -170,12 +173,13 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
     let lastShotId = null;
     let feedbackImageFor;
     const flights = [];
+    const handMotion = createHandMotion();
     const gunShots = [];
     function removeGunShot(shot) {
         shot.dispose();
     }
-    const cardFlightDuration = 1400;
-    const cardArrivalPause = 550;
+    const cardFlightDuration = CARD_MOTION.play;
+    const cardArrivalPause = CARD_MOTION.pause;
     function stopFlight() {
         gunShots.forEach(removeGunShot); gunShots.length = 0;
         for (const flight of flights) { scene.remove(flight.mesh); flight.mesh.geometry.dispose(); flight.mesh.material.dispose(); }
@@ -185,7 +189,11 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
         if (!active || disposed || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
         const face = new THREE.Mesh(new THREE.PlaneGeometry(CARD_WIDTH,CARD_HEIGHT), new THREE.MeshBasicMaterial({map:texture,transparent:true,side:THREE.DoubleSide}));
         face.quaternion.copy(camera.quaternion); face.position.copy(from); face.visible = false; scene.add(face);
-        flights.push({mesh:face,from:from.clone(),to:to.clone(),started:performance.now()+delay,hold}); requestRender();
+        const heading = Math.atan2(to.x-from.x,to.z-from.z);
+        const flight = {mesh:face,from:from.clone(),to:to.clone(),rotation:face.quaternion.clone(),
+            resting:new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI/2,0,heading)),
+            arc:Math.min(.3,from.distanceTo(to)*.025),started:performance.now()+delay,hold};
+        flights.push(flight); requestRender(); return flight;
     }
 
     function requestRender() {
@@ -224,14 +232,17 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
                 flight.mesh.visible = true;
                 flight.mesh.position.lerpVectors(flight.from,flight.to,eased);
                 flight.mesh.position.y += Math.sin(Math.PI*t)*(flight.arc ?? 1.2);
+                flight.mesh.quaternion.slerpQuaternions(flight.rotation,flight.resting,eased);
+                if (t === 1) flight.mesh.position.y += Math.sin(Math.max(0,Math.min(1,(elapsed-(flight.duration || cardFlightDuration))/120))*Math.PI)*.012;
                 if (elapsed >= (flight.duration || cardFlightDuration)+flight.hold) { scene.remove(flight.mesh); flight.mesh.geometry.dispose(); flight.mesh.material.dispose(); flights.splice(index,1); }
             }
             for (let index = gunShots.length - 1; index >= 0; index--) {
                 const shot = gunShots[index];
                 if (!shot.tick(now)) { removeGunShot(shot); gunShots.splice(index, 1); }
             }
+            const handMoving = handMotion.tick(now);
             renderer.render(scene, camera);
-            if (flights.length || gunShots.length || cameraRig.hasMovement || !reducedMotion.matches) requestRender();
+            if (flights.length || gunShots.length || handMoving || cameraRig.hasMovement || !reducedMotion.matches) requestRender();
         });
     }
     const graphics = createGraphicsQuality({ renderer, scene, key, container, quality: qualityLevel, requestRender,
@@ -333,18 +344,26 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
         signature = nextSignature;
         lifeSetupStage = state.lifeSetup?.stage || null;
         lifeSetupPile = null;
-        const night = state.currentPhase === 'NIGHT';
+        const night = ['NIGHT', 'PRE_DAWN'].includes(state.currentPhase);
         ritualActive = state.currentPhase === 'BLACKCAT_TRYAL' || !!state.awaitingLeftTryalSelections;
         const choosingLife = ritualActive || !!state.playerForcedToRevealTryal || state.currentPhase === 'PRE_DAWN' || interaction?.kind === 'life';
-        ambient.intensity = choosingLife ? 1.8 : 1.25;
-        key.intensity = choosingLife ? 3 : 2.4;
-        candleBaseIntensity = choosingLife ? 12 : 10;
+        roomLighting.setNight(night);
+        ambient.intensity = night ? 0 : choosingLife ? 1.8 : 1.25;
+        key.intensity = night ? 0 : choosingLife ? 3 : 2.4;
+        moonFill.intensity = night ? 0 : .85;
+        ambient.visible = key.visible = moonFill.visible = !night;
+        wax.material.emissiveIntensity = night ? .18 : .02;
+        scene.background.set(night ? 0x020202 : 0x303b40);
+        scene.fog.color.copy(scene.background);
+        candleLight.distance = night ? 13 : 9;
+        candleBaseIntensity = night ? 34 : choosingLife ? 12 : 10;
         candleLight.intensity = candleBaseIntensity;
-        outerFlame.material.color.set(night ? 0xe82028 : 0xff8b26);
-        innerFlame.material.color.set(night ? 0xff5750 : 0xffe5a0);
-        core.material.color.set(night ? 0xffb5a3 : 0xfff6da);
-        glow.material.color.set(night ? 0xff3028 : 0xffffff);
-        candleLight.color.set(night ? 0xff3038 : 0xffa04c);
+        outerFlame.material.color.set(0xff8b26);
+        innerFlame.material.color.set(0xffe5a0);
+        core.material.color.set(0xfff6da);
+        glow.material.color.set(0xffffff);
+        candleLight.color.set(0xffa04c);
+        handMotion.begin();
         clearDynamic();
         if (!state.prankShotActive && gunShots.length) {
             gunShots.forEach(removeGunShot); gunShots.length = 0;
@@ -478,7 +497,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             const own = player.uniqueId === me;
             const count = state.currentPhase === 'SETUP' || interaction?.kind === 'life' ? 0 : own ? hand.length : Number(player.handSize) || 0;
             // Own hand uses separate rows so every title remains visible.
-            const handSize = sizeFor('hand');
+            const handSize = own ? sizeFor('hand') : 1;
             const seatColumns = Math.max(3, Math.floor((Math.PI * 2 * 4.7 / players.length - .3) / (CARD_SPACING * handSize)));
             const maxColumns = own && !handLowered && container.clientHeight > container.clientWidth ? 4 : Math.min(8, seatColumns);
             const columns = Math.ceil(count / Math.max(1, Math.ceil(count / maxColumns)));
@@ -498,8 +517,15 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
                     own ? cardTexture(imageFor(hand[i].name)) : back,
                     own ? { cardIndex: i, category: hand[i].color, resting: lowered } : { playerId: player.uniqueId, resting: lowered });
                 face.scale.setScalar(handSize * (lowered ? handScale : 1));
+                if (own && !lowered && night) {
+                    // Keep private card text readable without lighting the room.
+                    face.material.emissiveMap=face.material.map;
+                    face.material.emissive.setHex(0xffddb0);
+                    face.material.emissiveIntensity=.5;
+                }
                 if (own && (selected === i || selectedCards.includes(i))) face.material.color.set(0xb9a687);
                 if (own && reorderIndex === i) outline(face, 0xffdc73);
+                if (own) handMotion.place(`${me}:${i}:${hand[i].name}`,face,!reducedMotion.matches);
             }
             // Effects begin beyond the innermost life row, with a size-aware gap.
             effects.forEach((effect, i) => {
@@ -509,6 +535,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
                 if (interaction?.kind === 'effect' && interaction.owner === player.uniqueId && interaction.eligible.includes(i)) outline(effectCard, interaction.selected.includes(i) ? 0x879277 : 0xc2ab87);
             });
         });
+        handMotion.end();
 
         if (state.gameStarted && !state.gameOver && !state.prankGunHolderId) {
             const mount = new THREE.Group(); mount.position.set(-3.6, 2.1, -11.25); dynamic.add(mount);
@@ -647,7 +674,8 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
         animateCard(event) {
             const actor = seatPositions.get(event.actorId), target = seatPositions.get(event.targetId);
             const from = actor?.clone().multiplyScalar(1.15).setY(1);
-            const to = target ? target.clone().multiplyScalar(.63).setY(.18) : new THREE.Vector3(0,1.1,0);
+            const to = target ? target.clone().multiplyScalar(.7) : new THREE.Vector3();
+            to.y = flightLandingY(to);
             if (!from || !feedbackImageFor) return;
             const texture = cardTexture(feedbackImageFor(event.cardName));
             addFlight(from,to,texture,event.delay || 0,cardArrivalPause);
@@ -658,17 +686,18 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
                 if (!active || disposed || reducedMotion.matches) return;
                 const seat = seatPositions.get(event.targetId);
                 if (seat) {
-                    addFlight(new THREE.Vector3(0, 1.6, 0), seat.clone().multiplyScalar(.79).setY(.18), back, 0, 0);
+                    const to=seat.clone().multiplyScalar(.79);to.y=flightLandingY(to);
+                    addFlight(new THREE.Vector3(0, .25, 0), to, back, 0, 0);
                     const flight = flights.at(-1);
-                    flight.duration = 650; flight.arc = .5;
+                    flight.duration = CARD_MOTION.deal; flight.arc = .12;
                 }
             } else if (event.kind === 'draw') {
                 const to = seatPositions.get(event.targetId);
-                if (to) addFlight(new THREE.Vector3(-1.2,.4,0),to.clone().multiplyScalar(1.15).setY(1),back,event.delay || 0);
+                if (to) { const flight=addFlight(new THREE.Vector3(-1.2,.18,0),to.clone().multiplyScalar(1.02).setY(.8),back,event.delay || 0); if(flight){flight.duration=CARD_MOTION.draw;flight.resting.copy(flight.rotation);} }
             } else if (event.kind === 'conspiracy') {
                 for (const route of event.routes || []) {
                     const from = seatPositions.get(route.actorId), to = seatPositions.get(route.targetId);
-                    if (from && to) addFlight(from.clone().multiplyScalar(.79).setY(.18),to.clone().multiplyScalar(.79).setY(.18),back);
+                    if (from && to) { const source=from.clone().multiplyScalar(.79),target=to.clone().multiplyScalar(.79);source.y=flightLandingY(source)+.03;target.y=flightLandingY(target);addFlight(source,target,back); }
                 }
             }
         },
@@ -679,11 +708,12 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             cameraRig.dispose();
             disposed = true; clearTimeout(holdTimer); clearTimeout(flameTimer); stopFlight();
             cancelAnimationFrame(renderFrame);
-            resizeObserver.disconnect(); clearDynamic();
+            resizeObserver.disconnect(); handMotion.clear(); clearDynamic();
             scene.traverse(object => { object.geometry?.dispose(); object.material?.dispose(); });
             characterCache.forEach(parts => parts.forEach(part => { if (!villagerModels || part.userData.ownedGeometry) part.geometry.dispose(); part.material.dispose(); }));
             characterCache.clear();
             if (villagerModels) disposeVillagerModels(villagerModels, true);
+            roomLighting.dispose();
             flameGlowTexture.dispose(); wood.dispose(); cloth.dispose(); back.dispose(); textures.forEach(texture => texture.dispose());
             renderer.dispose(); renderer.domElement.remove();
         },

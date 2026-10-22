@@ -5,10 +5,14 @@ HTML audio player. Background music is separate from the sound effects volume.
 
 ## Tracks
 
-- `lobby-music.mp3`: home, lobby, life setup and game over.
+- `lobby-music.mp3`: home, lobby and game over.
 - `day-music.mp3`: daytime.
-- `night-music.mp3`: nighttime.
+- `night-music.mp3`: nighttime and the initial offering selection.
 - `predawn-music.mp3`: pre-dawn.
+
+Life setup (shuffling, dealing and arranging lives) stops background music.
+Music resumes when the witches begin choosing the offering recipient; card
+handling effects continue independently during the quiet setup.
 
 Track selection is configured in `public/js/audio/music.js`. There is no reference
 to a missing game-over track.

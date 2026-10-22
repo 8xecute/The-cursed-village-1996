@@ -104,7 +104,7 @@ export function initialize() {
       
       // Change background music based on game phase
       if (roomState.currentPhase) {
-          client.actions.changePhaseMusic(roomState.currentPhase);
+          client.actions.changePhaseMusic(roomState.currentPhase, roomState);
       }
       // Update lobby/game UI based on roomState
       client.dom.lobbyRoomName.textContent = roomState.name;

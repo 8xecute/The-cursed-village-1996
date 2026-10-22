@@ -22,7 +22,10 @@ export function createGraphicsQuality({ renderer, scene, key, container, quality
         }
         let lightIndex=0;
         scene.traverse(part=>{
-            if(part.userData.qualityLight) {part.visible=QUALITY_PRESETS[level].lightStride > 0 && lightIndex % QUALITY_PRESETS[level].lightStride === 0;lightIndex++;}
+            if(part.userData.qualityLight) {
+                part.userData.qualityAllowed=QUALITY_PRESETS[level].lightStride > 0 && lightIndex % QUALITY_PRESETS[level].lightStride === 0;
+                part.visible=part.userData.qualityAllowed && !part.userData.nightDisabled;lightIndex++;
+            }
             if(changed && part.isMesh && part.material) part.material.needsUpdate=true;
         });
         if (changed) onChange?.();

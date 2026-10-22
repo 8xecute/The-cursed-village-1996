@@ -51,8 +51,23 @@ export function buildCeremonialRoom(scene, wood, lowPower = false) {
     // Repeat the same inward-facing room wall on all four sides. Leaving the
     // ceiling open preserves overhead play; walls disappear when viewed outside.
     const pottery=new THREE.MeshStandardMaterial({color:0x3b3930,roughness:.98});
-    const windowMaterial=new THREE.MeshBasicMaterial({color:0x151e25});
+    const outside=document.createElement('canvas');outside.width=256;outside.height=256;
+    const sky=outside.getContext('2d');
+    const haze=sky.createLinearGradient(0,0,0,256);haze.addColorStop(0,'#9ba7ac');haze.addColorStop(.6,'#75888b');haze.addColorStop(1,'#41575a');
+    sky.fillStyle=haze;sky.fillRect(0,0,256,256);
+    // Soft cloud bands and distant trees, without additional geometry or lights.
+    for(let i=0;i<9;i++) {
+        sky.fillStyle=`rgba(205,214,214,${.06+(i%3)*.025})`;sky.beginPath();sky.ellipse((i*83)%300-20,30+i*19,95,14,0,0,Math.PI*2);sky.fill();
+    }
+    for(let i=0;i<15;i++) {
+        const x=i*20-8,top=125+(i*29)%65;
+        sky.fillStyle='rgba(35,60,58,.35)';sky.fillRect(x,top,3,256-top);
+        sky.beginPath();sky.moveTo(x-17,top+67);sky.lineTo(x+2,top-12);sky.lineTo(x+21,top+67);sky.fill();
+    }
+    const outsideMap=new THREE.CanvasTexture(outside);outsideMap.colorSpace=THREE.SRGBColorSpace;
+    const windowMaterial=new THREE.MeshBasicMaterial({map:outsideMap,color:0xc7d2d4});
     const paper=new THREE.MeshStandardMaterial({color:0x9c733e,emissive:0xffa345,emissiveIntensity:.6,roughness:.8});
+    const roomLights=[];
     for(let side=0;side<4;side++) {
         const angle=side*Math.PI/2;
         const group=new THREE.Group();group.rotation.y=angle;scene.add(group);
@@ -81,12 +96,22 @@ export function buildCeremonialRoom(scene, wood, lowPower = false) {
             wallAdd(new THREE.CylinderGeometry(.3,.3,.06,12),bronze,[x,2.64,-11.3]);wallBeam([.025,3.1,.025],[x,4.2,-11.3]);
         }
         const light=new THREE.PointLight(0xdf9e59,7,10,2);light.position.set(0,3,-10.4);light.userData.qualityLight=true;group.add(light);
+        roomLights.push(light);
     }
     // Table legs and cross braces visible when looking across the table.
     for(const x of [-3.3,3.3]) for(const z of [-3.3,3.3]) {
         const leg=add(new THREE.CylinderGeometry(.19,.25,1,12),material,[x,-.85,z]);leg.castShadow=true;
     }
     beam([7,.15,.18],[0,-1.02,0]);beam([.18,.15,7],[0,-1.02,0]);
+    return {
+        setNight(night) {
+            windowMaterial.color.setHex(night?0x020304:0xc7d2d4);
+            paper.emissiveIntensity=night?0:.6;
+            paper.color.setHex(night?0x32291e:0x9c733e);
+            roomLights.forEach(light=>{light.intensity=night?0:7;light.userData.nightDisabled=night;light.visible=!night && light.userData.qualityAllowed!==false;});
+        },
+        dispose() { outsideMap.dispose(); }
+    };
 }
 
 export function createRitualBust(parent, color, alive, variant = 0, headGeometry = null) {

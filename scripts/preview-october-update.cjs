@@ -21,7 +21,7 @@ const publicRoot = path.resolve(__dirname, '../public');
             if (extension === '.html') body = body.toString().replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '');
             return route.fulfill({contentType:type,body});
         });
-        await page.goto('http://preview.test/' + (process.argv.includes('--mobile-review') ? '?mobile-review' : process.argv.includes('--refinements-only') || process.argv.includes('--shotgun-only') ? '?refinements' : ''));
+        await page.goto('http://preview.test/' + (process.argv.includes('--mobile-review') ? '?mobile-review' : ['--refinements-only','--shotgun-only','--atmosphere-only'].some(flag=>process.argv.includes(flag)) ? '?refinements' : ''));
         await page.screenshot({path:path.join(output,'halloween-home.png')});
         if (process.argv.includes('--ui-static-only')) {
             await page.evaluate(()=>document.getElementById('music-overlay').style.display='none');
@@ -93,6 +93,35 @@ const publicRoot = path.resolve(__dirname, '../public');
             document.getElementById('table3d-log').open=true;
             previewEvent('card action feedback',{actorName:'คำปัน',targetName:'คุณ',cardName:'Evidence',result:'ข้อกล่าวหา +3 แต้ม'});
         }, process.argv.includes('--roster-only'));
+        if(process.argv.includes('--atmosphere-only')) {
+            await page.waitForTimeout(1000);
+            await page.evaluate(()=>{document.getElementById('table3d-log').open=false;document.getElementById('play-result-toast').hidden=true;window.previewEngine.resetCamera();});
+            await page.screenshot({path:path.join(output,'cloudy-day.png')});
+            await page.evaluate(()=>{window.previewOptions.cardSizes={hand:200};window.previewEngine.update(window.previewOptions);});
+            await page.waitForTimeout(400);
+            await page.screenshot({path:path.join(output,'own-hand-200-percent.png')});
+            await page.evaluate(()=>{window.previewOptions.handLowered=true;window.previewEngine.update(window.previewOptions);});
+            await page.waitForTimeout(160);
+            await page.screenshot({path:path.join(output,'hand-lowering-motion.png')});
+            await page.evaluate(()=>{window.previewOptions.handLowered=false;});
+            await page.evaluate(()=>{window.previewOptions.cardSizes={hand:100};window.previewState.currentPhase='NIGHT';window.previewEngine.update(window.previewOptions);});
+            await page.waitForTimeout(400);
+            await page.screenshot({path:path.join(output,'candle-night.png')});
+            await page.setViewportSize({width:390,height:844});
+            await page.evaluate(()=>{window.previewEngine.setQuality('low');window.previewEngine.resetCamera();});
+            await page.waitForTimeout(250);
+            await page.screenshot({path:path.join(output,'candle-night-mobile.png')});
+            const pcm=await page.evaluate(async()=>{
+                const {playSurfaceSound}=await import('/js/audio/surface-sounds.js');
+                const context=new OfflineAudioContext(1,96000,48000);
+                playSurfaceSound(context,.8,'flip',.1);playSurfaceSound(context,.8,'place',.85);playSurfaceSound(context,.7,'deal',1.45);
+                return Array.from((await context.startRendering()).getChannelData(0));
+            });
+            const wav=Buffer.alloc(44+pcm.length*2);wav.write('RIFF',0);wav.writeUInt32LE(wav.length-8,4);wav.write('WAVEfmt ',8);wav.writeUInt32LE(16,16);wav.writeUInt16LE(1,20);wav.writeUInt16LE(1,22);wav.writeUInt32LE(48000,24);wav.writeUInt32LE(96000,28);wav.writeUInt16LE(2,32);wav.writeUInt16LE(16,34);wav.write('data',36);wav.writeUInt32LE(pcm.length*2,40);
+            pcm.forEach((value,i)=>wav.writeInt16LE(Math.round(Math.max(-1,Math.min(1,value))*32767),44+i*2));
+            fs.writeFileSync(path.join(output,'paper-and-table.wav'),wav);
+            return;
+        }
         if(process.argv.includes('--blood-only')) {
             await page.waitForTimeout(1200);
             await page.evaluate(()=>{
