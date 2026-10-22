@@ -63,7 +63,8 @@ module.exports = function createServices(game) {
                   break;
           case 'PRE_DAWN':
               room.confessionOrder = game.getAlivePlayers(room).map(player => player.uniqueId);
-              room.confessionActions = [];
+              room.confessionActions = game.getAlivePlayers(room)
+                  .filter(player => game.isNightProtected(room, player)).map(player => player.uniqueId);
               room.confessionResolving = false;
               room.confessionChoices = {};
               room.nightConfessors = [];
@@ -96,6 +97,11 @@ module.exports = function createServices(game) {
       nextDuration = nextPhase === 'PRE_DAWN' ? 0 : room.phaseConfig[nextPhase] || game.DEFAULT_PHASE_DURATIONS[nextPhase];
       game.startPhaseTimer(roomName, nextDuration);
       game.emitRoomState(roomName);
+
+      if (nextPhase === 'PRE_DAWN') {
+          game.finishConfessionIfReady(roomName);
+          return;
+      }
 
       // If transitioning to NIGHT, prompt witch and constable actions
       if (nextPhase === 'NIGHT') {
@@ -163,6 +169,9 @@ module.exports = function createServices(game) {
           return;
       }
       room.gameStarted = true;
+      clearTimeout(room.prankGunTimer);
+      room.prankGunTimer = null;
+      room.prankGunExpiresAt = null;
       assignCharacterIds(alivePlayers, game.shuffleArray, true);
       room.firstTurnStarted = false;
       room.pendingDraw = null;
@@ -215,7 +224,7 @@ module.exports = function createServices(game) {
           player.isSilenced = false; // Reset status
           room.prankShot = null;
           player.prankGun = false;
-          player.ghostScareUsed = false;
+          player.ghostScareAvailableAt = 0;
           player.ghostScareUntil = 0;
           player.inPlayCards = []; // Clear permanent cards from previous game
           player.hand = []; // Clear hand from previous game

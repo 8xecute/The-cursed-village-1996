@@ -2,11 +2,11 @@ import { client } from '../core/client.js';
 
 export function initialize() {
     const controls = document.createElement('aside'); controls.id = 'ghost-scare-controls'; controls.hidden = true;
-    const open = document.createElement('button'); open.type = 'button'; open.textContent = '👻 หลอกเพื่อน · 1 ครั้ง'; open.setAttribute('aria-expanded', 'false');
+    const open = document.createElement('button'); open.type = 'button'; open.textContent = '👻 หลอกเพื่อน'; open.setAttribute('aria-expanded', 'false');
     const panel = document.createElement('div'); panel.id = 'ghost-scare-panel'; panel.hidden = true;
     open.setAttribute('aria-controls', panel.id);
     const title = document.createElement('strong'); title.textContent = 'เลือกคนที่ยังมีชีวิต';
-    const hint = document.createElement('p'); hint.textContent = 'ใช้ได้ 1 ครั้งต่อเกม · คนที่เลือกจะเห็นผีแวบขึ้นมา';
+    const hint = document.createElement('p'); hint.textContent = 'หลอกได้ทุก 2 นาที · คนที่เลือกจะเห็นผีแวบขึ้นมา';
     const targets = document.createElement('select'); targets.setAttribute('aria-label', 'ผู้เล่นที่จะหลอก');
     const send = document.createElement('button'); send.type = 'button'; send.textContent = '👻 หลอกคนนี้';
     const cancel = document.createElement('button'); cancel.type = 'button'; cancel.textContent = 'ปิด';
@@ -17,17 +17,26 @@ export function initialize() {
     const image = document.createElement('img'); image.src = 'cards/witch.png'; image.alt = ''; image.draggable = false; face.appendChild(image);
     const caption = document.createElement('div'); caption.className = 'ghost-scare-caption';
     overlay.append(face, caption);
-    let timer, pending = false, generation = 0, state;
+    let timer, cooldownTimer, pending = false, generation = 0, state;
+    const eligible = () => !!(state?.ghostScareEligible ?? state?.ghostScareAvailable) && !state?.isSpectator && !client.state.isSpectatorMode;
+    const secondsLeft = () => Math.max(0, Math.ceil(((state?.ghostScareAvailableAt || 0) - Date.now()) / 1000));
+    const canScare = () => eligible() && !secondsLeft();
     function mount() {
         const root = document.fullscreenElement || document.body;
-        if (controls.parentElement !== root) root.appendChild(controls);
+        const scene = document.body.classList.contains('game-view-3d') && document.getElementById('table3d-canvas');
+        const controlsRoot = scene || root;
+        if (controls.parentElement !== controlsRoot) controlsRoot.appendChild(controls);
         if (overlay.parentElement !== root) root.appendChild(overlay);
     }
     function close() { panel.hidden = true; open.setAttribute('aria-expanded', 'false'); }
     function stop() { clearTimeout(timer); overlay.hidden = true; client.actions.stopGhostScareSound?.(); }
     function render() {
-        controls.hidden = !state?.ghostScareAvailable || !!state.isSpectator || !!client.state.isSpectatorMode;
-        open.disabled = pending;
+        controls.hidden = !eligible();
+        const seconds = secondsLeft();
+        open.textContent = seconds ? `👻 หลอกได้อีกใน ${Math.floor(seconds/60)}:${String(seconds%60).padStart(2,'0')}` : '👻 หลอกเพื่อน';
+        open.disabled = pending || !!seconds;
+        if (controls.hidden || !seconds) { clearInterval(cooldownTimer);cooldownTimer=null; }
+        else if (!cooldownTimer) cooldownTimer=setInterval(render,1000);
         if (controls.hidden) close();
         const players = Object.values(state?.players || {}).filter(p => p.alive && p.connected !== false && !p.isBot && !p.isReplacementBot && !p.reconnectDeadline);
         const signature = JSON.stringify(players.map(p => [p.uniqueId, p.name]));
@@ -37,22 +46,25 @@ export function initialize() {
             if (players.some(p => p.uniqueId === previous)) targets.value = previous;
             targets.dataset.signature = signature;
         }
-        send.disabled = pending || !players.length;
+        send.disabled = pending || !canScare() || !players.length;
         if (!players.length && !pending) status.textContent = 'ยังไม่มีผู้เล่นออนไลน์ที่หลอกได้';
     }
     open.onclick = () => { panel.hidden = !panel.hidden; open.setAttribute('aria-expanded', String(!panel.hidden)); status.textContent = ''; render(); };
     cancel.onclick = close;
     send.onclick = () => {
-        if (pending || !targets.value || !state?.ghostScareAvailable) return;
+        if (pending || !targets.value || !canScare()) return;
         pending = true; const request = generation; status.textContent = 'กำลังส่งผี…'; render();
         client.state.socket.timeout(5000).emit('ghost scare', targets.value, (error, result) => {
             if (request !== generation) return;
             pending = false;
             if (error) status.textContent = 'ยังไม่ได้รับคำตอบ กรุณารอเชื่อมต่อแล้วลองใหม่';
-            else if (!result?.ok) status.textContent = result?.message || 'ยังหลอกไม่ได้';
+            else if (!result?.ok) {
+                status.textContent = result?.message || 'ยังหลอกไม่ได้';
+                if (result?.availableAt) state = { ...state, ghostScareAvailableAt: result.availableAt };
+            }
             else {
-                state = { ...state, ghostScareAvailable: false }; close();
-                client.actions.addGameMessage('👻 ส่งผีไปหลอกเพื่อนแล้ว · คุณใช้สิทธิ์ครบในเกมนี้แล้ว', 'purple');
+                state = { ...state, ghostScareEligible:true, ghostScareAvailable: false, ghostScareAvailableAt:result.availableAt }; close();
+                client.actions.addGameMessage('👻 ส่งผีไปหลอกเพื่อนแล้ว · หลอกได้อีกครั้งใน 2 นาที', 'purple');
             }
             render();
         });
@@ -68,9 +80,10 @@ export function initialize() {
         timer = setTimeout(stop, Math.max(500, Math.min(3800, Number(event.duration) || 3400)));
     });
     client.state.socket.on('room left', () => { generation++; pending = false; state = null; close(); stop(); render(); });
-    client.state.socket.on('disconnect', () => { generation++; pending = false; close(); stop(); controls.hidden = true; });
+    client.state.socket.on('disconnect', () => { generation++; pending = false; close(); stop(); controls.hidden = true;clearInterval(cooldownTimer);cooldownTimer=null; });
     document.addEventListener('fullscreenchange', mount);
-    document.addEventListener('visibilitychange', () => { if (document.hidden) stop(); });
+    new MutationObserver(mount).observe(document.body, { attributes:true, attributeFilter:['class'] });
+    document.addEventListener('visibilitychange', () => { if (document.hidden) stop();else render(); });
     window.addEventListener('pagehide', stop);
     mount();
 }

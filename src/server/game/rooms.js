@@ -12,6 +12,8 @@ module.exports = function createServices(game) {
       clearInterval(room.phaseInterval);
       clearTimeout(room.confessionTimer);
       clearTimeout(room.nightActionTimeout);
+      clearTimeout(room.prankGunTimer);
+      room.prankGunTimer = null;
       room.phaseInterval = room.confessionTimer = room.nightActionTimeout = null;
       for (const player of Object.values(room.players || {})) {
           clearTimeout(player.disconnectTimeout);

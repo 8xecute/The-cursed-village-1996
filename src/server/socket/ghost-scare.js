@@ -5,17 +5,19 @@ module.exports = function registerGhostScare(socket, game) {
         const player = room?.players[socket.uniqueId];
         if (!room?.gameStarted || room.gameOver || !player || player.id !== socket.id || player.alive !== false || player.isBot || player.isSpectator)
             return reply({ ok: false, message: 'ใช้ได้หลังคุณตาย และเกมยังไม่จบเท่านั้น' });
-        if (player.ghostScareUsed) return reply({ ok: false, message: 'คุณใช้สิทธิ์หลอกเพื่อนในเกมนี้แล้ว' });
+        const now = Date.now();
+        if (player.ghostScareAvailableAt > now) return reply({ ok: false,
+            message: `รออีก ${Math.ceil((player.ghostScareAvailableAt - now) / 1000)} วินาที จึงจะหลอกได้อีกครั้ง`,
+            availableAt: player.ghostScareAvailableAt });
         const target = typeof targetId === 'string' && room.players[targetId];
         if (!target?.alive || !target.id || target.connected === false || target.isBot || target.isReplacementBot || target.reconnectDeadline)
             return reply({ ok: false, message: 'เลือกผู้เล่นที่ยังมีชีวิตและออนไลน์อยู่' });
-        const now = Date.now();
         if (target.ghostScareUntil > now) return reply({ ok: false, message: 'คนนี้กำลังโดนหลอกอยู่ ลองเลือกใหม่อีกครั้ง' });
-        // Commit before emitting, so double clicks/reconnects cannot grant another use.
-        player.ghostScareUsed = true;
+        // Commit before emitting, so double clicks/reconnects cannot bypass cooldown.
+        player.ghostScareAvailableAt = now + 2 * 60 * 1000;
         target.ghostScareUntil = now + 3800;
         game.io.to(target.id).emit('ghost scare received', { actorName: player.name, duration: 3400 });
-        reply({ ok: true, targetName: target.name });
+        reply({ ok: true, targetName: target.name, availableAt: player.ghostScareAvailableAt });
         game.emitRoomState(room.name);
     });
 };

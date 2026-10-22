@@ -14,7 +14,7 @@ module.exports = function createServices(game) {
       const room = game.rooms[roomName];
       const player = room?.players[id];
       if (!room || room.gameOver || !room.gameStarted || room.currentPhase !== 'PRE_DAWN' ||
-          !player?.alive || room.confessionResolving || room.confessionActions?.includes(id)) return;
+          !player?.alive || game.isNightProtected(room, player) || room.confessionResolving || room.confessionActions?.includes(id)) return;
       if (index !== null && (!Number.isInteger(index) || index < 0 || index >= player.tryalCards.length)) return;
       (room.confessionChoices ||= {})[id] = index;
       markConfessionAction(room, id);
@@ -25,12 +25,14 @@ module.exports = function createServices(game) {
       const room = game.rooms[roomName];
       if (!room || room.gameOver || room.currentPhase !== 'PRE_DAWN' || room.confessionResolving) return;
       const alive = game.getAlivePlayers(room);
-      if (!alive.every(player => room.confessionActions?.includes(player.uniqueId))) return;
+      if (!alive.every(player => game.isNightProtected(room, player) || room.confessionActions?.includes(player.uniqueId))) return;
       room.confessionResolving = true;
       clearConfessionTimer(roomName);
       room.nightConfessors = [];
       // Resolve in stable seating order, regardless of network arrival order.
       for (const player of alive) {
+          // Protection automatically passes this step without spending a life card.
+          if (game.isNightProtected(room, player)) continue;
           const index = room.confessionChoices?.[player.uniqueId];
           if (index === null || index === undefined) {
               game.sendGameMessage(room.name, `${player.name} ข้ามการสารภาพบาป`, 'orange', true);

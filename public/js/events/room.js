@@ -95,10 +95,15 @@ export function initialize() {
       if (client.dom.nameInputContainer) client.dom.nameInputContainer.style.display = roomState.gameStarted ? 'none' : 'flex';
       const registeredName = roomState.players?.[client.state.myUniqueId]?.name;
       if (registeredName) {
+          const previousName = client.state.myPlayerName || '';
+          const draft = client.dom.nameInput.value;
+          // Ready toggles and other room updates must preserve an unfinished
+          // rename, including an empty draft and edits made while saving.
+          const hasDraft = draft !== previousName;
           client.state.myPlayerName = registeredName;
           try { sessionStorage.setItem('playerName', registeredName); } catch (_) {}
           client.dom.playerNameDisplay.textContent = registeredName;
-          client.dom.nameInput.value = registeredName;
+          if (!hasDraft || draft.trim() === registeredName) client.dom.nameInput.value = registeredName;
       }
       client.actions.updateTryalCardDisplay(); // Always update tryal card display on room state update
       

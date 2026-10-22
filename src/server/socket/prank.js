@@ -6,14 +6,26 @@ module.exports = function registerPrank(socket, game) {
     }
     socket.on('prank gun pickup', () => {
         const { room, player } = context();
-        if (!room?.gameStarted || room.gameOver || room.prankShot || !player?.alive || room.currentPhase !== 'DAY') return;
+        if (!room?.gameStarted || room.gameOver || room.prankShot || !player?.alive || room.currentPhase !== 'DAY' || room.prankGunExpiresAt) return;
         if (Object.values(room.players).some(other => other.alive && other.prankGun)) return;
         for (const other of Object.values(room.players)) other.prankGun = other === player;
+        const expiresAt = Date.now() + 2 * 60 * 1000;
+        room.prankGunExpiresAt = expiresAt;
+        room.prankGunTimer = setTimeout(() => {
+            if (game.rooms[room.name] !== room || room.prankGunExpiresAt !== expiresAt) return;
+            room.prankGunTimer = null;
+            for (const other of Object.values(room.players)) other.prankGun = false;
+            if (!room.gameStarted || room.gameOver) return;
+            if (player.id) game.io.to(player.id).emit('game message', 'หมดเวลาใช้ลูกซองแล้ว', 'orange');
+            game.emitRoomState(room.name);
+        }, 2 * 60 * 1000);
+        room.prankGunTimer.unref?.();
         game.emitRoomState(room.name);
     });
     socket.on('prank gun shoot', id => {
         const { room, player } = context();
-        if (!room?.gameStarted || room.gameOver || room.prankShot || room.currentPhase !== 'DAY' || !player?.alive || !player.prankGun || game.hasPendingCardAction(room)) return;
+        if (!room?.gameStarted || room.gameOver || room.prankShot || room.currentPhase !== 'DAY' || !player?.alive || !player.prankGun ||
+            !room.prankGunExpiresAt || Date.now() >= room.prankGunExpiresAt || game.hasPendingCardAction(room)) return;
         const target = room.players[id];
         if (!target?.alive || id === player.uniqueId) return;
         const shot = { actorId: player.uniqueId, targetId: id, actorName: player.name, targetName: target.name,

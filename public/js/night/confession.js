@@ -8,7 +8,7 @@ client.actions.showConfessPopup = function showConfessPopup(tryalCards) {
     const existingOverlay = document.getElementById('confess-overlay');
     if (existingOverlay) existingOverlay.remove();
     
-    if (!tryalCards || tryalCards.length === 0) return; // ไม่เด้ง popup ถ้าไม่มีไพ่
+    if (!tryalCards || tryalCards.length === 0 || client.state.currentRoomState?.confessionExempt) return;
 
     // Confession starts a new life-selection step; previous reveal/pick dialogs
     // must not survive and become actionable again after confession closes.

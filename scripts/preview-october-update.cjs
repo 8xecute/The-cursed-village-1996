@@ -93,6 +93,52 @@ const publicRoot = path.resolve(__dirname, '../public');
             document.getElementById('table3d-log').open=true;
             previewEvent('card action feedback',{actorName:'คำปัน',targetName:'คุณ',cardName:'Evidence',result:'ข้อกล่าวหา +3 แต้ม'});
         }, process.argv.includes('--roster-only'));
+        if(process.argv.includes('--turn-alert-only')) {
+            await page.waitForTimeout(1000);
+            await page.evaluate(()=>{
+                document.getElementById('table3d-log').open=false;
+                document.getElementById('play-result-toast').hidden=true;
+                document.getElementById('game-preferences').open=true;
+            });
+            await page.screenshot({path:path.join(output,'turn-sound-settings.png')});
+            await page.setViewportSize({width:390,height:844});
+            await page.screenshot({path:path.join(output,'turn-sound-settings-mobile.png')});
+            await page.evaluate(()=>{
+                document.getElementById('game-preferences').open=false;
+                previewState.players.p0.alive=false;
+                Object.assign(previewState,{ghostScareEligible:true,ghostScareAvailable:false,ghostScareAvailableAt:Date.now()+95000});
+                previewEvent('room state update',previewState);previewEngine.update(previewOptions);
+            });
+            await page.waitForTimeout(200);
+            await page.screenshot({path:path.join(output,'ghost-cooldown-mobile.png')});
+            await page.evaluate(()=>previewEngine.dispose());
+            return;
+        }
+        if(process.argv.includes('--gun-limit-only')) {
+            await page.waitForTimeout(1200);
+            await page.evaluate(()=>{
+                document.getElementById('table3d-log').open=false;
+                document.getElementById('play-result-toast').hidden=true;
+                Object.assign(previewState,{prankGun:true,prankGunHolderId:'p0',prankGunAvailable:false,prankGunExpiresAt:Date.now()+120000});
+                previewEngine.update(previewOptions);previewEvent('room state update',previewState);
+            });
+            await page.screenshot({path:path.join(output,'shotgun-two-minute-limit.png')});
+            await page.evaluate(()=>{
+                Object.assign(previewState,{prankGun:false,prankGunHolderId:null,prankGunExpiresAt:Date.now()-1});
+                previewEngine.update(previewOptions);previewEvent('room state update',previewState);
+            });
+            await page.screenshot({path:path.join(output,'shotgun-expired.png')});
+            await page.setViewportSize({width:390,height:844});
+            await page.evaluate(async()=>{
+                Object.assign(previewState,{prankGun:true,prankGunHolderId:'p0',prankGunExpiresAt:Date.now()+61000});
+                previewEngine.update(previewOptions);previewEvent('room state update',previewState);
+                previewEngine.resetCamera();
+            });
+            await page.waitForTimeout(200);
+            await page.screenshot({path:path.join(output,'shotgun-limit-mobile.png')});
+            await page.evaluate(()=>previewEngine.dispose());
+            return;
+        }
         if(process.argv.includes('--visual-polish-only')) {
             await page.waitForTimeout(1200);
             await page.evaluate(()=>{

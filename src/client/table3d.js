@@ -373,7 +373,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
         const { state, me, hand, selected, selectedCards = [], imageFor, interaction = null, canDraw = false, drawConfirming = false, handLowered = false, artwork = 'new', reorderIndex = null, cardSizes = {} } = options;
         const sizeFor = key => Math.max(.5, Math.min(2, (Number(cardSizes[key]) || 100) / 100));
         if (!state) return;
-        const nextSignature = JSON.stringify([state.currentPhase, state.gameOver, state.lifeSetup, state.awaitingLeftTryalSelections, state.playerForcedToRevealTryal, state.players, state.currentTurnPlayerUniqueId, state.deckCount, state.discardPileCount, state.witchNightState, state.prankGunHolderId, state.prankShotActive, hand, selected, selectedCards, me, interaction, canDraw, drawConfirming, handLowered, artwork, reorderIndex, cardSizes]);
+        const nextSignature = JSON.stringify([state.currentPhase, state.gameOver, state.lifeSetup, state.awaitingLeftTryalSelections, state.playerForcedToRevealTryal, state.players, state.currentTurnPlayerUniqueId, state.deckCount, state.discardPileCount, state.witchNightState, state.prankGunHolderId, state.prankGunAvailable, state.prankShotActive, hand, selected, selectedCards, me, interaction, canDraw, drawConfirming, handLowered, artwork, reorderIndex, cardSizes]);
         if (signature === nextSignature) return;
         signature = nextSignature;
         lifeSetupStage = state.lifeSetup?.stage || null;
@@ -573,7 +573,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
         });
         handMotion.end();
 
-        if (state.gameStarted && !state.gameOver && !state.prankGunHolderId) {
+        if (state.gameStarted && !state.gameOver && !state.prankGunHolderId && state.prankGunAvailable !== false) {
             const mount = new THREE.Group(); mount.position.set(-3.6, 2.1, -11.25); dynamic.add(mount);
             const wallAngle = -Math.max(0, ownIndex) * Math.PI * 2 / Math.max(1, players.length);
             mount.position.applyAxisAngle(new THREE.Vector3(0,1,0), wallAngle); mount.rotation.y = wallAngle;

@@ -52,6 +52,8 @@ module.exports = function createServices(game) {
       clearInterval(room.phaseInterval);
       clearTimeout(room.nightActionTimeout);
       clearTimeout(room.confessionTimer);
+      clearTimeout(room.prankGunTimer);
+      room.prankGunTimer = null;
       room.phaseTimer = 0;
       game.sendGameMessage(room.name, message, color, true);
 

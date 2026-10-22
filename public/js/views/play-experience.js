@@ -1,5 +1,6 @@
 import { client } from '../core/client.js';
 import { playSurfaceSound } from '../audio/surface-sounds.js';
+import { initializeTurnAlert } from '../audio/turn-alert.js';
 import { CARD_MOTION } from '../core/card-motion.mjs';
 
 const nameOf = card => typeof card === 'string' ? card : card.name;
@@ -113,6 +114,7 @@ export function initialize() {
     const audioControls = document.createElement('div'); audioControls.id = 'game-sound-settings';
     audioControls.innerHTML = '<strong>เสียงเกม</strong><label>เอฟเฟกต์ <input type="range" min="0" max="100" step="5"></label>';
     document.getElementById('game-preferences-content').appendChild(audioControls);
+    initializeTurnAlert(audioControls);
     const preferences = document.getElementById('game-preferences');
     document.addEventListener('click', event => { if (preferences.open && !preferences.contains(event.target)) preferences.open = false; });
     document.addEventListener('keydown', event => { if (event.key === 'Escape') preferences.open = false; });
@@ -212,7 +214,7 @@ export function initialize() {
         if (audio.state === 'suspended') audio.resume().catch(() => {});
     });
     volume.oninput = () => { saved = Number(volume.value)/100; try { localStorage.setItem('villageSfxVolume',String(saved)); } catch (_) {} };
-    let previousPhase, previousTurn;
+    let previousPhase;
     const previousAlive = new Map();
     client.state.socket.on('room state update', state => {
         const deaths = Object.values(state.players || {}).filter(player => previousAlive.get(player.uniqueId) === true && !player.alive);
@@ -220,8 +222,7 @@ export function initialize() {
         previousAlive.clear(); Object.values(state.players || {}).forEach(player => previousAlive.set(player.uniqueId, !!player.alive));
         renderStatus();
         if (previousPhase && state.currentPhase !== previousPhase) sound('flip');
-        if (previousTurn && state.currentTurnPlayerUniqueId !== previousTurn && state.currentTurnPlayerUniqueId === client.state.myUniqueId) sound('turn');
-        previousPhase = state.currentPhase; previousTurn = state.currentTurnPlayerUniqueId;
+        previousPhase = state.currentPhase;
     });
     client.state.socket.on('card action feedback', event => {
         const route = event.targetName ? `${event.actorName} → ${event.targetName}${event.secondTargetName ? ' → '+event.secondTargetName : ''}` : event.actorName;
@@ -274,7 +275,7 @@ export function initialize() {
     document.getElementById('table3d-hand-toggle')?.addEventListener('click',()=>sound('flip'));
     client.state.socket.on('card play rejected', ({message}) => { showFeedback(message); sound('flip'); });
     client.state.socket.on('game restarted', () => { shotSounds.forEach(stop=>stop());previousAlive.clear(); feedback.hidden=true; feedback.textContent=''; feedbackQueue.length=0; clearTimeout(feedbackTimer); });
-    client.state.socket.on('room left', () => { previousAlive.clear(); shotSounds.forEach(stop => stop()); focused=null; status.hidden=true; closeInspect(); feedback.hidden=true; feedback.textContent=''; feedbackQueue.length=0; clearTimeout(feedbackTimer); previousPhase=previousTurn=null; });
+    client.state.socket.on('room left', () => { previousAlive.clear(); shotSounds.forEach(stop => stop()); focused=null; status.hidden=true; closeInspect(); feedback.hidden=true; feedback.textContent=''; feedbackQueue.length=0; clearTimeout(feedbackTimer); previousPhase=null; });
     const suspendSounds=()=>{shotSounds.forEach(stop=>stop());audio?.suspend().catch(()=>{});};
     window.addEventListener('pagehide',suspendSounds);
     document.addEventListener('visibilitychange',()=>{if(document.hidden)suspendSounds();});

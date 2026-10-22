@@ -27,6 +27,7 @@ function getGuide(state) {
         return guide('รอสรุปการเลือกกลางคืน', 'ยังไม่ต้องทำอะไร');
     }
     if (state.currentPhase === 'PRE_DAWN') {
+        if (state.confessionExempt) return guide('คุณได้รับการคุ้มครองคืนนี้', 'ไม่ต้องสารภาพ · รอผู้เล่นคนอื่นตัดสินใจ');
         const id = me.uniqueId;
         if (id === me.uniqueId && !state.confessionActions?.includes(id)) return guide('เลือกสารภาพหรือข้าม', 'สารภาพ: เปิดการ์ดชีวิต 1 ใบ · ข้าม: ไม่เปิดการ์ด', true);
         return guide('รอทุกคนตัดสินใจ', `ตัดสินใจแล้ว ${state.confessionActions?.length || 0}/${state.confessionOrder?.length || 0} คน · เฉลยเมื่อครบทุกคน`);

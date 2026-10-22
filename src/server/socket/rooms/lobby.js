@@ -125,6 +125,10 @@ module.exports = function registerRoomLobby(socket, game) {
           }
 
           room.gameStarted = false;
+          clearTimeout(room.prankGunTimer);
+          room.prankGunTimer = null;
+          room.prankGunExpiresAt = null;
+          room.prankShot = null;
       game.cancelLifeSetup(room);
           room.gameOver = false;
           room.gameSummary = null;
@@ -153,6 +157,7 @@ module.exports = function registerRoomLobby(socket, game) {
           p.revealedTryalCards = [];
               p.inPlayCards = [];
               p.alive = true;
+              p.prankGun = false;
               p.isSilenced = false;
               p.isWitch = false;
               p.isConstable = false;

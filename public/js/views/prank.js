@@ -3,7 +3,8 @@ import { client } from '../core/client.js';
 export function initialize() {
     const bar = document.createElement('div'); bar.id = 'prank-controls'; bar.hidden = true;
     const gun = document.createElement('button'); gun.type = 'button'; gun.textContent = '🔫 เล็งลูกซอง';
-    bar.append(gun); document.body.appendChild(bar);
+    const remaining = document.createElement('span'); remaining.className = 'prank-gun-remaining'; remaining.hidden = true;
+    bar.append(gun, remaining); document.body.appendChild(bar);
     const cue = document.createElement('div'); cue.id = 'prank-shot-cue'; cue.hidden = true; cue.setAttribute('role', 'status'); document.body.appendChild(cue);
     // Keep the overlays attached to the scene, above its separate mobile controls.
     function placeOverlays() {
@@ -13,7 +14,7 @@ export function initialize() {
     }
     placeOverlays();
     new MutationObserver(placeOverlays).observe(document.body, {attributes:true, attributeFilter:['class']});
-    let selecting = false, selected = null, cueTimer, pickupTap = 0;
+    let selecting = false, selected = null, cueTimer, pickupTap = 0, gunTimer;
     let speechTimer, speechStopTimer, ownSpeech;
     window.speechSynthesis?.getVoices();
     function stopSpeech() {
@@ -24,7 +25,7 @@ export function initialize() {
     document.addEventListener('visibilitychange',()=>{if(document.hidden)stopSpeech();});
     client.actions.pickupWallShotgun = () => {
         const state = client.state.currentRoomState;
-        if (!state?.gameStarted || state.gameOver || state.isSpectator || !state.players?.[client.state.myUniqueId]?.alive || state.prankGunHolderId || state.prankShotActive || state.currentPhase !== 'DAY') return;
+        if (!state?.gameStarted || state.gameOver || state.isSpectator || !state.players?.[client.state.myUniqueId]?.alive || state.prankGunHolderId || state.prankGunAvailable === false || state.prankShotActive || state.currentPhase !== 'DAY') return;
         const now = performance.now();
         if (pickupTap && now - pickupTap < 2500) {
             pickupTap = 0; cue.hidden = true; clearTimeout(cueTimer);
@@ -37,6 +38,20 @@ export function initialize() {
     const originalInteraction = client.actions.getTable3DInteraction;
     const originalPlayer = client.actions.handleTable3DPlayer;
     function clearSelection() { selecting = false; selected = null; gun.textContent = '🔫 เล็งลูกซอง'; }
+    function updateRemaining() {
+        const deadline = client.state.currentRoomState?.prankGunExpiresAt;
+        remaining.hidden = gun.hidden || !deadline;
+        if (remaining.hidden) return;
+        const seconds = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
+        remaining.textContent = `เหลือ ${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+        remaining.title = 'เวลาที่เหลือสำหรับใช้ลูกซอง';
+        if (!seconds) {
+            const wasSelecting = selecting;
+            clearSelection(); gun.hidden = bar.hidden = remaining.hidden = true;
+            clearInterval(gunTimer);
+            if (wasSelecting) client.actions.syncTable3D();
+        }
+    }
     function shoot(id) {
         client.state.socket.emit('prank gun shoot', id);
         clearSelection(); client.actions.syncTable3D();
@@ -69,6 +84,8 @@ export function initialize() {
         gun.disabled = !state.players?.[client.state.myUniqueId]?.alive || state.prankShotActive || state.currentPhase !== 'DAY';
         bar.hidden = gun.hidden;
         if (gun.hidden || gun.disabled) clearSelection();
+        clearInterval(gunTimer);updateRemaining();
+        if (!gun.hidden && state.prankGunExpiresAt) gunTimer = setInterval(updateRemaining, 1000);
         if (state.prankGunHolderId && pickupTap) { pickupTap = 0; cue.hidden = true; clearTimeout(cueTimer); }
     });
     client.state.socket.on('prank gun shot', event => {
@@ -94,5 +111,5 @@ export function initialize() {
         if (document.body.classList.contains('game-view-3d')) client.state.table3D?.animateShot?.(event);
         cueTimer = setTimeout(() => { cue.hidden = true; }, event.duration + 500);
     });
-    client.state.socket.on('room left', () => { stopSpeech();clearSelection(); pickupTap = 0; bar.hidden = true; cue.hidden = true; clearTimeout(cueTimer); });
+    client.state.socket.on('room left', () => { stopSpeech();clearSelection(); pickupTap = 0; bar.hidden = true; cue.hidden = true; clearTimeout(cueTimer);clearInterval(gunTimer); });
 }

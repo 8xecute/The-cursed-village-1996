@@ -97,3 +97,17 @@ body.game-view-3d #prank-shot-cue::after { display:none; }
   body .player-life-slot figcaption { font-size:12px; }
   body .game-event-entry { font-size:14px; }
 }
+.prank-gun-remaining { display: inline-block; margin-inline: .4rem; color: #e4d1ae; font-size: .85rem; font-variant-numeric: tabular-nums; }
+.prank-gun-remaining[hidden] { display: none; }
+.turn-sound-setting { display:flex; flex-wrap:wrap; align-items:center; gap:6px 10px; margin-top:10px; }
+#game-sound-settings .turn-sound-setting label { flex:1 1 170px; margin:0; }
+.turn-sound-setting input[type=checkbox] { flex:none; width:20px; height:20px; accent-color:#b99560; }
+.turn-sound-setting small { flex-basis:100%; color:#c7b59b; line-height:1.5; }
+.turn-sound-setting button { margin:0; padding:7px 10px; }
+body.game-view-3d #table3d-canvas #ghost-scare-controls { position:absolute; right:12px; bottom:12px; max-width:calc(100% - 24px); }
+#ghost-scare-panel { box-sizing:border-box; }
+#ghost-scare-controls > button:disabled { opacity:.85; }
+@media (max-width:768px) {
+  body.game-view-3d #table3d-canvas #ghost-scare-controls { right:8px; bottom:8px; }
+  body.in-game:not(.game-view-3d) #ghost-scare-controls { bottom:calc(80px + env(safe-area-inset-bottom,0px)); }
+}

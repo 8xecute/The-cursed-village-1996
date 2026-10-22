@@ -1,5 +1,9 @@
 // Resolve the committed target only after all confession choices are complete.
 module.exports = function createServices(game) {
+  function isNightProtected(room, player) {
+      return !!player && (player.inPlayCards?.some(card => card.name === 'Asylum') ||
+          room.playersWhoActedAtNight?.constableSave === player.uniqueId);
+  }
   function resolveNightActions(roomName) {
       const room = game.rooms[roomName];
       if (!room || room.gameOver) return;
@@ -7,12 +11,8 @@ module.exports = function createServices(game) {
       const target = room.players[targetId];
       const aliveWitches = game.getAlivePlayers(room).filter(player => player.hasBeenWitch || player.isWitch);
       if (target?.alive && aliveWitches.length > 0) {
-          const protectedBy = target.inPlayCards.some(card => card.name === 'Asylum') ? 'ที่หลบภัย'
-              : room.playersWhoActedAtNight.constableSave === targetId ? 'หมอผี'
-              : room.nightConfessors?.includes(targetId) ? 'การสารภาพบาป' : null;
-          if (protectedBy) {
-              game.sendGameMessage(room.name, `${target.name} รอดจากการสังหารด้วย${protectedBy}`, 'green', true);
-          } else {
+          // Do not reveal the attempted target or which protection succeeded.
+          if (!isNightProtected(room, target) && !room.nightConfessors?.includes(targetId)) {
               game.sendGameMessage(room.name, `${target.name} ถูกสังหารในตอนกลางคืน!`, 'red', true);
               game.handlePlayerDeath(room, target, { byPlayerName: room.lastNightKillerName || null, cause: 'night_kill' });
               return;
@@ -28,5 +28,5 @@ module.exports = function createServices(game) {
       return witches.length === 0 || room.playersWhoActedAtNight['witchKill'] !== undefined;
   }
 
-  return { resolveNightActions, allWitchesActed };
+  return { resolveNightActions, allWitchesActed, isNightProtected };
 };
