@@ -1,0 +1,44 @@
+/* A short photo story, shared navigation with the update archive. */
+.updates-tabs { display:flex; gap:6px; margin:16px 0; padding:5px; border:1px solid #76563a; border-radius:10px; background:#211710f2; }
+.updates-tabs a { flex:1; display:flex; align-items:center; justify-content:center; min-height:44px; padding:8px 12px; border-radius:6px; text-align:center; text-decoration:none; font-size:14px; }
+.updates-tabs a[aria-current="page"] { color:#fff0d5; background:#513b25; }
+.updates-tabs a:hover { background:#3c2c1e; }
+.patch-story-link { display:block; margin:16px 0; padding:15px 18px; background:#251a13f2; border:1px solid #85613e; border-radius:12px; text-decoration:none; }
+.patch-story-link strong { display:block; color:#f5d39e; font-size:17px; }
+.patch-story-link span { display:block; color:#cdbb9f; font-size:14px; margin-top:3px; }
+body.dev-story-page main { width:min(1020px,100%); }
+body.dev-story-page .story-intro { padding:30px; }
+body.dev-story-page h1 { font-size:clamp(26px,4vw,40px); line-height:1.55; color:#f3d2a0; margin:10px 0 18px; }
+.story-intro > p { max-width:730px; font-size:16px; }
+.story-intro small { font-size:12px; white-space:nowrap; color:#d3b8df; }
+.story-route { display:flex; flex-wrap:wrap; gap:10px; margin:20px 0 0; color:#e6bf84 !important; font-size:13px !important; }
+body.dev-story-page .story-chapter { padding:24px 28px; margin:20px 0; }
+.chapter-number { color:#bda17a; font-size:12px; margin:0 0 6px; }
+body.dev-story-page h2 { font-size:clamp(20px,3vw,26px); line-height:1.6; margin:4px 0 10px; }
+.story-chapter > p:not(.chapter-number) { max-width:760px; line-height:1.9; font-size:16px; }
+.story-pair,.story-bug-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; margin-top:20px; }
+figure { min-width:0; margin:0; }
+figure a { display:block; border:1px solid #5d4935; border-radius:8px; overflow:hidden; background:#151413; }
+figure img { display:block; width:100%; height:230px; object-fit:contain; }
+figure a:focus-visible { outline-offset:4px; }
+figcaption { font-size:12px; color:#c4ae8e; line-height:1.65; margin-top:7px; }
+.story-wide { margin-top:20px; }
+.story-wide img { height:auto; aspect-ratio:16/9; object-fit:contain; }
+.story-bug-grid { grid-template-columns:repeat(3,minmax(0,1fr)); }
+.story-bug-grid img { height:225px; }
+.story-ending { color:#f3cd96; font-weight:600; margin:24px 0 0; }
+body.dev-story-page footer { display:flex; flex-wrap:wrap; align-items:center; gap:16px; }
+body.dev-story-page footer p { width:100%; font-size:12px; margin:0; }
+.story-action { display:inline-flex; align-items:center; min-height:44px; padding:9px 16px; border:1px solid #b28b58; border-radius:8px; text-decoration:none; background:#48321e; }
+@media(max-width:600px) {
+  body.dev-story-page main { padding:14px 12px 24px; }
+  body.dev-story-page .story-intro,body.dev-story-page .story-chapter { padding:20px 16px; }
+  .story-pair { gap:10px; }
+  figure img { height:150px; }
+  .story-bug-grid { gap:12px; grid-template-columns:1fr; }
+  .story-bug-grid figure { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); align-items:center; gap:12px; }
+  .story-bug-grid img { height:150px; }
+  .story-bug-grid figcaption { margin:0; font-size:13px; }
+  .story-chapter > p:not(.chapter-number),.story-intro > p { font-size:15px; }
+  .updates-tabs a { padding:8px; font-size:13px; }
+}
