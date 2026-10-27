@@ -26,6 +26,7 @@ client.actions.showGameOverModal = function showGameOverModal(data) {
     const victoryMessage = document.getElementById('victory-message');
     const rolesRevealTbody = document.getElementById('roles-reveal-tbody');
     const rematchBtn = document.getElementById('rematch-btn');
+    const rematchStatus = document.getElementById('rematch-status');
     const closeBtn = document.getElementById('close-victory-modal-btn');
 
     const winner = summary.winner || '';
@@ -134,14 +135,20 @@ client.actions.showGameOverModal = function showGameOverModal(data) {
 
     // Rematch Actions
     const isMeHost = (client.state.currentRoomState && client.state.currentRoomState.hostUniqueId === client.state.myUniqueId);
+    if (rematchStatus) rematchStatus.textContent = isMeHost ? 'ผู้เล่นจะกลับไปเตรียมตัวในห้องเดิม' : 'รอหัวห้องพากลับล็อบบี้ห้องเดิม';
     if (rematchBtn) {
+        rematchBtn.disabled = false;
         if (isMeHost) {
             rematchBtn.style.display = 'inline-block';
             rematchBtn.onclick = () => {
-                if (client.state.currentRoomName) {
-                    client.state.socket.emit('restart game', client.state.currentRoomName);
-                }
-                modal.style.display = 'none';
+                if (!client.state.currentRoomName || rematchBtn.disabled) return;
+                rematchBtn.disabled = true;
+                if (rematchStatus) rematchStatus.textContent = 'กำลังกลับล็อบบี้…';
+                client.state.socket.timeout(5000).emit('restart game', client.state.currentRoomName, (error, result) => {
+                    if (!error && result?.ok) return;
+                    rematchBtn.disabled = false;
+                    if (rematchStatus) rematchStatus.textContent = result?.message || 'เชื่อมต่อไม่สำเร็จ กรุณาลองอีกครั้ง';
+                });
             };
         } else {
             rematchBtn.style.display = 'none';
@@ -258,6 +265,14 @@ export function initialize() {
       const oldPopup = document.getElementById('game-over-popup');
       if (oldPopup) oldPopup.remove();
 
+      client.actions.closeTable3DFullscreen?.();
+      client.actions.restoreTable3DDialogs?.();
+      client.state.table3D?.setActive(false);
+      client.state.isMyTurn = false;
+      client.state.deathNotified = false;
+      client.state.selectedCard = null;
+      client.state.myCurrentHand = [];
+      client.state.myTryalCards = [];
       document.body.classList.remove('in-game');
       if (client.dom.gameSection) client.dom.gameSection.style.display = 'none';
       if (client.dom.roomLobbySection) client.dom.roomLobbySection.style.display = 'block';

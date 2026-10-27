@@ -117,24 +117,41 @@ module.exports = function registerRoomLobby(socket, game) {
           game.broadcastActiveRooms();
       });
 
-  socket.on('restart game', (roomName) => {
-          const room = game.rooms[roomName || socket.currentRoom];
-          if (!room || room.hostUniqueId !== socket.uniqueId) {
-              game.io.to(socket.id).emit('game message', 'คุณไม่มีสิทธิ์เริ่มเกมรอบใหม่.', 'red');
+  socket.on('restart game', (roomName, ack) => {
+          const reply = result => { if (typeof ack === 'function') ack(result); };
+          const room = game.rooms[socket.currentRoom];
+          if (!room || (roomName && roomName !== socket.currentRoom) ||
+              room.hostUniqueId !== socket.uniqueId || room.players[socket.uniqueId]?.id !== socket.id) {
+              reply({ok:false, message:'เฉพาะหัวห้องที่อยู่ในห้องนี้เท่านั้นที่กลับล็อบบี้ได้'});
+              game.io.to(socket.id).emit('game message', 'เฉพาะหัวห้องที่อยู่ในห้องนี้เท่านั้นที่กลับล็อบบี้ได้', 'red');
+              return;
+          }
+          if (!room.gameStarted || !room.gameOver) {
+              reply({ok:false, message:'กลับล็อบบี้ได้หลังจบเกมแล้ว'});
               return;
           }
 
           room.gameStarted = false;
+          clearInterval(room.phaseInterval);
+          clearTimeout(room.confessionTimer);
+          clearTimeout(room.nightActionTimeout);
+          room.phaseInterval = room.confessionTimer = room.nightActionTimeout = null;
+          room.phaseTimer = 0;
           clearTimeout(room.prankGunTimer);
           room.prankGunTimer = null;
           room.prankGunExpiresAt = null;
           room.prankShot = null;
-      game.cancelLifeSetup(room);
+          game.cancelLifeSetup(room);
           room.gameOver = false;
+          room.winner = null;
           room.gameSummary = null;
           room.gameDeck = [];
           room.discardPile = [];
           room.confessionOrder = [];
+          room.confessionActions = [];
+          room.confessionChoices = {};
+          room.confessionResolving = false;
+          room.confessors = [];
           room.currentConfessionIndex = 0;
           room.firstVictim = null;
           room.accusedPlayers = {};
@@ -144,33 +161,50 @@ module.exports = function registerRoomLobby(socket, game) {
           room.conspiracyDrawer = null;
           room.pendingDraw = null;
           room.blackCatHolder = null;
+          room.blackCatHolderAlreadyActedThisDay = false;
+          room.isAssigningBlackCat = false;
+          room.pendingBlackCatCard = null;
+          room.currentTurnPlayerUniqueId = null;
+          room.turnSerial = 0;
+          room.witchNightId = null;
+          room.witchNightMarks = {};
+          room.witchChatHistory = [];
+          room.infectionLog = [];
+          room.deathLog = [];
           room.dayNumber = 0;
           room.currentPhase = 'LOBBY';
           delete room.awaitingCurseSelection;
           delete room.awaitingConspiracySelection;
+          delete room.awaitingAlibiSelection;
+          delete room.awaitingLeftTryalSelections;
+          delete room.conspiracyTryalSelections;
           delete room.playerForcedToRevealTryal;
           delete room.playerForcedToRevealSelector;
 
           Object.values(room.players).forEach(p => {
               p.hand = [];
               p.tryalCards = [];
-          p.revealedTryalCards = [];
+              p.revealedTryalCards = [];
               p.inPlayCards = [];
               p.alive = true;
               p.prankGun = false;
+              p.ghostScareAvailableAt = 0;
+              p.ghostScareUntil = 0;
+              p.hasPlayedCardsThisTurn = false;
               p.isSilenced = false;
               p.isWitch = false;
               p.isConstable = false;
               p.hasBeenWitch = false;
               p.knownWitchTeammates = new Set();
               p.revealedTryalCardIndexes = new Set();
-              p.isReady = !!p.isBot;
+              p.isReady = !!p.isHost || !!p.isBot;
           });
 
           game.io.to(room.name).emit('game restarted');
           game.emitRoomState(room.name);
           game.sendGameMessage(room.name, '<b>หัวห้องได้รีเซ็ตเกมเพื่อเริ่มรอบใหม่!</b> กลับสู่ห้องล็อบบี้', 'green', true);
           game.broadcastActiveRooms();
+          reply({ok:true});
       });
 
 

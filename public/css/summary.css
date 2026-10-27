@@ -166,6 +166,7 @@
   margin-top: 20px;
   flex-wrap: wrap;
 }
+#rematch-status { flex-basis:100%; margin:0; text-align:center; color:#d3c0a1; font-size:.9rem; }
 
 .rematch-btn {
   background: linear-gradient(135deg, #ff8f00 0%, #e65100 100%);
