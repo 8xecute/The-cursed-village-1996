@@ -23,6 +23,7 @@ module.exports = function applyEffect(game, context) {
             // ลบการ์ด Alibi ออกจากมือทันทีเมื่อเริ่มใช้งาน
             player.hand.splice(cardIndex, 1);
             game.io.to(player.id).emit('update hand', player.hand);
+            game.emitRoomState(room.name);
             return true; // ยังไม่จบเทิร์น
         } else {
             game.sendGameMessage(room.name, `<b>${targetPlayer.name}</b> ไม่มีการ์ดข้อกล่าวหา/หลักฐานให้ลบ`, 'orange', true);

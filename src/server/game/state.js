@@ -101,6 +101,8 @@ module.exports = function createServices(game) {
           phaseTimer: room.phaseTimer,
           dayNumber: room.dayNumber,
           currentTurnPlayerUniqueId: room.currentTurnPlayerUniqueId,
+          turnSerial: room.turnSerial || 0,
+          pendingCardAction: game.hasPendingCardAction(room),
           currentTurnPlayerName: room.currentTurnPlayerUniqueId ? room.players[room.currentTurnPlayerUniqueId]?.name : null,
           phaseConfig: room.phaseConfig,
           confessors: room.confessors, // Players who have confessed this day

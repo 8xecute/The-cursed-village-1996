@@ -174,6 +174,7 @@ module.exports = function createServices(game) {
       room.prankGunExpiresAt = null;
       assignCharacterIds(alivePlayers, game.shuffleArray, true);
       room.firstTurnStarted = false;
+      room.turnSerial = 0;
       room.pendingDraw = null;
       room.removedGameCards = [];
       room.twoPlayerRulesAnnounced = false;

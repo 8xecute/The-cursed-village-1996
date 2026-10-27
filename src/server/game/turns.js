@@ -71,6 +71,7 @@ module.exports = function createServices(game) {
       }
 
       room.currentTurnPlayerUniqueId = nextPlayerUniqueId;
+      room.turnSerial = (room.turnSerial || 0) + 1;
       room.firstTurnStarted = true;
       const nextPlayer = room.players[nextPlayerUniqueId];
       

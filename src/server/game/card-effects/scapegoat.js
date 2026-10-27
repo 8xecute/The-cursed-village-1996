@@ -46,6 +46,7 @@ module.exports = function applyEffect(game, context) {
                 game.emitRoomState(room.name);
                 // ลบการ์ด Scapegoat ออกจากมือก่อน return
                 player.hand.splice(cardIndex, 1);
+                player.hasPlayedCardsThisTurn = true;
                 game.io.to(player.id).emit('update hand', player.hand);
                 return true;
             }

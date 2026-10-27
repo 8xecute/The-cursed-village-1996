@@ -1,10 +1,6 @@
 const { io } = require('socket.io-client');
 
-const TARGET_CARDS = new Set([
-    'Accusation', 'Evidence', 'Witness', 'Curse', 'Alibi', 'Robbery',
-    'Stocks', 'Arson', 'Scapegoat', 'Asylum', 'Piety', 'Matchmaker', 'Black Cat',
-]);
-const TWO_TARGET_CARDS = new Set(['Robbery', 'Scapegoat']);
+const { alliesFor, chooseCardAction, chooseNightTarget, chooseProtectedTarget } = require('./strategy');
 
 function pickRandom(items) {
     return items.length ? items[Math.floor(Math.random() * items.length)] : null;
@@ -23,6 +19,8 @@ function createBotClient({ url, uniqueId, token, name }) {
     let roomState = null;
     let hand = [];
     let tryalCards = [];
+    let handReceived = false, turnKey = null, stopPlayingThisTurn = false, inFlight = false, responseSeen = false;
+    let suspicion = {};
 
     function later(key, callback, delay = 350 + Math.floor(Math.random() * 500)) {
         if (timers.has(key)) return;
@@ -37,73 +35,38 @@ function createBotClient({ url, uniqueId, token, name }) {
         for (const timer of timers.values()) clearTimeout(timer);
         timers.clear();
     }
+    function clearTimer(key) {
+        if (timers.has(key)) clearTimeout(timers.get(key));
+        timers.delete(key);
+    }
 
     function currentBot() {
         return roomState?.players?.[uniqueId];
     }
 
-    function aliveOthers() {
-        return Object.values(roomState?.players || {}).filter(player => player.alive && player.uniqueId !== uniqueId);
-    }
-
     function submitDayAction() {
         const me = currentBot();
         if (!roomState?.gameStarted || roomState.gameOver || roomState.currentPhase !== 'DAY' ||
-            roomState.currentTurnPlayerUniqueId !== uniqueId || !me?.alive || me.hasPlayedCardsThisTurn) return;
-
-        const candidate = chooseCardAction();
-        if (candidate && Math.random() < 0.55) {
-            socket.emit('play card', candidate.cardIndex, candidate.targetId, candidate.secondTargetId);
-            later('day-fallback', () => {
-                const updatedMe = currentBot();
-                if (roomState?.currentPhase === 'DAY' && roomState.currentTurnPlayerUniqueId === uniqueId &&
-                    updatedMe?.alive && !updatedMe.hasPlayedCardsThisTurn) {
-                    socket.emit('draw cards');
-                }
-            }, 1200);
-        } else {
-            socket.emit('draw cards');
+            roomState.currentTurnPlayerUniqueId !== uniqueId || !me?.alive || !handReceived ||
+            roomState.pendingCardAction || inFlight) return;
+        const candidate = !stopPlayingThisTurn ? chooseCardAction({state:roomState, id:uniqueId, hand, suspicion}) : null;
+        if (!candidate || candidate.score < 4) {
+            socket.emit(me.hasPlayedCardsThisTurn ? 'end turn' : 'draw cards');
+            return;
         }
-    }
-
-    function chooseCardAction() {
-        const others = aliveOthers();
-        const allAlive = Object.values(roomState?.players || {}).filter(player => player.alive);
-        const candidates = [];
-
-        hand.forEach((card, cardIndex) => {
-            if (!card?.name) return;
-            if (!TARGET_CARDS.has(card.name)) {
-                candidates.push({ cardIndex });
-                return;
-            }
-
-            let targets = others;
-            if (['Accusation', 'Evidence', 'Witness'].includes(card.name)) {
-                targets = others.filter(player => !player.inPlayCards?.some(effect => effect.name === 'Piety'));
-            } else if (card.name === 'Curse') {
-                targets = others.filter(player => player.inPlayCards?.some(effect => effect.color === 'Blue'));
-            } else if (card.name === 'Alibi') {
-                targets = others.filter(player => player.inPlayCards?.some(effect => effect.color === 'Red'));
-            } else if (card.name === 'Robbery') {
-                targets = others.filter(player => player.handSize > 0);
-            }
-            if (!targets.length) return;
-
-            if (TWO_TARGET_CARDS.has(card.name)) {
-                const source = pickRandom(targets);
-                const destinations = allAlive.filter(player => player.uniqueId !== uniqueId && player.uniqueId !== source.uniqueId);
-                const destination = pickRandom(destinations);
-                if (source && destination) {
-                    candidates.push({ cardIndex, targetId: source.uniqueId, secondTargetId: destination.uniqueId });
-                }
-            } else {
-                const target = pickRandom(targets);
-                if (target) candidates.push({ cardIndex, targetId: target.uniqueId });
-            }
-        });
-
-        return pickRandom(candidates);
+        inFlight = true; responseSeen = false;
+        if (candidate.kind === 'red') socket.emit('play red cards', candidate.indexes, candidate.targetId);
+        else socket.emit('play card', candidate.cardIndex, candidate.targetId, candidate.secondTargetId);
+        // Recover if a target changed or the server rejected a choice silently.
+        const recover = () => {
+            const bot = currentBot();
+            if (!inFlight || roomState?.currentPhase !== 'DAY' || roomState.currentTurnPlayerUniqueId !== uniqueId ||
+                !bot?.alive) return;
+            if (roomState.pendingCardAction) { later('day-watchdog', recover, 2500);return; }
+            inFlight = false; stopPlayingThisTurn = true;
+            later('day-turn', submitDayAction, 200);
+        };
+        later('day-watchdog', recover, 2500);
     }
 
     socket.on('connect', () => socket.emit('register uniqueId', uniqueId, name));
@@ -111,6 +74,15 @@ function createBotClient({ url, uniqueId, token, name }) {
         roomState = state;
         const me = currentBot();
         if (!me || !state.gameStarted || state.gameOver) return;
+        const nextTurnKey = `${state.name}:${state.turnSerial || 0}:${state.currentTurnPlayerUniqueId}`;
+        if (nextTurnKey !== turnKey) {
+            turnKey = nextTurnKey; stopPlayingThisTurn = false; inFlight = false; responseSeen = false;
+            clearTimer('day-turn');clearTimer('day-watchdog');
+        }
+        if (state.currentPhase !== 'DAY') { inFlight = false;responseSeen = false;clearTimer('day-watchdog'); }
+        if (inFlight && responseSeen && !state.pendingCardAction) {
+            inFlight = false;responseSeen = false;clearTimer('day-watchdog');
+        }
 
         if (state.currentPhase === 'SETUP' && state.lifeSetup?.stage === 'arrange' && !state.lifeSetup.confirmed.includes(uniqueId)) {
             const setupId = state.lifeSetup.id;
@@ -118,7 +90,7 @@ function createBotClient({ url, uniqueId, token, name }) {
                 if (roomState?.currentPhase === 'SETUP' && roomState.lifeSetup?.id === setupId && roomState.lifeSetup.stage === 'arrange') socket.emit('confirm life setup', setupId);
             }, 1000);
         }
-        if (state.currentPhase === 'DAY' && state.currentTurnPlayerUniqueId === uniqueId && me.alive && !me.hasPlayedCardsThisTurn) {
+        if (state.currentPhase === 'DAY' && state.currentTurnPlayerUniqueId === uniqueId && me.alive && !state.pendingCardAction && !inFlight) {
             later('day-turn', submitDayAction);
         }
         const witchNight = state.witchNightState;
@@ -139,51 +111,62 @@ function createBotClient({ url, uniqueId, token, name }) {
             !(state.confessionActions || []).includes(uniqueId)) {
             later('confession', () => {
                 if (roomState?.currentPhase !== 'PRE_DAWN' || !roomState.confessionOrder?.includes(uniqueId) || roomState.confessionActions?.includes(uniqueId)) return;
-                if (tryalCards.length > 0 && Math.random() < 0.5) {
-                    socket.emit('confess during night', Math.floor(Math.random() * tryalCards.length));
+                const safeIndex = tryalCards.findIndex(card => card.name === 'Not A Witch');
+                if (tryalCards.length > 1 && safeIndex >= 0 && Math.random() < 0.5) {
+                    socket.emit('confess during night', safeIndex);
                 } else {
                     socket.emit('skip confession');
                 }
             });
         }
 
-        if (state.currentPhase === 'DAY' && state.currentTurnPlayerUniqueId === uniqueId && me.alive && me.hasPlayedCardsThisTurn) {
-            later('end-turn', () => {
-                if (roomState?.currentPhase === 'DAY' && roomState.currentTurnPlayerUniqueId === uniqueId && currentBot()?.hasPlayedCardsThisTurn) {
-                    socket.emit('end turn');
-                }
-            }, 650);
-        }
     });
-    socket.on('update hand', cards => { hand = Array.isArray(cards) ? cards : []; });
+    socket.on('update hand', cards => {
+        hand = Array.isArray(cards) ? cards : [];handReceived = true;
+        if (roomState?.currentPhase === 'DAY' && roomState.currentTurnPlayerUniqueId === uniqueId && !roomState.pendingCardAction && !inFlight)
+            later('day-turn', submitDayAction);
+    });
     socket.on('update tryal cards initial', cards => { tryalCards = Array.isArray(cards) ? cards : []; });
 
     socket.on('your turn', () => later('day-turn', submitDayAction));
+    socket.on('card played successfully', () => { if (inFlight) responseSeen = true; });
+    socket.on('card play rejected', () => {
+        if (!inFlight) return;
+        inFlight = false;responseSeen = false;stopPlayingThisTurn = true;clearTimer('day-watchdog');
+        later('day-turn', submitDayAction, 250);
+    });
+    socket.on('card action feedback', event => {
+        if (!roomState || !event?.actorId || event.actorId === uniqueId || event.batchIndex > 0 ||
+            !['Accusation','Evidence','Witness','Stocks','Arson'].includes(event.cardName)) return;
+        if (alliesFor(roomState, uniqueId).allies.has(event.targetId))
+            suspicion[event.actorId] = Math.min(5, (suspicion[event.actorId] || 0) + 1);
+    });
 
     socket.on('popup assign black cat', potentialTargets => {
         later('assign-black-cat', () => {
-            const target = pickRandom(potentialTargets || []);
+            const allies = alliesFor(roomState || {}, uniqueId).allies;
+            const targets = (potentialTargets || []).filter(player => !allies.has(player.uniqueId));
+            const target = pickRandom(targets.length ? targets : (potentialTargets || []));
             if (target) socket.emit('assign black cat', target.uniqueId);
         });
     });
 
     socket.on('prompt witch kill', () => {
         later('witch-action', () => {
-            const targets = aliveOthers().filter(player =>
-                !player.hasBeenWitch && !player.inPlayCards?.some(card => card.name === 'Asylum'));
-            const target = pickRandom(targets);
+            const target = chooseNightTarget(roomState, uniqueId, suspicion);
             socket.emit('witch mark target', target?.uniqueId || null, roomState?.witchNightState?.nightId);
         });
     });
 
     socket.on('prompt constable action', () => {
         later('constable-action', () => {
-            const target = pickRandom(aliveOthers());
+            const target = chooseProtectedTarget(roomState, uniqueId);
             socket.emit('constable action', target?.uniqueId || null);
         });
     });
 
     socket.on('prompt select accused tryal', ({ accusedUniqueId, tryalCount } = {}) => {
+        if (inFlight) responseSeen = true;
         later('accused-tryal', () => {
             const count = Math.min(Number(tryalCount) || 0, roomState?.players?.[accusedUniqueId]?.tryalCardCount || 0);
             if (count > 0) socket.emit('select tryal card for confession', accusedUniqueId, Math.floor(Math.random() * count));
@@ -205,17 +188,23 @@ function createBotClient({ url, uniqueId, token, name }) {
     });
 
     socket.on('prompt select curse target', ({ targetUniqueId, blueCards } = {}) => {
+        if (inFlight) responseSeen = true;
         later('curse-selection', () => {
             const count = Array.isArray(blueCards) ? blueCards.length : 0;
-            if (count > 0) socket.emit('select curse target', targetUniqueId, Math.floor(Math.random() * count));
+            if (count > 0) {
+                const preferred = blueCards.findIndex(card => ['Piety','Asylum','Black Cat'].includes(card.name));
+                socket.emit('select curse target', targetUniqueId, preferred < 0 ? 0 : preferred);
+            }
         });
     });
 
     socket.on('prompt select alibi removal', ({ redCards } = {}) => {
+        if (inFlight) responseSeen = true;
         later('alibi-selection', () => {
-            const validCards = (redCards || []).filter(card => Number(card.value || 1) <= 3);
-            const card = pickRandom(validCards);
-            if (card) socket.emit('select alibi removal', { selectedIndexes: [card.index] });
+            const accusations = (redCards || []).filter(card => card.name === 'Accusation').slice(0,3);
+            const evidence = (redCards || []).find(card => card.name === 'Evidence');
+            const selected = accusations.length === 3 || !evidence ? accusations : [evidence];
+            if (selected.length) socket.emit('select alibi removal', { selectedIndexes: selected.map(card => card.index) });
         });
     });
 
@@ -223,9 +212,10 @@ function createBotClient({ url, uniqueId, token, name }) {
     socket.on('game restarted', () => {
         hand = [];
         tryalCards = [];
+        handReceived = false;turnKey = null;stopPlayingThisTurn = false;inFlight = responseSeen = false;suspicion = {};
         clearTimers();
     });
-    socket.on('disconnect', clearTimers);
+    socket.on('disconnect', () => { clearTimers();handReceived = false;turnKey = null;inFlight = responseSeen = false; });
     return socket;
 }
 
