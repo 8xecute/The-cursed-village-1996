@@ -153,7 +153,8 @@ module.exports = function createServices(game) {
 
       const alivePlayers = game.getAlivePlayers(room);
       if (alivePlayers.length < game.MIN_PLAYERS_TO_START) {
-          game.io.to(room.hostUniqueId).emit('game message', `ต้องการผู้เล่นอย่างน้อย ${game.MIN_PLAYERS_TO_START} คนเพื่อเริ่มเกม`, 'red', true);
+          const host = room.players[room.hostUniqueId];
+          if (host?.id) game.io.to(host.id).emit('game message', `ต้องการผู้เล่นอย่างน้อย ${game.MIN_PLAYERS_TO_START} คนเพื่อเริ่มเกม`, 'red', true);
           return;
       }
 

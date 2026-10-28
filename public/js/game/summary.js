@@ -134,7 +134,7 @@ client.actions.showGameOverModal = function showGameOverModal(data) {
     }
 
     // Rematch Actions
-    const isMeHost = (client.state.currentRoomState && client.state.currentRoomState.hostUniqueId === client.state.myUniqueId);
+    const isMeHost = !!client.state.currentRoomState?.players?.[client.state.myUniqueId]?.isHost;
     if (rematchStatus) rematchStatus.textContent = isMeHost ? 'ผู้เล่นจะกลับไปเตรียมตัวในห้องเดิม' : 'รอหัวห้องพากลับล็อบบี้ห้องเดิม';
     if (rematchBtn) {
         rematchBtn.disabled = false;
