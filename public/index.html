@@ -9,6 +9,7 @@
     <link rel="preload" href="fonts/Sarabun-Regular.ttf" as="font" type="font/ttf" crossorigin>
     <link rel="preload" href="fonts/Chonburi-Regular.ttf" as="font" type="font/ttf" crossorigin>
     <link rel="stylesheet" href="style.css?v=2.2">
+    <link rel="stylesheet" href="css/table-controls.css">
 </head>
 <body>
     <h1 class="game-title halloween-title">หมู่บ้านต้องสาป <span class="game-year">1996<small class="halloween-edition edition-curve"><svg viewBox="0 0 180 48" role="img" aria-label="Halloween Edition"><path id="edition-arc-1" d="M8 9 Q90 57 172 9" fill="none"/><text><textPath href="#edition-arc-1" startOffset="50%" text-anchor="middle">Halloween Edition</textPath></text></svg></small></span></h1>
@@ -185,9 +186,8 @@
                 <div class="game-view-toolbar">
                     <span id="game-view-description" aria-live="polite">มุมมอง 2D</span>
                     <button id="mobile-game-menu" class="mobile-game-menu" type="button" aria-controls="game-navigation" aria-expanded="false">เมนู</button>
-                    <button id="game-view-toggle" class="game-view-toggle" type="button" role="switch" aria-checked="false" aria-label="แสดงกระดานแบบ 3D">
-                        <span class="game-view-toggle-track" aria-hidden="true"><span></span></span>
-                        <span>3D</span>
+                    <button id="game-view-toggle" class="game-view-toggle" type="button" aria-label="สลับเป็นมุมมอง 3D">
+                        <span>สลับเป็น 3D</span>
                     </button>
                 </div>
                 <div id="game-state-bar" class="game-state-bar">
@@ -220,14 +220,17 @@
                     </div>
                     <div class="table3d-hand-controls" aria-label="มุมมองและไพ่ของคุณ">
                         <span id="table3d-seat-label" role="status"></span>
-                        <div class="table3d-control-row table3d-view-row">
+                        <details id="table3d-camera-menu" class="table3d-tool-menu"><summary>มุมกล้อง</summary><div class="table3d-tool-panel"><strong>มองรอบโต๊ะ</strong><div class="table3d-control-row table3d-view-row">
                             <button type="button" id="table3d-seat-left" aria-label="ดูผู้เล่นทางซ้าย">◀</button>
                             <button type="button" id="table3d-reset" title="คืนกล้องไปยังมุมเริ่มต้น">กลับโต๊ะ</button>
                             <button type="button" id="table3d-seat-right" aria-label="ดูผู้เล่นทางขวา">▶</button>
                         </div>
+                        </div></details>
                         <div class="table3d-control-row table3d-card-row">
                             <button type="button" id="table3d-hand-toggle" aria-pressed="false" title="วางไพ่ในมือลงบนโต๊ะ โดยยังไม่เล่นการ์ด">วางไพ่</button>
+                            <details id="table3d-hand-menu" class="table3d-tool-menu"><summary>จัดการไพ่</summary><div class="table3d-tool-panel"><strong>ไพ่ในมือ</strong><p>จัดตำแหน่งและขนาด โดยยังไม่เล่นการ์ด</p><div id="table3d-hand-tools"></div>
                             <details id="table3d-card-sizes"><summary aria-label="ปรับขนาดการ์ด">ขนาดไพ่</summary><div class="card-size-panel"></div></details>
+                            </div></details>
                             <button type="button" class="table3d-end-turn" data-table-action="end-turn-button" disabled>จบเทิร์น</button>
                         </div>
                     </div>
@@ -243,7 +246,6 @@
                         <strong id="table3d-action-hint" role="status"></strong>
                         <p id="table3d-card-description"></p>
 
-                        <button id="table3d-details-toggle" type="button" aria-expanded="false">เปิดกระดาน 2D</button>
                         <button id="table3d-summary" type="button" hidden>ดูสรุปจบเกม</button>
                     </div>
                 </section>

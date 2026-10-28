@@ -1,4 +1,5 @@
 import { initialize as initializeHandOrder } from './js/views/hand-order.js';
+import { initialize as initializeActionClock } from './js/views/action-clock.js';
 import { initialize as initializeLifeSetup } from './js/views/life-setup.js';
 import { initialize as initializeLifeReveal } from './js/views/life-reveal.js';
 import { initialize as initializePrank } from './js/views/prank.js';
@@ -89,3 +90,4 @@ initializeGhostScare();
 initializeLifeSetup();
 
 initializeHandOrder();
+initializeActionClock();

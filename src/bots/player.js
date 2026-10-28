@@ -1,6 +1,7 @@
 const { io } = require('socket.io-client');
 
 const { alliesFor, chooseCardAction, chooseNightTarget, chooseProtectedTarget } = require('./strategy');
+const { lifeIndex, curseIndex, alibiIndexes } = require('./pending-choices');
 
 function pickRandom(items) {
     return items.length ? items[Math.floor(Math.random() * items.length)] : null;
@@ -169,21 +170,21 @@ function createBotClient({ url, uniqueId, token, name }) {
         if (inFlight) responseSeen = true;
         later('accused-tryal', () => {
             const count = Math.min(Number(tryalCount) || 0, roomState?.players?.[accusedUniqueId]?.tryalCardCount || 0);
-            if (count > 0) socket.emit('select tryal card for confession', accusedUniqueId, Math.floor(Math.random() * count));
+            if (count > 0) socket.emit('select tryal card for confession', accusedUniqueId, lifeIndex(count));
         });
     });
 
     socket.on('prompt select blackcat tryal', ({ blackCatHolder, tryalCount } = {}) => {
         later('blackcat-tryal', () => {
             const count = Math.min(Number(tryalCount) || 0, roomState?.players?.[blackCatHolder]?.tryalCardCount || 0);
-            if (count > 0) socket.emit('select blackcat tryal', blackCatHolder, Math.floor(Math.random() * count));
+            if (count > 0) socket.emit('select blackcat tryal', blackCatHolder, lifeIndex(count));
         });
     });
 
     socket.on('prompt select left tryal', ({ leftPlayerTryalCount } = {}) => {
         later('left-tryal', () => {
             const count = Number(leftPlayerTryalCount) || 0;
-            socket.emit('select left tryal', count > 0 ? Math.floor(Math.random() * count) : 0);
+            socket.emit('select left tryal', lifeIndex(count) ?? 0);
         });
     });
 
@@ -192,8 +193,7 @@ function createBotClient({ url, uniqueId, token, name }) {
         later('curse-selection', () => {
             const count = Array.isArray(blueCards) ? blueCards.length : 0;
             if (count > 0) {
-                const preferred = blueCards.findIndex(card => ['Piety','Asylum','Black Cat'].includes(card.name));
-                socket.emit('select curse target', targetUniqueId, preferred < 0 ? 0 : preferred);
+                socket.emit('select curse target', targetUniqueId, curseIndex(blueCards));
             }
         });
     });
@@ -201,10 +201,8 @@ function createBotClient({ url, uniqueId, token, name }) {
     socket.on('prompt select alibi removal', ({ redCards } = {}) => {
         if (inFlight) responseSeen = true;
         later('alibi-selection', () => {
-            const accusations = (redCards || []).filter(card => card.name === 'Accusation').slice(0,3);
-            const evidence = (redCards || []).find(card => card.name === 'Evidence');
-            const selected = accusations.length === 3 || !evidence ? accusations : [evidence];
-            if (selected.length) socket.emit('select alibi removal', { selectedIndexes: selected.map(card => card.index) });
+            const selectedIndexes = alibiIndexes(redCards);
+            if (selectedIndexes.length) socket.emit('select alibi removal', { selectedIndexes });
         });
     });
 

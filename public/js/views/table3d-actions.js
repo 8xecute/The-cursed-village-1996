@@ -159,7 +159,7 @@ export function initialize() {
         }
         if (source && source.classList.contains('table3d-phase-source') !== enabled) source.classList.toggle('table3d-phase-source', enabled);
         phasePanel.classList.toggle('is-direct-target', !!target);
-        const show = enabled && canAct() && !!root;
+        const show = enabled && canAct() && (!!root || !!request?.preview);
         if (phasePanel.hidden !== !show) phasePanel.hidden = !show;
         if (!show) { phaseSignature = ''; return; }
         const kill = document.getElementById('witch-kill-confirm-panel');
@@ -170,7 +170,7 @@ export function initialize() {
         phaseSignature = signature;
         phasePanel.replaceChildren();
         const heading = document.createElement('strong');
-        heading.textContent = life ? life.querySelector('h3')?.textContent || 'เลือกการ์ดชีวิต'
+        heading.textContent = request?.preview ? 'เลือกผู้เล่นที่จะใช้การ์ดใส่' : life ? life.querySelector('h3')?.textContent || 'เลือกการ์ดชีวิต'
             : night ? (client.state.nightActionState.actionType === 'witch' ? 'ปอบ · แตะผู้เล่นเพื่อมาร์ค' : 'หมอผี · แตะผู้เล่นเพื่อปกป้อง') : assign ? 'แตะผู้เล่นเพื่อมอบเครื่องเซ่น' : target ? target.querySelector('h3')?.textContent : alibi ? 'ข้อแก้ต่าง · เลือกการ์ดแดงบนโต๊ะ' : 'เล่นยามวิกาลเพื่อเข้าสู่กลางคืน';
         const header = document.createElement('div');
         header.className = 'table3d-phase-header';
@@ -181,13 +181,56 @@ export function initialize() {
             : assign ? request?.selected?.length ? `เลือก: ${client.state.currentRoomState.players[request.selected[0]]?.name || ''} · แตะคนเดิมอีกครั้งเพื่อมอบเครื่องเซ่น` : 'แตะผู้เล่นเพื่อเลือก แล้วแตะคนเดิมอีกครั้งเพื่อมอบเครื่องเซ่น'
             : selectedId && night ? `เป้าหมาย: ${client.state.currentRoomState.players[selectedId]?.name || ''}${client.state.nightActionState.actionType === 'constable' ? ' · แตะคนเดิมอีกครั้งเพื่อปกป้อง' : ''}` : target ? request?.selected?.length ? `เลือก: ${client.state.currentRoomState.players[request.selected[0]]?.name || ''} · แตะคนเดิมอีกครั้งเพื่อยืนยัน` : 'แตะผู้เล่นเพื่อเลือก แล้วแตะคนเดิมอีกครั้งเพื่อยืนยัน' : alibi ? `เลือกแล้ว ${request?.selected?.length || 0} ใบ · เลือกชนิดเดียว แต้มรวมไม่เกิน 3` : 'เลือกเป้าหมายบนโต๊ะ แล้วกดยืนยัน';
         phasePanel.appendChild(note);
+        if (window.matchMedia('(max-width:768px), (max-width:950px) and (pointer:coarse)').matches) {
+            if (request?.kind === 'life') note.textContent = request.selected?.length
+                ? `เลือกใบที่ ${request.selected[0] + 1} แล้ว · กดยืนยันด้านล่าง` : 'เลือกหมายเลขใบด้านล่าง แล้วกดยืนยัน';
+            if (request?.kind === 'player') note.textContent = request.selected?.length
+                ? 'เลือกผู้เล่นแล้ว · กดยืนยันด้านล่าง' : 'เลือกชื่อผู้เล่นด้านล่างได้เลย';
+        }
         function action(label, handler, disabled = false) {
             const button = document.createElement('button');
             button.type = 'button'; button.textContent = label; button.disabled = disabled;
-            button.onclick = () => { if (canAct() && root.isConnected) { handler(); schedule(); } };
+            button.onclick = () => { if (canAct() && (root?.isConnected || request?.preview)) { handler(); schedule(); } };
             phasePanel.appendChild(button);
             return button;
         }
+        if (request && ['player', 'life', 'effect'].includes(request.kind)) {
+            const choices = document.createElement('div');
+            choices.className = 'table3d-touch-choices';
+            choices.setAttribute('aria-label', request.kind === 'player' ? 'เลือกผู้เล่น' : 'เลือกการ์ด');
+            const ids = request.kind === 'player'
+                ? [...request.eligible, ...Object.keys(request.blocked || {}).filter(id => !request.eligible.includes(id))]
+                : request.eligible;
+            for (const id of ids) {
+                const option = document.createElement('button'); option.type = 'button';
+                const selected = request.selected?.includes(id);
+                const blocked = request.blocked?.[id];
+                const player = client.state.currentRoomState.players[id];
+                option.textContent = request.kind === 'player' ? `${player?.name || 'ผู้เล่น'}${blocked ? ' · ' + blocked : ''}`
+                    : request.kind === 'life' ? `ใบที่ ${id + 1}`
+                        : client.actions.displayCardName(client.state.currentRoomState.players[request.owner]?.inPlayCards?.[id]?.name || 'การ์ด');
+                option.disabled = !!blocked;
+                option.setAttribute('aria-pressed', String(selected));
+                option.onclick = () => {
+                    if (!canAct()) return;
+                    if (request.kind === 'player') client.actions.handleTable3DPlayer(id);
+                    else if (request.kind === 'life') client.actions.handleTable3DLife(request.owner, id);
+                    else client.actions.handleTable3DEffect(request.owner, id);
+                    schedule();
+                };
+                choices.appendChild(option);
+            }
+            phasePanel.appendChild(choices);
+            if (request.selected?.length && ['player', 'life'].includes(request.kind)) {
+                const id = request.selected[0];
+                const confirm = action(request.kind === 'life' ? `ยืนยันใบที่ ${id + 1}` : 'ยืนยันเลือกผู้เล่นนี้', () => {
+                    if (request.kind === 'life') client.actions.handleTable3DLife(request.owner, id);
+                    else client.actions.handleTable3DPlayer(id);
+                });
+                confirm.classList.add('table3d-touch-confirm');
+            }
+        }
+        if (request?.preview) action('ยกเลิกเลือกการ์ด', () => client.actions.clearCardSelection());
         if (alibi) {
             const confirm = alibi.querySelector('[data-alibi-action=confirm]');
             action('ยืนยันลบการ์ดที่เลือก', () => currentInteraction()?.confirm?.(), !request?.selected?.length);
@@ -287,14 +330,6 @@ export function initialize() {
     document.querySelectorAll('#table3d-section [data-table-action]').forEach(button => button.addEventListener('click', () => {
         if (!button.disabled) document.getElementById(button.dataset.tableAction)?.click();
     }));
-    document.getElementById('table3d-details-toggle').addEventListener('click', event => {
-        // Open the regular board as a complete view, with its own action UI.
-        client.actions.setGameViewMode('2d');
-        client.actions.syncTable3D();
-        event.currentTarget.setAttribute('aria-expanded', 'false');
-        client.actions.switchMobileGameTab('players');
-        requestAnimationFrame(() => document.querySelector('.game-layout')?.scrollIntoView({ block: 'start', behavior: 'smooth' }));
-    });
     document.getElementById('table3d-summary').addEventListener('click', () => document.getElementById('reopen-game-summary-btn')?.click());
     new MutationObserver(records => {
         // Our own rendered HUD must not recursively trigger itself.

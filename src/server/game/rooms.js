@@ -8,6 +8,7 @@ module.exports = function createServices(game) {
       // Remove the room first so disconnect callbacks cannot act on stale state.
       delete game.rooms[roomName];
       room.gameOver = true;
+      room.actionClock?.clear();
       game.cancelLifeSetup(room);
       clearInterval(room.phaseInterval);
       clearTimeout(room.confessionTimer);

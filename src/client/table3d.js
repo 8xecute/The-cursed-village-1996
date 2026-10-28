@@ -1,5 +1,6 @@
 import { QUALITY_PRESETS, normalizeQuality, createGraphicsQuality } from './graphics-quality.mjs';
 import * as THREE from 'three';
+import { addHourglass } from './hourglass.mjs';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { prepareVillagerModels, instantiateVillager, disposeVillagerModels } from './villager-models.mjs';
 import { createGunShot } from './gun-shot.mjs';
@@ -34,7 +35,7 @@ function canvasTexture(width, height, draw) {
     return texture;
 }
 
-function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError, onInspect, onSeatFocus, onShotgun, quality = 'medium', cameraMode = 'rotate' }) {
+function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError, onInspect, onSeatFocus, onShotgun, onHourglass, quality = 'medium', cameraMode = 'rotate' }) {
     const qualityLevel = normalizeQuality(quality);
     const renderer = new THREE.WebGLRenderer({ antialias: false, alpha: false, powerPreference: 'default' });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, QUALITY_PRESETS[qualityLevel].pixelRatio));
@@ -373,7 +374,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
         const { state, me, hand, selected, selectedCards = [], imageFor, interaction = null, canDraw = false, drawConfirming = false, handLowered = false, artwork = 'new', reorderIndex = null, cardSizes = {} } = options;
         const sizeFor = key => Math.max(.5, Math.min(2, (Number(cardSizes[key]) || 100) / 100));
         if (!state) return;
-        const nextSignature = JSON.stringify([state.currentPhase, state.gameOver, state.lifeSetup, state.awaitingLeftTryalSelections, state.playerForcedToRevealTryal, state.players, state.currentTurnPlayerUniqueId, state.deckCount, state.discardPileCount, state.witchNightState, state.prankGunHolderId, state.prankGunAvailable, state.prankShotActive, hand, selected, selectedCards, me, interaction, canDraw, drawConfirming, handLowered, artwork, reorderIndex, cardSizes]);
+        const nextSignature = JSON.stringify([state.actionTimer?.deadline, state.actionTimer?.available, state.currentPhase, state.gameOver, state.lifeSetup, state.awaitingLeftTryalSelections, state.playerForcedToRevealTryal, state.players, state.currentTurnPlayerUniqueId, state.deckCount, state.discardPileCount, state.witchNightState, state.prankGunHolderId, state.prankGunAvailable, state.prankShotActive, hand, selected, selectedCards, me, interaction, canDraw, drawConfirming, handLowered, artwork, reorderIndex, cardSizes]);
         if (signature === nextSignature) return;
         signature = nextSignature;
         lifeSetupStage = state.lifeSetup?.stage || null;
@@ -401,6 +402,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
         candleLight.color.set(0xffbd7a);
         handMotion.begin();
         clearDynamic();
+        addHourglass(dynamic, targets, !!state.actionTimer?.available && !state.actionTimer?.seconds && !state.actionTimer?.deadline && !!state.players?.[me]?.alive && !state.isSpectator, !!state.actionTimer?.deadline);
         if (!state.prankShotActive && gunShots.length) {
             gunShots.forEach(removeGunShot); gunShots.length = 0;
         }
@@ -638,7 +640,8 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
         const hit = raycaster.intersectObjects(targets, false)[0];
         if (!hit) return;
         const data = hit.object.userData;
-        if (data.shotgun) onShotgun?.();
+        if (data.hourglass) onHourglass?.();
+        else if (data.shotgun) onShotgun?.();
         else if (Number.isInteger(data.cardIndex)) onCard(data.cardIndex);
         else if (data.draw) onDraw?.();
         else if (Number.isInteger(data.revealedIndex)) onInspect?.(data);

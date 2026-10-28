@@ -83,6 +83,7 @@ module.exports = function createServices(game) {
       };
 
       const publicState = {
+          actionTimer: game.syncActionClock(room),
           prankGunHolderId: room.prankGunExpiresAt > Date.now() ? Object.values(room.players).find(player => player.alive && player.prankGun)?.uniqueId || null : null,
           prankGunAvailable: !room.prankGunExpiresAt,
           prankGunExpiresAt: room.prankGunExpiresAt || null,

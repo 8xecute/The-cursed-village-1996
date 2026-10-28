@@ -31,7 +31,9 @@ client.actions.showConfessPopup = function showConfessPopup(tryalCards) {
     popup.appendChild(title);
 
     const subtitle = document.createElement('p');
-    subtitle.textContent = 'เลือกการ์ดชีวิต 1 ใบหรือข้าม ระบบจะรอทุกคนตัดสินใจครบ แล้วจึงเปิดการ์ดและเฉลยผลกลางคืน';
+    subtitle.textContent = tryalCards.length === 1
+        ? 'สารภาพได้แม้เหลือ 1 ใบ แต่การเปิดใบสุดท้ายจะทำให้คุณเสียชีวิต · เลือกเปิดหรือข้ามได้'
+        : 'เลือกการ์ดชีวิต 1 ใบหรือข้าม ระบบจะรอทุกคนตัดสินใจครบ แล้วจึงเปิดการ์ดและเฉลยผลกลางคืน';
     subtitle.style = 'color: #d7ccc8; font-size: 0.95em; margin-top: -6px; margin-bottom: 16px;';
     popup.appendChild(subtitle);
 

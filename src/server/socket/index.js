@@ -13,6 +13,7 @@ const registrars = [
 
 module.exports = function registerSocketHandlers(game) {
   game.io.on('connection', socket => {
+    game.registerActionClock(socket);
     socket.use(([event], next) => {
       if (event === 'register uniqueId' || event === 'leave room') return next();
       if (socket.pendingReturnRoom) return;

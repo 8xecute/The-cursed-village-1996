@@ -70,6 +70,7 @@ client.actions.syncTable3D = async function syncTable3D() {
                     } else cards[index]?.click();
                 },
                 onDraw: () => { if (client.actions.canUseTable3DHand()) { const draw = document.getElementById('draw-card-button'); if (draw && !draw.disabled) draw.click(); } },
+                onHourglass: () => client.state.socket.emit('start action clock'),
                 onShotgun: () => client.actions.pickupWallShotgun?.(),
                 onSeatFocus: name => {
                     const label = document.getElementById('table3d-seat-label');
@@ -132,7 +133,13 @@ client.actions.setGameViewMode = function setGameViewMode(mode) {
         document.body.classList.remove('table3d-unavailable');
     }
     document.body.classList.toggle('game-view-3d', use3D);
-    client.dom.gameViewToggle?.setAttribute('aria-checked', String(use3D));
+    const viewButton = client.dom.gameViewToggle;
+    if (viewButton) {
+        viewButton.textContent = use3D ? 'สลับเป็น 2D' : 'สลับเป็น 3D';
+        viewButton.setAttribute('aria-label', viewButton.textContent);
+        const host = document.querySelector(use3D ? '.table3d-camera-controls' : '.game-view-toolbar');
+        if (host && viewButton.parentElement !== host) host.append(viewButton);
+    }
     if (client.dom.gameViewDescription) client.dom.gameViewDescription.textContent = use3D ? 'มุมมองกระดาน 3D' : 'มุมมอง 2D';
 };
 

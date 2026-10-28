@@ -8,9 +8,6 @@ export function initializeMobilePlay() {
     const life = document.getElementById('own-life-panel');
     const navigation = document.getElementById('game-navigation');
     const menuButtons = [...document.querySelectorAll('.mobile-game-menu')];
-    const detailsButton = document.getElementById('table3d-details-toggle');
-    const detailsParent = detailsButton.parentElement;
-    const viewRow = document.querySelector('.table3d-view-row');
     function closeMenu() {
         document.body.classList.remove('game-menu-open');
         menuButtons.forEach(button => button.setAttribute('aria-expanded', 'false'));
@@ -25,19 +22,5 @@ export function initializeMobilePlay() {
         if (!navigation.contains(event.target) || event.target.closest('button,a')) closeMenu();
     });
     document.addEventListener('keydown', event => { if (event.key === 'Escape') closeMenu(); });
-    function layout() {
-        life.open = !mobile.matches;
-        closeMenu();
-        // Use the existing 2D switch and its handler, without a second action.
-        if (mobile.matches) {
-            viewRow.appendChild(detailsButton);
-            detailsButton.textContent = '2D'; detailsButton.title = 'เปลี่ยนเป็นกระดาน 2D';
-        } else {
-            detailsParent.prepend(detailsButton);
-            detailsButton.textContent = 'เปิดกระดาน 2D';
-        }
-    }
-    mobile.addEventListener('change', layout);
     client.state.socket.on('room left', closeMenu);
-    layout();
 }

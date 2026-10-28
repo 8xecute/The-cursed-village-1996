@@ -22,17 +22,31 @@ export function initialize() {
     const handToggle = document.getElementById('table3d-hand-toggle');
     if (handToggle) actions.prepend(handToggle);
     const endTurn = document.querySelector('#table3d-section .table3d-end-turn');
-    actions.appendChild(button);
+    const tools = document.getElementById('table3d-hand-tools') || actions;
+    tools.prepend(button);
     const cardSizes = document.getElementById('table3d-card-sizes');
-    if (cardSizes) actions.appendChild(cardSizes);
+    if (cardSizes) tools.appendChild(cardSizes);
     if (endTurn) actions.appendChild(endTurn);
     row.appendChild(note);
+    const menus = [...row.querySelectorAll('.table3d-tool-menu')];
+    menus.forEach(menu => {
+        menu.addEventListener('toggle', () => {
+            if (menu.open) menus.forEach(other => { if (other !== menu) other.open = false; });
+        });
+        menu.addEventListener('keydown', event => {
+            if (event.key === 'Escape') { menu.open = false; menu.querySelector('summary').focus(); event.stopPropagation(); }
+        });
+    });
+    document.addEventListener('click', event => menus.forEach(menu => { if (!menu.contains(event.target)) menu.open = false; }));
+    views.addEventListener('click', event => { if (event.target.closest('button')) document.getElementById('table3d-camera-menu').open = false; });
     let pending = false, previousHand = JSON.stringify(client.state.myCurrentHand || []);
     function refresh() {
         if (!allowed()) { client.state.table3DReorderMode = false; client.state.table3DReorderIndex = null; pending = false; }
         const active = !!client.state.table3DReorderMode;
         button.disabled = !allowed(); button.setAttribute('aria-pressed', String(active));
         button.textContent = active ? 'จัดไพ่เสร็จ' : 'จัดไพ่';
+        const summary = document.querySelector('#table3d-hand-menu > summary');
+        if (summary) summary.textContent = active ? 'จัดไพ่อยู่' : 'จัดการไพ่';
         note.hidden = !active;
         note.textContent = pending ? 'กำลังสลับ…' : client.state.table3DReorderIndex == null ? 'แตะไพ่ใบแรก แล้วแตะอีกใบเพื่อสลับ' : 'เลือกอีกใบเพื่อสลับ · แตะใบเดิมเพื่อยกเลิก';
         client.actions.syncTable3D?.();
@@ -43,6 +57,8 @@ export function initialize() {
         client.state.table3DReorderIndex = null;
         if (client.state.table3DReorderMode) client.actions.clearCardSelection();
         refresh();
+        const menu = document.getElementById('table3d-hand-menu');
+        if (menu) menu.open = false;
     };
     client.actions.reorderTable3DCard = index => {
         if (!allowed() || pending || !client.state.table3DReorderMode || !Number.isInteger(index) || !client.state.myCurrentHand[index]) return;

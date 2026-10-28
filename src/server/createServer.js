@@ -9,6 +9,7 @@ const { getGameCardsForPlayerCount } = require('../shared/cards');
 const config = require('./config');
 const registerSocketHandlers = require('./socket');
 const serviceFactories = [
+  require('./game/action-timer'),
   require('./game/rooms'),
   require('./game/reconnection'),
   require('./game/replacement-bots'),

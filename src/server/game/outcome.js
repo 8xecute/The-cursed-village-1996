@@ -44,6 +44,7 @@ module.exports = function createServices(game) {
   function finishGame(room, winner, message, color) {
       if (room.gameOver) return;
       room.gameOver = true;
+      room.actionClock?.clear();
       game.cancelLifeSetup(room);
       room.currentPhase = 'GAME_OVER';
       room.winner = winner;
