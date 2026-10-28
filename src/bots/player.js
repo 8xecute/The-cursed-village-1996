@@ -22,7 +22,7 @@ function createBotClient({ url, uniqueId, token, name }) {
     let handReceived = false, turnKey = null, stopPlayingThisTurn = false, inFlight = false, responseSeen = false;
     let suspicion = {};
 
-    function later(key, callback, delay = 350 + Math.floor(Math.random() * 500)) {
+    function later(key, callback, delay = 900 + Math.floor(Math.random() * 700)) {
         if (timers.has(key)) return;
         const timer = setTimeout(() => {
             timers.delete(key);

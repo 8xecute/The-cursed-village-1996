@@ -7,6 +7,7 @@ export const QUALITY_PRESETS = Object.freeze({
 export function normalizeQuality(level) { return Object.hasOwn(QUALITY_PRESETS, level) ? level : 'medium'; }
 export function createGraphicsQuality({ renderer, scene, key, container, quality, requestRender, onChange }) {
     let qualityLevel = normalizeQuality(quality);
+    const mobile = window.matchMedia('(max-width: 900px) and (pointer: coarse)').matches;
     function setQuality(level) {
         if (!Object.hasOwn(QUALITY_PRESETS, level)) return;
         const changed=qualityLevel!==level;
@@ -14,7 +15,7 @@ export function createGraphicsQuality({ renderer, scene, key, container, quality
         renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1,QUALITY_PRESETS[level].pixelRatio));
         renderer.setSize(container.clientWidth || 1,container.clientHeight || 1);
         renderer.shadowMap.enabled=QUALITY_PRESETS[level].shadows;
-        const shadowSize=QUALITY_PRESETS[level].shadowSize;
+        const shadowSize=mobile ? Math.min(512, QUALITY_PRESETS[level].shadowSize) : QUALITY_PRESETS[level].shadowSize;
         if(key.shadow.mapSize.x!==shadowSize) {
             key.shadow.map?.dispose();key.shadow.map=null;
             key.shadow.mapPass?.dispose();key.shadow.mapPass=null;
@@ -23,7 +24,8 @@ export function createGraphicsQuality({ renderer, scene, key, container, quality
         let lightIndex=0;
         scene.traverse(part=>{
             if(part.userData.qualityLight) {
-                part.userData.qualityAllowed=QUALITY_PRESETS[level].lightStride > 0 && lightIndex % QUALITY_PRESETS[level].lightStride === 0;
+                const stride = mobile && QUALITY_PRESETS[level].lightStride ? Math.max(2, QUALITY_PRESETS[level].lightStride) : QUALITY_PRESETS[level].lightStride;
+                part.userData.qualityAllowed=stride > 0 && lightIndex % stride === 0;
                 part.visible=part.userData.qualityAllowed && !part.userData.nightDisabled;lightIndex++;
             }
             if(changed && part.isMesh && part.material) part.material.needsUpdate=true;
