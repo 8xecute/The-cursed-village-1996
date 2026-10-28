@@ -1,6 +1,6 @@
 const { io } = require('socket.io-client');
 
-const { alliesFor, chooseCardAction, chooseNightTarget, chooseProtectedTarget } = require('./strategy');
+const { alliesFor, chooseCardAction, chooseNightTarget, chooseProtectedTarget, chooseDayDecision } = require('./strategy');
 const { lifeIndex, curseIndex, alibiIndexes } = require('./pending-choices');
 
 function pickRandom(items) {
@@ -51,8 +51,9 @@ function createBotClient({ url, uniqueId, token, name }) {
             roomState.currentTurnPlayerUniqueId !== uniqueId || !me?.alive || !handReceived ||
             roomState.pendingCardAction || inFlight) return;
         const candidate = !stopPlayingThisTurn ? chooseCardAction({state:roomState, id:uniqueId, hand, suspicion}) : null;
-        if (!candidate || candidate.score < 4) {
-            socket.emit(me.hasPlayedCardsThisTurn ? 'end turn' : 'draw cards');
+        const decision = chooseDayDecision({ candidate, handSize: hand.length, hasPlayed: me.hasPlayedCardsThisTurn });
+        if (decision !== 'play') {
+            socket.emit(decision === 'end' ? 'end turn' : 'draw cards');
             return;
         }
         inFlight = true; responseSeen = false;

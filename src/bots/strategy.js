@@ -122,4 +122,15 @@ function chooseProtectedTarget(state, id) {
         })[0] || null;
 }
 
-module.exports = { alliesFor, bestRedBatch, chooseCardAction, chooseNightTarget, chooseProtectedTarget };
+function chooseDayDecision({ candidate, handSize, hasPlayed, random = Math.random }) {
+    // A small red batch still builds pressure; it need not reveal a life today.
+    const useful = candidate && (candidate.kind === 'red' ? candidate.score > 0 : candidate.score >= 4);
+    if (!useful) return hasPlayed ? 'end' : 'draw';
+    if (!hasPlayed && candidate.score < 12) {
+        const drawChance = handSize <= 2 ? .45 : handSize <= 5 ? .25 : .12;
+        if (random() < drawChance) return 'draw';
+    }
+    return 'play';
+}
+
+module.exports = { alliesFor, bestRedBatch, chooseCardAction, chooseNightTarget, chooseProtectedTarget, chooseDayDecision };
