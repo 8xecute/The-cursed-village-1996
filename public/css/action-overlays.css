@@ -1,0 +1,228 @@
+/* ==========================================================================
+   In-Modal Witch Chat (Night Phase Coordination)
+   ========================================================================== */
+.modal-witch-chat-section {
+  background: rgba(20, 8, 8, 0.92);
+  border: 1px solid #7f1d1d;
+  border-radius: 10px;
+  margin: 12px 0;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Collapse active action popups so the board and game log remain accessible. */
+.popup-collapse-header,
+.night-action-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+}
+
+.popup-collapse-header h3,
+.night-action-title-row .night-action-title {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+}
+
+.popup-collapse-toggle {
+  flex: 0 0 auto !important;
+  width: auto !important;
+  min-width: 52px;
+  min-height: 34px;
+  padding: 6px 10px !important;
+  border: 1px solid rgba(255, 183, 77, 0.65) !important;
+  border-radius: 8px !important;
+  background: rgba(74, 49, 25, 0.95) !important;
+  color: #ffe0a3 !important;
+  font-size: 0.85rem !important;
+  cursor: pointer;
+}
+
+.popup-collapse-toggle:hover {
+  background: rgba(111, 72, 31, 0.98) !important;
+}
+
+.tryal-modal-overlay.is-collapsed,
+#select-blackcat-overlay.is-collapsed,
+#select-left-tryal-overlay.is-collapsed {
+  align-items: flex-end !important;
+  justify-content: center !important;
+  padding: 12px !important;
+  background: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  pointer-events: none !important;
+  overflow: visible !important;
+}
+
+.tryal-selection-popup.is-collapsed {
+  width: min(100%, 440px) !important;
+  max-width: 440px !important;
+  max-height: none !important;
+  margin: 0 auto !important;
+  padding: 10px 12px !important;
+  overflow: visible !important;
+  pointer-events: auto !important;
+}
+
+.tryal-selection-popup.is-collapsed .popup-collapse-header {
+  align-items: center;
+}
+
+.tryal-selection-popup.is-collapsed .popup-collapse-header h3 {
+  margin: 0 !important;
+  font-size: 1rem !important;
+  line-height: 1.3;
+}
+
+.tryal-selection-popup.is-collapsed .popup-collapsible-content {
+  display: none;
+}
+
+.lobby-bot-add-btn,
+.bot-player-remove-btn {
+  min-height: 36px;
+  border: 1px solid #806841;
+  border-radius: 7px;
+  padding: 7px 11px;
+  color: #f5e6cb;
+  background: linear-gradient(135deg, #49351e, #29211a);
+  cursor: pointer;
+}
+
+.lobby-bot-add-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.bot-player-badge {
+  display: inline-block;
+  margin-left: 4px;
+  padding: 2px 7px;
+  border: 1px solid rgba(255, 193, 7, 0.4);
+  border-radius: 10px;
+  color: #ffd166;
+  background: rgba(90, 66, 22, 0.3);
+  font-size: 0.8em;
+}
+
+.bot-player-remove-btn {
+  margin: 6px 0 2px 8px;
+  border-color: #8d4141;
+  color: #ffc8c8;
+  background: #4c2525;
+}
+
+.night-action-overlay.is-collapsed {
+  background: transparent !important;
+  backdrop-filter: none !important;
+  pointer-events: none !important;
+}
+
+#night-action-popup.is-collapsed {
+  top: auto !important;
+  bottom: 12px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  width: min(95vw, 520px) !important;
+  max-width: 520px !important;
+  max-height: none !important;
+  padding: 10px 12px !important;
+  overflow: visible !important;
+  pointer-events: auto !important;
+}
+
+#night-action-popup.is-collapsed .night-action-header {
+  margin: 0;
+}
+
+#night-action-popup.is-collapsed .night-action-title {
+  font-size: 1rem;
+  line-height: 1.3;
+}
+
+#night-action-popup.is-collapsed .night-action-subtitle,
+#night-action-popup.is-collapsed .night-action-content {
+  display: none;
+}
+
+@media (max-width: 480px) {
+  .popup-collapse-header h3 {
+    font-size: 1.05em !important;
+    line-height: 1.35;
+  }
+
+  #night-action-popup.is-collapsed {
+    bottom: 8px !important;
+    width: calc(100vw - 16px) !important;
+  }
+}
+
+.modal-witch-chat-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.88em;
+  font-weight: bold;
+  color: #f87171;
+  border-bottom: 1px solid rgba(127, 29, 29, 0.4);
+  padding-bottom: 5px;
+}
+
+.modal-witch-chat-sub {
+  font-size: 0.78em;
+  color: #fca5a5;
+  font-weight: normal;
+}
+
+.modal-witch-chat-messages {
+  max-height: 120px;
+  min-height: 55px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 4px;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 6px;
+}
+
+.modal-witch-chat-input-bar {
+  display: flex;
+  gap: 6px;
+}
+
+.modal-witch-chat-input-bar input {
+  flex: 1;
+  min-width: 0;
+  width: 0;
+  box-sizing: border-box;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid #7f1d1d;
+  color: #fff;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 0.88em;
+}
+
+.modal-witch-chat-input-bar input:focus {
+  outline: none;
+  border-color: #ef4444;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.4);
+}
+
+.modal-witch-chat-input-bar button {
+  flex: 0 0 54px;
+  width: 54px;
+  min-width: 54px;
+  margin: 0;
+  padding: 6px 0;
+  font-size: 0.88em;
+  border-radius: 6px;
+}
+

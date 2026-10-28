@@ -1,0 +1,32 @@
+/* ==========================================================================
+   Top Navigation Buttons (Salem Antique Themed)
+   ========================================================================== */
+.top-nav-btn {
+  background: linear-gradient(180deg, #2a201b 0%, #17120f 100%);
+  color: #dfceb7;
+  border: 1px solid #5a3f2b;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  border-radius: 20px;
+  padding: 8px 16px;
+  font-size: 0.9em;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.top-nav-btn:hover {
+  background: linear-gradient(180deg, #3d2c22 0%, #221813 100%);
+  color: #fff;
+  border-color: #a37243;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.7), 0 0 10px rgba(163, 114, 67, 0.3);
+}
+
+.top-nav-icon {
+  font-size: 1.1em;
+}
+

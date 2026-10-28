@@ -1,0 +1,72 @@
+/* Two compact rows share the same existing game action handlers. */
+#table3d-canvas { position:relative; }
+body.game-view-3d #table3d-section .table3d-hand-controls,
+body.game-view-3d #table3d-section .table3d-hand-controls:has(#table3d-reorder-hint:not([hidden])) {
+    display:flex; flex-direction:column; gap:4px; width:max-content;
+    max-width:calc(100% - 16px); padding:6px 8px;
+    top:auto; bottom:calc(100% - var(--table3d-canvas-height,75dvh) + 8px);
+}
+.table3d-control-row { display:flex; align-items:center; justify-content:center; gap:5px; }
+body.game-view-3d #table3d-section .table3d-hand-controls button {
+    position:static; inset:auto; transform:none; flex:0 0 auto;
+    width:auto !important; min-width:32px !important; max-width:none;
+    min-height:30px !important; height:auto !important;
+    padding:5px 8px !important; margin:0 !important;
+    white-space:nowrap; font-size:.8rem !important; line-height:1.25 !important;
+}
+#table3d-reorder-hint { max-width:280px; }
+@media(max-width:768px) {
+    body.game-view-3d #table3d-section .table3d-hand-controls,
+    body.game-view-3d #table3d-section .table3d-hand-controls:has(#table3d-reorder-hint:not([hidden])) {
+        position:relative; inset:auto; transform:none; margin:0 auto;
+        width:max-content; min-height:0; padding:6px 8px;
+    }
+    body.game-view-3d #table3d-section .table3d-hand-controls button { min-height:38px !important; }
+}
+#prank-controls details[open] { max-height: 40dvh; overflow: auto; }
+#prank-controls details[open] select { display: block; width: 100%; margin: 8px 0; }
+#prank-controls details[open] button { min-height: 38px; }
+
+#game-messages .game-event-entry.is-self-event,
+#table3d-log-messages .game-event-entry.is-self-event {
+    background: #63482388; border-left: 4px solid #ffd57b; border-radius: 5px;
+    padding: 8px 10px; margin: 5px 0; box-shadow: inset 0 0 0 1px #edc57533;
+}
+body.game-view-3d #play-result-toast {
+    top: max(54px, calc(env(safe-area-inset-top) + 48px)); width: min(540px, calc(100vw - 340px));
+    min-width: 180px; text-align: center; font-weight: 600;
+    border-top: 3px solid #e6ba6d; box-shadow: 0 5px 22px #0008;
+}
+@media (max-width: 800px) {
+    body.game-view-3d #play-result-toast {
+        top: max(100px, calc(env(safe-area-inset-top) + 90px));
+        width: calc(100vw - 24px); max-width: 540px; font-size: .82rem;
+        padding: 8px 12px; line-height: 1.5;
+    }
+    #prank-controls { top: 40dvh; right: 8px; max-width: min(300px, calc(100vw - 16px)); }
+}
+.top-nav-btn[href] { text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.intro-patch-link { display: block; margin: 12px auto 0; color: #ffd596; text-align: center; }
+
+.lobby-rules-note { margin:10px 0; font-size:.82rem; color:#cfbea3; }
+.lobby-rules-note summary { cursor:pointer; color:#e5c58e; }
+.lobby-rules-note p { margin:6px 0; }
+
+.life-tile { display:inline-flex; flex-direction:column; align-items:center; margin:0; flex:0 0 auto; vertical-align:top; }
+.life-tile figcaption { font-size:10px; line-height:1.4; color:#cdbb9c; text-align:center; margin-top:1px; white-space:nowrap; }
+.life-tile-revealed .card { cursor:default; }
+#my-tryal-cards-list { align-items:flex-start; }
+.player-board-life-row { display:flex; align-items:flex-start; flex-wrap:wrap; gap:5px; margin-top:8px; }
+.player-board-life-row .life-tile .card { width:48px !important; height:71px !important; min-height:71px !important; max-height:71px !important; min-width:0 !important; margin:0 !important; padding:0; }
+.player-board-life-row .life-tile img { object-fit:cover; }
+
+/* The end-turn action belongs to the card row, never to a scene anchor. */
+body.game-view-3d #table3d-section .table3d-card-row > .table3d-end-turn {
+    position:static !important; inset:auto !important; transform:none !important;
+    width:auto !important; margin:0 !important;
+}
+.player-board-life-row { flex-wrap:nowrap; gap:4px; }
+.player-life-slot { margin:0; width:40px; display:flex; flex-direction:column; align-items:center; flex:0 0 40px; }
+.player-life-mini { width:28px; height:38px; border:1px solid #9d8157; border-radius:3px; background:#231a12; display:grid; place-items:center; color:#ba9c70; font-size:10px; }
+.player-life-slot.is-opened .player-life-mini { color:#e89787; border-color:#b96254; background:#39221c; }
+.player-life-slot figcaption { margin-top:3px; font-size:9px; line-height:1.4; color:#d9c8ad; text-align:center; }

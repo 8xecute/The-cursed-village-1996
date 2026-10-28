@@ -1,0 +1,88 @@
+/* Final theme layer: matte materials and explicit borders replace neon glow. */
+:root {
+    --raw-paper: #e5ddcf;
+    --raw-muted: #b9ac99;
+    --raw-line: #756451;
+    --raw-accent: #c2ab87;
+    --raw-red: #c94d45;
+    --raw-green: #549560;
+    --raw-blue: #4a8dc0;
+}
+body { color: var(--raw-paper); }
+body *, body *::before, body *::after { text-shadow: none !important; box-shadow: none !important; }
+body button, body .top-nav-btn {
+    animation: none !important;
+}
+body button:disabled { cursor: not-allowed; }
+body button:focus-visible, [role="button"]:focus-visible { outline: 2px solid var(--raw-accent); outline-offset: 3px; }
+body .game-title { color: #b99470; }
+body h2, body h3, .night-action-title, .witch-night .night-action-title, .constable-night .night-action-title { color: var(--raw-paper) !important; }
+input[type="range"] { accent-color: #a68b68; }
+.card, .tryal-card { border-width: 1px !important; border-style: solid !important; }
+.card-red { background: #44302b !important; border-color: var(--raw-red) !important; }
+.card-green { background: #30372c !important; border-color: var(--raw-green) !important; }
+.card-blue { background: #2d343b !important; border-color: var(--raw-blue) !important; }
+.card-black { background: #262522 !important; border-color: #77716b !important; }
+.card:hover, .tryal-card:hover, .card.selected, .player-select-card { transform: none !important; }
+.card.selected { outline: 2px solid var(--raw-accent); outline-offset: 2px; }
+.card.selected::after { content: '✓'; position: absolute; top: 4px; right: 4px; padding: 2px 6px; border-radius: 3px; background: #c2ab87; color: #211d18; font-weight: bold; }
+.card-night, .night-card, .night-card-highlight, .my-turn-active, .card.selected, [data-training-next], .confirming { animation: none !important; }
+.my-turn-active { border-color: var(--raw-accent) !important; }
+.player-select-card.selected { outline: 2px solid var(--raw-accent); outline-offset: 2px; }
+.player-select-card { background: #2d2822 !important; border-color: var(--raw-line) !important; color: var(--raw-paper) !important; }
+.player-select-card span, .player-select-card strong { color: var(--raw-paper) !important; }
+.player-select-card.selected { background: #453b2f !important; }
+.target-card-overview { padding: 10px 12px; margin-bottom: 12px; background: #28231e; border-left: 3px solid var(--raw-accent); text-align: left; }
+.target-card-overview p { margin: 4px 0 0; color: var(--raw-muted); line-height: 1.6; font-size: .9rem; }
+.select-player-modal .player-select-card { max-width: none !important; min-height: 70px; height: auto !important; padding: 12px !important; }
+.target-selection-footer { position: sticky; bottom: 0; display: flex; gap: 8px; padding: 12px 0 4px; background: #211c18; border-top: 1px solid var(--raw-line); }
+.target-selection-footer button { flex: 1; min-height: 48px; margin: 0 !important; padding: 10px !important; }
+.action-guide.needs-action { background: #342c22; border-color: #a68b68; }
+.action-guide strong, .action-guide.needs-action strong { color: #e1cfac; }
+.turn-notice { background: #302920; color: var(--raw-paper); border-color: #a68b68; }
+.night-action-popup, .witch-night .night-action-popup, .constable-night .night-action-popup { background: #221e1a !important; border-color: var(--raw-line) !important; }
+.night-player-card.selected, .team-marked { border-color: var(--raw-accent) !important; background: #3b3026 !important; }
+#training-dialog .training-card.card-red { border-color: var(--raw-red) !important; }
+#training-dialog .training-card.card-green { border-color: var(--raw-green) !important; }
+#training-dialog .training-card.card-blue { border-color: var(--raw-blue) !important; }
+#training-dialog .training-card.card-black { border-color: #77716b !important; }
+#training-dialog .training-card-explanation.card-red { border-left-color: var(--raw-red); }
+#training-dialog .training-card-explanation.card-green { border-left-color: var(--raw-green); }
+#training-dialog .training-card-explanation.card-blue { border-left-color: var(--raw-blue); }
+#training-dialog [data-training-next="true"] { outline: 3px solid var(--raw-accent); animation: none; }
+#training-dialog [data-training-next="true"]::after { background: var(--raw-accent); color: #211d18; content: 'กดตรงนี้'; }
+.selected-card-summary[hidden] { display: none; }
+.selected-card-summary { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 12px 0; padding: 12px 14px; background: #29241e; border: 1px solid var(--raw-line); border-left: 3px solid var(--raw-accent); border-radius: 8px; }
+.selected-card-summary strong { color: #e1cfac; }
+.selected-card-summary p { margin: 5px 0; color: var(--raw-paper); line-height: 1.6; font-size: .9rem; }
+.selected-card-summary small { color: var(--raw-muted); }
+#clear-selected-card { width: auto; flex-shrink: 0; min-height: 44px; margin: 0; padding: 8px 12px; }
+.hand-action-buttons .action-buttons-row button { min-height: 48px; font-size: .95rem; }
+#play-card-button.can-play, #draw-card-button.confirming, #end-turn-button.confirming {
+    animation: none !important;
+}
+#current-turn-player-display { background: #c2ab87 !important; color: #211d18 !important; }
+@media (max-width: 600px) {
+    .selected-card-summary { align-items: flex-start; flex-wrap: wrap; }
+    #clear-selected-card { font-size: .85rem; }
+    .hand-action-buttons .action-buttons-row { gap: 6px; }
+    .hand-action-buttons .action-buttons-row button { padding: 8px; font-size: .85rem; }
+}
+
+.card-artwork-toggle {
+    position: fixed; left: max(10px, env(safe-area-inset-left)); bottom: max(10px, env(safe-area-inset-bottom));
+    z-index: 12000; width: auto; min-height: 40px; margin: 0; padding: 8px 12px;
+    border: 1px solid #967b54; border-radius: 8px; background: #241c16ed; color: #f0dfbd; font-size: .85rem;
+}
+
+body .card-artwork-toggle {
+    width: 34px; height: 34px; min-height: 34px; padding: 0;
+    display: grid; place-items: center; font-size: 20px; opacity: .65;
+}
+body .card-artwork-toggle:hover, body .card-artwork-toggle:focus-visible { opacity: 1; }
+@media (pointer: coarse) { body .card-artwork-toggle { width: 44px; height: 44px; min-height: 44px; } }
+
+.lobby-witch-setting { padding:12px; margin:12px 0; border:1px solid #756451; border-radius:8px; background:#29231c; }
+.lobby-witch-setting label { display:block; margin-bottom:6px; }
+.lobby-witch-setting select { width:auto; min-height:40px; padding:6px 10px; background:#211b17; color:#efdfc3; border:1px solid #8b7350; border-radius:6px; }
+.lobby-witch-setting small { display:block; margin-top:8px; color:#c5b79e; line-height:1.5; }

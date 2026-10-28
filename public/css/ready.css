@@ -1,0 +1,64 @@
+/* --- Ready System (Lobby) --- */
+.ready-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 22px;
+  border-radius: 8px;
+  font-size: 1.05em;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  border: 1px solid transparent;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.ready-btn.not-ready {
+  background: linear-gradient(135deg, #37474f 0%, #263238 100%);
+  color: #cfd8dc;
+  border-color: #546e7a;
+}
+.ready-btn.not-ready:hover {
+  background: linear-gradient(135deg, #455a64 0%, #37474f 100%);
+  color: #fff;
+  border-color: #78909c;
+}
+
+.ready-btn.ready {
+  background: linear-gradient(135deg, #2e7d32 0%, #1b5e20 100%);
+  color: #fff;
+  border-color: #81c784;
+  box-shadow: 0 0 14px rgba(76, 175, 80, 0.6);
+}
+.ready-btn.ready:hover {
+  background: linear-gradient(135deg, #388e3c 0%, #2e7d32 100%);
+}
+
+.ready-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.82em;
+  font-weight: 600;
+  margin-left: 8px;
+  letter-spacing: 0.3px;
+}
+.ready-badge.host {
+  background: rgba(255, 179, 0, 0.18);
+  color: #ffb300;
+  border: 1px solid rgba(255, 179, 0, 0.4);
+}
+.ready-badge.ready {
+  background: rgba(76, 175, 80, 0.2);
+  color: #81c784;
+  border: 1px solid rgba(76, 175, 80, 0.45);
+}
+.ready-badge.not-ready {
+  background: rgba(158, 158, 158, 0.15);
+  color: #b0bec5;
+  border: 1px solid rgba(158, 158, 158, 0.3);
+}
+

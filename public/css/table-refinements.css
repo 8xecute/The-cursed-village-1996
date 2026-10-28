@@ -1,0 +1,21 @@
+html.returning-session #music-overlay { display:none !important; }
+.game-year { display:inline-flex; flex-direction:column; align-items:center; vertical-align:top; line-height:1.25; }
+body .game-year .halloween-edition.edition-curve { display:block; margin:-2px 0 0; width:7.5em; max-width:160px; height:2em; font-size:12px; letter-spacing:.08em; }
+.edition-curve svg { display:block; width:100%; height:100%; overflow:visible; }
+.edition-curve text { fill:#e2b6f4; font-family:"Village Sarabun",sans-serif; font-size:15px; font-weight:700; }
+body.game-view-3d #table3d-section .table3d-hand-controls .table3d-end-turn:not(:disabled) { min-height:40px !important; padding:9px 17px !important; border:1px solid #ffd69a; background:linear-gradient(#dd9a3d,#a75619); color:#fff5d6; font-weight:700; box-shadow:0 0 10px #ffae4599,0 0 22px #ed81264d; }
+body.game-view-3d #table3d-section .table3d-hand-controls .table3d-end-turn:not(:disabled):hover { background:#d98d2a; box-shadow:0 0 16px #ffb94ac9; }
+body.game-view-3d #table3d-section .table3d-hand-controls .table3d-end-turn:not(:disabled):focus-visible { outline:3px solid #ffe1a6; outline-offset:3px; }
+#table3d-card-sizes { position:relative; display:inline-block; }
+#table3d-card-sizes > summary { display:grid; place-items:center; min-height:32px; padding:5px 9px; box-sizing:border-box; border:1px solid #a7834d; border-radius:7px; background:#302517ed; color:#f1dbb0; font-size:12px; cursor:pointer; list-style:none; }
+#table3d-card-sizes > summary::-webkit-details-marker { display:none; }
+#table3d-card-sizes .card-size-panel { position:absolute; bottom:calc(100% + 12px); left:50%; transform:translateX(-50%); width:260px; max-width:calc(100vw - 24px); box-sizing:border-box; padding:14px; background:#281d15fa; border:1px solid #ab854c; border-radius:10px; box-shadow:0 8px 26px #000a; text-align:left; max-height:55dvh; overflow:auto; }
+.card-size-panel label { display:grid; grid-template-columns:1fr auto; align-items:center; gap:6px; margin-bottom:12px; font-size:13px; color:#eedabc; }
+.card-size-panel label input { grid-column:1; grid-row:2; width:100%; min-width:0; min-height:28px; margin:0; }
+.card-size-panel output { grid-column:2; grid-row:2; min-width:38px; text-align:right; }
+body #table3d-card-sizes .card-size-panel button { display:block; width:100%; min-height:40px; margin:0; }
+@media(max-width:768px) {
+  #table3d-card-sizes > summary { min-height:44px; padding:8px; }
+  #table3d-card-sizes .card-size-panel { position:fixed; left:12px; right:12px; bottom:180px; transform:none; width:auto; }
+  body.game-view-3d #table3d-section .table3d-hand-controls .table3d-end-turn:not(:disabled) { min-height:46px !important; padding:9px 16px !important; }
+}

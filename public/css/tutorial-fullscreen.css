@@ -1,0 +1,34 @@
+#guide-picker { width:min(420px,calc(100vw - 32px)); box-sizing:border-box; padding:18px; border:1px solid #b7833d; border-radius:12px; background:#241c16; color:#eee3d4; }
+#guide-picker::backdrop { background:#080605cc; }
+#guide-picker header { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+#guide-picker h2 { margin:0; border:0; font-size:1.15rem; }
+#guide-picker-close { width:38px; min-width:38px; height:38px; margin:0; padding:0; }
+#guide-picker > .top-nav-btn { display:flex; justify-content:center; width:100%; margin:10px 0 0; box-sizing:border-box; }
+#training-dialog[open][data-training-view="3d"] { position:fixed; inset:0; margin:0; width:100vw; height:100dvh; max-width:none; max-height:none; border:0; border-radius:0; overflow:hidden; }
+#training-dialog[data-training-view="3d"] .training-header { position:absolute; inset:0 0 auto; z-index:5; padding:8px 14px; background:#201810e6; }
+#training-dialog[data-training-view="3d"] #training-body { position:relative; width:100%; height:100%; padding:0; overflow:hidden; }
+#training-dialog[data-training-view="3d"] .training-table { position:absolute; inset:0; width:100%; height:100%; margin:0; border:0; border-radius:0; }
+#training-dialog[data-training-view="3d"] .training-table-canvas { height:100%; }
+#training-dialog[data-training-view="3d"] .training-table-controls { position:absolute; bottom:12px; left:50%; transform:translateX(-50%); z-index:3; margin:0; padding:8px; border-radius:8px; background:#1d160ee6; }
+#training-dialog[data-training-view="3d"] .training-view-picker { position:absolute; top:72px; right:12px; z-index:4; margin:0; }
+#training-dialog[data-training-view="3d"] .training-3d-coach,
+#training-dialog[data-training-view="3d"] .training-3d-actions { position:absolute; z-index:3; box-sizing:border-box; width:min(310px,calc(100% - 24px)); padding:12px; border:1px solid #80603a; border-radius:10px; background:#201810ed; overflow:auto; }
+#training-dialog[data-training-view="3d"] .training-3d-coach { top:72px; left:12px; max-height:42dvh; }
+#training-dialog[data-training-view="3d"] .training-3d-actions { right:12px; bottom:108px; max-height:36dvh; }
+#training-dialog[data-training-view="3d"] .training-board[hidden],
+#training-dialog[data-training-view="3d"] .training-actions .training-card-row,
+#training-dialog[data-training-view="3d"] .training-actions > .training-card { display:none !important; }
+#training-dialog[data-training-view="3d"] .training-footer { padding-top:8px; }
+#training-dialog[data-training-view="3d"] .training-button { min-height:38px; padding:6px 9px; margin:3px; font-size:.85rem; }
+#training-dialog[data-training-view="3d"] h3 { font-size:1.05rem; }
+#training-dialog[data-training-view="3d"] .training-feedback:empty { display:none; }
+#training-dialog[data-training-view="3d"] #training-close { flex:0 0 38px; width:38px !important; min-width:38px; height:38px; }
+#training-dialog[data-training-view="3d"] .training-table-controls button { width:auto !important; min-width:38px; max-width:none; flex:none; white-space:nowrap; padding:7px 10px; }
+#training-dialog[data-training-view="3d"] .training-view-picker button { width:auto !important; }
+@media(max-width:600px) {
+  #training-dialog[data-training-view="3d"] .training-3d-coach { top:68px; left:8px; width:calc(100% - 16px); max-height:26dvh; padding:8px; }
+  #training-dialog[data-training-view="3d"] .training-view-picker { top:auto; bottom:12px; right:8px; flex-direction:column; gap:4px; }
+  #training-dialog[data-training-view="3d"] .training-3d-actions { right:8px; bottom:112px; width:calc(100% - 16px); max-height:23dvh; padding:8px; }
+  #training-dialog[data-training-view="3d"] .training-table-controls { left:8px; transform:none; }
+  #training-dialog[data-training-view="3d"] .training-header { padding:6px 10px; }
+}

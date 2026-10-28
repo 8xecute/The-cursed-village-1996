@@ -1,0 +1,109 @@
+/* Lobby and welcome shell. Gameplay surfaces retain their own layout. */
+:root { --village-bg:#17110e; --village-surface:#2a211b; --village-line:#594332; --village-ink:#f2e5cf; --village-muted:#c0ac8d; --village-orange:#d9a35f; }
+body:not(.in-game) { background:linear-gradient(180deg,#17110e18,#17110e38 850px),url('../Background/background.jpg') center top/cover fixed; color:var(--village-ink); padding:26px 32px 60px; box-sizing:border-box; }
+body:not(.in-game) :is(.game-title,.top-buttons,.section,.section h2,.section h3,.section p,.section button,.section input,.section select,.player-profile-row,.village-hero,.village-hero *,.welcome-copy,.welcome-copy *,.top-nav-btn) { font-family:var(--village-font-body) !important; }
+body:not(.in-game) > .game-title { align-self:flex-start; max-width:calc(100% - 570px); margin:0 0 26px; padding:0; font-size:clamp(18px,2vw,25px); line-height:1.5; text-align:left; letter-spacing:-.03em; font-variant:normal; text-shadow:none !important; color:#f2e5cf !important; }
+body:not(.in-game) > .game-title .halloween-edition { display:block; margin:4px 0 0; color:#d9a35f !important; font-size:10px; letter-spacing:.18em; text-shadow:none !important; }
+body:not(.in-game) .top-buttons { position:absolute; top:28px; right:88px; gap:6px; }
+body:not(.in-game) .top-buttons .top-nav-btn { min-height:40px; padding:8px 13px; background:transparent; border:1px solid transparent; border-radius:10px; color:#dfcbae; font-size:13px; text-decoration:none; transform:none; box-sizing:border-box; }
+body:not(.in-game) .top-buttons .top-nav-btn:hover { background:#3b2c20; border-color:#806044; color:#fff; }
+body:not(.in-game) .music-controls { position:absolute !important; top:28px; right:30px; left:auto; width:auto !important; margin:0; }
+body:not(.in-game) #game-preferences > summary { width:40px; height:40px; display:grid; place-items:center; border:1px solid var(--village-line); border-radius:10px; background:#2a211b; box-sizing:border-box; list-style:none; }
+body:not(.in-game) #game-preferences-content { left:auto; right:0; max-width:calc(100vw - 32px); box-sizing:border-box; background:#2b211a; border-color:#806044; }
+.village-hero { position:relative; display:flex; align-items:center; justify-content:space-between; width:100%; max-width:1140px; min-height:290px; box-sizing:border-box; padding:32px 44px; margin:6px 0 28px; border:1px solid #73543b; border-radius:24px; background:linear-gradient(90deg,#251a14 5%,#251a14ed 45%,#251a1435),url('../Background/story.jpg') center 42%/cover; overflow:hidden; }
+.village-eyebrow { display:block; color:#d8bd91; font-size:11px; font-weight:600; letter-spacing:.12em; }
+body .village-hero h2 { margin:14px 0 12px; border:0; font-size:clamp(30px,3.4vw,44px); line-height:1.3; letter-spacing:-.035em; color:#f6eee1 !important; }
+.village-hero h2 em { color:#f3ac65; font-style:normal; }
+.village-hero p { margin:0; font-size:14px; line-height:1.8; color:#d6c2a2; }
+.welcome-tags { display:flex; flex-wrap:wrap; gap:8px; margin-top:20px; }
+.welcome-tags span { border:1px solid #c49b6255; border-radius:6px; padding:5px 9px; font-size:11px; color:#eddbbc; background:#17100c88; }
+.village-hero-art { position:relative; flex:0 0 270px; height:245px; margin-right:32px; }
+.village-hero-art img { position:absolute; top:9px; width:142px; height:213px; object-fit:cover; border:1px solid #a88e64; border-radius:10px; box-shadow:0 18px 36px #0009 !important; }
+.village-hero-art img:first-child { left:10px; transform:rotate(-14deg); }
+.village-hero-art img:last-child { right:0; top:22px; transform:rotate(11deg); }
+body.in-game .village-hero, body:has(#room-lobby-section[style*="display: block"]) .village-hero { display:none; }
+body:not(.in-game) > .container { max-width:1140px; background:transparent; padding:0; border-radius:0; gap:20px; box-sizing:border-box; }
+body:not(.in-game) .main-game-content { display:grid; grid-template-columns:minmax(0,.85fr) minmax(0,1.4fr); align-items:start; gap:20px; }
+body:not(.in-game) :is(#game-section,#room-lobby-section) { grid-column:1/-1; }
+body:not(.in-game) :is(#name-section,#room-management-section,#room-lobby-section) { min-width:0; margin:0; padding:26px; border:1px solid var(--village-line); border-radius:18px; background:linear-gradient(145deg,#2b211bed,#201811f0); box-sizing:border-box; }
+.village-step { display:block; margin:0 0 8px; color:#d9a35f; font-size:11px; font-weight:600; letter-spacing:.08em; }
+body:not(.in-game) :is(#name-section,#room-management-section,#room-lobby-section) h2 { margin:0 0 8px; padding:0; border:0; font-size:21px; letter-spacing:-.02em; color:#f2e5cf !important; }
+body:not(.in-game) :is(#name-section,#room-management-section,#room-lobby-section) h3 { font-size:14px; color:#d6e2db !important; border:0; }
+body:not(.in-game) .section-description { margin:0 0 22px; color:var(--village-muted); font-size:12px; line-height:1.8; }
+body:not(.in-game) :is(#name-section,#room-management-section) .room-input-group input { height:46px !important; min-height:46px !important; border-radius:9px !important; border-color:#6b503a !important; background:#1c1510 !important; color:#f6eee1 !important; }
+body:not(.in-game) :is(#name-section,#room-management-section) .room-input-group input:focus { border-color:#e7ac73 !important; outline:2px solid #e7ac7340 !important; outline-offset:2px; }
+body:not(.in-game) :is(#name-section,#room-management-section) .room-input-group input::placeholder { color:#b7a183 !important; }
+body:not(.in-game) :is(.room-input-group button,.active-room-join-btn,#start-game-button) { height:46px !important; min-height:46px !important; border:1px solid #f3ac65 !important; border-radius:9px !important; background:#d9a35f !important; color:#29190e !important; font-size:13px !important; font-weight:700; transform:none; }
+body:not(.in-game) :is(.room-input-group button,.active-room-join-btn,#start-game-button):hover { background:#edbf7e !important; }
+body:not(.in-game) .player-profile-row { padding:14px 0; margin:16px 0 4px; border:0; border-top:1px solid var(--village-line); border-radius:0; background:transparent; gap:12px; }
+body:not(.in-game) .profile-label { color:#c3ad8b; font-size:12px; }
+body:not(.in-game) .profile-name { color:#f5e1bf; font-size:14px; }
+body:not(.in-game) .player-current-room-row { color:#c3ad8b; font-size:12px; }
+body:not(.in-game) .player-uuid-badge { background:#1c1510; border-color:#604832; color:#c3ad8b; }
+body:not(.in-game) .active-rooms-panel { margin-top:24px; }
+body:not(.in-game) .active-room-item { display:flex; align-items:center; justify-content:space-between; gap:14px; margin-top:10px; padding:16px; background:#1c1510; border:1px solid #604832; border-radius:12px; }
+body:not(.in-game) .active-room-info { min-width:0; }
+body:not(.in-game) .active-room-name { font-size:14px; font-weight:600; color:#f1e3cc; overflow-wrap:anywhere; }
+body:not(.in-game) .active-room-meta { margin-top:5px; font-size:11px; color:#c4ac87; line-height:1.8; }
+body:not(.in-game) .room-list-empty { border:1px dashed #73553b; border-radius:10px; padding:22px; color:#c4ac87; font-size:13px; text-align:center; }
+body:not(.in-game) #player-list { grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); max-height:360px; background:#1a130f; border-color:#604832; padding:12px; border-radius:12px; }
+body:not(.in-game) #player-list .player-item { border:1px solid #705139; border-radius:10px; background:#33271d; color:#f1e3cc; padding:14px; }
+body:not(.in-game) .lobby-settings-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin:14px 0; }
+body:not(.in-game) .lobby-witch-setting { width:100%; margin:0; padding:16px; box-sizing:border-box; background:#1a130f; border-color:#604832; border-radius:12px; }
+body:not(.in-game) .lobby-witch-setting small { color:#c4ac87; font-size:12px; }
+body:not(.in-game) .lobby-witch-setting select { background:#3a2b1e; border-color:#856242; color:#f2e6d6; border-radius:8px; }
+body:not(.in-game) .lobby-action-row { border-top:1px solid var(--village-line); padding-top:20px; }
+/* Entry sheet: short copy, clear primary action, no clipped content on phones. */
+body #music-overlay { padding:24px; box-sizing:border-box; height:100dvh; background:#130c08d9; overflow:auto; }
+body #music-overlay .welcome-card { display:grid; grid-template-columns:1fr 1fr; width:min(920px,100%); max-width:920px; margin:auto; padding:0 !important; overflow:hidden; border:1px solid #856242; border-radius:22px; background:#241b14; color:#f2e5cf; }
+body #music-overlay .welcome-card > img { width:100%; height:100%; min-height:510px; max-height:none; object-fit:cover; border-radius:0; }
+.welcome-copy { padding:38px 32px; min-width:0; }
+body #music-overlay .welcome-copy h2 { margin:16px 0; text-align:left !important; font-size:29px; line-height:1.4; }
+body #music-overlay .welcome-copy h2 .halloween-edition { display:block; margin:8px 0 0; font-size:12px; }
+body #music-overlay .welcome-copy p { text-align:left; font-size:14px; line-height:1.9; color:#ddc7a7; }
+.welcome-actions { display:flex; flex-direction:column; align-items:stretch; gap:10px; margin-top:28px; }
+body #music-overlay .enter-village-btn { width:100%; min-height:48px; padding:12px !important; background:#d9a35f; border:1px solid #ffc891; border-radius:10px; color:#24190e; font-size:15px !important; letter-spacing:0; transform:none; }
+body #music-overlay #enter-village-btn { position:static !important; inset:auto !important; transform:none !important; width:100% !important; max-width:none !important; min-width:0 !important; margin:0 !important; box-sizing:border-box; background:#d9a35f !important; color:#24190e !important; border-radius:10px !important; }
+body:has(#room-lobby-section[style*="display: block"]) #name-section { grid-column:1/-1; }
+body:not(.in-game) #share-room-link-btn { background:#3a2b1e !important; border:1px solid #997447 !important; color:#f3deba !important; border-radius:9px !important; min-height:44px; }
+@media(min-width:701px) {
+  body:has(#room-lobby-section[style*="display: block"]) #name-section { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); column-gap:28px; padding:22px 26px; }
+  body:has(#room-lobby-section[style*="display: block"]) #name-section > :is(.village-step,h2,.section-description) { grid-column:1; }
+  body:has(#room-lobby-section[style*="display: block"]) #name-input-container { grid-column:2; grid-row:1/4; align-self:center; }
+  body:has(#room-lobby-section[style*="display: block"]) #name-section .player-profile-row { grid-column:1; margin:8px 0 0; padding:10px 0 0; }
+  body:has(#room-lobby-section[style*="display: block"]) #name-section .player-current-room-row { grid-column:2; align-self:center; }
+}
+body #music-overlay #intro-training-btn { width:100%; min-height:44px; justify-content:center; margin:0; box-sizing:border-box; background:transparent; border:1px solid #856242; border-radius:10px; color:#f2dfbe; font-size:13px; }
+body #music-overlay .intro-patch-link { align-self:center; color:#d0b68d; font-size:12px; text-decoration:none; margin-top:4px; }
+@media(max-width:1000px) {
+  body:not(.in-game) > .game-title { max-width:none; margin-bottom:16px; padding-right:48px; }
+  body:not(.in-game) .top-buttons { position:static !important; width:100%; justify-content:flex-start; margin:0 0 20px; flex-wrap:wrap; }
+  body:not(.in-game) .top-buttons .top-nav-btn { background:#2d211ade; border-color:#73543b; }
+  .village-hero { padding:28px; }
+  .village-hero-art { flex-basis:230px; margin-right:0; }
+}
+@media(max-width:700px) {
+  body:not(.in-game) { padding:20px 16px 36px; background-attachment:scroll; }
+  body:not(.in-game) > .game-title { font-size:20px; }
+  body:not(.in-game) .music-controls { right:16px; top:20px; }
+  body:not(.in-game) .top-buttons { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+  body:not(.in-game) .top-buttons .top-nav-btn { width:100% !important; justify-content:center; min-height:44px; padding:9px 6px; font-size:12px; margin:0; }
+  .village-hero { min-height:260px; padding:24px; margin:0 0 20px; border-radius:18px; }
+  .village-hero-copy { position:relative; z-index:1; }
+  body .village-hero h2 { font-size:32px; }
+  .village-hero p { font-size:13px; }
+  .village-hero-art { position:absolute; right:-100px; bottom:-26px; opacity:.22; transform:rotate(8deg); pointer-events:none; }
+  body:not(.in-game) .main-game-content { grid-template-columns:minmax(0,1fr); gap:16px; }
+  body:not(.in-game) :is(#name-section,#room-management-section,#room-lobby-section) { padding:22px 18px; border-radius:16px; }
+  body:not(.in-game) .active-room-item { padding:14px 12px; gap:10px; }
+  body:not(.in-game) .active-room-join-btn { min-width:74px !important; padding:0 12px !important; }
+  body:not(.in-game) .lobby-witch-setting { width:100%; margin-right:0; }
+  body:not(.in-game) .lobby-settings-grid { grid-template-columns:minmax(0,1fr); }
+  body #music-overlay { padding:16px; }
+  body #music-overlay .welcome-card { display:block; border-radius:18px; }
+  body #music-overlay .welcome-card > img { height:180px; min-height:0; object-position:center 40%; }
+  .welcome-copy { padding:24px; }
+  body #music-overlay .welcome-copy h2 { font-size:25px; }
+  .welcome-actions { margin-top:22px; }
+}
+@media(prefers-reduced-motion:reduce) { .village-hero *, .welcome-card * { transition:none; } }

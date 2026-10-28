@@ -1,0 +1,139 @@
+// outcome: game services. Dependencies are injected through game.
+const { usageLog } = require('../usage-log');
+module.exports = function createServices(game) {
+  function checkWinCondition(room) {
+      if (room.gameOver) return;
+
+      const alivePlayers = game.getAlivePlayers(room);
+      // เงื่อนไขใหม่: นับจาก hasBeenWitch
+      const aliveWitches = alivePlayers.filter(p => p.hasBeenWitch);
+      const aliveTownsfolk = alivePlayers.filter(p => !p.hasBeenWitch);
+
+      // ตรวจสอบว่ามีการ์ด Witch ที่ยังไม่ถูกเปิดอยู่ในเกมหรือไม่
+      let witchCardLeft = false;
+      for (const p of Object.values(room.players)) {
+          if (p.tryalCards) {
+              p.tryalCards.forEach((card, idx) => {
+                  const revealed = p.revealedTryalCardIndexes && (typeof p.revealedTryalCardIndexes.has === 'function'
+                      ? p.revealedTryalCardIndexes.has(idx)
+                      : p.revealedTryalCardIndexes.includes && p.revealedTryalCardIndexes.includes(idx));
+                  if (card.name === 'Witch' && !revealed) {
+              witchCardLeft = true;
+                  }
+              });
+          }
+      }
+
+      // 1. ทีมปอบชนะเมื่อไม่มีชาวบ้านที่ยังไม่เคยติดเชื้อเหลืออยู่
+      if (alivePlayers.length > 0 && aliveWitches.length === alivePlayers.length) {
+          game.finishGame(room, 'Witches', 'ปอบชนะ! ผู้เล่นที่ยังรอดทั้งหมดอยู่ฝ่ายปอบแล้ว!', 'red');
+          return;
+      }
+      // 2. ทีมชาวบ้านชนะทันทีเมื่อเปิด Tryal Card ที่เป็น Witch ครบ
+      if (!witchCardLeft && aliveTownsfolk.length > 0) {
+          game.finishGame(room, 'Townsfolk', 'ชาวบ้านชนะ! เปิดเผยการ์ดปอบครบทุกใบแล้ว!', 'green');
+          return;
+      }
+      // 3. ไม่มีผู้เล่นเหลืออยู่ (เสมอ)
+      if (alivePlayers.length === 0) {
+          game.finishGame(room, 'None (Draw)', 'ไม่มีผู้เล่นเหลืออยู่... เสมอ!', 'grey');
+          return;
+      }
+  }
+
+  function finishGame(room, winner, message, color) {
+      if (room.gameOver) return;
+      room.gameOver = true;
+      game.cancelLifeSetup(room);
+      room.currentPhase = 'GAME_OVER';
+      room.winner = winner;
+      usageLog('game_finished', { roomName: room.name, roundId: room.usageRoundId || null,
+          winner, days: room.dayNumber, durationSeconds: room.gameStartTime ? Math.round((Date.now() - room.gameStartTime) / 1000) : null });
+      clearInterval(room.phaseInterval);
+      clearTimeout(room.nightActionTimeout);
+      clearTimeout(room.confessionTimer);
+      clearTimeout(room.prankGunTimer);
+      room.prankGunTimer = null;
+      room.phaseTimer = 0;
+      game.sendGameMessage(room.name, message, color, true);
+
+      const playersArr = Object.values(room.players || {});
+      room.gameSummary = {
+          winner: winner,
+          message: message,
+          color: color,
+          daysSurvived: room.dayNumber,
+          initialWitchCardCount: room.initialWitchCardCount ?? null,
+          infectionLog: (room.infectionLog || []).map(event => ({ from:event.from, to:event.to, day:event.day })),
+          players: playersArr.map(p => ({
+              name: p.name,
+              alive: !!p.alive,
+              isHost: !!p.isHost,
+              hasBeenWitch: !!p.hasBeenWitch,
+              tryalCards: (p.tryalCards || []).map(c => c.name),
+              revealedTryalCards: (p.revealedTryalCards || []).map(c => c.name),
+              revealedTryals: Array.from(p.revealedTryalCardIndexes || [])
+          }))
+      };
+
+      game.io.to(room.name).emit('game over summary', room.gameSummary);
+      game.emitRoomState(room.name);
+  }
+
+  function handlePlayerDeath(room, player, metadata = {}) {
+      if (!player || !player.alive || room.gameOver) return;
+      player.alive = false;
+      if (!room.deathLog) room.deathLog = [];
+      if (!room.firstVictim) room.firstVictim = player.name;
+      room.deathLog.push({
+          playerName: player.name,
+          byPlayerName: metadata.byPlayerName || null,
+          cause: metadata.cause || 'unknown',
+          day: room.dayNumber,
+          timestamp: Date.now(),
+      });
+      // แจ้งเตือนว่าผู้เล่นตาย
+      game.sendGameMessage(room.name, `<b>${player.name}</b> ตายแล้ว!`, 'red', true);
+      // Reveal all Tryal Cards (เปิดการ์ดชีวิตทั้งหมด)
+      player.revealedTryalCardIndexes = new Set(player.tryalCards.map((_, idx) => idx));
+      // Sync revealedTryalCardIndexes to array for client (safety)
+      game.io.to(player.id).emit('update revealed tryal indexes', Array.from(player.revealedTryalCardIndexes));
+      // แสดงชื่อการ์ดชีวิตที่เหลือทั้งหมด
+      if (player.tryalCards && player.tryalCards.length > 0) {
+          const cardNames = player.tryalCards.map(card => game.getCardNameWithColor(card.name)).join(', ');
+          game.sendGameMessage(room.name, `การ์ดชีวิตที่เหลือของ <b>${player.name}</b>: ${cardNames}`, 'gold', true);
+      }
+      // ทิ้งการ์ดในมือทั้งหมดลงกองทิ้ง
+      if (player.hand && player.hand.length > 0) {
+          room.discardPile.push(...player.hand);
+          player.hand = [];
+      }
+      const linkedPlayer = player.inPlayCards?.some(card => card.name === 'Matchmaker')
+          ? Object.values(room.players).find(other => other.uniqueId !== player.uniqueId && other.alive &&
+              other.inPlayCards?.some(card => card.name === 'Matchmaker')) : null;
+      room.discardPile.push(...(player.inPlayCards || []));
+      player.inPlayCards = [];
+      game.updateBlackCatHolder(room);
+      game.checkWinCondition(room);
+      if (room.gameOver) return;
+      if (linkedPlayer?.alive) {
+          game.sendGameMessage(room.name, `${linkedPlayer.name} ตายตาม ${player.name} เพราะผูกวิญญาณ`, 'red', true);
+          game.handlePlayerDeath(room, linkedPlayer, { byPlayerName: player.name, cause: 'matchmaker_link' });
+          if (room.gameOver) return;
+      }
+      game.applyTwoPlayerRules(room);
+      game.emitRoomState(room.name);
+  }
+
+  function eliminatePlayerWithoutLifeCards(room, player) {
+      if (!room || room.gameOver || !player || !player.alive || !Array.isArray(player.tryalCards) || player.tryalCards.length > 0) {
+          return false;
+      }
+
+      game.sendGameMessage(room.name, `<b>${player.name}</b> การ์ดชีวิตหมดแล้ว!`, 'red', true);
+      game.handlePlayerDeath(room, player, { cause: 'tryal_cards_exhausted' });
+      return true;
+  }
+
+  return { checkWinCondition, finishGame, handlePlayerDeath, eliminatePlayerWithoutLifeCards };
+};

@@ -1,0 +1,463 @@
+/* Mobile usability fixes across all pages */
+@media (max-width: 768px) {
+  .container,
+  .game-layout,
+  .main-game-content,
+  .sidebar {
+    box-sizing: border-box;
+    min-width: 0;
+    width: 100%;
+  }
+
+  /* Compact in-game header */
+  body.in-game #name-section {
+    padding: 6px 10px;
+    margin-bottom: 6px;
+    font-size: 0.88em;
+  }
+  body.in-game #name-section h2,
+  body.in-game #name-input-container,
+  body.in-game #player-uuid-row {
+    display: none !important;
+  }
+  body.in-game .game-title {
+    font-size: 1.5em;
+    margin: 4px 0 6px 0;
+  }
+
+  /* Lobby Grid on Mobile */
+  #player-list {
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 6px;
+    padding: 8px;
+    max-height: 200px;
+  }
+
+  .player-item {
+    font-size: 0.88em;
+    padding: 6px 8px;
+  }
+
+  #start-game-button {
+    min-height: 48px;
+    font-size: 1.1em;
+    font-weight: bold;
+    border-radius: 8px;
+    width: 100%;
+  }
+
+  .active-room-join-btn {
+    width: auto !important;
+    min-width: 76px;
+    min-height: 40px;
+    padding: 8px 12px;
+    margin: 0 !important;
+  }
+
+  /* Mobile Game Tabs */
+  .mobile-game-tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 10px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(26, 26, 26, 0.95);
+    backdrop-filter: blur(8px);
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  }
+
+  .mobile-tab-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 10px 4px;
+    background: #2a2a2a;
+    border: 1.5px solid #444;
+    border-radius: 8px;
+    color: #ccc;
+    font-size: 0.88em;
+    font-weight: 600;
+    cursor: pointer;
+    min-height: 44px;
+    position: relative;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+    white-space: nowrap;
+  }
+
+  .mobile-tab-btn:hover {
+    background: #333;
+    color: #fff;
+  }
+
+  .mobile-tab-btn.active {
+    background: linear-gradient(135deg, #3a2512 0%, #20150b 100%);
+    border-color: #ff9800;
+    color: #ffb74d;
+    box-shadow: 0 0 10px rgba(255, 152, 0, 0.35);
+  }
+
+  .tab-badge {
+    background: #e53935;
+    color: #fff;
+    font-size: 0.7em;
+    padding: 2px 6px;
+    border-radius: 8px;
+    font-weight: bold;
+    animation: pulseBadge 1.5s infinite;
+  }
+
+  .tab-count-badge {
+    color: #90caf9;
+    font-size: 0.85em;
+    margin-left: 2px;
+  }
+
+  .tab-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #ff5722;
+    box-shadow: 0 0 6px #ff5722;
+    display: inline-block;
+  }
+
+  @keyframes pulseBadge {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.1); opacity: 0.85; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  /* Toggle mobile in-game views via data-mobile-game-tab */
+  #game-section .game-layout {
+    flex-direction: column;
+    gap: 0;
+  }
+
+  /* Default or Hand Tab */
+  #sidebar-left,
+  #sidebar-right {
+    display: none !important;
+  }
+  #game-main-content {
+    display: flex !important;
+  }
+
+  /* Players Tab */
+  body[data-mobile-game-tab="players"] #sidebar-left {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    position: static !important;
+    max-height: none !important;
+  }
+  body[data-mobile-game-tab="players"] #game-main-content {
+    display: none !important;
+  }
+  body[data-mobile-game-tab="players"] #sidebar-right {
+    display: none !important;
+  }
+
+  /* Chat Tab */
+  body[data-mobile-game-tab="chat"] #sidebar-right {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    position: static !important;
+    max-height: none !important;
+  }
+  body[data-mobile-game-tab="chat"] #game-main-content {
+    display: none !important;
+  }
+  body[data-mobile-game-tab="chat"] #sidebar-left {
+    display: none !important;
+  }
+
+  /* 12-Player Board List on Mobile */
+  #players-board-list {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+    max-height: 72vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 2px;
+  }
+
+  .player-board-card {
+    padding: 8px 10px;
+    border-radius: 8px;
+    font-size: 0.9em;
+    margin-bottom: 0;
+  }
+
+  /* State Bar on Mobile */
+  #game-state-bar {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 5px;
+    padding: 6px 4px;
+    font-size: 0.84em;
+    text-align: center;
+  }
+
+  #game-state-bar > span {
+    background: rgba(0, 0, 0, 0.35);
+    padding: 4px;
+    border-radius: 5px;
+    border: 1px solid #444;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Hand cards scrollable on mobile */
+  #player-hand {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    gap: 8px;
+    padding: 8px;
+    min-height: 120px;
+    max-height: 150px;
+    border-radius: 8px;
+    background: #262626;
+  }
+
+  #player-hand .card {
+    flex: 0 0 auto;
+    width: 72px;
+    min-width: 72px;
+    height: 105px;
+    min-height: 105px;
+    padding: 6px 4px;
+    border-radius: 8px;
+    font-size: 0.82em;
+    touch-action: manipulation;
+  }
+
+  #player-hand .card.selected {
+    transform: translateY(-8px) scale(1.05);
+    border-color: #ffd54f !important;
+    box-shadow: 0 0 12px rgba(255, 213, 79, 0.7) !important;
+  }
+
+  /* Action Buttons sticky at bottom */
+  .hand-action-buttons {
+    position: sticky;
+    bottom: 0;
+    background: rgba(20, 20, 20, 0.97);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-top: 1.5px solid rgba(255, 255, 255, 0.15);
+    border-radius: 12px 12px 0 0;
+    padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 0px));
+    margin-top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    z-index: 40;
+    box-sizing: border-box;
+    width: 100%;
+  }
+
+  .targets-container {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 100%;
+  }
+
+  .targets-container select {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 42px;
+    margin: 0 !important;
+    padding: 8px 10px;
+    font-size: 15px;
+    font-weight: 600;
+    border-radius: 8px;
+    background-color: #383838;
+    color: #fff;
+    border: 1.5px solid #ff9800;
+  }
+
+  .action-buttons-row {
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
+    align-items: stretch;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 2px 0;
+  }
+
+  .action-buttons-row .btn-action {
+    box-sizing: border-box;
+    min-height: 44px;
+    margin: 0 !important;
+    padding: 10px 6px;
+    border-radius: 8px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    white-space: nowrap;
+    user-select: none;
+  }
+
+  #draw-card-button {
+    flex: 1 1 0;
+    min-width: 0;
+    font-size: 0.85em !important;
+    background: linear-gradient(135deg, #2e7d32 0%, #1b5e20 100%);
+    color: #fff;
+    border: 1.5px solid #43a047;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  }
+
+  #play-card-button {
+    flex: 1.3 1 0;
+    min-width: 0;
+    font-size: 0.88em !important;
+    background: linear-gradient(135deg, #1565c0 0%, #0d47a1 100%);
+    color: #fff;
+    border: 1.5px solid #1e88e5;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  }
+
+  #play-card-button.can-play {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
+    color: #1a0f00 !important;
+    border: 2px solid #fde047 !important;
+    box-shadow: 0 0 12px rgba(245, 158, 11, 0.7) !important;
+  }
+
+  #end-turn-button {
+    flex: 0 0 90px;
+    width: 90px;
+    min-width: 86px;
+    max-width: 96px;
+    font-size: 0.82em !important;
+    background: linear-gradient(135deg, #441717 0%, #2b0b0b 100%);
+    color: #ffcdd2;
+    border: 1.5px solid #7f1d1d;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    margin: 0 !important;
+  }
+
+  #end-turn-button.confirming {
+    background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%) !important;
+    color: #ffffff !important;
+    border: 2px solid #facc15 !important;
+    font-size: 0.78em !important;
+    box-shadow: 0 0 14px rgba(220, 38, 38, 0.8) !important;
+  }
+
+  #draw-card-button.confirming {
+    background: linear-gradient(135deg, #2563eb 0%, #1e3a8a 100%) !important;
+    color: #ffffff !important;
+    border: 2px solid #38bdf8 !important;
+    font-size: 0.78em !important;
+    box-shadow: 0 0 14px rgba(37, 99, 235, 0.8) !important;
+  }
+
+  /* Tryal cards in hand */
+  .tryal-card-in-hand {
+    width: 72px !important;
+    height: 102px !important;
+    margin: 3px !important;
+    font-size: 0.85em !important;
+    flex-shrink: 0;
+  }
+
+  /* Modals & Popups on Mobile */
+  .modal-content,
+  #game-rules-modal .modal-content,
+  #card-explain-modal .modal-content,
+  #story-modal .modal-content {
+    width: 94vw !important;
+    max-width: 95vw !important;
+    max-height: 85vh !important;
+    padding: 18px 14px !important;
+    margin: auto !important;
+    border-radius: 12px !important;
+    box-sizing: border-box !important;
+  }
+
+  #night-action-popup,
+  #assign-blackcat-popup,
+  #must-play-night-popup,
+  .select-player-modal > div {
+    min-width: 0 !important;
+    width: 92vw !important;
+    max-width: 94vw !important;
+    max-height: 85vh !important;
+    padding: 18px 12px !important;
+    box-sizing: border-box !important;
+    overflow-y: auto !important;
+  }
+
+  #night-action-players-list {
+    max-height: 45vh !important;
+  }
+
+  input[type="text"],
+  input[type="number"],
+  select {
+    font-size: 16px;
+  }
+}
+
+@media (min-width: 480px) and (max-width: 768px) {
+  #players-board-list {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 420px) {
+  #game-state-bar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  #game-state-bar > span:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+}
+
+@supports (height: 100dvh) {
+  .music-overlay,
+  #game-rules-modal,
+  #card-explain-modal,
+  #story-modal {
+    height: 100dvh !important;
+  }
+
+  #game-rules-modal .modal-content {
+    max-height: 80dvh;
+  }
+
+  #card-explain-modal .modal-content {
+    max-height: 99dvh;
+  }
+
+  #story-modal .modal-content {
+    max-height: 90dvh;
+  }
+}
+
+@media (max-width: 600px) {
+  #enter-village-btn {
+    bottom: calc(24px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+}
+

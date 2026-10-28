@@ -1,0 +1,134 @@
+/* ==========================================================================
+   Death Notification Modal & Visuals
+   ========================================================================== */
+.death-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(6px);
+  z-index: 9999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 16px;
+  animation: fadeInDeath 0.5s ease-out;
+}
+
+.death-modal-content {
+  background: radial-gradient(circle at top, #240b0b 0%, #120505 70%, #050202 100%);
+  border: 2px solid #991b1b;
+  border-radius: 16px;
+  padding: 28px 24px 24px 24px;
+  max-width: 440px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 10px 40px rgba(153, 27, 27, 0.6), inset 0 0 25px rgba(0, 0, 0, 0.8);
+  animation: popInDeath 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+}
+
+.death-modal-icon {
+  font-size: 3.5em;
+  margin-bottom: 8px;
+  filter: drop-shadow(0 0 12px rgba(239, 68, 68, 0.6));
+}
+
+.death-modal-title {
+  color: #f87171;
+  font-size: 1.6em;
+  font-weight: bold;
+  margin: 0 0 8px 0;
+  letter-spacing: 0.5px;
+  text-shadow: 0 0 12px rgba(220, 38, 38, 0.8);
+}
+
+.death-modal-badge {
+  display: inline-block;
+  background: rgba(127, 29, 29, 0.5);
+  border: 1px solid #dc2626;
+  color: #fecaca;
+  padding: 4px 14px;
+  border-radius: 20px;
+  font-size: 0.86em;
+  margin-bottom: 14px;
+}
+
+.death-modal-desc {
+  color: #d1d5db;
+  font-size: 0.94em;
+  line-height: 1.6;
+  margin: 0 0 22px 0;
+}
+
+.death-modal-close-btn {
+  background: linear-gradient(180deg, #7f1d1d 0%, #450a0a 100%);
+  border: 1px solid #ef4444;
+  color: #ffffff;
+  padding: 10px 22px;
+  font-size: 0.96em;
+  font-weight: bold;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(127, 29, 29, 0.5);
+}
+
+.death-modal-close-btn:hover {
+  background: linear-gradient(180deg, #991b1b 0%, #581010 100%);
+  box-shadow: 0 6px 16px rgba(239, 68, 68, 0.6);
+  transform: translateY(-2px);
+}
+
+@keyframes fadeInDeath {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes popInDeath {
+  from { transform: scale(0.85); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+/* Dead badges on cards & sidebar */
+.player-dead-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #7f1d1d;
+  color: #fff;
+  border: 1px solid #ef4444;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 0.78em;
+  font-weight: bold;
+  vertical-align: middle;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+
+.player-dead-badge-sm {
+  background: #7f1d1d;
+  color: #fff;
+  border: 1px solid #ef4444;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 0.75em;
+  font-weight: 600;
+  margin-left: 4px;
+}
+
+.player-board-card.dead {
+  background: linear-gradient(135deg, #251414 0%, #130b0b 100%) !important;
+  border: 1.5px solid #b91c1c !important;
+  opacity: 1;
+  filter: grayscale(20%);
+  position: relative;
+}
+
+.player-board-card.dead:hover {
+  opacity: 1;
+  filter: grayscale(10%);
+}
+
+.player-board-card.dead .player-board-header {
+  color: #9ca3af !important;
+}
+

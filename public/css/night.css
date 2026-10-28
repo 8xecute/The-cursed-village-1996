@@ -1,0 +1,245 @@
+/* ==========================================================================
+   Night Action Modal (Salem Horror & Mystical Theme)
+   ========================================================================== */
+.night-action-overlay {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(8, 6, 8, 0.88);
+  backdrop-filter: blur(5px);
+  z-index: 2500;
+  animation: fadeIn 0.25s ease-out;
+}
+
+.night-action-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 92vw;
+  max-width: 520px;
+  max-height: 88vh;
+  border-radius: 16px;
+  padding: 24px 22px;
+  z-index: 2501;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: popupFadeIn 0.25s ease-out;
+}
+
+/* Witch Night Theme */
+.night-action-modal.theme-witch-night {
+  background: linear-gradient(180deg, #241417 0%, #130a0c 100%);
+  border: 1px solid #7d2633;
+  box-shadow: 0 16px 50px rgba(0, 0, 0, 0.95), 0 0 30px rgba(125, 38, 51, 0.35);
+  color: #f7e6e6;
+}
+
+/* Constable Night Theme */
+.night-action-modal.theme-constable-night {
+  background: linear-gradient(180deg, #141f2b 0%, #0c121a 100%);
+  border: 1px solid #2e5585;
+  box-shadow: 0 16px 50px rgba(0, 0, 0, 0.95), 0 0 30px rgba(46, 85, 133, 0.35);
+  color: #e6f0fa;
+}
+
+.night-action-header {
+  text-align: center;
+  margin-bottom: 14px;
+}
+
+.night-action-title {
+  margin: 0;
+  font-size: 1.35em;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.theme-witch-night .night-action-title {
+  color: #ff8595;
+  text-shadow: 0 2px 8px rgba(255, 60, 90, 0.4);
+}
+
+.theme-constable-night .night-action-title {
+  color: #8ac0ff;
+  text-shadow: 0 2px 8px rgba(70, 150, 255, 0.4);
+}
+
+.night-action-subtitle {
+  font-size: 0.88em;
+  color: #bfb2a8;
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+.night-witch-team-box {
+  background: rgba(60, 15, 20, 0.7);
+  border: 1px solid #6b202a;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 0.88em;
+  color: #ffd700;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.night-targets-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 42vh;
+}
+
+.night-targets-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.night-targets-scroll::-webkit-scrollbar-thumb {
+  background: #4a3424;
+  border-radius: 3px;
+}
+
+.night-target-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  background: rgba(28, 20, 18, 0.8);
+  border: 1px solid #422f25;
+}
+
+.night-target-row:hover {
+  transform: translateY(-1px);
+  background: rgba(45, 32, 28, 0.95);
+  border-color: #8c5d3d;
+}
+
+.theme-witch-night .night-target-row.selected {
+  background: rgba(80, 20, 28, 0.85);
+  border-color: #ff4760;
+  box-shadow: 0 0 14px rgba(255, 71, 96, 0.45);
+}
+
+.theme-constable-night .night-target-row.selected {
+  background: rgba(20, 48, 80, 0.85);
+  border-color: #4da3ff;
+  box-shadow: 0 0 14px rgba(77, 163, 255, 0.45);
+}
+
+.night-target-name {
+  font-weight: 700;
+  font-size: 1.05em;
+  color: #fff;
+}
+
+.night-target-meta {
+  font-size: 0.82em;
+  color: #baa89b;
+  margin-top: 2px;
+}
+
+.night-target-badge {
+  font-size: 0.82em;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.4);
+  color: #b5a595;
+  border: 1px solid #423225;
+}
+
+.selected .night-target-badge {
+  color: #fff;
+  font-weight: bold;
+}
+
+.theme-witch-night .selected .night-target-badge {
+  background: #7d1c28;
+  border-color: #ff4760;
+}
+
+.theme-constable-night .selected .night-target-badge {
+  background: #1c4a7d;
+  border-color: #4da3ff;
+}
+
+.night-action-footer {
+  text-align: center;
+  margin-top: 14px;
+}
+
+.night-confirm-btn {
+  padding: 12px 28px;
+  border-radius: 10px;
+  font-size: 1.05em;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+}
+
+.theme-witch-night .night-confirm-btn {
+  background: linear-gradient(180deg, #991c2c 0%, #660e19 100%);
+  border: 1px solid #cc2b40;
+}
+.theme-witch-night .night-confirm-btn:hover {
+  background: linear-gradient(180deg, #b82236 0%, #801220 100%);
+  box-shadow: 0 6px 20px rgba(204, 43, 64, 0.5);
+  transform: translateY(-2px);
+}
+
+.theme-constable-night .night-confirm-btn {
+  background: linear-gradient(180deg, #1c4e8a 0%, #0f3057 100%);
+  border: 1px solid #2d70c4;
+}
+.theme-constable-night .night-confirm-btn:hover {
+  background: linear-gradient(180deg, #2360aa 0%, #153f70 100%);
+  box-shadow: 0 6px 20px rgba(45, 112, 196, 0.5);
+  transform: translateY(-2px);
+}
+
+@media (max-width: 680px) {
+  .game-rules-modal-container {
+    width: 96vw;
+    height: 92vh;
+    border-radius: 12px;
+  }
+  .game-rules-header {
+    padding: 12px 14px 10px 14px;
+  }
+  .game-rules-title {
+    font-size: 1.15em;
+  }
+  .game-rules-body {
+    padding: 14px 12px 24px 12px;
+    gap: 12px;
+  }
+  .rule-card {
+    padding: 12px 14px;
+  }
+  .night-action-modal {
+    width: 95vw;
+    padding: 18px 14px;
+  }
+  .night-action-title {
+    font-size: 1.2em;
+  }
+}
+
+
+#night-action-popup.confirming-kill .night-action-content > :not(#witch-kill-confirm-panel) { display: none !important; }
+#witch-kill-confirm-panel { padding: 18px; border: 1px solid #ac5661; border-radius: 12px; background: #301b1d; text-align: left; }
+#witch-kill-confirm-panel p { font-size: 1.2rem; font-weight: bold; line-height: 1.6; margin: 0 0 8px; }
+#witch-kill-confirm-panel small { display: block; color: #d5bdab; line-height: 1.6; margin-bottom: 16px; }
+#witch-kill-confirm-panel button { display: block; width: 100%; min-height: 48px; margin: 8px 0 0; }
+#witch-kill-confirm-panel .night-confirm-btn { background: #a22b3c; color: #fff0dc; }

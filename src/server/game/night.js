@@ -1,0 +1,32 @@
+// Resolve the committed target only after all confession choices are complete.
+module.exports = function createServices(game) {
+  function isNightProtected(room, player) {
+      return !!player && (player.inPlayCards?.some(card => card.name === 'Asylum') ||
+          room.playersWhoActedAtNight?.constableSave === player.uniqueId);
+  }
+  function resolveNightActions(roomName) {
+      const room = game.rooms[roomName];
+      if (!room || room.gameOver) return;
+      const targetId = room.playersWhoActedAtNight?.witchKill;
+      const target = room.players[targetId];
+      const aliveWitches = game.getAlivePlayers(room).filter(player => player.hasBeenWitch || player.isWitch);
+      if (target?.alive && aliveWitches.length > 0) {
+          // Do not reveal the attempted target or which protection succeeded.
+          if (!isNightProtected(room, target) && !room.nightConfessors?.includes(targetId)) {
+              game.sendGameMessage(room.name, `${target.name} ถูกสังหารในตอนกลางคืน!`, 'red', true);
+              game.handlePlayerDeath(room, target, { byPlayerName: room.lastNightKillerName || null, cause: 'night_kill' });
+              return;
+          }
+      }
+      game.sendGameMessage(room.name, 'ไม่มีผู้เสียชีวิตจากการสังหารในคืนนี้', 'green', true);
+      game.checkWinCondition(room);
+  }
+
+  function allWitchesActed(room) {
+      const witches = game.getAlivePlayers(room).filter(p => p.hasBeenWitch || p.isWitch);
+      // ถ้าไม่มีปอบ หรือมีการเลือก witchKill แล้ว (null หรือ id)
+      return witches.length === 0 || room.playersWhoActedAtNight['witchKill'] !== undefined;
+  }
+
+  return { resolveNightActions, allWitchesActed, isNightProtected };
+};

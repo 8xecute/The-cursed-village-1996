@@ -1,0 +1,71 @@
+.witch-popup-modal {
+        position: fixed;
+        z-index: 4000;
+        left: 0; top: 0; width: 100vw; height: 100vh;
+        background: rgba(20,10,30,0.92);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: opacity 0.4s;
+      }
+      .witch-popup-content {
+        background: #1a0e1a;
+        color: #fff;
+        border-radius: 18px;
+        padding: 40px 32px 32px 32px;
+        box-shadow: 0 0 32px 8px #000a;
+        min-width: 320px;
+        max-width: 90vw;
+        text-align: center;
+        position: relative;
+      }
+      .witch-card-img {
+        width: 120px;
+        height: auto;
+        margin-bottom: 18px;
+        filter: drop-shadow(0 0 18px #ff1744cc) drop-shadow(0 0 8px #fff8);
+      }
+      .witch-popup-title {
+        font-family: 'Creepster', 'Noto Serif Thai', serif;
+        font-size: 2em;
+        color: #ff1744;
+        margin-bottom: 10px;
+        letter-spacing: 2px;
+        text-shadow: 0 2px 12px #000a;
+      }
+      .witch-popup-desc {
+        font-size: 1.1em;
+        color: #ffe0b2;
+        margin-bottom: 28px;
+        text-shadow: 0 1px 8px #000a;
+      }
+      .witch-popup-close-btn {
+        font-size: 1.15em;
+        background: linear-gradient(90deg, #ff1744 60%, #ff7043 100%);
+        color: #fff;
+        border: none;
+        border-radius: 10px;
+        padding: 12px 32px;
+        font-family: 'Montserrat', 'Noto Serif Thai', sans-serif;
+        font-weight: bold;
+        box-shadow: 0 2px 12px #0007;
+        cursor: pointer;
+        letter-spacing: 1px;
+        transition: background 0.2s, transform 0.2s;
+        outline: none;
+      }
+      .witch-popup-close-btn:hover {
+        background: linear-gradient(90deg, #ff7043 60%, #ff1744 100%);
+        transform: scale(1.06);
+        box-shadow: 0 4px 24px #ff1744aa;
+      }
+      @media (max-width: 600px) {
+        .witch-popup-content {
+          padding: 24px 8px 18px 8px;
+          min-width: 0;
+        }
+        .witch-card-img { width: 80px; }
+        .witch-popup-title { font-size: 1.2em; }
+        .witch-popup-desc { font-size: 1em; }
+        .witch-popup-close-btn { font-size: 1em; padding: 10px 18px; }
+      }

@@ -1,0 +1,428 @@
+/* 3D uses the same action elements and handlers as the regular board. */
+.game-view-3d:not(.table3d-unavailable):not(.table3d-show-details) .game-layout,
+.game-view-3d:not(.table3d-unavailable):not(.table3d-show-details) #mobile-game-tabs { display: none !important; }
+.table3d-play-panel { padding: 14px; background: #25211c; border-top: 1px solid #756451; }
+.table3d-play-panel > strong { display: block; color: #e1cfac; line-height: 1.5; }
+.table3d-play-panel > p { margin: 6px 0 12px; font-size: .9rem; line-height: 1.6; color: #d3c7b7; }
+.table3d-play-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+.table3d-play-panel button { width: auto; min-height: 44px; margin: 4px 0; padding: 9px 14px; }
+.table3d-play-buttons button { flex: 1 1 120px; background: #31543c; }
+.table3d-play-buttons button[data-table-action="play-card-button"] { background: #294c6f; }
+.table3d-play-buttons button[data-table-action="end-turn-button"] { background: #65352e; }
+.table3d-section .table3d-instructions { position: static; margin: 0; padding: 8px 12px; }
+.table3d-section .table3d-camera-controls { top: 8px; bottom: auto; right: 8px; }
+.table3d-section .table3d-hud { max-width: calc(100% - 160px); }
+.table3d-docked {
+    position: fixed !important; top: auto !important; left: auto !important;
+    right: 12px !important; bottom: 12px !important; transform: none !important;
+    width: min(420px, calc(100vw - 24px)) !important; height: auto !important;
+    max-height: 50vh !important; max-height: 50dvh !important;
+    padding: 0 !important; background: transparent !important;
+    backdrop-filter: none !important; pointer-events: none !important;
+    display: block !important; z-index: 7000 !important;
+}
+.table3d-docked > :first-child {
+    position: relative !important; inset: auto !important; transform: none !important;
+    width: 100% !important; max-width: none !important; box-sizing: border-box;
+    max-height: 50vh !important; max-height: 50dvh !important; overflow: auto !important;
+    pointer-events: auto; margin: 0 !important;
+}
+.table3d-docked > .tryal-selection-popup,
+.table3d-docked > .night-action-modal,
+.table3d-docked > div { padding: 14px !important; border: 1px solid #756451; border-radius: 12px; background: #241e19 !important; }
+/* These prompts are a standalone panel instead of an overlay wrapper. */
+#alibi-redcard-select-popup.table3d-docked,
+#must-play-night-popup.table3d-docked {
+    pointer-events: auto !important; overflow: auto !important;
+    padding: 14px !important; background: #241e19 !important;
+    border: 1px solid #756451;
+}
+.table3d-docked [data-life-index] { min-width: 44px; min-height: 60px; }
+.table3d-panel-toggle { display: none; }
+.table3d-docked > .table3d-panel-toggle {
+    display: block; position: absolute; right: 0; top: -38px;
+    width: auto; min-height: 34px; padding: 6px 12px; margin: 0;
+    pointer-events: auto; border: 1px solid #756451;
+}
+.table3d-docked.table3d-panel-minimized,
+.table3d-docked.is-collapsed { width: auto !important; overflow: visible !important; }
+.table3d-docked.table3d-panel-minimized > :not(.table3d-panel-toggle) { display: none !important; }
+.table3d-docked.is-collapsed > :first-child { width: auto !important; padding: 0 !important; background: transparent !important; border: 0; overflow: visible !important; }
+@media (max-width: 600px) {
+    .table3d-docked { right: 6px !important; bottom: 6px !important; width: min(360px, calc(100vw - 12px)) !important; max-height: 42dvh !important; }
+    .table3d-docked > :first-child { max-height: 42dvh !important; }
+    .table3d-play-panel { padding: 10px; }
+    .table3d-play-buttons { gap: 6px; }
+    .table3d-play-buttons button { flex-basis: 40%; padding: 9px; font-size: .85rem; }
+}
+
+.table3d-end-turn {
+    position: absolute; right: 14px; top: 64px; z-index: 5;
+    width: auto; min-height: 44px; padding: 9px 16px;
+    background: #873b32; color: #fff0dc; border: 1px solid #b16c55; border-radius: 8px;
+}
+.table3d-end-turn:disabled { opacity: .45; cursor: not-allowed; }
+.table3d-confirm { z-index: 10000 !important; }
+.table3d-confirm .select-player-modal-content { max-width: 340px !important; }
+@media (max-width: 600px) { .table3d-end-turn { top: 68px; right: 8px; } }
+
+/* Phase actions remain over the table; the original controls supply the rules. */
+.table3d-phase-panel {
+    position: absolute; top: 114px; left: 12px; z-index: 8;
+    width: min(290px, calc(100% - 24px)); box-sizing: border-box;
+    max-height: 36vh; overflow: auto; padding: 12px;
+    color: #efdfc3; background: #211a15ee; border: 1px solid #8c7452; border-radius: 10px;
+}
+.table3d-phase-panel strong { display: block; }
+.table3d-phase-panel p { margin: 8px 0; font-size: .9rem; }
+.table3d-phase-panel button { width: auto; min-height: 44px; margin: 4px; padding: 8px 12px; }
+.game-view-3d:not(.table3d-unavailable) #night-action-overlay { display: none !important; }
+.game-view-3d:not(.table3d-unavailable):not(.table3d-phase-details) .table3d-phase-source { display: none !important; }
+#night-action-popup.table3d-docked {
+    pointer-events: auto !important; padding: 12px !important; overflow: auto !important;
+    background: #241e19 !important; border: 1px solid #756451; border-radius: 12px;
+}
+#night-action-popup.table3d-docked > :first-child { max-height: none !important; }
+@media (max-width: 600px) {
+    .table3d-phase-panel { top: 112px; left: 6px; width: min(250px, calc(100% - 12px)); max-height: 30vh; padding: 8px; }
+}
+
+/* IDs in the legacy modal theme must not override the 3D docking geometry. */
+body.game-view-3d:not(.table3d-unavailable) :is(
+    #confess-overlay, #select-left-tryal-overlay, #select-blackcat-overlay,
+    #blackcat-tryal-overlay, #accused-tryal-select-overlay, #forced-reveal-notice-overlay,
+    #assign-blackcat-overlay, #night-action-popup, #must-play-night-popup,
+    #alibi-redcard-select-popup, .tryal-modal-overlay
+).table3d-docked {
+    position: fixed !important; inset: auto 12px 12px auto !important;
+    width: min(420px, calc(100vw - 24px)) !important; height: auto !important;
+    max-height: 50dvh !important; min-height: 0 !important;
+    background: transparent !important; backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important; overflow: visible !important;
+    padding: 0 !important; display: block !important; pointer-events: none !important;
+}
+body.game-view-3d:not(.table3d-unavailable):not(.table3d-phase-details) :is(
+    #confess-overlay, #select-left-tryal-overlay, #select-blackcat-overlay,
+    #blackcat-tryal-overlay, #accused-tryal-select-overlay, #assign-blackcat-overlay,
+    #night-action-popup, #must-play-night-popup, .tryal-modal-overlay
+).table3d-phase-source { display: none !important; }
+body.game-view-3d .table3d-phase-source :is(.popup-collapse-toggle, .table3d-panel-toggle) { display: none !important; }
+body.game-view-3d .table3d-phase-source :is(.popup-collapsible-content, .night-action-content),
+body.game-view-3d .table3d-phase-source :is(.night-action-title, .popup-collapse-header h3) { display: block !important; }
+body.game-view-3d .table3d-docked > :is(
+    #confess-popup, #select-left-tryal-popup, #select-blackcat-tryal-popup,
+    #blackcat-tryal-select-popup, #accused-tryal-select-popup,
+    #forced-reveal-notice-popup, #assign-blackcat-popup
+) {
+    position: relative !important; inset: auto !important; transform: none !important;
+    width: 100% !important; max-width: none !important; max-height: 50dvh !important;
+    overflow: auto !important; margin: 0 !important; pointer-events: auto !important;
+    padding: 14px !important;
+}
+body.game-view-3d #night-action-popup.table3d-docked {
+    pointer-events: auto !important; overflow: auto !important; padding: 14px !important;
+    background: #241e19 !important;
+}
+.table3d-phase-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.table3d-phase-header strong { flex: 1; min-width: 0; }
+.table3d-phase-panel .table3d-phase-toggle { flex: none; min-height: 34px; margin: 0; padding: 5px 10px; }
+.table3d-phase-panel.is-minimized { width: auto; max-width: calc(100% - 24px); overflow: visible; }
+.table3d-phase-panel.is-minimized > :not(.table3d-phase-header),
+.table3d-phase-panel.is-minimized .table3d-phase-header strong { display: none; }
+.table3d-phase-panel .table3d-kill-select,
+.table3d-phase-panel .table3d-kill-confirm { display: block; width: 100%; margin: 8px 0; background: #9a2936; color: #fff1df; }
+.table3d-phase-panel small { display: block; color: #d5bdab; line-height: 1.5; }
+/* Defensive removal for older cached HTML. */
+#table3d-hand-options, #table3d-play-panel details:has(#table3d-hand-options) { display: none !important; }
+
+body.game-view-3d #night-action-popup.table3d-phase-source :is(.night-action-content, .night-action-title) { display: block !important; }
+body.game-view-3d #night-action-popup.table3d-phase-source .popup-collapse-toggle { display: none !important; }
+body.game-view-3d #night-action-popup.table3d-phase-source .night-action-header { padding: 0 !important; border: 0; background: transparent !important; }
+body.game-view-3d #night-action-popup.table3d-phase-source .night-action-content { padding: 0 !important; border: 0; background: transparent !important; }
+body.game-view-3d #night-action-popup.table3d-phase-source > .night-action-header { max-height: none !important; }
+
+.table3d-view-controls {
+    position: absolute; top: 62px; right: 12px; z-index: 6; display: flex; gap: 6px;
+}
+.table3d-view-controls button {
+    width: auto; min-height: 40px; margin: 0; padding: 7px 12px;
+    border: 1px solid #87653c; border-radius: 8px; background: #261c12ed; color: #ffe1aa;
+}
+.table3d-view-controls button[aria-pressed="true"] { border-color: #d2b478; background: #4b3924; }
+.table3d-section .table3d-end-turn { top: 112px; }
+body.table3d-fullscreen { overflow: hidden; }
+body.table3d-fullscreen #table3d-section {
+    position: fixed; inset: 0; z-index: 6000; width: 100%; height: 100vh; height: 100dvh;
+    margin: 0; border: 0; border-radius: 0; display: flex; flex-direction: column;
+}
+body.table3d-fullscreen #table3d-canvas { flex: 1 1 0; min-height: 0; height: auto; }
+body.table3d-fullscreen #table3d-play-panel { flex: none; max-height: 20dvh; overflow: auto; padding: 8px 12px; }
+body.table3d-fullscreen .table3d-instructions { flex: none; font-size: .8rem; }
+body.table3d-fullscreen #table3d-phase-panel { z-index: 8; }
+@media (max-width: 600px) {
+    .table3d-view-controls { right: 8px; }
+    .table3d-view-controls button { padding: 6px 9px; font-size: .85rem; }
+    .table3d-section .table3d-hud { max-width: calc(100% - 180px); padding: 8px; }
+    body.table3d-fullscreen .table3d-instructions { display: none; }
+}
+
+body.table3d-fullscreen #turn-notice { z-index: 11000; }
+
+.table3d-hand-controls {
+    position: absolute; top: calc(var(--table3d-canvas-height, clamp(380px, 62vh, 700px)) - 56px);
+    left: 50%; transform: translateX(-50%); z-index: 6;
+}
+.table3d-hand-controls button { width: auto; margin: 0; min-height: 44px; padding: 8px 18px; border: 1px solid #b79964; border-radius: 10px; background: #302519ed; color: #ffe1aa; }
+body.table3d-fullscreen .table3d-hand-controls { top: calc(var(--table3d-canvas-height, 75dvh) - 56px); bottom: auto; }
+.table3d-section .table3d-camera-controls { flex-wrap: wrap; justify-content: flex-end; max-width: 280px; }
+@media (max-width: 600px) {
+    .table3d-hand-controls { top: calc(var(--table3d-canvas-height, clamp(330px, 52vh, 490px)) - 54px); }
+    .table3d-section .table3d-camera-controls { max-width: 220px; gap: 4px; }
+    .table3d-section .table3d-camera-controls button { min-width: 30px; padding: 6px 8px; font-size: .8rem; }
+    body.table3d-fullscreen .table3d-hand-controls { top: calc(var(--table3d-canvas-height, 75dvh) - 54px); bottom: auto; }
+}
+
+/* The regular board always opens target selection as a centered modal. */
+:is(body:not(.game-view-3d), body.table3d-unavailable) .select-player-modal {
+    position: fixed !important; inset: 0 !important; transform: none !important;
+    width: 100vw !important; height: 100dvh !important; max-height: none !important;
+    display: flex !important; align-items: center !important; justify-content: center !important;
+    padding: 16px !important; box-sizing: border-box;
+    background: #000a !important; pointer-events: auto !important; z-index: 10000 !important;
+}
+:is(body:not(.game-view-3d), body.table3d-unavailable) .select-player-modal > .select-player-modal-content {
+    width: min(420px, 100%) !important; max-width: 420px !important; max-height: 85dvh !important;
+    position: relative !important; inset: auto !important; transform: none !important;
+    overflow-y: auto !important; margin: 0 !important; padding: 16px !important;
+}
+:is(body:not(.game-view-3d), body.table3d-unavailable) .select-player-modal .table3d-panel-toggle { display: none !important; }
+
+/* Compact 3D controls: explicit sizes override the mobile full-width button theme. */
+body.game-view-3d #table3d-section :is(.table3d-camera-controls, .table3d-view-controls, .table3d-hand-controls) button,
+body.game-view-3d #table3d-section .table3d-end-turn {
+    width: auto !important; min-width: 30px !important; height: 32px !important;
+    min-height: 32px !important; margin: 0 !important; padding: 5px 9px !important;
+    font-size: .78rem !important; line-height: 1.2 !important; border-radius: 6px;
+}
+body.game-view-3d #table3d-section .table3d-view-controls { top: 48px; gap: 4px; }
+body.game-view-3d #table3d-section .table3d-end-turn { top: 88px; }
+body.game-view-3d #table3d-phase-panel {
+    top: 100px; left: 8px; width: min(260px, calc(100% - 16px));
+    max-height: 34dvh; padding: 9px; font-size: .82rem; border-radius: 8px;
+}
+body.game-view-3d #table3d-phase-panel strong { font-size: .85rem; line-height: 1.4; }
+body.game-view-3d #table3d-phase-panel p { margin: 6px 0; font-size: .78rem; line-height: 1.5; }
+body.game-view-3d #table3d-phase-panel button {
+    width: auto !important; min-height: 32px !important; height: auto !important;
+    margin: 3px !important; padding: 6px 9px !important; font-size: .78rem !important;
+}
+body.game-view-3d #table3d-phase-panel .table3d-kill-confirm { width: 100% !important; min-height: 38px !important; margin: 6px 0 !important; }
+body.game-view-3d #table3d-phase-panel.is-minimized { width: auto; }
+body.game-view-3d #table3d-play-panel { padding: 8px 10px; }
+body.game-view-3d #table3d-play-panel > strong { font-size: .84rem; }
+body.game-view-3d #table3d-play-panel > p { font-size: .78rem; margin: 4px 0 6px; }
+body.game-view-3d #table3d-play-panel > button { width: auto !important; min-height: 32px; font-size: .78rem; padding: 6px 9px; }
+/* Direct target selection keeps only one small confirmation panel, without a backdrop. */
+body.game-view-3d:not(.table3d-unavailable) .select-player-modal.table3d-confirm {
+    position: fixed !important; inset: auto 10px 10px auto !important;
+    width: min(310px, calc(100vw - 20px)) !important; height: auto !important;
+    max-height: 45dvh !important; padding: 0 !important; background: transparent !important;
+    backdrop-filter: none !important; display: block !important;
+}
+body.game-view-3d .table3d-confirm .select-player-modal-content {
+    width: 100% !important; max-width: none !important; padding: 10px !important;
+    max-height: 45dvh !important; overflow: auto !important;
+}
+body.game-view-3d .table3d-confirm .target-card-overview { display: none; }
+body.game-view-3d .table3d-confirm h3 { margin: 0 0 6px !important; font-size: .9rem !important; }
+body.game-view-3d .table3d-confirm .player-select-card { min-height: 44px !important; padding: 6px !important; font-size: .8rem !important; }
+body.game-view-3d .table3d-confirm .target-selection-footer { padding: 6px 0 0; gap: 6px; }
+body.game-view-3d .table3d-confirm .target-selection-footer button { min-height: 36px; font-size: .8rem !important; padding: 6px !important; }
+@media (pointer: coarse) {
+    body.game-view-3d #table3d-section :is(.table3d-camera-controls, .table3d-view-controls, .table3d-hand-controls) button,
+    body.game-view-3d #table3d-section .table3d-end-turn,
+    body.game-view-3d #table3d-phase-panel button { min-height: 36px !important; height: auto !important; }
+}
+
+/* The table uses the same village artwork as the page. */
+#table3d-canvas { background: #151713; }
+body.game-view-3d:not(.table3d-unavailable) :is(#waiting-status-banner, #turn-notice) { display:none !important; }
+.table-phase-cue-night #table3d-canvas { animation:phase-night 2.4s ease-out; }
+.table-phase-cue-conspiracy #table3d-canvas { animation:phase-conspiracy 2.4s ease-out; }
+@keyframes phase-night { 35% { filter:brightness(.55) saturate(.6); } }
+@keyframes phase-conspiracy { 35% { filter:sepia(.45) brightness(1.2); } }
+@media(prefers-reduced-motion:reduce) { .table-phase-cue-night #table3d-canvas, .table-phase-cue-conspiracy #table3d-canvas { animation:none; } }
+
+body.game-view-3d:not(.table3d-unavailable) .select-player-modal.table3d-direct-target { display: none !important; }
+
+body.game-view-3d:not(.table3d-unavailable) #alibi-redcard-select-popup.table3d-phase-source { display:none !important; }
+
+
+/* Public log shares the existing message source; no duplicate socket listeners. */
+body.game-view-3d:not(.table3d-unavailable) #player-status-peek { display:none !important; }
+
+body.game-view-3d #table3d-section .table3d-instructions {
+    display: block; text-align: center; padding: 12px; font-size: 1rem;
+    color: #eddbb7; min-height: 44px; box-sizing: border-box;
+}
+body.game-view-3d #table3d-section .table3d-instructions.is-your-turn {
+    color: #ffe6a8; background: #513816; border-block: 1px solid #b38a43;
+    font-size: 1.1rem; text-shadow: 0 0 12px #c88c39; font-weight: bold;
+}
+body.game-view-3d #table3d-phase-panel {
+    top: auto; bottom: 165px; left: 12px;
+    width: min(320px, calc(100% - 24px)); max-height: 28dvh;
+}
+body.game-view-3d #table3d-phase-panel .table3d-phase-toggle,
+body.game-view-3d .table3d-docked .table3d-panel-toggle,
+body.game-view-3d .table3d-docked .popup-collapse-toggle { display: none !important; }
+#table3d-player-info {
+    position: absolute; z-index: 9; bottom: 165px; right: 12px;
+    width: min(300px, calc(100% - 24px)); box-sizing: border-box;
+    padding: 14px; border: 1px solid #907548; border-radius: 10px;
+    background: rgba(29,23,18,.96); color: #eddbb7;
+    max-height: 30dvh; overflow: auto; font-size: .85rem;
+}
+#table3d-player-info[hidden] { display: none; }
+#table3d-player-info > button { float: right; margin: 0 0 4px 8px; padding: 4px 10px; min-height: 32px; width: auto; }
+#table3d-player-info p { margin: 8px 0 0; }
+.table3d-log {
+    position:absolute; top:138px; right:8px; z-index:9;
+    width:auto; max-width:calc(100% - 16px); border:1px solid #806a4b;
+    border-radius:8px; background:#211b15f2; color:#ead8bc; font-size:.8rem;
+}
+.table3d-log > summary { cursor:pointer; padding:8px 10px; min-height:20px; }
+.table3d-log[open] { width:min(300px,calc(100% - 16px)); }
+#table3d-log-messages { max-height:32dvh; overflow:auto; padding:0 10px 10px; overscroll-behavior:contain; line-height:1.6; }
+#table3d-log-messages > div { padding:5px 0; border-top:1px solid #63513b55; overflow-wrap:anywhere; }
+#table3d-log-unread { display:inline-block; padding:1px 5px; margin-left:4px; border-radius:8px; background:#7d3c26; color:#ffdfae; }
+#table3d-log-unread[hidden] { display:none; }
+@media(max-width:600px) { .table3d-log[open] { width:min(250px,calc(100% - 16px)); } #table3d-log-messages { max-height:25dvh; } }
+
+.table3d-hand-controls { display:flex; align-items:center; justify-content:center; gap:6px; white-space:nowrap; }
+
+#table3d-seat-label { position:absolute; bottom:calc(100% + 5px); left:50%; transform:translateX(-50%); max-width:85vw; overflow:hidden; text-overflow:ellipsis; padding:3px 8px; border-radius:5px; background:#211b15e8; color:#e5d2b0; font-size:.75rem; pointer-events:none; }
+#table3d-seat-label:empty { display:none; }
+/* Keep mobile camera controls and phase actions in separate layout rows. */
+@media (max-width: 768px) {
+    body.game-view-3d #table3d-section { display: flex; flex-direction: column; }
+    body.game-view-3d #table3d-section #table3d-canvas { order: 0; }
+    body.game-view-3d #table3d-section .table3d-hand-controls {
+        position: relative; top: auto; bottom: auto; left: auto; transform: none;
+        order: 1; flex: none; margin: 0; padding: 24px 8px 8px;
+        background: #211a15; z-index: 7; min-height: 44px;
+    }
+    body.game-view-3d #table3d-section #table3d-seat-label { top: 3px; bottom: auto; }
+    body.game-view-3d #table3d-section .table3d-instructions { order: 2; flex: none; padding: 8px; font-size: .85rem; }
+    body.game-view-3d #table3d-section #table3d-phase-panel {
+        position: relative; inset: auto; order: 3; flex: none;
+        width: auto; max-width: none; margin: 6px 8px; padding: 8px 10px;
+        max-height: 22dvh; overflow: auto; box-sizing: border-box;
+    }
+    body.game-view-3d #table3d-section #table3d-play-panel { order: 4; flex: none; }
+    body.game-view-3d.table3d-fullscreen #table3d-section #table3d-play-panel { max-height: 12dvh; }
+    body.game-view-3d #table3d-section .table3d-hand-controls button { min-height: 40px !important; }
+}
+#table3d-role-badge {
+    display: block; margin-top: 8px; padding: 6px 10px; border: 1px solid #cb555c;
+    border-radius: 6px; background: #571f29; color: #ffe0df; font-size: .95rem;
+}
+#table3d-role-badge[hidden] { display: none; }
+#prank-controls { position: fixed; top: 40dvh; right: 12px; z-index: 14000; display: flex; flex-direction: column; align-items: end; gap: 6px; max-width: calc(100vw - 24px); }
+#prank-controls[hidden], #prank-controls [hidden], #prank-shot-cue[hidden] { display: none !important; }
+#prank-controls button, #prank-controls summary { width: auto; padding: 8px 12px; margin: 0; font-size: .85rem; cursor: pointer; }
+#prank-controls details { background: #241d17; color: #eddbb7; border: 1px solid #947344; border-radius: 8px; padding: 5px; max-width: calc(100vw - 24px); }
+#prank-controls details strong { display: block; margin: 8px; }
+#prank-controls select { max-width: 200px; }
+#prank-shot-cue { position: fixed; top: 18%; left: 50%; transform: translateX(-50%); z-index: 15000; max-width: 85vw; padding: 16px 24px; background: #251b15ee; color: #ffe2a0; border: 1px solid #d9a45b; border-radius: 10px; pointer-events: none; text-align: center; }
+#prank-shot-cue::after { content: '•'; display: block; text-align: left; color: #ffe2a0; animation: prank-bullet var(--shot-duration, 2200ms) ease-in-out forwards; }
+#prank-shot-cue.is-pickup::after { display:none; }
+@keyframes prank-bullet { from { transform: translateX(0); } to { transform: translateX(90%); } }
+@media (prefers-reduced-motion: reduce) { #prank-shot-cue::after { animation: none; } }
+body:not(.game-view-3d) #game-messages {
+    max-height: 55dvh; min-height: 240px; padding: 10px;
+    background: #181512; border: 1px solid #584b3c; border-radius: 10px;
+    font-size: .95rem; line-height: 1.7; overflow-y: auto; overflow-wrap: anywhere;
+    scrollbar-gutter: stable;
+}
+body:not(.game-view-3d) #game-messages > div {
+    padding: 10px 12px; margin: 0 0 7px; border-radius: 6px;
+    background: #26211c; border-left: 3px solid currentColor;
+    font-weight: normal !important;
+}
+body:not(.game-view-3d) #game-messages > div b { font-weight: 700; }
+body.game-view-3d.table3d-phase-details #night-action-popup.table3d-phase-source {
+    pointer-events: auto !important;
+    top: auto !important; bottom: 155px !important; right: 12px !important; left: auto !important;
+    transform: none !important; width: min(360px, calc(100vw - 24px)) !important;
+    max-height: 48dvh !important; overflow: auto !important;
+    padding: 12px !important; background: #211a18fa !important;
+}
+body.game-view-3d.table3d-phase-details #night-action-popup > .night-action-header,
+body.game-view-3d.table3d-phase-details #night-action-popup .night-action-content > :not(.modal-witch-chat-section) { display: none !important; }
+body.game-view-3d.table3d-phase-details #night-action-popup .modal-witch-chat-section { margin: 0; padding: 0; }
+body.game-view-3d #modal-witch-chat-messages { height: 24dvh; min-height: 100px; max-height: 260px; overflow-y: auto; }
+.modal-witch-chat-input-bar { display: flex; gap: 6px; }
+.modal-witch-chat-input-bar input { min-width: 0; flex: 1; font-size: 16px; }
+body.game-view-3d.table3d-phase-details #night-action-popup.table3d-docked .modal-witch-chat-section,
+body.game-view-3d.table3d-phase-details #night-action-popup.table3d-docked .modal-witch-chat-input-bar :is(input, button) { pointer-events: auto !important; }
+.modal-witch-chat-input-bar button { flex: 0 0 auto; width: auto; }
+.witch-chat-message { padding: 8px 10px; margin: 6px 0; background: #302826; border-radius: 6px; color: #f0e1d3; overflow-wrap: anywhere; }
+.witch-chat-message .sender { color: #f2bd99; }
+.witch-chat-message .message { color: #f0e1d3; line-height: 1.5; white-space: pre-wrap; }
+.witch-chat-message .timestamp { display: block; color: #b8aaa0; font-size: .72rem; margin-top: 3px; }
+.witch-chat-message.is-system { background: #332125; border-left: 2px solid #a46d74; font-size: .8rem; }
+#table3d-keyboard-status {
+    position: absolute; top: calc(100% + 3px); left: 50%; transform: translateX(-50%);
+    font-size: .65rem; color: #d4c5ab; background: #211b15e8; padding: 2px 6px;
+    border-radius: 4px; pointer-events: none;
+}
+@media (hover: none) { #table3d-keyboard-status { display: none; } }
+
+/* One instruction row and only the controls needed for the current mobile action. */
+@media (max-width: 768px) {
+    body.game-view-3d #table3d-section .table3d-hand-controls { padding: 8px; min-height: 44px; }
+    body.game-view-3d #table3d-seat-label,
+    body.game-view-3d #table3d-keyboard-status { display: none !important; }
+    body.game-view-3d #table3d-section #table3d-phase-panel {
+        margin: 0; padding: 8px 12px; border: 0; border-radius: 0;
+        max-height: 18dvh; background: #211a15;
+    }
+    body.game-view-3d #table3d-phase-panel p { display: none; }
+    body.game-view-3d #table3d-phase-panel.is-direct-target .table3d-phase-header { display: none; }
+    body.game-view-3d #table3d-phase-panel button { min-height: 40px; margin: 0 6px 0 0; padding: 6px 12px; }
+    body.game-view-3d #table3d-play-panel { padding: 4px 12px; }
+    body.game-view-3d #table3d-card-description { display: none; }
+    body.game-view-3d #table3d-play-panel.has-selected-card:not(.has-phase-action) #table3d-card-description {
+        display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+        overflow: hidden; margin: 4px 0; font-size: .8rem;
+    }
+    body.game-view-3d #table3d-details-toggle { background: transparent; border: 0; font-size: .75rem; padding: 4px 0; min-height: 36px; }
+}
+
+#table3d-reorder-hand[aria-pressed=true] { border-color:#ffda86; background:#614320; }
+#table3d-reorder-hint { display:block; flex-basis:100%; color:#efdbac; font-size:.8rem; text-align:center; }
+#table3d-reorder-hint[hidden] { display:none; }
+
+/* Fixed columns keep hand actions usable at every viewport width. */
+body.game-view-3d #table3d-section .table3d-hand-controls {
+    display:grid; grid-template-columns:36px minmax(0,1fr) minmax(0,1.15fr) 36px minmax(0,1fr);
+    gap:6px; width:min(460px,calc(100% - 20px)); max-width:calc(100% - 20px);
+    box-sizing:border-box; white-space:normal; align-items:center;
+    top:calc(var(--table3d-canvas-height,75dvh) - 58px); bottom:auto;
+}
+body.game-view-3d #table3d-section .table3d-hand-controls:has(#table3d-reorder-hint:not([hidden])) {
+    top:calc(var(--table3d-canvas-height,75dvh) - 88px);
+}
+body.game-view-3d #table3d-section .table3d-hand-controls button {
+    width:100%; min-width:0; min-height:42px; padding:6px 3px; margin:0; font-size:.8rem; line-height:1.2;
+}
+#table3d-keyboard-status { display:none !important; }
+#table3d-reorder-hint { grid-column:1 / -1; white-space:normal; line-height:1.4; margin:0; }
+@media(max-width:768px) {
+    body.game-view-3d #table3d-section .table3d-hand-controls,
+    body.game-view-3d #table3d-section .table3d-hand-controls:has(#table3d-reorder-hint:not([hidden])) {
+        position:relative; top:auto; bottom:auto; left:auto; transform:none; padding:8px;
+        width:100%; max-width:100%; margin:0;
+    }
+}

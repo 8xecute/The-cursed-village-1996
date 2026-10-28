@@ -1,47 +1,35 @@
-# Background Music Setup
+# Background music
 
-## ไฟล์เสียงที่ต้องการ
+The game uses Web Audio (`public/js/audio/background-player.js`) rather than an
+HTML audio player. Background music is separate from the sound effects volume.
 
-เพื่อให้ background music ทำงานได้ คุณต้องเพิ่มไฟล์เสียงในโฟลเดอร์นี้:
+## Tracks
 
-### ไฟล์หลัก (จำเป็น):
-- `background-music.mp3` - ไฟล์เสียงหลัก (MP3 format)
-- `background-music.ogg` - ไฟล์เสียงสำรอง (OGG format) - ไม่บังคับ
+- `lobby-music.mp3`: home, lobby and game over.
+- `day-music.mp3`: daytime.
+- `night-music.mp3`: nighttime and the initial offering selection.
+- `predawn-music.mp3`: pre-dawn.
 
-### ไฟล์เสียงตามเฟส (ไม่บังคับ):
-หากต้องการเพลงที่แตกต่างกันตามเฟสของเกม สามารถเพิ่มไฟล์เหล่านี้:
+Life setup (shuffling, dealing and arranging lives) stops background music.
+Music resumes when the witches begin choosing the offering recipient; card
+handling effects continue independently during the quiet setup.
 
-- `lobby-music.mp3` - เพลงสำหรับล็อบบี้
-- `day-music.mp3` - เพลงสำหรับช่วงกลางวัน
-- `night-music.mp3` - เพลงสำหรับช่วงกลางคืน (น่ากลัว)
-- `predawn-music.mp3` - เพลงสำหรับช่วงก่อนเช้า
-- `gameover-music.mp3` - เพลงสำหรับเกมจบ
+Track selection is configured in `public/js/audio/music.js`. There is no reference
+to a missing game-over track.
 
-### แนะนำไฟล์เสียง:
-- **ประเภท**: เพลงบรรยากาศ, เพลงสยองขวัญ, เพลงลึกลับ
-- **ความยาว**: 2-5 นาที (จะ loop อัตโนมัติ)
-- **ระดับเสียง**: ปานกลาง (ไม่ดังเกินไป)
-- **รูปแบบ**: MP3 หรือ OGG
+## Playback lifecycle
 
-### วิธีเพิ่มไฟล์เสียง:
-1. หาไฟล์เสียงที่เหมาะสม (ฟรีจาก YouTube, Free Music Archive, หรืออื่นๆ)
-2. แปลงเป็น MP3 format
-3. เปลี่ยนชื่อตามที่ต้องการ
-4. วางในโฟลเดอร์ `public/audio/`
+- No autoplay or music download before a player interacts with the page.
+- Initial music volume is 20% in the UI, scaled to 30% of that for background use.
+- The slider saves the preferred volume; zero also stops playback.
+- Phase changes crossfade for 450 ms; identical tracks continue without restarting.
+- Hiding the tab, locking the screen or leaving the page stops voices, cancels
+  pending fetches and suspends the music context.
+- Returning resumes the current phase from the saved position where possible.
+  If the browser blocks resuming, the next tap or key press retries it.
+- A single decoded track is retained, resampled to 22,050 Hz mono where the
+  browser supports OfflineAudioContext, to limit mobile memory usage.
+- Missing or undecodable files remain silent and can retry on another interaction.
 
-### ตัวอย่างแหล่งไฟล์เสียงฟรี:
-- [Free Music Archive](https://freemusicarchive.org/)
-- [Incompetech](https://incompetech.com/) (Kevin MacLeod)
-- [YouTube Audio Library](https://studio.youtube.com/channel/UC/music)
-
-### การควบคุมเสียง:
-- 🔇/🔊 - เปิด/ปิดเพลง
-- 🔉 - ลดเสียง
-- 🔊 - เพิ่มเสียง
-
-### หมายเหตุ:
-- เริ่มต้นที่ระดับเสียง 30%
-- เพลงจะ loop อัตโนมัติ
-- ต้องคลิกปุ่มก่อนเพลงจะเล่น (นโยบาย browser)
-- หากไม่มีไฟล์เสียงตามเฟส ระบบจะใช้ไฟล์ `background-music.mp3` แทน
-- เพลงจะเปลี่ยนอัตโนมัติเมื่อเฟสของเกมเปลี่ยน 
+Existing MP3 assets remain unchanged. Source code does not register a media-player
+session or create an HTML audio/video element for background music.

@@ -1,0 +1,113 @@
+/* Readable controls and restrained colors across gameplay and dialogs. */
+:root { color-scheme:dark; --ui-amber:#d0ad76; --ui-text:#eddfc9; --ui-muted:#c7b59b; }
+body :is(button,summary,input,select,textarea) { font-family:var(--village-font-body) !important; letter-spacing:normal; }
+body :is(button,summary):focus-visible { outline:2px solid #edc58b !important; outline-offset:3px; }
+body button:not(.tryal-card-btn):not(.card):not(.training-card) { word-break:normal; overflow-wrap:break-word; }
+body :is(input,textarea)::placeholder { color:#b8a58b; opacity:1; }
+body select { background:#302319; color:var(--ui-text); border:1px solid #967044; border-radius:8px; }
+body :is(.card-explain-title,.game-rules-title,.section-title,.training-instruction,.night-action-title,.victory-title),
+body.in-game :is(h2,h3), body #training-dialog :is(h2,h3) { font-family:var(--village-font-body) !important; font-weight:600; letter-spacing:0; line-height:1.6; }
+body.in-game #game-section h3 { font-size:18px; }
+body #sidebar-right h3 { font-size:18px; margin:0 0 12px; border-bottom:1px solid #76563a; padding-bottom:8px; }
+body :is(.card-explain-body,.game-rules-body,.training-card-explanation,.witch-popup-desc) { line-height:1.8; }
+body :is(.player-board-status,.player-board-tryals) { font-size:13px; line-height:1.7; }
+body .player-board-header { display:flex; flex-wrap:wrap; align-items:center; gap:4px 6px; font-size:14px; line-height:1.6; overflow-wrap:anywhere; }
+body .player-board-header .board-host { color:#d4b386; }
+body .player-board-header .board-turn { color:#c9d4ad; font-weight:600; }
+body .player-board-header .board-team { color:#dda7a2; }
+body .player-board-header .board-offering { color:#d7bc85; }
+body .player-board-status { color:#d1c2ac; }
+body .player-board-tryals { color:#b7c8cf; }
+body .player-life-slot figcaption { font-size:11px; line-height:1.6; color:#e0cfb1; }
+body .player-life-mini { font-size:12px; }
+body .life-tile figcaption { font-size:11px; }
+body :is(#game-messages,#table3d-log-messages) { font-size:14px; line-height:1.75; }
+body .game-event-entry { padding:8px 10px; margin:0 0 6px; line-height:1.75; overflow-wrap:anywhere; }
+body .game-event-entry.is-self-event { background:#463520 !important; border-left-color:#d2b17d; }
+body #draw-card-button { background:#385243; border-color:#72927c; color:#f0e8d8; }
+body #draw-card-button:hover:not(:disabled) { background:#46654f; }
+body #play-card-button { background:#354b5d; border-color:#7994a8; color:#f0e8d8; }
+body #play-card-button:hover:not(:disabled) { background:#465f72; }
+body #play-card-button.can-play { background:#bd985e !important; border:1px solid #e5c58c !important; color:#231a10 !important; }
+body #end-turn-button { background:#4b3529; border-color:#a18156; color:#eddfc9; }
+body #end-turn-button:hover:not(:disabled) { background:#654a31; }
+body :is(#draw-card-button,#end-turn-button).confirming { background:#71483c !important; border:2px solid #d6ac7d !important; color:#fff0da !important; }
+body :is(#draw-card-button,#play-card-button,#end-turn-button):disabled { background:#38312a !important; border:1px solid #66543f !important; color:#b8aa96 !important; opacity:.7; }
+body .rematch-btn { background:#ad824a; border-color:#d6b17a; color:#21190f; font-size:16px; }
+body .rematch-btn:hover { background:#c39659; transform:none; }
+body :is(.victory-badge,.roles-table th) { color:#e2c49a; }
+body .role-tag.witch { background:#49302e; color:#edb5ac; border-color:#96655c; }
+body .role-tag.town { background:#304532; color:#bbd0b2; border-color:#627b5c; }
+body .role-tag { white-space:nowrap; }
+body #my-role-display.team-town { color:#b7c8cf; }
+body #my-role-display.team-witch { color:#dda7a2; }
+body .tryal-pill.witch { background:#67413b; color:#f4d5ca; }
+body .tryal-pill.constable { background:#3b5369; color:#e1e8ec; }
+body .game-over-modal-content .roles-table { min-width:440px; }
+body .roles-table :is(th,td):first-child { min-width:70px; white-space:nowrap; }
+body .roles-table-wrapper { max-width:100%; overscroll-behavior-x:contain; scrollbar-width:thin; }
+body .roles-table :is(th,td) { font-size:13px; line-height:1.6; vertical-align:top; }
+body .summary-scroll-hint { display:none; }
+body #game-rules-modal :is(h3,h4) { font-family:var(--village-font-body) !important; font-weight:600; line-height:1.6; }
+body .game-over-actions > button { min-height:44px; margin:0; }
+body #witch-chat-section { background:#30201d; border:1px solid #98655b; }
+body #witch-chat-section h2 { color:#e4b0a3 !important; }
+body .witch-popup-content { background:#291b18; border:1px solid #986e56; box-sizing:border-box; }
+body .witch-popup-title { color:#e1aaa0; letter-spacing:0; }
+body .witch-popup-close-btn { background:#704438; border:1px solid #bc8b72; transform:none; }
+body .witch-popup-close-btn:hover { background:#865343; transform:none; }
+body .witch-card-img { filter:drop-shadow(0 4px 8px #0006); }
+body :is(.select-player-modal,.tryal-selection-popup,.curse-target-modal,#alibi-redcard-select-popup) button:not(.tryal-card-btn):not(.player-select-card):not(.popup-collapse-toggle) { min-height:44px; padding:9px 14px; line-height:1.5; border-radius:8px; }
+body.game-view-3d #table3d-section .table3d-hand-controls .table3d-end-turn:not(:disabled) { background:linear-gradient(#b98b49,#80532d); border-color:#dfbc83; color:#fff0d5; box-shadow:0 0 8px #d5a25e55 !important; }
+body .table3d-control-row { flex-wrap:wrap; }
+body #table3d-card-sizes .card-size-panel label { font-size:14px; line-height:1.6; }
+body #game-preferences-content :is(label,strong) { line-height:1.6; }
+body #game-preferences-content :is(.music-setting-row,.graphics-setting-row) { font-size:14px; }
+body .table3d-instructions { line-height:1.65; }
+#summary-infections { margin:16px 0; padding:14px; border:1px solid #76563a; border-radius:9px; background:#241b15; overflow-wrap:anywhere; }
+#summary-infections h3 { margin:0 0 8px; font-size:17px; color:#edcd9d; }
+#summary-infections ol { padding-left:24px; margin:8px 0; }
+#summary-infections li { padding:5px 0; line-height:1.7; }
+#summary-infections p { font-size:13px; color:#cab795; }
+body.game-view-3d #table3d-canvas { position:relative; }
+body.game-view-3d #table3d-canvas #prank-controls {
+  position:absolute; top:auto; right:auto; left:12px; bottom:12px;
+  align-items:flex-start; max-width:min(290px,calc(100% - 24px));
+}
+body.game-view-3d #prank-controls button { min-height:44px; white-space:normal; text-align:left; }
+body #prank-shot-cue { top:64px; padding:9px 16px; line-height:1.5; overflow-wrap:anywhere; }
+body.game-view-3d #table3d-canvas #prank-shot-cue { position:absolute; top:64px; max-width:calc(100% - 32px); box-sizing:border-box; }
+body.game-view-3d #prank-shot-cue::after { display:none; }
+@media(max-width:600px) {
+  body.game-view-3d #table3d-canvas #prank-shot-cue { top:116px; width:max-content; padding:7px 12px; font-size:13px; }
+  body.game-view-3d #table3d-canvas #prank-controls { left:8px; bottom:8px; max-width:calc(100% - 16px); }
+}
+@media(max-width:768px) {
+  body .summary-scroll-hint { display:block; color:var(--ui-muted); font-size:12px; margin:8px 0; }
+  body .game-over-modal-content { padding:18px 14px; }
+  body .victory-title { font-size:23px; line-height:1.5; }
+  body .game-over-actions { display:grid; grid-template-columns:minmax(0,1fr); gap:10px; }
+  body .game-over-actions > button { width:100%; white-space:normal; }
+  body :is(.card-explain-title,.game-rules-title) { font-size:18px; }
+  body .card-explain-title-row { align-items:flex-start; }
+  body #training-dialog[data-training-view="3d"] .training-instruction { font-size:16px; }
+  body #training-dialog[data-training-view="3d"] .training-meta { font-size:13px; line-height:1.65; }
+  body #training-dialog .training-table-controls { max-width:calc(100vw - 24px); flex-wrap:wrap; justify-content:center; }
+  body .table3d-instructions { font-size:12px; }
+  body .player-life-slot figcaption { font-size:12px; }
+  body .game-event-entry { font-size:14px; }
+}
+.prank-gun-remaining { display: inline-block; margin-inline: .4rem; color: #e4d1ae; font-size: .85rem; font-variant-numeric: tabular-nums; }
+.prank-gun-remaining[hidden] { display: none; }
+.turn-sound-setting { display:flex; flex-wrap:wrap; align-items:center; gap:6px 10px; margin-top:10px; }
+#game-sound-settings .turn-sound-setting label { flex:1 1 170px; margin:0; }
+.turn-sound-setting input[type=checkbox] { flex:none; width:20px; height:20px; accent-color:#b99560; }
+.turn-sound-setting small { flex-basis:100%; color:#c7b59b; line-height:1.5; }
+.turn-sound-setting button { margin:0; padding:7px 10px; }
+body.game-view-3d #table3d-canvas #ghost-scare-controls { position:absolute; right:12px; bottom:12px; max-width:calc(100% - 24px); }
+#ghost-scare-panel { box-sizing:border-box; }
+#ghost-scare-controls > button:disabled { opacity:.85; }
+@media (max-width:768px) {
+  body.game-view-3d #table3d-canvas #ghost-scare-controls { right:8px; bottom:8px; }
+  body.in-game:not(.game-view-3d) #ghost-scare-controls { bottom:calc(80px + env(safe-area-inset-bottom,0px)); }
+}

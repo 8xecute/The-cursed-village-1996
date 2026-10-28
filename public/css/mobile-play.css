@@ -1,0 +1,164 @@
+/* Keep the board, the selected card and its actions close together on touch screens. */
+.mobile-game-menu { display:none; }
+/* Hidden hover popups must not create an invisible scroll area. */
+.custom-tooltip:not(.show), #card-description-popup:not(.show) { display:none; }
+.own-life-heading { display:flex; align-items:center; justify-content:space-between; gap:8px; list-style:none; cursor:pointer; }
+.own-life-heading::-webkit-details-marker { display:none; }
+.own-life-heading h3 { margin:0; }
+.own-life-heading:focus-visible { outline:2px solid #edc58b; outline-offset:3px; }
+body.in-game.game-view-3d :is(#card-explain-modal,#game-rules-modal,#story-modal) { z-index:16000 !important; }
+
+@media (max-width:768px), (max-width:950px) and (max-height:520px) {
+  body.in-game { --mobile-action-space:86px; }
+  body.in-game > .game-title { display:none; }
+  body.in-game .mobile-game-menu { display:inline-flex; align-items:center; justify-content:center; width:auto !important; min-width:54px; min-height:44px; padding:8px 12px; margin:0; }
+  body.in-game #game-navigation { display:none !important; }
+  body.in-game.game-menu-open #game-navigation {
+    display:grid !important; position:fixed; top:60px; right:8px; width:min(280px,calc(100vw - 16px)) !important;
+    grid-template-columns:1fr; z-index:15000; margin:0; padding:10px; gap:8px;
+    box-sizing:border-box; border:1px solid #967044; border-radius:12px; background:#281e17;
+    max-height:calc(100dvh - 80px); overflow:auto;
+  }
+  body.in-game #game-navigation .top-nav-btn { width:100% !important; min-height:44px; margin:0; justify-content:flex-start; }
+  body.in-game:not(.game-view-3d) { padding:6px 6px calc(var(--mobile-action-space) + env(safe-area-inset-bottom,0px)); }
+  body.in-game:not(.game-view-3d) > .container { padding:0; border:0; gap:4px; }
+  body.in-game:not(.game-view-3d) #game-section { padding:0; margin:0; border:0; background:transparent; }
+  body.in-game:not(.game-view-3d) .game-layout { padding:0; }
+  body.in-game:not(.game-view-3d) #game-main-content { padding:0; border:0; background:transparent; }
+  body.in-game:not(.game-view-3d) :is(#name-section,#room-management-section,#room-lobby-section) { display:none !important; }
+  body.in-game:not(.game-view-3d) .music-controls { position:absolute !important; top:6px; right:6px; left:auto; width:44px !important; transform:none; }
+  body.in-game:not(.game-view-3d) .game-view-toolbar { min-height:44px; margin:0 48px 4px 0; gap:6px; justify-content:flex-start; }
+  body.in-game:not(.game-view-3d) #game-view-description { flex:1; font-size:13px; }
+  body.in-game:not(.game-view-3d) #game-view-toggle { min-height:44px; padding:5px 8px; margin:0; }
+  body.in-game:not(.game-view-3d) #game-state-bar { display:flex; flex-wrap:wrap; gap:3px 6px; padding:6px 8px; margin:0 0 4px; font-size:12px; }
+  body.in-game:not(.game-view-3d) #game-state-bar > span { flex:0 1 auto; padding:2px 5px; border:0; white-space:normal; }
+  body.in-game:not(.game-view-3d) #game-state-bar > span:nth-child(3) { flex:1 1 45%; }
+  body.in-game:not(.game-view-3d) #game-state-bar span span { padding:0 3px; background:transparent; }
+  body.in-game:not(.game-view-3d) #waiting-status-banner { position:static; padding:7px 9px; margin:0 0 4px; gap:4px; }
+  body.in-game:not(.game-view-3d) #waiting-status-banner .action-guide-copy { flex:1; min-width:0; }
+  body.in-game:not(.game-view-3d) #action-guide-title { font-size:14px; line-height:1.5; }
+  body.in-game:not(.game-view-3d) #action-guide-detail { font-size:12px; margin:2px 0 0; line-height:1.5; }
+  body.in-game:not(.game-view-3d)[data-mobile-game-tab="hand"] #action-guide-button { display:none; }
+  body.in-game:not(.game-view-3d) #turn-notice { display:none !important; }
+  body.in-game:not(.game-view-3d) #mobile-game-tabs { display:flex; position:sticky; top:0; margin:0 0 6px; padding:4px 0; gap:5px; z-index:45; background:#231a13f5; }
+  body.in-game:not(.game-view-3d) .mobile-tab-btn { width:auto !important; flex:1; min-height:44px; margin:0; padding:8px 3px; font-size:13px; }
+  body.in-game:not(.game-view-3d) .tab-icon { display:none; }
+  body.in-game:not(.game-view-3d) .game-layout { flex-direction:column; gap:0; }
+  body.in-game:not(.game-view-3d) :is(#sidebar-left,#sidebar-right) { display:none !important; }
+  body.in-game:not(.game-view-3d) #game-main-content { display:flex !important; gap:6px; min-width:0; width:100%; }
+  body.in-game:not(.game-view-3d) #game-main-content > h3 { font-size:15px; line-height:1.5; margin:0; padding:0 3px; }
+  body.in-game:not(.game-view-3d) #player-hand {
+    display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:7px; align-content:start; flex:none;
+    min-height:0; max-height:clamp(150px,calc(100dvh - 500px),390px); overflow:auto; padding:6px; margin:0;
+    border:0; border-radius:8px; background:#1b1510; overscroll-behavior:contain;
+  }
+  body.in-game:not(.game-view-3d) #player-hand > .card { width:100% !important; height:auto !important; aspect-ratio:100 / 148; min-width:0 !important; max-width:none !important; min-height:0 !important; max-height:none !important; padding:0; margin:0; box-sizing:border-box; }
+  body.in-game:not(.game-view-3d) #player-hand > .card:hover { transform:none; }
+  body.in-game:not(.game-view-3d) #player-hand > .card.selected { transform:none; outline:3px solid #f1cc83; outline-offset:-3px; border-width:2px !important; }
+  body.in-game:not(.game-view-3d) .hand-action-buttons { position:fixed; inset:auto 0 0; z-index:100; width:100%; margin:0; padding:8px 8px calc(8px + env(safe-area-inset-bottom,0px)); border:0; border-top:1px solid #8a6742; border-radius:0; background:#281e17fa; }
+  body.in-game:not(.game-view-3d) .targets-container:has(select[style*="display: none"]):not(:has(select:not([style*="display: none"]))) { display:none; }
+  body.in-game:not(.game-view-3d) .action-buttons-row { display:grid; grid-template-columns:1fr 1.25fr 1fr; gap:6px; }
+  body.in-game:not(.game-view-3d) .action-buttons-row button { width:100% !important; max-width:none !important; min-width:0 !important; margin:0 !important; min-height:48px !important; font-size:13px !important; padding:8px 4px; }
+  body.in-game:not(.game-view-3d) #end-turn-button { grid-column:auto; }
+  body.in-game:not(.game-view-3d) #own-life-panel { border:1px solid #76563a; border-radius:9px; padding:0 8px; }
+  body.in-game:not(.game-view-3d) .own-life-heading { min-height:48px; gap:4px; flex-wrap:wrap; }
+  body.in-game:not(.game-view-3d) .own-life-heading h3 { font-size:14px !important; }
+  body.in-game:not(.game-view-3d) .own-life-heading::after { content:'ดู ▾'; margin-left:auto; font-size:12px; color:#d6bb8d; }
+  body.in-game:not(.game-view-3d) #own-life-panel[open] .own-life-heading::after { content:'ย่อ ▴'; }
+  body.in-game:not(.game-view-3d) #my-role-display-container { max-width:none; font-size:12px; }
+  body.in-game:not(.game-view-3d) #my-role-display { font-size:13px; }
+  body.in-game:not(.game-view-3d) #tryal-cards-display { padding:6px; margin:0 0 6px; border:0; }
+  body.in-game:not(.game-view-3d) #my-tryal-cards-list { margin:0; padding:0; gap:6px; flex-wrap:nowrap; overflow-x:auto; }
+  body.in-game:not(.game-view-3d) #my-tryal-cards-list .card { width:74px !important; height:110px !important; min-width:74px !important; max-width:74px !important; min-height:110px !important; max-height:110px !important; margin:0; padding:0; }
+  body.in-game:not(.game-view-3d) #selected-card-summary { margin:0; padding:8px; gap:6px; font-size:13px; }
+  body.in-game:not(.game-view-3d) #selected-card-description { margin:3px 0; line-height:1.5; }
+  body.in-game:not(.game-view-3d) #clear-selected-card { min-height:44px; width:auto !important; padding:6px 10px; margin:0; }
+  body.in-game:not(.game-view-3d)[data-mobile-game-tab="players"] #sidebar-left,
+  body.in-game:not(.game-view-3d)[data-mobile-game-tab="chat"] #sidebar-right { display:flex !important; width:100%; max-width:none; min-width:0; flex:1 1 auto; }
+  body.in-game:not(.game-view-3d):is([data-mobile-game-tab="players"],[data-mobile-game-tab="chat"]) #game-main-content { display:none !important; }
+  body.in-game:not(.game-view-3d) #players-board-section { padding:4px; margin:0; border:0; }
+  body.in-game:not(.game-view-3d) #players-board-section > h3 { display:none; }
+  body.in-game:not(.game-view-3d) #players-board-list { max-height:none; overflow:visible; }
+  body.in-game:not(.game-view-3d) #sidebar-right { position:static; }
+  body.in-game:not(.game-view-3d) #game-messages { max-height:55dvh !important; min-height:120px; padding:8px; margin:0; }
+  body.in-game:not(.game-view-3d) #game-messages h2 { font-size:16px; margin:0 0 8px; padding:0; border:0; }
+  body.in-game:not(.game-view-3d) .player-board-card { padding:8px; }
+  body.in-game:not(.game-view-3d) #prank-controls { margin:8px 0; }
+  body.in-game .select-player-modal .select-player-modal-content { max-height:calc(100dvh - 24px) !important; padding:12px !important; }
+  body.in-game .target-player-list { display:grid !important; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px !important; }
+  body.in-game .target-player-list .player-select-card { max-width:none !important; min-height:66px; height:auto !important; box-sizing:border-box; font-size:13px !important; }
+  body.in-game .target-player-list .player-select-card * { overflow-wrap:anywhere; }
+  body.in-game .target-player-list .player-select-card > div:first-child { display:none; }
+  body.in-game .target-card-overview { margin:4px 0 8px; }
+  body.in-game .target-card-overview p { font-size:13px; line-height:1.55; margin:4px 0; }
+  body.in-game #life-setup-panel { padding:10px; margin:6px 0; }
+  body.in-game .setup-role { font-size:13px; line-height:1.6; }
+  body.in-game .setup-own-lives { gap:5px; }
+  body.in-game .setup-own-lives button { width:min(18%,85px) !important; margin:0 !important; min-width:0; }
+  body.in-game .setup-readiness summary { min-height:44px; font-size:13px; color:#d7bb8c; cursor:pointer; }
+  body.in-game .setup-readiness[open] .setup-seats { margin:4px 0 10px; }
+  body.in-game:has(#life-setup-panel) #play-result-toast { display:none !important; }
+  body.in-game.game-view-3d #table3d-section:has(#life-setup-panel) .table3d-card-row { display:none; }
+  body.in-game:not(.game-view-3d) #game-section:has(#life-setup-panel) :is(.game-layout,#mobile-game-tabs,#game-state-bar,#waiting-status-banner) { display:none !important; }
+
+  /* The 3D viewport fits the screen; secondary information never extends the page. */
+  body.in-game.game-view-3d:not(.table3d-unavailable) { overflow:hidden; }
+  body.in-game.game-view-3d:not(.table3d-unavailable) #table3d-section { position:fixed; inset:0; width:100%; height:100dvh; z-index:6000; display:flex; flex-direction:column; margin:0; border:0; border-radius:0; padding-bottom:env(safe-area-inset-bottom,0px); box-sizing:border-box; }
+  body.in-game.game-view-3d #table3d-section #table3d-canvas { order:0; flex:1 1 0; height:auto; min-height:0; }
+  body.in-game.game-view-3d #table3d-section .table3d-hand-controls,
+  body.in-game.game-view-3d #table3d-section .table3d-hand-controls:has(#table3d-reorder-hint:not([hidden])) { position:relative; inset:auto; transform:none; order:2; flex:none; width:100%; max-width:none; padding:6px 8px; margin:0; gap:6px; background:#211a15; }
+  body.in-game.game-view-3d #table3d-section .table3d-instructions { display:block; order:1; flex:none; padding:6px 10px; font-size:12px; line-height:1.5; max-height:62px; overflow:auto; background:#211a15; }
+  body.in-game.game-view-3d #table3d-section:has(#table3d-phase-panel:not([hidden])) .table3d-instructions { display:none; }
+  body.in-game.game-view-3d #table3d-section #table3d-phase-panel { position:relative; inset:auto; order:1; flex:none; width:100%; max-width:none; max-height:28dvh; margin:0; padding:8px 10px; border:0; border-top:1px solid #967044; border-radius:0; z-index:8; overflow:auto; background:#211a15; }
+  body.in-game.game-view-3d #table3d-phase-panel p { display:block; font-size:12px; line-height:1.6; margin:4px 0 8px; }
+  body.in-game.game-view-3d #table3d-phase-panel button { min-height:44px !important; }
+  body.in-game.game-view-3d #table3d-section #table3d-play-panel { order:3; flex:none; max-height:22dvh; overflow:auto; padding:4px 10px; }
+  body.in-game.game-view-3d #table3d-play-panel:not(.has-selected-card):not(:has(#table3d-summary:not([hidden]))) { display:none !important; }
+  body.in-game.game-view-3d #table3d-section .table3d-hand-controls :is(button,summary) { min-height:44px !important; font-size:13px !important; }
+  body.in-game.game-view-3d #table3d-section #table3d-details-toggle { position:static; width:auto !important; min-width:44px !important; padding:6px 10px !important; border:1px solid #a7834d; border-radius:7px; background:#302517; }
+  body.in-game.game-view-3d #table3d-section #table3d-seat-label { display:none; }
+  body.in-game.game-view-3d #life-setup-panel { top:70px; max-height:calc(100dvh - 210px); }
+  body.in-game.game-view-3d #table3d-section .table3d-camera-controls { top:8px; right:8px; bottom:auto; gap:6px; }
+  body.in-game.game-view-3d #table3d-section .table3d-hud { max-width:calc(100% - 210px); padding:7px 8px; top:8px; left:6px; }
+  body.in-game.game-view-3d .music-controls { position:fixed !important; top:8px; left:auto; right:142px; transform:none; width:44px !important; }
+  body.in-game.game-view-3d #game-preferences > summary { width:44px; height:44px; }
+  body.in-game.game-view-3d #game-preferences-content { top:62px; }
+  body.in-game.game-view-3d #table3d-log { top:64px; right:8px; max-width:calc(100% - 16px); }
+  body.in-game.game-view-3d #table3d-log[open] { max-height:55dvh; overflow:auto; background:#241c16fa; }
+  body.in-game.game-view-3d #play-result-toast { top:118px; padding:6px 10px; font-size:12px; }
+  body.in-game.game-view-3d #turn-notice { display:none !important; }
+}
+
+@media (max-width:359px) {
+  body.in-game:not(.game-view-3d) #player-hand { grid-template-columns:repeat(3,minmax(0,1fr)); }
+  body.in-game:not(.game-view-3d) .own-life-heading { flex-direction:row; }
+  body.in-game.game-view-3d #table3d-section .table3d-hud { max-width:calc(100% - 200px); }
+}
+@media (min-width:380px) and (max-width:768px) {
+  body.in-game:not(.game-view-3d) #players-board-list { grid-template-columns:repeat(2,minmax(0,1fr)); align-items:start; gap:7px; }
+  body.in-game:not(.game-view-3d) .player-board-header { font-size:13px; gap:2px 4px; }
+  body.in-game:not(.game-view-3d) :is(.player-board-status,.player-board-tryals) { font-size:12px; }
+  body.in-game:not(.game-view-3d) .player-board-life-row { gap:4px; }
+  body.in-game:not(.game-view-3d) .player-life-slot { width:24px; flex:1 1 24px; min-width:24px; }
+  body.in-game:not(.game-view-3d) .player-life-mini { width:24px; height:32px; }
+  body.in-game:not(.game-view-3d) .player-life-slot:not(.is-opened) figcaption { display:none; }
+  body.in-game:not(.game-view-3d) .player-life-slot figcaption { font-size:11px; overflow-wrap:anywhere; }
+}
+@media (min-width:601px) and (max-width:950px) and (max-height:520px) {
+  body.in-game:not(.game-view-3d) { height:100dvh; min-height:0; overflow:hidden; box-sizing:border-box; }
+  body.in-game:not(.game-view-3d) #game-section { display:grid !important; grid-template-columns:210px minmax(0,1fr); grid-template-rows:48px auto auto 48px 1fr; gap:4px 10px; height:calc(100dvh - 92px); }
+  body.in-game:not(.game-view-3d) #game-section:has(#life-setup-panel) { display:block !important; height:auto; max-height:calc(100dvh - 16px); overflow:auto; }
+  body.in-game:not(.game-view-3d) .game-view-toolbar { grid-column:1; grid-row:1; margin-right:0; }
+  body.in-game:not(.game-view-3d) #game-view-description { display:none; }
+  body.in-game:not(.game-view-3d) .music-controls { top:7px; right:auto; left:168px; }
+  body.in-game:not(.game-view-3d) #game-state-bar { grid-column:1; grid-row:2; }
+  body.in-game:not(.game-view-3d) #waiting-status-banner { grid-column:1; grid-row:3; }
+  body.in-game:not(.game-view-3d) #mobile-game-tabs { grid-column:1; grid-row:4; position:static; }
+  body.in-game:not(.game-view-3d) .game-layout { grid-column:2; grid-row:1/6; min-height:0; overflow:auto; }
+  body.in-game:not(.game-view-3d) #player-hand { grid-template-columns:repeat(6,minmax(0,1fr)); max-height:calc(100dvh - 190px); }
+  body.in-game:not(.game-view-3d) .action-buttons-row { grid-template-columns:1fr 1.25fr 1fr; }
+  body.in-game.game-view-3d #table3d-section .table3d-hand-controls { flex-direction:row; justify-content:center; gap:14px; }
+  body.in-game.game-view-3d #table3d-section #table3d-phase-panel { position:absolute; inset:70px auto auto 8px; width:260px; max-height:calc(100dvh - 140px); border:1px solid #967044; border-radius:9px; }
+  body.in-game.game-view-3d #life-setup-panel { top:60px; max-height:calc(100dvh - 120px); }
+  body.in-game.game-view-3d #table3d-section .table3d-instructions { text-align:left; padding-inline:12px; }
+}

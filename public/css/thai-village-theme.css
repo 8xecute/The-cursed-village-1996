@@ -1,0 +1,68 @@
+/* Shared Thai typography and candlelit wood palette for every UI surface. */
+@font-face { font-family:'Village Sarabun'; src:url('../fonts/Sarabun-Regular.ttf') format('truetype'); font-style:normal; font-weight:400; font-display:swap; }
+@font-face { font-family:'Village Sarabun'; src:url('../fonts/Sarabun-SemiBold.ttf') format('truetype'); font-style:normal; font-weight:600 900; font-display:swap; }
+@font-face { font-family:'Village Chonburi'; src:url('../fonts/Chonburi-Regular.ttf') format('truetype'); font-style:normal; font-weight:400 900; font-display:swap; }
+:root { --village-font-body:'Village Sarabun',Tahoma,sans-serif; --village-font-title:'Village Chonburi','Noto Serif Thai',serif; --village-panel:#251b14f5; --village-border:#76563a; --village-ink:#f2e5cf; --village-muted:#c0ac8d; --raw-paper:#f2e5cf; --raw-muted:#c0ac8d; --raw-line:#76563a; --raw-accent:#d9b47a; }
+body, body * { font-family:var(--village-font-body) !important; }
+body :is(h1,h2,h3), body:not(.in-game) :is(.game-title,.section h2,.section h3,.village-hero h2,.welcome-copy h2), body.patch-notes-page h1 { font-family:var(--village-font-title) !important; font-weight:400; letter-spacing:0; }
+body .halloween-edition { font-family:var(--village-font-body) !important; font-weight:600; color:#d9b47a !important; letter-spacing:.12em; text-shadow:none !important; }
+body:not(.game-view-3d), body:not(.in-game), body.patch-notes-page { background:#17110e url('../Background/background.jpg') center center/cover fixed no-repeat; }
+body:not(.in-game) > .game-title { color:#f8d49a !important; font-size:clamp(19px,2vw,25px); text-shadow:0 2px 8px #100805 !important; }
+body:not(.in-game) .top-buttons .top-nav-btn { background:#261b13e8; border-color:#795837; color:#eddbbc; }
+body:not(.in-game) .top-buttons .top-nav-btn:hover { background:#493221; border-color:#bf9357; }
+body:not(.in-game) #game-preferences > summary { background:#261b13eb; border-color:#795837; color:#f0d9ae; }
+body .village-hero { background:linear-gradient(90deg,#21160fe8,#21160fb8 55%,#21160f45),url('../Background/story.jpg') center 42%/cover; border-color:#896744; }
+body .village-hero h2 { font-size:clamp(29px,3.1vw,41px); line-height:1.5; }
+body:not(.in-game) .village-hero h2 em { font-family:var(--village-font-title) !important; color:#edbc78; }
+body:not(.in-game) :is(#name-section,#room-management-section,#room-lobby-section) { background:linear-gradient(135deg,#302218f5,#201710f2); border-color:#85613e; }
+body:not(.in-game) .section-description { font-size:14px; }
+body:not(.in-game) .active-room-meta { font-size:13px; }
+body:not(.in-game) .top-buttons .top-nav-btn { font-size:14px; }
+body #music-overlay { background:#100b08c9; }
+body #music-overlay .welcome-card { background:#281c14f5; border-color:#997447; }
+body #music-overlay .welcome-copy h2 { font-size:28px; line-height:1.65; }
+body #music-overlay .welcome-copy p { color:#e4ceb0; font-size:16px; }
+body #music-overlay #intro-training-btn { border-color:#a27c4e; color:#f3dfbd; }
+/* 2D game board: retain card colors and selection indicators. */
+body.in-game:not(.game-view-3d) > .container { background:#21170ff0; border:1px solid #6b4b30; }
+body.in-game:not(.game-view-3d) :is(#game-section,#players-board-section) { background:transparent; }
+body.in-game:not(.game-view-3d) :is(.sidebar,#player-hand,#my-tryal-cards-list) { background:#221910ed; border-color:#60442e; }
+body.in-game:not(.game-view-3d) :is(.game-state-bar,.player-board-card,.game-view-toolbar) { background:#302319; border-color:#76563a; color:#f1dfbf; }
+body.in-game:not(.game-view-3d) :is(.action-guide,.selected-card-summary) { background:#39291b; border-color:#b58b54; }
+body.in-game:not(.game-view-3d) #game-messages { background:#19120d; border-color:#60442e; }
+body.in-game:not(.game-view-3d) :is(#tryal-cards-display,.hand-action-buttons) { background:#241a12; border-color:#76563a; }
+/* Help, story, lessons and results share the same wood and parchment tones. */
+body :is(#guide-picker,#training-dialog,.card-explain-modal-container,.game-rules-modal-container,.game-over-modal-content), body #story-modal > .modal-content { background:linear-gradient(145deg,#302218,#1d150f) !important; border:1px solid #997447; color:#f2e5cf; }
+body :is(.card-explain-header,.game-rules-header,.training-header) { background:#21170ff5; border-color:#76563a; }
+body :is(.card-explain-title-block,.game-rules-title-block) { flex:1; min-width:0; }
+body :is(.card-explain-title-block,.game-rules-title-block) > div { min-width:0; }
+body :is(#close-cards-modal,#close-rules-modal,#guide-picker-close) { flex:0 0 44px; width:44px !important; min-width:44px !important; max-width:44px !important; height:44px !important; margin:0 !important; padding:0 !important; border-radius:9px; background:#39281b; color:#f2dfbe; border:1px solid #967044; }
+body :is(.card-explain-body,.game-rules-body) { color:#e5d2b4; }
+body :is(#card-explain-modal,#game-rules-modal,#story-modal) { background:#100a06c7 !important; }
+body:has(:is(#card-explain-modal,#game-rules-modal,#story-modal,#game-over-modal)[style*="display: flex"]) .music-controls { visibility:hidden; }
+body #training-dialog .training-player { background:#302319; border-color:#785638; }
+body #training-dialog .training-card-explanation { background:#302319; color:#ead8bc; }
+body #training-dialog .training-instruction { background:#49321f; border-left-color:#ddb273; }
+body #training-dialog .training-table-controls button { background:#3b291b; border:1px solid #a17c4e; color:#f5dfb7; border-radius:8px; }
+body #training-dialog[data-training-view="3d"] :is(.training-3d-coach,.training-3d-actions) { background:#261a10ed; border-color:#967044; }
+body #life-setup-panel { background:#261a10f2; border-color:#967044; }
+body #game-preferences-content { background:#281d15; border-color:#967044; color:#eddbbc; }
+/* Standalone update page uses the original village artwork too. */
+body.patch-notes-page { min-height:100dvh; color:#f2e5cf; font-size:15px; line-height:1.75; }
+.patch-notes-page main { width:min(740px,100%); padding:24px 20px 36px; }
+.patch-notes-page nav { padding:14px 16px; background:#251a13ef; border:1px solid #85613e; border-radius:12px; }
+.patch-notes-page header { margin:18px 0; padding:24px; background:#251a13ed; border:1px solid #85613e; border-radius:14px; }
+.patch-notes-page :is(section,.patch-day) { background:#251a13f2; border-color:#85613e; }
+.patch-notes-page :is(header > p:last-child,footer p) { color:#d2ba96; }
+.patch-notes-page footer { padding:16px; background:#251a13ed; border-radius:12px; }
+.patch-notes-page a { color:#f1c687; }
+@media(max-width:700px) {
+  body:not(.game-view-3d),body:not(.in-game),body.patch-notes-page { background-attachment:scroll; }
+  body:not(.in-game) > .game-title { font-size:clamp(16px,4.5vw,20px); line-height:1.6; }
+  body .village-hero h2 { font-size:30px; }
+  body #music-overlay .welcome-copy h2 { font-size:24px; }
+  body:not(.in-game) .top-buttons .top-nav-btn { font-size:13px; }
+  body :is(.card-explain-title,.game-rules-title) { font-size:18px; line-height:1.5; }
+  .patch-notes-page main { padding:16px 12px 28px; }
+  .patch-notes-page header { padding:20px 16px; }
+}

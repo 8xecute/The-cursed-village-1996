@@ -1,0 +1,3 @@
+node_modules
+dist/
+public/table3d.bundle.js*
