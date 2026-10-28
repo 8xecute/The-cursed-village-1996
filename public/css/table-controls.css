@@ -48,3 +48,25 @@ body.in-game.game-view-3d #table3d-section:has(#life-setup-panel) .table3d-hand-
  body.game-view-3d #table3d-section .table3d-touch-confirm {display:inline-flex!important;min-height:44px!important;background:#425039;border:1px solid #b9c294;}
  body.game-view-3d #table3d-phase-panel {max-height:42dvh;overflow:auto;}
 }
+/* Clock belongs to the action dock; card feedback owns the top notification lane. */
+body.game-view-3d #table3d-section .table3d-hand-controls #action-clock-controls {
+ position:static!important;inset:auto!important;transform:none!important;z-index:auto!important;
+ flex-basis:100%;width:auto;max-width:100%;border:0;border-bottom:1px solid #68523866;border-radius:0;
+ background:transparent;padding:0 0 5px;gap:8px;margin:0;min-height:0;
+}
+body.game-view-3d #table3d-section .table3d-hand-controls #action-clock-controls button {min-height:36px!important;padding:5px 10px!important;font-size:13px!important;}
+body.game-view-3d #table3d-section #action-clock-controls span[hidden] {display:none!important;}
+body.game-view-3d #play-result-toast {top:110px;max-width:min(600px,calc(100vw - 24px));}
+@media(max-width:768px) {
+ body.in-game.game-view-3d #table3d-section .table3d-camera-controls {top:8px;right:8px;gap:5px;}
+ body.in-game.game-view-3d #table3d-section .table3d-camera-controls button {width:auto!important;min-height:44px!important;padding:6px 9px!important;font-size:12px!important;white-space:nowrap;}
+ body.in-game.game-view-3d .music-controls {top:8px!important;left:8px!important;right:auto!important;transform:none!important;}
+ body.in-game.game-view-3d #table3d-section .table3d-hud {top:60px;left:8px;right:8px;width:auto;max-width:none;box-sizing:border-box;padding:6px 8px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 8px;align-items:center;}
+ body.in-game.game-view-3d #table3d-section #table3d-player-name {margin:0;font-size:13px;}
+ body.in-game.game-view-3d #table3d-section #table3d-player-status {grid-column:1 / -1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11px;}
+ body.in-game.game-view-3d #table3d-section #table3d-role-badge {grid-column:2;grid-row:1;margin:0;padding:2px 5px;font-size:11px;line-height:1.4;width:auto;max-width:130px;}
+ body.in-game.game-view-3d #table3d-log {top:118px;right:8px;}
+ body.in-game.game-view-3d #play-result-toast {top:170px;padding:6px 10px;font-size:12px;line-height:1.5;}
+ body.game-view-3d #table3d-section .table3d-hand-controls #action-clock-controls {padding-bottom:4px;}
+ body.in-game.game-view-3d #table3d-section #action-clock-controls button {min-height:32px!important;}
+}
