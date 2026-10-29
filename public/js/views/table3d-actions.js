@@ -197,6 +197,7 @@ export function initialize() {
         if (request && ['player', 'life', 'effect'].includes(request.kind)) {
             const choices = document.createElement('div');
             choices.className = 'table3d-touch-choices';
+            if (alibi) choices.classList.add('table3d-alibi-choices');
             choices.setAttribute('aria-label', request.kind === 'player' ? 'เลือกผู้เล่น' : 'เลือกการ์ด');
             const ids = request.kind === 'player'
                 ? [...request.eligible, ...Object.keys(request.blocked || {}).filter(id => !request.eligible.includes(id))]
@@ -205,11 +206,17 @@ export function initialize() {
                 const option = document.createElement('button'); option.type = 'button';
                 const selected = request.selected?.includes(id);
                 const blocked = request.blocked?.[id];
+                option.disabled = !!blocked;
                 const player = client.state.currentRoomState.players[id];
+                const effect = client.state.currentRoomState.players[request.owner]?.inPlayCards?.[id];
                 option.textContent = request.kind === 'player' ? `${player?.name || 'ผู้เล่น'}${blocked ? ' · ' + blocked : ''}`
                     : request.kind === 'life' ? `ใบที่ ${id + 1}`
                         : client.actions.displayCardName(client.state.currentRoomState.players[request.owner]?.inPlayCards?.[id]?.name || 'การ์ด');
-                option.disabled = !!blocked;
+                if (alibi) {
+                    option.textContent = `${selected ? '✓ เลือกแล้ว · ' : ''}ใบที่ ${id + 1} · ${client.actions.displayCardName(effect?.name || 'การ์ด')} (+${effect?.value || (effect?.name === 'Evidence' ? 3 : 1)})`;
+                    const selectedType = client.state.currentRoomState.players[request.owner]?.inPlayCards?.[request.selected?.[0]]?.name;
+                    if (!selected && selectedType === effect?.name && request.selected.length >= (selectedType === 'Evidence' ? 1 : 3)) option.disabled = true;
+                }
                 option.setAttribute('aria-pressed', String(selected));
                 option.onclick = () => {
                     if (!canAct()) return;
@@ -232,8 +239,19 @@ export function initialize() {
         }
         if (request?.preview) action('ยกเลิกเลือกการ์ด', () => client.actions.clearCardSelection());
         if (alibi) {
-            const confirm = alibi.querySelector('[data-alibi-action=confirm]');
-            action('ยืนยันลบการ์ดที่เลือก', () => currentInteraction()?.confirm?.(), !request?.selected?.length);
+            const owner = client.state.currentRoomState.players[request?.owner];
+            const selected = (request?.selected || []).map(index => ({ index, card: owner?.inPlayCards?.[index] })).filter(item => item.card);
+            const points = selected.reduce((total, item) => total + (item.card.value || (item.card.name === 'Evidence' ? 3 : 1)), 0);
+            const summary = document.createElement('div'); summary.className = 'table3d-alibi-summary'; summary.setAttribute('role', 'status');
+            const count = document.createElement('strong'); count.textContent = `${owner?.name || 'เป้าหมาย'} · เลือก ${selected.length} ใบ · ลบ ${points}/3 แต้ม`;
+            const list = document.createElement('span'); list.textContent = selected.length
+                ? selected.map(item => `✓ ใบที่ ${item.index + 1} ${client.actions.displayCardName(item.card.name)}`).join(' · ')
+                : 'ยังไม่ได้เลือก · แตะการ์ดในรายการหรือบนโต๊ะ';
+            const remaining = document.createElement('span'); remaining.textContent = `ข้อกล่าวหาหลังลบ: ${Math.max(0, (owner?.accusationPoints || 0) - points)}/7 · แตะใบเดิมเพื่อเอาออก`;
+            summary.append(count, list, remaining); phasePanel.insertBefore(summary, phasePanel.querySelector('.table3d-alibi-choices'));
+            note.classList.add('table3d-alibi-instruction');
+            note.textContent = 'เลือกข้อกล่าวหาได้สูงสุด 3 ใบ หรือหลักฐาน 1 ใบ · เปลี่ยนชนิดจะล้างตัวเลือกเดิม';
+            action(`ยืนยันลบ ${selected.length} ใบ (${points} แต้ม)`, () => currentInteraction()?.confirm?.(), !selected.length || points > 3);
             action('ยกเลิก', () => currentInteraction()?.cancel?.());
         }
         if (target) action('ยกเลิกการเล่น', () => currentInteraction()?.cancel?.());

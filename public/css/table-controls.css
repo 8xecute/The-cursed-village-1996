@@ -70,3 +70,13 @@ body.game-view-3d #play-result-toast {top:110px;max-width:min(600px,calc(100vw -
  body.game-view-3d #table3d-section .table3d-hand-controls #action-clock-controls {padding-bottom:4px;}
  body.in-game.game-view-3d #table3d-section #action-clock-controls button {min-height:32px!important;}
 }
+/* Alibi exposes the exact selected cards on desktop as well as touch devices. */
+body.game-view-3d #table3d-section .table3d-alibi-choices {display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;max-height:24dvh;overflow:auto;}
+body.game-view-3d #table3d-section .table3d-alibi-choices button {min-height:48px!important;width:100%!important;white-space:normal;line-height:1.5;font-size:13px;}
+body.game-view-3d #table3d-section .table3d-alibi-choices button[aria-pressed=true] {border:2px solid #f0c86f!important;background:#53432b!important;color:#fff0c2!important;}
+.table3d-alibi-summary {display:grid;gap:5px;padding:10px;margin:8px 0;border:1px solid #a58a57;border-radius:8px;background:#362c20;color:#f2dfb9;font-size:13px;line-height:1.5;}
+.table3d-alibi-summary span {display:block;overflow-wrap:anywhere;}
+body.game-view-3d #table3d-phase-panel .table3d-alibi-instruction {display:block;font-size:12px;}
+body.game-view-3d #table3d-section #table3d-phase-panel:has(.table3d-alibi-summary) {max-height:65dvh;overflow:auto;}
+body.game-view-3d #table3d-section .table3d-alibi-choices {max-height:16dvh;}
+@media(max-width:768px) {body.game-view-3d #table3d-section #table3d-phase-panel:has(.table3d-alibi-summary) {max-height:48dvh;} body.game-view-3d #table3d-section .table3d-alibi-choices {max-height:12dvh;} }

@@ -570,7 +570,17 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
                 const effectCard = card(seat, publicPosition(i),
                     [-Math.PI / 2, 0, 0], cardTexture(imageFor(effect.name)), { playerId: player.uniqueId, effectIndex: i, category: effect.color, resting: true });
                 effectCard.scale.setScalar(publicScale);
-                if (interaction?.kind === 'effect' && interaction.owner === player.uniqueId && interaction.eligible.includes(i)) outline(effectCard, interaction.selected.includes(i) ? 0x879277 : 0xc2ab87);
+                if (interaction?.kind === 'effect' && interaction.owner === player.uniqueId && interaction.eligible.includes(i)) {
+                    const picked = interaction.selected.includes(i);
+                    outline(effectCard, picked ? 0xffd359 : 0xc2ab87);
+                    if (picked) {
+                        effectCard.material.color.setHex(0xffdf99);
+                        effectCard.material.emissive.setHex(0x705018);
+                        effectCard.material.emissiveIntensity = .35;
+                    }
+                    const position = publicPosition(i);
+                    label(seat, `${picked ? '✓ ' : ''}${i + 1}`, [position[0], .23, position[2]], picked ? '#ffdf80' : '#e1d1b7');
+                }
             });
         });
         handMotion.end();
