@@ -224,6 +224,10 @@ export function initialize() {
         if (previousPhase && state.currentPhase !== previousPhase) sound('flip');
         previousPhase = state.currentPhase;
     });
+    client.state.socket.on('confession protection announcement', message => {
+        clearTimeout(feedbackTimer); feedbackQueue.length = 0; feedback.hidden = true;
+        showFeedback(message);
+    });
     client.state.socket.on('card action feedback', event => {
         const route = event.targetName ? `${event.actorName} → ${event.targetName}${event.secondTargetName ? ' → '+event.secondTargetName : ''}` : event.actorName;
         if (!event.batchIndex) {

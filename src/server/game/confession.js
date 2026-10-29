@@ -1,5 +1,13 @@
 // All living players decide concurrently; reveal only after every decision is committed.
 module.exports = function createServices(game) {
+  function getConfessionProtections(room) {
+      return game.getAlivePlayers(room).flatMap(player => {
+          const reasons = [];
+          if (room.playersWhoActedAtNight?.constableSave === player.uniqueId) reasons.push('หมอผีปกป้อง');
+          if (player.inPlayCards?.some(card => card.name === 'Asylum')) reasons.push('มีที่หลบภัย');
+          return reasons.length ? [{ playerId: player.uniqueId, name: player.name, reasons }] : [];
+      });
+  }
   function clearConfessionTimer(roomName) {
       const room = game.rooms[roomName];
       if (room?.confessionTimer) clearTimeout(room.confessionTimer);
@@ -124,5 +132,5 @@ module.exports = function createServices(game) {
       game.finishEmptyHandTurn(room);
   }
 
-  return { confessTryalCard, confessDuringNight, submitConfessionChoice, finishConfessionIfReady, clearConfessionTimer, markConfessionAction, startConfessionTimer, revealTryalCard };
+  return { getConfessionProtections, confessTryalCard, confessDuringNight, submitConfessionChoice, finishConfessionIfReady, clearConfessionTimer, markConfessionAction, startConfessionTimer, revealTryalCard };
 };

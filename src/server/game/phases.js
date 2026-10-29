@@ -61,7 +61,13 @@ module.exports = function createServices(game) {
                       // ไม่ต้อง set confessionOrder ที่นี่
                   }
                   break;
-          case 'PRE_DAWN':
+          case 'PRE_DAWN': {
+              const protections = game.getConfessionProtections(room);
+              const message = protections.length
+                  ? 'ไม่ต้องสารภาพคืนนี้: ' + protections.map(p => `${p.name} (${p.reasons.join(' และ ')})`).join(' · ') + ' · ผู้เล่นที่เหลือเลือกสารภาพหรือข้ามได้'
+                  : 'คืนนี้ไม่มีผู้เล่นได้รับการยกเว้นสารภาพ · ทุกคนเลือกสารภาพหรือข้ามได้';
+              game.sendGameMessage(room.name, message, 'blue', true);
+              game.io.to(room.name).emit('confession protection announcement', message);
               room.confessionOrder = game.getAlivePlayers(room).map(player => player.uniqueId);
               room.confessionActions = game.getAlivePlayers(room)
                   .filter(player => game.isNightProtected(room, player)).map(player => player.uniqueId);
@@ -72,6 +78,7 @@ module.exports = function createServices(game) {
               game.clearConfessionTimer(roomName);
               nextPhase = 'PRE_DAWN';
               break;
+          }
           case 'GAME_OVER':
               return; // Game is over, no more phase changes
           default:

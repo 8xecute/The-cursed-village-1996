@@ -106,6 +106,7 @@ module.exports = function createServices(game) {
           pendingCardAction: game.hasPendingCardAction(room),
           currentTurnPlayerName: room.currentTurnPlayerUniqueId ? room.players[room.currentTurnPlayerUniqueId]?.name : null,
           phaseConfig: room.phaseConfig,
+          confessionProtections: room.currentPhase === 'PRE_DAWN' ? game.getConfessionProtections(room) : [],
           confessors: room.confessors, // Players who have confessed this day
           confessionActions: room.confessionActions || [],
           playerForcedToRevealTryal: room.playerForcedToRevealTryal,

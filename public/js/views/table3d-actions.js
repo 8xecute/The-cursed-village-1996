@@ -176,6 +176,13 @@ export function initialize() {
         header.className = 'table3d-phase-header';
         header.append(heading);
         phasePanel.appendChild(header);
+        const protections = client.state.currentRoomState?.confessionProtections || [];
+        if (client.state.currentRoomState?.currentPhase === 'PRE_DAWN' && protections.length) {
+            const announcement = document.createElement('div'); announcement.className = 'confession-protection-list';
+            announcement.textContent = 'ไม่ต้องสารภาพคืนนี้: ' + protections.map(p => `${p.name} (${p.reasons.join(' และ ')})`).join(' · ');
+            phasePanel.appendChild(announcement);
+        }
+
         const note = document.createElement('p');
         note.textContent = life ? choice?.root === life ? `เลือกใบที่ ${choice.index + 1} แล้ว · แตะใบเดิมอีกครั้งเพื่อยืนยัน` : 'แตะการ์ดชีวิตที่มีกรอบบนโต๊ะ'
             : assign ? request?.selected?.length ? `เลือก: ${client.state.currentRoomState.players[request.selected[0]]?.name || ''} · แตะคนเดิมอีกครั้งเพื่อมอบเครื่องเซ่น` : 'แตะผู้เล่นเพื่อเลือก แล้วแตะคนเดิมอีกครั้งเพื่อมอบเครื่องเซ่น'

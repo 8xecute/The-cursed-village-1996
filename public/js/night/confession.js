@@ -36,6 +36,12 @@ client.actions.showConfessPopup = function showConfessPopup(tryalCards) {
         : 'เลือกการ์ดชีวิต 1 ใบหรือข้าม ระบบจะรอทุกคนตัดสินใจครบ แล้วจึงเปิดการ์ดและเฉลยผลกลางคืน';
     subtitle.style = 'color: #d7ccc8; font-size: 0.95em; margin-top: -6px; margin-bottom: 16px;';
     popup.appendChild(subtitle);
+    const protections = client.state.currentRoomState?.confessionProtections || [];
+    if (protections.length) {
+        const announcement = document.createElement('p'); announcement.className = 'confession-protection-list';
+        announcement.textContent = 'ไม่ต้องสารภาพคืนนี้: ' + protections.map(p => `${p.name} (${p.reasons.join(' และ ')})`).join(' · ');
+        popup.appendChild(announcement);
+    }
 
     const lifeCommands = new Map();
     const cardsDiv = document.createElement('div');
