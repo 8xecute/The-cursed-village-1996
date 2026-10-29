@@ -94,6 +94,8 @@ module.exports = function createServices(game) {
           maxPlayers: game.PLAYER_LIMIT,
           customWitchCardCount: room.customWitchCardCount ?? null,
           customLifeCardCount: room.customLifeCardCount ?? null,
+          customStartingHandCount: room.customStartingHandCount ?? null,
+          maxStartingHandCount: require('./starting-hand').maxStartingHand(Object.keys(room.players).length),
           gameStarted: room.gameStarted,
           currentPhase: room.currentPhase,
           lifeSetup: room.lifeSetup ? { id: room.lifeSetup.id, stage: room.lifeSetup.stage,
@@ -117,6 +119,7 @@ module.exports = function createServices(game) {
           // Add deck and discard pile information
           deckCount: room.gameDeck ? room.gameDeck.length : 0,
           discardPileCount: room.discardPile ? room.discardPile.length : 0,
+          discardTopCard: room.discardPile?.length ? { name: room.discardPile.at(-1).name, color: room.discardPile.at(-1).color } : null,
           // เพิ่มสำหรับ PRE_DAWN confession popup
           confessionOrder: room.confessionOrder,
           currentConfessionIndex: room.currentConfessionIndex,

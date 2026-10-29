@@ -81,3 +81,11 @@ body.game-view-3d #table3d-section #table3d-phase-panel:has(.table3d-alibi-summa
 body.game-view-3d #table3d-section .table3d-alibi-choices {max-height:16dvh;}
 @media(max-width:768px) {body.game-view-3d #table3d-section #table3d-phase-panel:has(.table3d-alibi-summary) {max-height:48dvh;} body.game-view-3d #table3d-section .table3d-alibi-choices {max-height:12dvh;} }
 .confession-protection-list {padding:8px 10px;margin:8px 0;border:1px solid #82996e;border-radius:8px;background:#2a3525;color:#e0e9d4;font-size:13px;line-height:1.6;overflow-wrap:anywhere;}
+#arson-reveal-panel {position:fixed;z-index:16000;top:22dvh;left:50%;transform:translateX(-50%);width:min(620px,calc(100vw - 24px));box-sizing:border-box;padding:14px;background:#2a2119f5;border:1px solid #b68a54;border-radius:12px;color:#f0dfc3;box-shadow:0 8px 32px #0009;}
+#arson-reveal-panel>strong {display:block;padding-right:60px;line-height:1.6;}
+#arson-reveal-panel>button {position:absolute;right:10px;top:8px;min-height:44px;width:auto;margin:0;}
+.arson-reveal-cards {display:flex;gap:10px;overflow:auto;max-height:35dvh;margin:12px 0;}
+.arson-reveal-cards figure {margin:0;flex:0 0 95px;text-align:center;}
+.arson-reveal-cards img {display:block;width:95px;height:140px;object-fit:contain;}
+.arson-reveal-cards figcaption {font-size:12px;line-height:1.5;}
+#arson-reveal-panel small {font-size:12px;color:#d5c1a4;}

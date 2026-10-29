@@ -96,6 +96,25 @@ export function initialize() {
     const feedback = document.createElement('div'); feedback.id = 'play-result-toast'; feedback.hidden = true; feedback.setAttribute('role', 'status');
     document.body.appendChild(feedback); let feedbackTimer;
     const feedbackQueue = [];
+    let burnTimer;
+    const closeBurnReveal = () => { clearTimeout(burnTimer); document.getElementById('arson-reveal-panel')?.remove(); };
+    client.state.socket.on('arson cards revealed', event => {
+        closeBurnReveal();
+        const panel = document.createElement('aside'); panel.id = 'arson-reveal-panel'; panel.setAttribute('aria-label', 'ไพ่ที่ถูกวางเพลิง');
+        const title = document.createElement('strong'); title.textContent = `${event.targetName} ถูกวางเพลิง · ทิ้ง ${event.cards.length} ใบ`;
+        const close = document.createElement('button'); close.type = 'button'; close.textContent = 'ปิด'; close.onclick = closeBurnReveal;
+        const cards = document.createElement('div'); cards.className = 'arson-reveal-cards';
+        for (const card of event.cards) {
+            const item = document.createElement('figure');
+            const image = client.actions.createCardImage(card.name); image.alt = client.actions.displayCardName(card.name);
+            const caption = document.createElement('figcaption'); caption.textContent = client.actions.displayCardName(card.name);
+            item.append(image, caption); cards.append(item);
+        }
+        const hint = document.createElement('small'); hint.textContent = 'ปิดอัตโนมัติใน 10 วินาที · ดูรายชื่อย้อนหลังในเหตุการณ์ได้';
+        panel.append(title, close, cards, hint); (document.fullscreenElement || document.body).append(panel);
+        burnTimer = setTimeout(closeBurnReveal, 10000);
+    });
+    for (const event of ['room left', 'game restarted']) client.state.socket.on(event, closeBurnReveal);
     function nextFeedback() {
         clearTimeout(feedbackTimer);
         const text = feedbackQueue.shift();

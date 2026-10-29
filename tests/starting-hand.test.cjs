@@ -1,0 +1,12 @@
+const {test}=require('node:test');const assert=require('node:assert/strict');
+const phases=require('../src/server/game/phases');const register=require('../src/server/socket/rooms/lobby');const {getGameCardsForPlayerCount}=require('../src/shared/cards');const {maxStartingHand}=require('../src/server/game/starting-hand');
+function fixture(count=4,setting=null){const players=Object.fromEntries(Array.from({length:count},(_,i)=>['p'+i,{id:'s'+i,uniqueId:'p'+i,name:'P'+i,isHost:i===0,alive:true,hand:[],inPlayCards:[]} ]));const room={name:'r',hostUniqueId:'p0',players,customStartingHandCount:setting,phaseConfig:{}};const game={rooms:{r:room},getAlivePlayers:r=>Object.values(r.players).filter(p=>p.alive),MIN_PLAYERS_TO_START:4,getGameCardsForPlayerCount,shuffleArray:a=>[...a],uuidv4:()=> 'round',broadcastActiveRooms:()=>{},beginLifeSetup:()=>{},emitRoomState:()=>{},io:{to:()=>({emit:()=>{}})}};Object.assign(game,phases(game));return {room,game};}
+test('default and custom starting hands are equal and exclude event cards',()=>{
+ for(const setting of [null,1,5,10]){const {room,game}=fixture(4,setting);game.startGame('r');assert.equal(room.gameStarted,true);for(const p of Object.values(room.players)){assert.equal(p.hand.length,setting??3);assert.ok(p.hand.every(c=>!['Night','Conspiracy','Black Cat'].includes(c.name)));}assert.equal(room.gameDeck.filter(c=>c.name==='Night').length,1);}
+});
+test('maximum is playable at twelve seats and excessive counts cannot start',()=>{
+ const max=maxStartingHand(12);const {room,game}=fixture(12,max);game.startGame('r');assert.ok(Object.values(room.players).every(p=>p.hand.length===max));const invalid=fixture(12,max+1);invalid.game.startGame('r');assert.ok(!invalid.room.gameStarted);
+});
+test('only current host can set valid values before the game starts',()=>{
+ const {room,game}=fixture();const handlers={};const socket={currentRoom:'r',uniqueId:'p1',id:'s1',on:(key,fn)=>handlers[key]=fn,emit:()=>{}};register(socket,game);handlers['set starting hand count'](5);assert.equal(room.customStartingHandCount,null);socket.uniqueId='p0';socket.id='s0';for(const bad of [0,-1,1.5,999,'5']){handlers['set starting hand count'](bad);assert.equal(room.customStartingHandCount,null);}handlers['set starting hand count'](5);assert.equal(room.customStartingHandCount,5);room.gameStarted=true;handlers['set starting hand count'](2);assert.equal(room.customStartingHandCount,5);
+});

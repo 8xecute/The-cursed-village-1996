@@ -4,6 +4,9 @@ module.exports = function applyEffect(game, context) {
     if (targetUniqueId) {
         const targetPlayer = room.players[targetUniqueId];
         if (targetPlayer.hand.length > 0) {
+            const burnedCards = targetPlayer.hand.map(card => ({ name: card.name, color: card.color }));
+            game.io.to(room.name).emit('arson cards revealed', { actorName: player.name, targetName: targetPlayer.name, cards: burnedCards });
+            game.sendGameMessage(room.name, `ไพ่ที่ถูกวางเพลิงของ ${targetPlayer.name}: ${burnedCards.map(card => game.getCardNameWithColor(card.name)).join(', ')}`, 'orange');
             room.discardPile.push(...targetPlayer.hand); // Add to discard pile
             targetPlayer.hand = [];
             game.sendGameMessage(room.name, `<b>${player.name}</b> ใช้การ์ด ${game.getCardNameWithColor('Arson')} ใส่ <b>${targetPlayer.name}</b>`, 'orange', true);

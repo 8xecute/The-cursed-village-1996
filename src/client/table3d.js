@@ -374,7 +374,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
         const { state, me, hand, selected, selectedCards = [], imageFor, interaction = null, canDraw = false, drawConfirming = false, handLowered = false, artwork = 'new', reorderIndex = null, cardSizes = {} } = options;
         const sizeFor = key => Math.max(.5, Math.min(2, (Number(cardSizes[key]) || 100) / 100));
         if (!state) return;
-        const nextSignature = JSON.stringify([state.actionTimer?.deadline, state.actionTimer?.available, state.currentPhase, state.gameOver, state.lifeSetup, state.awaitingLeftTryalSelections, state.playerForcedToRevealTryal, state.players, state.currentTurnPlayerUniqueId, state.deckCount, state.discardPileCount, state.witchNightState, state.prankGunHolderId, state.prankGunAvailable, state.prankShotActive, hand, selected, selectedCards, me, interaction, canDraw, drawConfirming, handLowered, artwork, reorderIndex, cardSizes]);
+        const nextSignature = JSON.stringify([state.actionTimer?.deadline, state.actionTimer?.available, state.currentPhase, state.gameOver, state.lifeSetup, state.awaitingLeftTryalSelections, state.playerForcedToRevealTryal, state.players, state.currentTurnPlayerUniqueId, state.deckCount, state.discardPileCount, state.discardTopCard, state.witchNightState, state.prankGunHolderId, state.prankGunAvailable, state.prankShotActive, hand, selected, selectedCards, me, interaction, canDraw, drawConfirming, handLowered, artwork, reorderIndex, cardSizes]);
         if (signature === nextSignature) return;
         signature = nextSignature;
         lifeSetupStage = state.lifeSetup?.stage || null;
@@ -489,7 +489,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             const remainingSlots = slots.filter(slot=>!slot.opened), openedSlots = slots.filter(slot=>slot.opened);
             const lifePosition = index => {
                 const row = Math.floor(index / lifeColumns), columns = Math.min(lifeColumns, lifeTotal - row * lifeColumns);
-                return [(index % lifeColumns - (columns - 1) / 2) * (CARD_WIDTH * lifeScale + .025), .06, -.85 - row * (CARD_HEIGHT * lifeScale + .10)];
+                return [(index % lifeColumns - (columns - 1) / 2) * (CARD_WIDTH * lifeScale + .025), .06, -.10 - row * (CARD_HEIGHT * lifeScale + .10)];
             };
             for (let life = 0; life < lives; life++) {
                 const revealedName = player.tryalCards?.[life]?.name;
@@ -510,7 +510,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             const publicRows = Math.ceil(publicCount / publicColumns);
             const publicScale = Math.min(1, 1.15 / Math.max(1, publicRows)) * sizeFor('status');
             const statusGap = .14;
-            const statusStart = -.85 - Math.max(0, lifeRows - 1) * (CARD_HEIGHT * lifeScale + .10) - CARD_HEIGHT * lifeScale / 2 - statusGap - CARD_HEIGHT * publicScale / 2;
+            const statusStart = -.10 - Math.max(0, lifeRows - 1) * (CARD_HEIGHT * lifeScale + .10) - CARD_HEIGHT * lifeScale / 2 - statusGap - CARD_HEIGHT * publicScale / 2;
             // Bound the public-card area outside the central piles, even after many effects.
             function publicPosition(index) {
                 const row = Math.floor(index / publicColumns);
@@ -547,7 +547,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
                 const offset = i % columns - (rowCount - 1) / 2;
                 const lowered = !own || handLowered;
                 const handRowStep = (CARD_HEIGHT + .035) * handSize;
-                const loweredStart = Math.max(.75, -.85 + CARD_HEIGHT * lifeScale / 2 + .14 + CARD_HEIGHT * handSize * handScale / 2 + Math.max(0, Math.ceil(count / Math.max(1, columns)) - 1) * handRowStep * handScale);
+                const loweredStart = Math.max(.75, -.10 + CARD_HEIGHT * lifeScale / 2 + .14 + CARD_HEIGHT * handSize * handScale / 2 + Math.max(0, Math.ceil(count / Math.max(1, columns)) - 1) * handRowStep * handScale);
                 const position = lowered ? [offset * spacing * handScale, .08, loweredStart - row * handRowStep * handScale]
                     : [offset * spacing, .72 + CARD_HEIGHT * handSize / 2 + row * handRowStep + (own && (selected === i || selectedCards.includes(i)) ? .16 : 0), -.1 + Math.abs(offset) * .025];
                 const rotation = lowered ? [-Math.PI / 2, 0, 0] : [-.12, 0, own ? 0 : -offset * Math.min(.045, .35 / Math.max(1, count))];
@@ -606,10 +606,12 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
         }
 
         function pile(x, count, title, clickable) {
+            if (!count) { label(dynamic, `${title} 0`, [x, .25, -.7]); return; }
             const height = Math.max(.04, Math.min(.52, count * .01));
             const box = mesh(new THREE.BoxGeometry(CARD_WIDTH, height, CARD_HEIGHT), new THREE.MeshStandardMaterial({ map:paperEdges,color:0xe2d2b4,roughness:.94,envMapIntensity:.1 }), dynamic, [x, CLOTH_TOP_Y + height / 2, 0]);
             box.castShadow = box.receiveShadow = false;
-            const top = card(dynamic, [x, CLOTH_TOP_Y + height + PAPER_FACE_OFFSET, 0], [-Math.PI / 2, 0, 0], back, { draw: clickable });
+            const top = card(dynamic, [x, CLOTH_TOP_Y + height + PAPER_FACE_OFFSET, 0], [-Math.PI / 2, 0, 0], !clickable && state.discardTopCard?.name ? cardTexture(imageFor(state.discardTopCard.name)) : back, { draw: clickable });
+            box.scale.set(1.35, 1, 1.35); top.scale.setScalar(1.35);
             if (clickable && canDraw) {
                 box.material.emissive.set(0xe9a63b);
                 box.material.emissiveIntensity = 0.65;

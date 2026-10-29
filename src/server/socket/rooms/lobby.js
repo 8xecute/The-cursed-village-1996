@@ -1,4 +1,15 @@
 module.exports = function registerRoomLobby(socket, game) {
+  socket.on('set starting hand count', count => {
+      const room = game.rooms[socket.currentRoom];
+      const host = room?.players?.[socket.uniqueId];
+      if (!room || room.gameStarted || !host?.isHost || host.id !== socket.id || room.hostUniqueId !== socket.uniqueId) return;
+      const max = require('../../game/starting-hand').maxStartingHand(Object.keys(room.players).length);
+      if (count !== null && (!Number.isInteger(count) || count < 1 || count > max)) {
+          socket.emit('game message', `เลือกไพ่เริ่มต้นคนละ 1–${max} ใบ หรือมาตรฐาน 3 ใบ`, 'orange'); return;
+      }
+      room.customStartingHandCount = count;
+      game.emitRoomState(room.name);
+  });
   socket.on('toggle ready', (roomName) => {
           const room = game.rooms[roomName || socket.currentRoom];
           if (!room || room.gameStarted) return;

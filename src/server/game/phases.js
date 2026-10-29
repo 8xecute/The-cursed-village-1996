@@ -158,6 +158,14 @@ module.exports = function createServices(game) {
       const room = game.rooms[roomName];
       if (!room || room.gameStarted) return;
 
+      const startingHandCount = room.customStartingHandCount ?? 3;
+      const maxStarting = require('./starting-hand').maxStartingHand(game.getAlivePlayers(room).length);
+      if (!Number.isInteger(startingHandCount) || startingHandCount < 1 || startingHandCount > maxStarting) {
+          const host = room.players[room.hostUniqueId];
+          if (host) game.io.to(host.id).emit('game message', `จำนวนไพ่เริ่มต้นต้องเป็น 1–${maxStarting} ใบ กรุณาตั้งใหม่ก่อนเริ่มเกม`, 'orange');
+          return;
+      }
+
       const alivePlayers = game.getAlivePlayers(room);
       if (alivePlayers.length < game.MIN_PLAYERS_TO_START) {
           const host = room.players[room.hostUniqueId];
@@ -253,10 +261,10 @@ module.exports = function createServices(game) {
       // Create the initial deck for dealing, without the special cards (and filter out ALL Night cards)
       let initialDealingDeck = allGameCards.filter(c => c.name !== 'Conspiracy' && c.name !== 'Night' && c.name !== 'Black Cat');
 
-      // 2. Shuffle the initial deck and deal 3 cards to each player
+      // 2. Shuffle the initial deck and deal the configured count equally.
       initialDealingDeck = game.shuffleArray(initialDealingDeck);
       alivePlayers.forEach(player => {
-          for (let i = 0; i < 3; i++) { // Deal 3 cards
+          for (let i = 0; i < startingHandCount; i++) {
               if (initialDealingDeck.length > 0) {
                   player.hand.push(initialDealingDeck.pop());
               }
