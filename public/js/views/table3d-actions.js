@@ -188,8 +188,14 @@ export function initialize() {
             : assign ? request?.selected?.length ? `เลือก: ${client.state.currentRoomState.players[request.selected[0]]?.name || ''} · แตะคนเดิมอีกครั้งเพื่อมอบเครื่องเซ่น` : 'แตะผู้เล่นเพื่อเลือก แล้วแตะคนเดิมอีกครั้งเพื่อมอบเครื่องเซ่น'
             : selectedId && night ? `เป้าหมาย: ${client.state.currentRoomState.players[selectedId]?.name || ''}${client.state.nightActionState.actionType === 'constable' ? ' · แตะคนเดิมอีกครั้งเพื่อปกป้อง' : ''}` : target ? request?.selected?.length ? `เลือก: ${client.state.currentRoomState.players[request.selected[0]]?.name || ''} · แตะคนเดิมอีกครั้งเพื่อยืนยัน` : 'แตะผู้เล่นเพื่อเลือก แล้วแตะคนเดิมอีกครั้งเพื่อยืนยัน' : alibi ? `เลือกแล้ว ${request?.selected?.length || 0} ใบ · เลือกชนิดเดียว แต้มรวมไม่เกิน 3` : 'เลือกเป้าหมายบนโต๊ะ แล้วกดยืนยัน';
         phasePanel.appendChild(note);
+        if (life?.id === 'confess-popup') {
+            note.classList.add('confession-options-guide');
+            note.textContent = request?.selected?.length
+                ? `เลือกใบที่ ${request.selected[0] + 1} แล้ว · ยืนยันสารภาพเพื่อเปิดใบนี้ หรือข้ามเพื่อเก็บชีวิตไว้`
+                : 'สารภาพ: เปิดชีวิต 1 ใบเพื่อกันการฆ่าคืนนี้ · ข้าม: เก็บชีวิตไว้ แต่เสี่ยงถูกฆ่า';
+        }
         if (window.matchMedia('(max-width:768px), (max-width:950px) and (pointer:coarse)').matches) {
-            if (request?.kind === 'life') note.textContent = request.selected?.length
+            if (request?.kind === 'life' && life?.id !== 'confess-popup') note.textContent = request.selected?.length
                 ? `เลือกใบที่ ${request.selected[0] + 1} แล้ว · กดยืนยันด้านล่าง` : 'เลือกหมายเลขใบด้านล่าง แล้วกดยืนยัน';
             if (request?.kind === 'player') note.textContent = request.selected?.length
                 ? 'เลือกผู้เล่นแล้ว · กดยืนยันด้านล่าง' : 'เลือกชื่อผู้เล่นด้านล่างได้เลย';
@@ -237,7 +243,7 @@ export function initialize() {
             phasePanel.appendChild(choices);
             if (request.selected?.length && ['player', 'life'].includes(request.kind)) {
                 const id = request.selected[0];
-                const confirm = action(request.kind === 'life' ? `ยืนยันใบที่ ${id + 1}` : 'ยืนยันเลือกผู้เล่นนี้', () => {
+                const confirm = action(request.kind === 'life' ? `${life?.id === 'confess-popup' ? 'ยืนยันสารภาพ · เปิด' : 'ยืนยัน'}ใบที่ ${id + 1}` : 'ยืนยันเลือกผู้เล่นนี้', () => {
                     if (request.kind === 'life') client.actions.handleTable3DLife(request.owner, id);
                     else client.actions.handleTable3DPlayer(id);
                 });
@@ -264,7 +270,7 @@ export function initialize() {
         if (target) action('ยกเลิกการเล่น', () => currentInteraction()?.cancel?.());
         if (life) {
             const skip = life.querySelector('#skip-confess-button');
-            if (currentInteraction()?.skip) action('ข้ามการสารภาพ', () => currentInteraction()?.skip?.());
+            if (currentInteraction()?.skip) action('ข้าม · เก็บการ์ดชีวิตไว้', () => currentInteraction()?.skip?.());
         } else if (night) {
             if (kill) {
                 const text = document.createElement('p'); text.textContent = kill.querySelector('p')?.textContent;

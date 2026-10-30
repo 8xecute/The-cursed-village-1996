@@ -63,6 +63,7 @@ export function initialize() {
             }, bar);
             pick.setAttribute('aria-pressed', String(view === mode));
         }
+        if (view === '3d') button('เต็มจอ', enterTrainingFullscreen, bar);
         parent.appendChild(bar);
     }
 
@@ -373,6 +374,10 @@ export function initialize() {
             for (const element of [...body.children]) {
                 if (![picker,board,actions,feedback,footer].includes(element)) coachPanel.appendChild(element);
             }
+            const extra = node('details', '', 'training-extra-help');
+            extra.appendChild(node('summary', 'คำอธิบายเพิ่มเติม'));
+            coachPanel.querySelectorAll('.training-meta,.training-card-explanation,.training-controls-help').forEach(element => extra.appendChild(element));
+            if (extra.children.length > 1) coachPanel.appendChild(extra);
             const actionPanel = node('aside', '', 'training-3d-actions');
             actionPanel.append(actions, feedback, footer);
             board.hidden = true;

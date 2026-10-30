@@ -374,7 +374,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
         const { state, me, hand, selected, selectedCards = [], imageFor, interaction = null, canDraw = false, drawConfirming = false, handLowered = false, artwork = 'new', reorderIndex = null, cardSizes = {} } = options;
         const sizeFor = key => Math.max(.5, Math.min(2, (Number(cardSizes[key]) || 100) / 100));
         if (!state) return;
-        const nextSignature = JSON.stringify([state.actionTimer?.deadline, state.actionTimer?.available, state.currentPhase, state.gameOver, state.lifeSetup, state.awaitingLeftTryalSelections, state.playerForcedToRevealTryal, state.players, state.currentTurnPlayerUniqueId, state.deckCount, state.discardPileCount, state.discardTopCard, state.witchNightState, state.prankGunHolderId, state.prankGunAvailable, state.prankShotActive, hand, selected, selectedCards, me, interaction, canDraw, drawConfirming, handLowered, artwork, reorderIndex, cardSizes]);
+        const nextSignature = JSON.stringify([state.actionTimer?.deadline, state.actionTimer?.available, state.seatOrder, state.currentPhase, state.gameOver, state.lifeSetup, state.awaitingLeftTryalSelections, state.playerForcedToRevealTryal, state.players, state.currentTurnPlayerUniqueId, state.deckCount, state.discardPileCount, state.discardTopCard, state.witchNightState, state.prankGunHolderId, state.prankGunAvailable, state.prankShotActive, hand, selected, selectedCards, me, interaction, canDraw, drawConfirming, handLowered, artwork, reorderIndex, cardSizes]);
         if (signature === nextSignature) return;
         signature = nextSignature;
         lifeSetupStage = state.lifeSetup?.stage || null;
@@ -408,6 +408,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
         }
         seatPositions.clear(); actorPawns.clear(); parkedGuns.clear(); feedbackImageFor = imageFor;
         const players = Object.values(state.players || {});
+        if (state.seatOrder) players.sort((a,b) => state.seatOrder.indexOf(a.uniqueId) - state.seatOrder.indexOf(b.uniqueId));
         cameraRig.setSeats(players, me);
         const ownIndex = players.findIndex(player => player.uniqueId === me);
         function outline(face, color = 0xc2ab87) {

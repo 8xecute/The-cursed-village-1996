@@ -24,6 +24,7 @@ export function createTrainingTable({ imageFor, action, onError }) {
         engine?.resetCamera();
         // A lesson uses a smaller canvas than the game; keep its cards easy to tap.
         engine?.zoom('in');
+        if (window.matchMedia('(max-width:600px)').matches) engine?.zoom('in');
     }
     function control(label, handler) {
         const button = document.createElement('button'); button.type = 'button'; button.textContent = label;
@@ -68,8 +69,8 @@ export function createTrainingTable({ imageFor, action, onError }) {
         const hand = lesson.kind === 'card' && !finished ? [{ name:lesson.card, color:category(lesson.card) }] : [];
         end.hidden = !endAction; end.textContent = endLabel || 'จบเทิร์น';
         const phase={'เตรียมเกม':'SETUP','กลางคืน':'NIGHT','ก่อนรุ่งสาง':'PRE_DAWN','จบเกม':'GAME_OVER'}[scene.phase] || 'DAY';
-        engine.update({state:{gameStarted:true, currentPhase:phase, gameOver:phase==='GAME_OVER', currentTurnPlayerUniqueId:phase==='DAY'?'0':null, players, deckCount:scene.deck, discardPileCount:scene.discard},
-            me:'0', hand, selected:selected ? 0:null, imageFor, handLowered:lowered, cardSizes:{hand:180}, interaction, canDraw:!!drawAction});
+        engine.update({state:{seatOrder:['0','2','1','3'],gameStarted:true, currentPhase:phase, gameOver:phase==='GAME_OVER', currentTurnPlayerUniqueId:phase==='DAY'?'0':null, players, deckCount:scene.deck, discardPileCount:scene.discard},
+            me:'0', hand, selected:selected ? 0:null, imageFor, handLowered:lowered, cardSizes:{hand:130}, interaction, canDraw:!!drawAction});
     }
     return {
         root,

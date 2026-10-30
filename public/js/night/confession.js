@@ -27,7 +27,7 @@ client.actions.showConfessPopup = function showConfessPopup(tryalCards) {
     popup.className = 'tryal-selection-popup';
 
     const title = document.createElement('h3');
-    title.textContent = '🕯️ สารภาพบาป: เลือกการ์ดชีวิตของคุณ';
+    title.textContent = 'คืนนี้จะสารภาพหรือข้าม?';
     popup.appendChild(title);
 
     const subtitle = document.createElement('p');
@@ -43,7 +43,11 @@ client.actions.showConfessPopup = function showConfessPopup(tryalCards) {
         popup.appendChild(announcement);
     }
 
+    const guide=document.createElement('div');guide.className='confession-options-guide';
+    guide.textContent='สารภาพ: เปิดชีวิต 1 ใบเพื่อกันการฆ่าคืนนี้ · ข้าม: เก็บชีวิตไว้ แต่เสี่ยงถูกฆ่า';popup.append(guide);
     const lifeCommands = new Map();
+    let selectedIndex = null;
+    const confirm=document.createElement('button');confirm.type='button';confirm.className='confession-confirm';confirm.disabled=true;confirm.textContent='เลือกการ์ดชีวิตก่อน';
     const cardsDiv = document.createElement('div');
     cardsDiv.className = 'cards-container';
 
@@ -52,21 +56,29 @@ client.actions.showConfessPopup = function showConfessPopup(tryalCards) {
         btn.className = 'tryal-card-btn';
         btn.dataset.lifeIndex = i;
         btn.innerHTML = `<span style="font-size:1.4em;margin-bottom:6px;">🎴</span><span>ใบที่ ${i+1}</span>`;
-        btn.onclick = () => {
+        const submit = () => {
             client.state.socket.emit('confess tryal card', i);
             if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);
             if (popup && popup.parentNode) popup.parentNode.removeChild(popup);
         };
-        lifeCommands.set(i, btn.onclick);
+        btn.setAttribute('aria-pressed','false');
+        btn.onclick = () => {
+            selectedIndex = i;
+            cardsDiv.querySelectorAll('button').forEach(button => button.setAttribute('aria-pressed',String(Number(button.dataset.lifeIndex)===i)));
+            confirm.disabled=false;confirm.textContent=`ยืนยันสารภาพ · เปิดใบที่ ${i+1}`;
+        };
+        lifeCommands.set(i, submit);
         cardsDiv.appendChild(btn);
     });
     popup.appendChild(cardsDiv);
+    confirm.onclick=()=>{if(selectedIndex!==null)lifeCommands.get(selectedIndex)?.();};
+    popup.append(confirm);
 
     // Skip button
     const skipBtn = document.createElement('button');
     skipBtn.id = 'skip-confess-button';
     skipBtn.className = 'tryal-popup-action-btn action-btn';
-    skipBtn.textContent = 'ข้ามการสารภาพ';
+    skipBtn.textContent = 'ข้าม · ไม่เปิดการ์ดชีวิต';
     skipBtn.onclick = () => {
         client.state.socket.emit('skip confession');
         if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);

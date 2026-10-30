@@ -96,7 +96,8 @@ export function initialize() {
     const feedback = document.createElement('div'); feedback.id = 'play-result-toast'; feedback.hidden = true; feedback.setAttribute('role', 'status');
     document.body.appendChild(feedback); let feedbackTimer;
     const feedbackQueue = [];
-    let burnTimer;
+    let burnTimer, protectionTimer;
+    const closeProtection = () => { clearTimeout(protectionTimer); document.getElementById('confession-announcement')?.remove(); };
     const closeBurnReveal = () => { clearTimeout(burnTimer); document.getElementById('arson-reveal-panel')?.remove(); };
     client.state.socket.on('arson cards revealed', event => {
         closeBurnReveal();
@@ -106,15 +107,16 @@ export function initialize() {
         const cards = document.createElement('div'); cards.className = 'arson-reveal-cards';
         for (const card of event.cards) {
             const item = document.createElement('figure');
+            item.dataset.cardColor = String(card.color || '').toLowerCase();
             const image = client.actions.createCardImage(card.name); image.alt = client.actions.displayCardName(card.name);
             const caption = document.createElement('figcaption'); caption.textContent = client.actions.displayCardName(card.name);
             item.append(image, caption); cards.append(item);
         }
-        const hint = document.createElement('small'); hint.textContent = 'ปิดอัตโนมัติใน 10 วินาที · ดูรายชื่อย้อนหลังในเหตุการณ์ได้';
+        const hint = document.createElement('small'); hint.textContent = 'ปิดอัตโนมัติใน 5 วินาที · ดูรายชื่อย้อนหลังในเหตุการณ์ได้';
         panel.append(title, close, cards, hint); (document.fullscreenElement || document.body).append(panel);
-        burnTimer = setTimeout(closeBurnReveal, 10000);
+        burnTimer = setTimeout(closeBurnReveal, 5000);
     });
-    for (const event of ['room left', 'game restarted']) client.state.socket.on(event, closeBurnReveal);
+    for (const event of ['room left', 'game restarted']) client.state.socket.on(event, () => { closeBurnReveal(); closeProtection(); });
     function nextFeedback() {
         clearTimeout(feedbackTimer);
         const text = feedbackQueue.shift();
@@ -243,9 +245,20 @@ export function initialize() {
         if (previousPhase && state.currentPhase !== previousPhase) sound('flip');
         previousPhase = state.currentPhase;
     });
-    client.state.socket.on('confession protection announcement', message => {
+    client.state.socket.on('confession protection announcement', event => {
         clearTimeout(feedbackTimer); feedbackQueue.length = 0; feedback.hidden = true;
-        showFeedback(message);
+        closeProtection();
+        const panel = document.createElement('section'); panel.id = 'confession-announcement';panel.setAttribute('role','dialog');panel.setAttribute('aria-label','ผู้เล่นที่ไม่ต้องสารภาพ');
+        const title = document.createElement('h3');title.textContent = 'ผู้เล่นที่ไม่ต้องสารภาพคืนนี้';
+        const list = document.createElement('ul');
+        for (const player of event.players || []) {
+            const item=document.createElement('li');const name=document.createElement('strong');name.textContent=player.name;
+            const reason=document.createElement('span');reason.textContent=player.reasons.join(' และ ');item.append(name,reason);list.append(item);
+        }
+        const note=document.createElement('p');note.textContent=event.players?.length ? 'คนที่เหลือเลือกสารภาพหรือข้ามได้ · ปิดใน 5 วินาที' : 'ไม่มีผู้ได้รับการยกเว้น · ทุกคนเลือกสารภาพหรือข้ามได้ · ปิดใน 5 วินาที';
+        const close=document.createElement('button');close.type='button';close.textContent='เข้าใจแล้ว';close.onclick=closeProtection;
+        panel.append(title,list,note,close);(document.fullscreenElement || document.body).append(panel);
+        protectionTimer=setTimeout(closeProtection,5000);
     });
     client.state.socket.on('card action feedback', event => {
         const route = event.targetName ? `${event.actorName} → ${event.targetName}${event.secondTargetName ? ' → '+event.secondTargetName : ''}` : event.actorName;

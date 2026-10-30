@@ -89,3 +89,43 @@ body.game-view-3d #table3d-section .table3d-alibi-choices {max-height:16dvh;}
 .arson-reveal-cards img {display:block;width:95px;height:140px;object-fit:contain;}
 .arson-reveal-cards figcaption {font-size:12px;line-height:1.5;}
 #arson-reveal-panel small {font-size:12px;color:#d5c1a4;}
+#confession-announcement {position:fixed;z-index:19000;top:50%;left:50%;transform:translate(-50%,-50%);width:min(440px,calc(100vw - 28px));max-height:75dvh;overflow:auto;box-sizing:border-box;padding:20px;background:#28241c;border:1px solid #b29c69;border-radius:14px;box-shadow:0 12px 80px #000b;color:#f0e3c8;}
+#confession-announcement h3 {margin:0 0 12px;font-size:18px;}
+#confession-announcement ul {padding:0;margin:0;list-style:none;display:grid;gap:8px;}
+#confession-announcement li {display:grid;gap:3px;padding:10px;border-radius:8px;background:#34402c;}
+#confession-announcement li span {font-size:13px;color:#d1dfbf;}
+#confession-announcement p {font-size:13px;line-height:1.6;}
+#confession-announcement button {min-height:44px;width:100%;}
+.confession-options-guide {padding:10px;background:#312a20;border-radius:8px;line-height:1.7;font-size:14px;color:#eddfc1;}
+#confess-popup .tryal-card-btn[aria-pressed=true] {outline:3px solid #e3c17b;background:#5c492c!important;opacity:1;}
+#confess-popup .confession-confirm {width:100%;min-height:46px;background:#415238;border:1px solid #a6bc8e;}
+#confess-popup #skip-confess-button {width:100%;min-height:46px;background:#39342e;border:1px solid #a59377;}
+.arson-reveal-cards figure img {border:3px solid #aa946c;border-radius:8px;box-sizing:border-box;}
+.arson-reveal-cards figure[data-card-color=red] img {border-color:#dd7469;}
+.arson-reveal-cards figure[data-card-color=green] img {border-color:#88b478;}
+.arson-reveal-cards figure[data-card-color=blue] img {border-color:#73a8d0;}
+.arson-reveal-cards figure[data-card-color=black] img {border-color:#b89cc9;}
+body.game-view-3d #table3d-phase-panel .confession-options-guide {display:block!important;font-size:13px;line-height:1.6;}
+/* Training uses dedicated rows, never floating panels over the cards. */
+body #training-dialog[open][data-training-view="3d"] {width:100vw;height:100dvh;max-height:none;max-width:none;inset:0;margin:0;border-radius:0;}
+body #training-dialog[data-training-view="3d"] .training-extra-help {font-size:12px;line-height:1.6;margin:4px 0;}
+body #training-dialog[data-training-view="3d"] .training-extra-help summary {cursor:pointer;min-height:32px;display:flex;align-items:center;color:#d7c4a2;}
+body #training-dialog[data-training-view="3d"] .training-extra-help :is(.training-meta,.training-card-explanation,.training-controls-help) {display:block;}
+@media(max-width:600px) {
+ body #training-dialog[open][data-training-view="3d"] #training-body {display:flex;flex-direction:column;height:100%;box-sizing:border-box;padding:60px 0 0;overflow:hidden;}
+ body #training-dialog[data-training-view="3d"] .training-header {height:60px;box-sizing:border-box;padding:6px 8px;}
+ body #training-dialog[data-training-view="3d"] .training-header h2 {max-width:calc(100% - 205px);white-space:normal;font-size:12px!important;line-height:1.3;}
+ body #training-dialog[data-training-view="3d"] .training-view-picker {position:absolute;inset:8px 56px auto auto;display:flex;flex-direction:row;gap:4px;}
+ body #training-dialog[data-training-view="3d"] .training-view-picker button {padding:5px 7px;min-width:36px!important;font-size:12px;}
+ body #training-dialog[data-training-view="3d"] .training-3d-coach {position:relative;inset:auto;width:100%;max-width:none;max-height:25dvh;flex:none;order:0;box-sizing:border-box;padding:6px 10px;margin:0;border:0;border-bottom:1px solid #765736;border-radius:0;overflow:auto;}
+ body #training-dialog[data-training-view="3d"] .training-3d-coach h3 {font-size:15px;margin:2px 0;}
+ body #training-dialog[data-training-view="3d"] .training-instruction {font-size:14px!important;margin:3px 0;padding:6px;line-height:1.55;}
+ body #training-dialog[data-training-view="3d"] .training-table {position:relative;inset:auto;flex:1 1 0;order:1;min-height:0;height:auto;margin:0;border:0;display:flex;flex-direction:column;}
+ body #training-dialog[data-training-view="3d"] .training-table-canvas {flex:1 1 0;min-height:0;height:auto;}
+ body #training-dialog[data-training-view="3d"] .training-table-controls {position:static;inset:auto;transform:none;display:flex;flex-direction:row;flex-wrap:nowrap;width:100%;max-width:100%;padding:4px;gap:4px;box-sizing:border-box;}
+ body #training-dialog[data-training-view="3d"] .training-table-controls button {padding:5px 8px;min-height:40px!important;}
+ body #training-dialog[data-training-view="3d"] .training-3d-actions {position:relative;inset:auto;order:2;flex:none;width:100%;max-width:none;max-height:28dvh;overflow:auto;box-sizing:border-box;padding:6px 10px;margin:0;border-radius:0;}
+ body #training-dialog[data-training-view="3d"] .training-footer {display:flex;gap:6px;}
+ body #training-dialog[data-training-view="3d"] .training-footer button {font-size:12px;padding:6px;}
+ body #training-dialog[data-training-view="3d"] .training-eyebrow {margin:0;font-size:11px;}
+}

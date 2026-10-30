@@ -67,7 +67,7 @@ module.exports = function createServices(game) {
                   ? 'ไม่ต้องสารภาพคืนนี้: ' + protections.map(p => `${p.name} (${p.reasons.join(' และ ')})`).join(' · ') + ' · ผู้เล่นที่เหลือเลือกสารภาพหรือข้ามได้'
                   : 'คืนนี้ไม่มีผู้เล่นได้รับการยกเว้นสารภาพ · ทุกคนเลือกสารภาพหรือข้ามได้';
               game.sendGameMessage(room.name, message, 'blue', true);
-              game.io.to(room.name).emit('confession protection announcement', message);
+              game.io.to(room.name).emit('confession protection announcement', { message, players: protections });
               room.confessionOrder = game.getAlivePlayers(room).map(player => player.uniqueId);
               room.confessionActions = game.getAlivePlayers(room)
                   .filter(player => game.isNightProtected(room, player)).map(player => player.uniqueId);
