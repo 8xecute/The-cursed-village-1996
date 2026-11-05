@@ -25,12 +25,12 @@ export function initialize() {
   });
 
   client.state.socket.on('update hand', (hand) => {
-      client.state.myCurrentHand = hand;
-      client.actions.updateHandDisplay(client.state.myCurrentHand);
-      if (client.state.isMyTurn && !client.state.hasDrawnCardThisTurn && hand.length > client.state.myCurrentHand.length) {
+      const previousCount = client.state.myCurrentHand.length;
+      if (client.state.isMyTurn && !client.state.hasDrawnCardThisTurn && hand.length > previousCount) {
           client.state.hasDrawnCardThisTurn = true;
           client.actions.updateTurnUI();
       }
+      client.actions.updateHandDisplay(hand);
   });
 
   client.state.prevTryalCards = [];

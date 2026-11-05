@@ -28,16 +28,6 @@ export function initialize() {
   });
   client.state.hasDrawnCardThisTurn = false;
 
-  client.state.socket.on('update hand', (hand) => {
-      // ... existing code ...
-      if (client.state.isMyTurn && !client.state.hasDrawnCardThisTurn && hand.length > client.state.myCurrentHand.length) {
-          client.state.hasDrawnCardThisTurn = true;
-          client.actions.updateTurnUI();
-      }
-      client.state.myCurrentHand = hand;
-      client.actions.updateHandDisplay(client.state.myCurrentHand);
-  });
-
   client.state.socket.on('card played successfully', () => {
       client.state.hasPlayedCardsThisTurn = true;
       client.actions.updateTurnUI();

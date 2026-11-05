@@ -65,9 +65,17 @@ describe('room lifecycle', () => {
     expect(Object.keys(room.players)).toHaveLength(4);
     expect(room.players.p1.isReady).toBe(false);
     expect(Object.values(room.players).every(p => p.tryalCards.length === 0)).toBe(true);
+    expect(Object.values(room.players).every(p => p.hand.length === 0)).toBe(true);
     host.emit('start game', 'room');
     await until(() => room.lifeSetup?.stage === 'arrange');
     expect(room.gameOver).toBe(false);
     expect(Object.values(room.players).every(p => p.tryalCards.length === 1)).toBe(true);
+    expect(Object.values(room.players).every(p => p.hand.length === 3)).toBe(true);
+    const secondHand = JSON.stringify(room.players.p1.hand);
+    players[1].disconnect();
+    await until(() => !room.players.p1.connected);
+    players[1] = await connect('p1');
+    await until(() => room.players.p1.connected);
+    expect(JSON.stringify(room.players.p1.hand)).toBe(secondHand);
   });
 });
