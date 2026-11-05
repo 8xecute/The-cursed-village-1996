@@ -586,7 +586,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
         });
         handMotion.end();
 
-        if (state.gameStarted && !state.gameOver && !state.prankGunHolderId && state.prankGunAvailable !== false) {
+        if (state.gameStarted) {
             const mount = new THREE.Group(); mount.position.set(-3.6, 2.1, -11.25); dynamic.add(mount);
             const wallAngle = -Math.max(0, ownIndex) * Math.PI * 2 / Math.max(1, players.length);
             mount.position.applyAxisAngle(new THREE.Vector3(0,1,0), wallAngle); mount.rotation.y = wallAngle;
@@ -595,7 +595,7 @@ function create({ container, onCard, onDraw, onPlayer, onLife, onEffect, onError
             const wallGun = createShotgun(); wallGun.position.set(-.25,0,.21); wallGun.rotation.y=Math.PI/2; wallGun.scale.setScalar(1.25); mount.add(wallGun);
             const pickup = mesh(new THREE.BoxGeometry(2.4,.65,.5),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}),mount,[0,0,.22]);
             pickup.userData.shotgun = true;
-            if (!state.isSpectator && state.players?.[me]?.alive && state.currentPhase === 'DAY' && !state.prankShotActive) targets.push(pickup);
+            targets.push(pickup);
         }
         if (state.prankShot && state.prankShot.startedAt !== lastShotId) animateShot(state.prankShot);
 

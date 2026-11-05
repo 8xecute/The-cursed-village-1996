@@ -1,115 +1,28 @@
 import { client } from '../core/client.js';
 
 export function initialize() {
-    const bar = document.createElement('div'); bar.id = 'prank-controls'; bar.hidden = true;
-    const gun = document.createElement('button'); gun.type = 'button'; gun.textContent = '🔫 เล็งลูกซอง';
-    const remaining = document.createElement('span'); remaining.className = 'prank-gun-remaining'; remaining.hidden = true;
-    bar.append(gun, remaining); document.body.appendChild(bar);
-    const cue = document.createElement('div'); cue.id = 'prank-shot-cue'; cue.hidden = true; cue.setAttribute('role', 'status'); document.body.appendChild(cue);
-    // Keep the overlays attached to the scene, above its separate mobile controls.
-    function placeOverlays() {
-        const scene = document.body.classList.contains('game-view-3d') && document.getElementById('table3d-canvas');
-        const parent = scene || document.body;
-        for (const overlay of [bar, cue]) if (overlay.parentElement !== parent) parent.appendChild(overlay);
-    }
-    placeOverlays();
-    new MutationObserver(placeOverlays).observe(document.body, {attributes:true, attributeFilter:['class']});
-    let selecting = false, selected = null, cueTimer, pickupTap = 0, gunTimer;
-    let speechTimer, speechStopTimer, ownSpeech;
-    window.speechSynthesis?.getVoices();
-    function stopSpeech() {
-        clearTimeout(speechTimer);clearTimeout(speechStopTimer);
-        if(ownSpeech)window.speechSynthesis?.cancel();ownSpeech=null;
-    }
-    client.state.socket.on('disconnect',stopSpeech);
-    document.addEventListener('visibilitychange',()=>{if(document.hidden)stopSpeech();});
+    const story = document.createElement('section');
+    story.id = 'shotgun-story';
+    story.hidden = true;
+    story.setAttribute('role', 'dialog');
+    story.setAttribute('aria-modal', 'true');
+    story.setAttribute('aria-labelledby', 'shotgun-story-title');
+    story.innerHTML = '<div class="shotgun-story-panel"><h2 id="shotgun-story-title">ปืนเก่าบนฝาผนัง</h2><p>นานมาแล้ว มีคนในหมู่บ้านเสียสติและใช้ปืนกระบอกนี้กราดยิงผู้คน หลังจากวันนั้น ชาวบ้านจึงนำกระสุนออกจนหมด แล้วแขวนปืนไว้บนผนังเพื่อเตือนความทรงจำ</p><button type="button">ปิด</button></div>';
+    const style = document.createElement('style');
+    style.textContent = '#shotgun-story[hidden]{display:none!important}#shotgun-story{position:absolute;inset:0;z-index:9999;display:grid;place-items:center;background:#000b;padding:16px;box-sizing:border-box}#shotgun-story .shotgun-story-panel{width:min(420px,100%);box-sizing:border-box;background:#251b15;color:#f1dfbd;border:1px solid #ae8751;border-radius:12px;padding:22px;line-height:1.7;box-shadow:0 12px 32px #000b}#shotgun-story h2{margin:0;font-size:1.2rem}#shotgun-story button{min-height:44px;padding:8px 24px}';
+    document.head.appendChild(style);
+    let previousFocus;
+    const close = () => { story.hidden = true; previousFocus?.focus?.(); };
+    story.querySelector('button').onclick = close;
+    story.onclick = event => { if (event.target === story) close(); };
+    story.onkeydown = event => { if (event.key === 'Escape') { event.stopPropagation(); close(); } };
     client.actions.pickupWallShotgun = () => {
-        const state = client.state.currentRoomState;
-        if (!state?.gameStarted || state.gameOver || state.isSpectator || !state.players?.[client.state.myUniqueId]?.alive || state.prankGunHolderId || state.prankGunAvailable === false || state.prankShotActive || state.currentPhase !== 'DAY') return;
-        const now = performance.now();
-        if (pickupTap && now - pickupTap < 2500) {
-            pickupTap = 0; cue.hidden = true; clearTimeout(cueTimer);
-            client.state.socket.emit('prank gun pickup');
-        } else {
-            pickupTap = now; cue.textContent = 'แตะลูกซองอีกครั้งเพื่อหยิบ'; cue.hidden = false; cue.classList.add('is-pickup');
-            clearTimeout(cueTimer); cueTimer = setTimeout(() => { cue.hidden = true; pickupTap = 0; }, 2500);
-        }
+        const mount = document.getElementById('table3d-section');
+        if (!mount) return;
+        if (story.parentElement !== mount) mount.appendChild(story);
+        previousFocus = document.activeElement;
+        story.hidden = false;
+        story.querySelector('button').focus();
     };
-    const originalInteraction = client.actions.getTable3DInteraction;
-    const originalPlayer = client.actions.handleTable3DPlayer;
-    function clearSelection() { selecting = false; selected = null; gun.textContent = '🔫 เล็งลูกซอง'; }
-    function updateRemaining() {
-        const deadline = client.state.currentRoomState?.prankGunExpiresAt;
-        remaining.hidden = gun.hidden || !deadline;
-        if (remaining.hidden) return;
-        const seconds = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
-        remaining.textContent = `เหลือ ${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
-        remaining.title = 'เวลาที่เหลือสำหรับใช้ลูกซอง';
-        if (!seconds) {
-            const wasSelecting = selecting;
-            clearSelection(); gun.hidden = bar.hidden = remaining.hidden = true;
-            clearInterval(gunTimer);
-            if (wasSelecting) client.actions.syncTable3D();
-        }
-    }
-    function shoot(id) {
-        client.state.socket.emit('prank gun shoot', id);
-        clearSelection(); client.actions.syncTable3D();
-    }
-    client.actions.getTable3DInteraction = () => selecting ? {
-        kind: 'player', eligible: Object.values(client.state.currentRoomState?.players || {}).filter(p => p.alive && p.uniqueId !== client.state.myUniqueId).map(p => p.uniqueId),
-        selected: selected ? [selected] : [], blocked: {}, outcomes: {}
-    } : originalInteraction();
-    client.actions.handleTable3DPlayer = id => {
-        if (!selecting) return originalPlayer(id);
-        if (!client.actions.getTable3DInteraction().eligible.includes(id)) return;
-        if (selected === id) shoot(id);
-        else { selected = id; client.actions.syncTable3D(); }
-    };
-    gun.onclick = () => {
-        if (selecting) { clearSelection(); client.actions.syncTable3D(); return; }
-        if (originalInteraction() || client.state.currentRoomState?.currentPhase !== 'DAY') {
-            client.actions.addGameMessage('ใช้ปืนได้ช่วงกลางวัน เมื่อไม่มีแอ็กชันการ์ดค้างอยู่', 'orange'); return;
-        }
-        if (document.body.classList.contains('game-view-3d')) {
-            selecting = true; gun.textContent = 'ยกเลิกยิง · แตะเป้าหมาย 2 ครั้ง'; client.actions.syncTable3D();
-        } else {
-            const targets = Object.values(client.state.currentRoomState.players).filter(p => p.alive && p.uniqueId !== client.state.myUniqueId);
-            client.actions.showSelectPlayerPopup('🔫 เลือกเป้าหมายยิงลูกซอง', targets, shoot);
-        }
-    };
-    client.state.socket.on('room state update', state => {
-        const available = state.gameStarted && !state.gameOver && !state.isSpectator;
-        gun.hidden = !available || !state.prankGun;
-        gun.disabled = !state.players?.[client.state.myUniqueId]?.alive || state.prankShotActive || state.currentPhase !== 'DAY';
-        bar.hidden = gun.hidden;
-        if (gun.hidden || gun.disabled) clearSelection();
-        clearInterval(gunTimer);updateRemaining();
-        if (!gun.hidden && state.prankGunExpiresAt) gunTimer = setInterval(updateRemaining, 1000);
-        if (state.prankGunHolderId && pickupTap) { pickupTap = 0; cue.hidden = true; clearTimeout(cueTimer); }
-    });
-    client.state.socket.on('prank gun shot', event => {
-        stopSpeech();
-        if(event.speechText && window.speechSynthesis) {
-            const elapsed=Math.max(0,Date.now()-event.startedAt);
-            const delay=Math.max(0,(event.speechStart||0)-elapsed);
-            if(elapsed<(event.speechStart||0)+event.speechDuration)speechTimer=setTimeout(()=>{
-                if(document.hidden)return;
-                const voice=window.speechSynthesis.getVoices().find(voice=>voice.lang.toLowerCase().startsWith('th'));
-                // Without a Thai voice, keep the bubble/mouth rather than mispronouncing it.
-                if(!voice)return;
-                ownSpeech=new SpeechSynthesisUtterance(event.speechText);ownSpeech.voice=voice;ownSpeech.lang='th-TH';
-                try{const volume=Number(localStorage.getItem('villageSfxVolume')??.5);ownSpeech.volume=Number.isFinite(volume)?Math.max(0,Math.min(1,volume)):.5;}catch(_){ownSpeech.volume=.5;}
-                window.speechSynthesis.speak(ownSpeech);
-                speechStopTimer=setTimeout(stopSpeech,Math.max(0,(event.speechStart||0)+event.speechDuration-Math.max(0,Date.now()-event.startedAt)));
-            },delay);
-        }
-        clearSelection(); clearTimeout(cueTimer);
-        cue.classList.remove('is-pickup');
-        cue.textContent = `🔫 ${event.actorName} → ${event.targetName} 💥`; cue.hidden = false;
-        cue.style.setProperty('--shot-duration', `${event.duration}ms`);
-        if (document.body.classList.contains('game-view-3d')) client.state.table3D?.animateShot?.(event);
-        cueTimer = setTimeout(() => { cue.hidden = true; }, event.duration + 500);
-    });
-    client.state.socket.on('room left', () => { stopSpeech();clearSelection(); pickupTap = 0; bar.hidden = true; cue.hidden = true; clearTimeout(cueTimer);clearInterval(gunTimer); });
+    client.state.socket.on('room left', close);
 }
