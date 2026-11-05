@@ -1,6 +1,7 @@
 const { usageLog } = require('../../usage-log');
 module.exports = function registerRoomIdentity(socket, game) {
   socket.on('register uniqueId', (uniqueId, playerName) => {
+          if (typeof playerName !== 'string' || /[<>]/.test(playerName)) playerName = '';
           const existingRoom = Object.values(game.rooms).find(room => room && room.players && room.players[uniqueId]);
           const existingPlayer = existingRoom?.players?.[uniqueId];
           const botToken = socket.handshake.auth?.botToken;
@@ -59,7 +60,7 @@ module.exports = function registerRoomIdentity(socket, game) {
               console.error('Unique ID not registered before setting name.');
               return;
           }
-          if (typeof playerName !== 'string' || !playerName.trim()) return;
+          if (typeof playerName !== 'string' || !playerName.trim() || /[<>]/.test(playerName)) { socket.emit('game message', 'ชื่อผู้เล่นต้องไม่มีเครื่องหมาย < หรือ >', 'red'); return; }
           const name = playerName.trim();
           for (const roomName in game.rooms) {
               const room = game.rooms[roomName];

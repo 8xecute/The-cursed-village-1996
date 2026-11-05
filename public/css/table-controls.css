@@ -68,7 +68,7 @@ body.game-view-3d #play-result-toast {top:110px;max-width:min(600px,calc(100vw -
  body.in-game.game-view-3d #table3d-log {top:118px;right:8px;}
  body.in-game.game-view-3d #play-result-toast {top:170px;padding:6px 10px;font-size:12px;line-height:1.5;}
  body.game-view-3d #table3d-section .table3d-hand-controls #action-clock-controls {padding-bottom:4px;}
- body.in-game.game-view-3d #table3d-section #action-clock-controls button {min-height:32px!important;}
+ body.in-game.game-view-3d #table3d-section #action-clock-controls button {min-height:44px!important;}
 }
 /* Alibi exposes the exact selected cards on desktop as well as touch devices. */
 body.game-view-3d #table3d-section .table3d-alibi-choices {display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;max-height:24dvh;overflow:auto;}
@@ -106,6 +106,18 @@ body.game-view-3d #table3d-section .table3d-alibi-choices {max-height:16dvh;}
 .arson-reveal-cards figure[data-card-color=blue] img {border-color:#73a8d0;}
 .arson-reveal-cards figure[data-card-color=black] img {border-color:#b89cc9;}
 body.game-view-3d #table3d-phase-panel .confession-options-guide {display:block!important;font-size:13px;line-height:1.6;}
+
+.lobby-options > summary {cursor:pointer; padding:10px; min-height:44px; box-sizing:border-box;}
+@media (max-width:768px) {
+ body:has(#room-lobby-section[style*="block"]) #name-section {padding:8px 12px;}
+ body:has(#room-lobby-section[style*="block"]) #name-section h2,
+ body:has(#room-lobby-section[style*="block"]) #name-section > p {display:none;}
+}
+@media (min-width:769px) {
+ body.in-game.game-view-3d #name-section {padding:6px 12px; margin-bottom:6px;}
+ body.in-game.game-view-3d #name-section h2,
+ body.in-game.game-view-3d #name-section > p {display:none;}
+}
 /* Training uses dedicated rows, never floating panels over the cards. */
 body #training-dialog[open][data-training-view="3d"] {width:100vw;height:100dvh;max-height:none;max-width:none;inset:0;margin:0;border-radius:0;}
 body #training-dialog[data-training-view="3d"] .training-extra-help {font-size:12px;line-height:1.6;margin:4px 0;}

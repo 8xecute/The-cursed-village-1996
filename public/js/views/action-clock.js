@@ -15,7 +15,7 @@ export function initialize() {
   const render=()=>{
     if(!state)return;
     const timer=state.actionTimer;
-    const active=state.gameStarted && !state.gameOver;
+    const active=state.gameStarted && !state.gameOver && state.currentPhase !== 'SETUP';
     panel.hidden=!active;
     if(!active)return;
     const root=document.body.classList.contains('game-view-3d')?document.querySelector('#table3d-section .table3d-hand-controls'):document.getElementById('game-section');

@@ -5,6 +5,9 @@ module.exports = function registerRoomMembership(socket, game) {
       });
 
   socket.on('create room', (roomName, playerName) => {
+          if (typeof roomName !== 'string' || !roomName.trim() || /[<>]/.test(roomName) || typeof playerName !== 'string' || /[<>]/.test(playerName)) {
+              socket.emit('game message', 'ชื่อห้องและชื่อผู้เล่นต้องไม่มีเครื่องหมาย < หรือ >', 'red'); return;
+          }
           if (game.rooms[roomName]) {
               game.io.to(socket.id).emit('game message', 'ชื่อห้องนี้ถูกใช้แล้ว. โปรดเลือกชื่ออื่น.', 'red');
               return;
@@ -77,6 +80,9 @@ module.exports = function registerRoomMembership(socket, game) {
       });
 
   socket.on('join room', (roomName, playerName) => {
+          if (typeof roomName !== 'string' || typeof playerName !== 'string' || /[<>]/.test(playerName)) {
+              socket.emit('game message', 'ชื่อผู้เล่นต้องไม่มีเครื่องหมาย < หรือ >', 'red'); return;
+          }
           const room = game.rooms[roomName];
           if (!room) {
               game.io.to(socket.id).emit('game message', 'ไม่พบห้องนี้.', 'red');

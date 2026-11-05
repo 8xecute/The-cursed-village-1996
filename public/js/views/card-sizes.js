@@ -1,6 +1,6 @@
 import { client } from '../core/client.js';
 
-const defaults = { life: 100, hand: 100, status: 100 };
+const defaults = { life: 100, hand: matchMedia('(max-width: 768px) and (pointer: coarse)').matches ? 135 : 100, status: 100 };
 export function initializeCardSizes() {
     let saved = {};
     try { saved = JSON.parse(localStorage.getItem('table3DCardSizes') || '{}') || {}; } catch (_) {}
@@ -26,7 +26,7 @@ export function initializeCardSizes() {
     const reset = document.createElement('button'); reset.type = 'button'; reset.textContent = 'คืนขนาดเริ่มต้น';
     reset.onclick = () => {
         client.state.table3DCardSizes = { ...defaults };
-        inputs.forEach(({ key, input, value }) => { input.value = defaults[key]; value.textContent = '100%'; }); save();
+        inputs.forEach(({ key, input, value }) => { input.value = defaults[key]; value.textContent = `${defaults[key]}%`; }); save();
     };
     panel.append(reset);
     document.addEventListener('click', event => { if (!menu.contains(event.target)) menu.open = false; });
